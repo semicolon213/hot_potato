@@ -1,0 +1,193 @@
+### 📦 React Native Stack Base ###
+.expo
+__generated__
+
+---
+
+### 📑 Logs ###
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+---
+
+### 📊 Diagnostic Reports ###
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+---
+
+### 🧰 Runtime Data ###
+pids
+*.pid
+*.seed
+*.pid.lock
+
+---
+
+### 📂 Instrumentation & Coverage ###
+lib-cov
+coverage/
+*.lcov
+.nyc_output
+
+---
+
+### 🛠️ Development Tools ###
+.grunt
+bower_components
+.lock-wscript
+build/Release
+
+---
+
+### 📦 Dependency Directories ###
+node_modules/
+jspm_packages/
+web_modules/
+
+---
+
+### 🧹 Cache Files ###
+*.tsbuildinfo
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+---
+
+### 📜 Package Outputs ###
+*.tgz
+.yarn-integrity
+
+---
+
+### 🌐 Environment Files ###
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+---
+
+### 📦 Parcel & Next.js ###
+.cache
+.parcel-cache
+.next
+out
+
+---
+
+### 🔨 Nuxt.js & Gatsby ###
+.nuxt
+dist
+.cache/
+# public (Gatsby 사용 시 주석 해제)
+
+---
+
+### 📚 Documentation Tools ###
+.vuepress/dist
+.temp
+.docusaurus
+
+---
+
+### 📊 Serverless ###
+.serverless/
+
+---
+
+### 🧳 Other Tools ###
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+
+---
+
+### 📦 Yarn v2 ###
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+---
+
+### 🍎 macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+---
+
+### 🤖 Android ###
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+output.json
+google-services.json
+*.hprof
+
+---
+
+### 🍏 Xcode ###
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+---
+
+### 🧱 Buck (Facebook Build System) ###
+buck-out/
+.buckconfig.local
+.buckd/
+.buckversion
+.fakebuckversion
+
+---
+
+### ⚙️ Gradle ###
+.gradle
+**/build/
+!src/**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+---
+
+### 🐧 Linux ###
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
