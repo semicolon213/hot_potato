@@ -1,54 +1,78 @@
-# React + TypeScript + Vite
+# 📘 Google API 기반 ERP 모듈
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Google API를 활용해 **서버 없이 동작**하는 ERP 모듈 프로젝트입니다.  
+React, React Native, Vite를 이용하여 빠르고 직관적인 사용자 경험을 제공합니다.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🧩 프로젝트 특징
 
-## Expanding the ESLint configuration
+- ✅ 서버 구축 없이 Google API로 데이터 처리
+- ✅ 멀티 플랫폼 대응 (웹 & 모바일)
+- ✅ 간단한 설정만으로 바로 사용 가능
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 🛠 사용 기술
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+| 프론트엔드 | 모바일 | 번들러 |
+|------------|--------|---------|
+| React      | React Native | Vite |
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## 🚀 사용법
+
+> 사용법 들어가면 댐
+
+---
+
+## 👥 팀원 소개
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/team/김형균.jpg" width="100"/><br/>
+      <b>김형균</b><br/>
+      PM, 개발 및 대외 협력<br/>
+      <a href="https://github.com/semicolon213">@semicolon213</a>
+    </td>
+    <td align="center">
+      <img src="images/team/용지순.jpg" width="100"/><br/>
+      <b>용지순</b><br/>
+      풀스택 개발 및 자료 수집<br/>
+      <a href="https://github.com/YJS511">@YJS511</a>
+    </td>
+    <td align="center">
+      <img src="images/team/문준영.jpg" width="100"/><br/>
+      <b>문준영</b><br/>
+      풀스택 개발 및 자료 수집<br/>
+      <a href="https://github.com/ycs-202007074">@ycs-202007074</a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/team/김나윤.jpg" width="100"/><br/>
+      <b>김나윤</b><br/>
+      풀스택 개발 및 문서 작성<br/>
+      <a href="https://github.com/nayun1">@nayun1</a>
+    </td>
+    <td align="center">
+      <img src="images/team/장환희.jpg" width="100"/><br/>
+      <b>장환희</b><br/>
+      풀스택 개발 및 문서 작성<br/>
+      <a href="https://github.com/Janghawnhui">@Janghawnhui</a>
+    </td>
+    <td align="center">
+      <img src="images/team/안창희.jpg" width="100"/><br/>
+      <b>안창희</b><br/>
+      풀스택 개발 및 자료 수집<br/>
+      <a href="https://github.com/ahn321">@ahn321</a>
+    </td>
+  </tr>
+</table>
+
+
+## 📬 문의
+
+궁금한 점이 있다면 [Issues](https://github.com/semicolon213/hot_potato/issues)를 통해 질문해주세요.
