@@ -1,57 +1,78 @@
-# 🥔 Hot Potato React ERP
+# 📘 Google API 기반 ERP 모듈
 
-**대학/조직용 문서·일정·정보 관리 웹앱**
-React + TypeScript + Vite 기반, 감자처럼 쉽고 유연하게!
-
----
-
-## 🥕 무엇을 하는 프로젝트인가요?
-
-- **대시보드**에서 다양한 위젯(공지, 강의노트, 도서관 좌석, 시간표 등)을 추가/삭제/배치하여 사용자가 원하는 정보를 한눈에 볼 수 있습니다.
-- **문서 관리** 기능을 통해 문서함, 자주 쓰는 양식, 새 문서 생성, 최근 문서 확인 등 조직 내 문서의 효율적인 관리가 가능합니다.
-- **캘린더**로 학사 일정, 개인/공용 일정을 관리할 수 있습니다.
-- **환경설정**에서 테마와 폰트 등 UI를 개인화할 수 있습니다.
-- **마이페이지**에서 내 정보, 활동 내역, 프로필을 관리할 수 있습니다.
-- **다양한 아이콘과 감자 캐릭터**로 친근하고 직관적인 UI를 제공합니다.
+Google API를 활용해 **서버 없이 동작**하는 ERP 모듈 프로젝트입니다.  
+React, React Native, Vite를 이용하여 빠르고 직관적인 사용자 경험을 제공합니다.
 
 ---
 
-## 🛠️ 어떤 언어와 기술로 개발되었나요?
+## 🧩 프로젝트 특징
 
-- **프로그래밍 언어**:  
-  - TypeScript (React 컴포넌트 및 로직)
-  - CSS (컴포넌트별 스타일, 글로벌 테마)
-- **프레임워크/라이브러리**:  
-  - React (SPA 구조, 컴포넌트 기반 UI)
-  - Vite (빠른 개발 환경 및 번들러)
-- **에셋**:  
-  - SVG 아이콘, PNG 감자 이미지 등
-- **상태 관리**:  
-  - useState, useEffect 등 React 내장 훅
-  - localStorage를 활용한 사용자 설정(테마, 폰트 등) 저장
-- **스타일 구조**:  
-  - CSS 파일을 컴포넌트별로 분리하여 관리
-  - 글로벌 폰트/테마 커스터마이징 지원
+- ✅ 서버 구축 없이 Google API로 데이터 처리
+- ✅ 멀티 플랫폼 대응 (웹 & 모바일)
+- ✅ 간단한 설정만으로 바로 사용 가능
 
 ---
 
-## 🗂️ 폴더 구조 예시
+## 🛠 사용 기술
 
-- `src/components/` : Header, Sidebar 등 공통 UI 컴포넌트
-- `src/pages/` : Calendar, Docbox, DocumentManagement, Preferences 등 주요 페이지
-- `src/assets/Icons/` : SVG 아이콘
-- `src/assets/image/` : 감자 등 PNG 이미지
-
----
-
-## 📝 요약
-
-- **TypeScript + React + Vite**로 개발된,  
-  대학/조직용 문서·일정·정보 관리 웹앱입니다.
-- 사용자 친화적이고, 커스터마이징(테마/폰트) 기능이 강점입니다.
-- 컴포넌트별 구조와 다양한 에셋(아이콘, 이미지)로 유지보수와 확장성이 뛰어납니다.
+| 프론트엔드 | 모바일 | 번들러 |
+|------------|--------|---------|
+| React      | React Native | Vite |
 
 ---
 
-> 감자처럼 쉽고, 감자처럼 유연한,  
-> **Hot Potato React ERP**와 함께하세요! 🥔✨
+## 🚀 사용법
+
+> 사용법 들어가면 댐
+
+---
+
+## 👥 팀원 소개
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/team/김형균.jpg" width="100"/><br/>
+      <b>김형균</b><br/>
+      PM, 개발 및 대외 협력<br/>
+      <a href="https://github.com/semicolon213">@semicolon213</a>
+    </td>
+    <td align="center">
+      <img src="images/team/용지순.jpg" width="100"/><br/>
+      <b>용지순</b><br/>
+      풀스택 개발 및 자료 수집<br/>
+      <a href="https://github.com/YJS511">@YJS511</a>
+    </td>
+    <td align="center">
+      <img src="images/team/문준영.jpg" width="100"/><br/>
+      <b>문준영</b><br/>
+      풀스택 개발 및 자료 수집<br/>
+      <a href="https://github.com/ycs-202007074">@ycs-202007074</a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/team/김나윤.jpg" width="100"/><br/>
+      <b>김나윤</b><br/>
+      풀스택 개발 및 문서 작성<br/>
+      <a href="https://github.com/nayun1">@nayun1</a>
+    </td>
+    <td align="center">
+      <img src="images/team/장환희.jpg" width="100"/><br/>
+      <b>장환희</b><br/>
+      풀스택 개발 및 문서 작성<br/>
+      <a href="https://github.com/Janghawnhui">@Janghawnhui</a>
+    </td>
+    <td align="center">
+      <img src="images/team/안창희.jpg" width="100"/><br/>
+      <b>안창희</b><br/>
+      풀스택 개발 및 자료 수집<br/>
+      <a href="https://github.com/ahn321">@ahn321</a>
+    </td>
+  </tr>
+</table>
+
+
+## 📬 문의
+
+궁금한 점이 있다면 [Issues](https://github.com/semicolon213/hot_potato/issues)를 통해 질문해주세요.
