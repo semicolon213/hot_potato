@@ -1,0 +1,522 @@
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+
+* {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nanum Gothic', 'Arial', sans-serif;
+        }
+
+        body {
+            display: flex; 
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        /* 메인 컨텐츠 영역 */
+        .main-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1;
+            background-color: #f8f9fa;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 800;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .dashboard-header h1::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            height: 70%;
+            width: 4px;
+            background-color: #3498db;
+            border-radius: 2px;
+        }
+
+        .add-widget-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+            font-weight: 700;
+        }
+
+        .add-widget-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .add-widget-btn i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        /* 위젯 그리드 */
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .widget {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .widget-header h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .widget-header h3 i {
+            margin-right: 10px;
+            color: #3498db;
+            font-size: 20px;
+        }
+
+        .widget-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .widget-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 14px;
+            transition: all 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+        }
+
+        .widget-btn:hover {
+            color: #e74c3c;
+            background-color: #fdedec;
+        }
+
+        .widget-content {
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        .widget-content p {
+            margin-bottom: 12px;
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px dashed #eee;
+            transition: all 0.3s;
+        }
+
+        .widget-content p:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+
+        .widget-content p:hover {
+            background-color: #f8f9fa;
+            padding-left: 10px;
+            border-radius: 4px;
+        }
+
+        .widget-content i {
+            margin-right: 10px;
+            color: #7f8c8d;
+            font-size: 14px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 특정 위젯 스타일 */
+        .widget[data-widget-type="notice"] .widget-content p {
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .widget[data-widget-type="notice"] .widget-content p::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .widget[data-widget-type="library"] .widget-content p {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .widget[data-widget-type="library"] .seat-available {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .widget[data-widget-type="library"] .seat-total {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .widget[data-widget-type="professor-contact"] input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .widget[data-widget-type="professor-contact"] .contact-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+        .widget[data-widget-type="professor-contact"] .contact-option:hover {
+            color: #3498db;
+        }
+
+        /* 성적 위젯 스타일 */
+        .widget[data-widget-type="grades"] .grade-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .widget[data-widget-type="grades"] .grade-bar {
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .widget[data-widget-type="grades"] .grade-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 5px;
+        }
+
+        /* 일정 위젯 스타일 */
+        .widget[data-widget-type="calendar"] .calendar-day {
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .widget[data-widget-type="calendar"] .calendar-event {
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .widget[data-widget-type="calendar"] .calendar-event::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+        }
+
+        /* 출석 위젯 스타일 */
+        .widget[data-widget-type="attendance"] .attendance-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .widget[data-widget-type="attendance"] .attendance-box {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .widget[data-widget-type="attendance"] .attendance-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* 과제 위젯 스타일 */
+        .widget[data-widget-type="assignments"] .assignment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .widget[data-widget-type="assignments"] .assignment-due {
+            font-size: 12px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* 시간표 위젯 스타일 */
+        .widget[data-widget-type="timetable"] .timetable-item {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .widget[data-widget-type="timetable"] .timetable-time {
+            font-weight: bold;
+            color: #3498db;
+            min-width: 80px;
+        }
+
+        /* 학식 메뉴 위젯 스타일 */
+        .widget[data-widget-type="cafeteria"] .menu-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .widget[data-widget-type="cafeteria"] .menu-price {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* 날씨 위젯 스타일 */
+        .widget[data-widget-type="weather"] .weather-today {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .widget[data-widget-type="weather"] .weather-temp {
+            font-size: 28px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .widget[data-widget-type="weather"] .weather-icon {
+            font-size: 40px;
+            margin-right: 15px;
+            color: #3498db;
+        }
+
+        .widget[data-widget-type="weather"] .weather-forecast {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .widget[data-widget-type="weather"] .forecast-day {
+            text-align: center;
+            font-size: 12px;
+        }
+
+        /* 버스 정보 위젯 스타일 */
+        .widget[data-widget-type="bus"] .bus-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .widget[data-widget-type="bus"] .bus-time {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        /* 캠퍼스 맵 위젯 스타일 */
+        .widget[data-widget-type="campus-map"] .map-container {
+            height: 200px;
+            background-color: #f1f1f1;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            font-weight: bold;
+        }
+
+        /* 위젯 추가 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.95);
+            animation: modalOpen 0.3s forwards;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        @keyframes modalOpen {
+            to { transform: scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-modal:hover {
+            color: #e74c3c;
+            background-color: #f8f9fa;
+        }
+
+        .widget-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .widget-option {
+            border: 1px solid #e9ecef;
+            padding: 20px 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+        }
+
+        .widget-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f8f9fa;
+        }
+
+        .widget-option.disabled:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: #e9ecef;
+        }
+
+        .widget-option:hover {
+            border-color: #3498db;
+            background-color: #f8fafc;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.15);
+        }
+
+        .widget-option i {
+            font-size: 36px;
+            margin-bottom: 15px;
+            color: #3498db;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .widget-option:hover i {
+            transform: scale(1.1);
+        }
+
+        .widget-option h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .widget-option p {
+            color: #7f8c8d;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .widget-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .widget-options {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
