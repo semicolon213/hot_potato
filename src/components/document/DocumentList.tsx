@@ -1,21 +1,24 @@
 import React from "react";
 import "./DocumentList.css";
 
-interface Document {
-  docNumber: string;
-  title: string;
-  author: string;
-  lastModified: string;
-  dueDate: string;
-  status: string;
+// T는 데이터 객체의 타입을 나타내는 제네릭 타입
+interface Column<T extends object> {
+  key: keyof T & string;
+  header: string;
+  width?: string;
+  // render 함수는 이제 제네릭 타입 T를 사용하여 row의 타입을 정확히 알 수 있음
+  render?: (row: T) => React.ReactNode;
+  cellClassName?: string;
 }
 
-interface DocumentListProps {
-  documents: Document[];
+interface DocumentListProps<T extends object> {
+  columns: Column<T>[];
+  data: T[];
   onPageChange: (pageName: string) => void;
+  title: string;
 }
 
-const DocumentList: React.FC<DocumentListProps> = ({ documents, onPageChange }) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title }: DocumentListProps<T>) => {
   return (
     <div className="document-container">
       <div className="table-container">
@@ -25,7 +28,7 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents, onPageChange }) 
         >
           <div className="section-title-container">
             <div className="section-title" style={{ color: "white" }}>
-              문서함
+              {title}
             </div>
           </div>
           <div
@@ -40,26 +43,20 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents, onPageChange }) 
         </div>
 
         <div className="table-header">
-          <div className="table-header-cell doc-number-cell">문서번호</div>
-          <div className="table-header-cell title-cell">제목</div>
-          <div className="table-header-cell author-cell">작성자</div>
-          <div className="table-header-cell date-cell">최근 수정일</div>
-          <div className="table-header-cell date-cell">기한일</div>
-          <div className="table-header-cell status-cell">상태</div>
+          {columns.map((col) => (
+            <div key={String(col.key)} className={`table-header-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
+              {col.header}
+            </div>
+          ))}
         </div>
 
-        {documents.map((doc, index) => (
+        {data.map((row, index) => (
           <div className="table-row" key={index}>
-            <div className="table-cell doc-number-cell">{doc.docNumber}</div>
-            <div className="table-cell title-cell title-bold">{doc.title}</div>
-            <div className="table-cell author-cell">{doc.author}</div>
-            <div className="table-cell date-cell">{doc.lastModified}</div>
-            <div className="table-cell date-cell">{doc.dueDate}</div>
-            <div className="table-cell status-cell">
-              <div className="status-badge">
-                <div className="status-text">{doc.status}</div>
+            {columns.map((col) => (
+              <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
+                {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
               </div>
-            </div>
+            ))}
           </div>
         ))}
       </div>

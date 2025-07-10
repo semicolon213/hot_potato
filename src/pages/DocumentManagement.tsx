@@ -3,6 +3,15 @@ import InfoCard from "../components/document/InfoCard";
 import DocumentList from "../components/document/DocumentList";
 import StatCard from "../components/document/StatCard";
 
+interface Document {
+  docNumber: string;
+  title: string;
+  author: string;
+  lastModified: string;
+  dueDate: string;
+  status: string;
+}
+
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
 }
@@ -20,7 +29,26 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
     { name: "회의록" },
   ];
 
-  const documents = [
+  const documentColumns = [
+    { key: 'docNumber' as const, header: '문서번호', width: '15%', cellClassName: 'doc-number-cell' },
+    { key: 'title' as const, header: '제목', width: '25%', cellClassName: 'title-cell' },
+    { key: 'author' as const, header: '작성자', width: '15%', cellClassName: 'author-cell' },
+    { key: 'lastModified' as const, header: '최근 수정일', width: '15%', cellClassName: 'date-cell' },
+    { key: 'dueDate' as const, header: '기한일', width: '15%', cellClassName: 'date-cell' },
+    {
+      key: 'status' as const,
+      header: '상태',
+      width: '15%',
+      cellClassName: 'status-cell',
+      render: (row: Document) => (
+        <div className={`status-badge ${row.status.toLowerCase()}`}>
+          <div className="status-text">{row.status}</div>
+        </div>
+      ),
+    },
+  ];
+
+  const documents: Document[] = [
     {
       docNumber: "DOC-2024-001",
       title: "2024년 1분기 사업계획서",
@@ -35,7 +63,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
       author: "박서연",
       lastModified: "2024-03-15",
       dueDate: "2024-03-14",
-      status: "진행중",
+      status: "완료",
     },
     {
       docNumber: "DOC-2024-003",
@@ -43,7 +71,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
       author: "김준호",
       lastModified: "2024-03-14",
       dueDate: "2024-03-13",
-      status: "진행중",
+      status: "반려",
     },
     {
       docNumber: "DOC-2024-005",
@@ -51,7 +79,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
       author: "강현우",
       lastModified: "2024-03-12",
       dueDate: "2024-03-11",
-      status: "진행중",
+      status: "임시저장",
     },
   ];
 
@@ -95,7 +123,12 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
         />
       </div>
 
-      <DocumentList documents={documents} onPageChange={onPageChange} />
+      <DocumentList<Document>
+        title="문서함"
+        columns={documentColumns}
+        data={documents}
+        onPageChange={onPageChange}
+      />
 
       <div className="stats-container">
         {statCards.map((card, index) => (
