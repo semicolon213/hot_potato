@@ -1,0 +1,117 @@
+/* src/components/WeatherWidget.css */
+
+/* 모든 위젯의 공통 스타일 (전체 내용) */
+.widget {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    position: relative;
+    border: 1px solid #e9ecef;
+}
+
+.widget:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.widget-header {
+    font-size: 1.4em;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    justify-content: space-between;
+}
+
+.widget-header h3 {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+}
+
+.widget-header i {
+    margin-right: 12px;
+    color: #3498db;
+    font-size: 1.1em;
+}
+
+.widget-content-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    color: #34495e;
+    line-height: 1.6;
+}
+
+.widget-content-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+.widget-content-wrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+.widget-content-wrapper::-webkit-scrollbar-track {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* WeatherWidget만의 스타일 */
+.weather-widget-content .weather-today {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #eee;
+}
+.weather-widget-content .weather-icon {
+    font-size: 3em;
+    margin-right: 15px;
+    color: #f39c12; /* Sun color */
+}
+/* ddd.html에서 각 아이콘 별 색상 정의 */
+.weather-widget-content .weather-today .fas.fa-sun { color: #f39c12; }
+.weather-widget-content .weather-today .fas.fa-cloud-sun { color: #3498db; }
+.weather-widget-content .weather-today .fas.fa-cloud-rain { color: #6c7a89; }
+.weather-widget-content .weather-today .fas.fa-cloud { color: #95a5a6; }
+
+.weather-widget-content .weather-today .weather-temp {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: #2c3e50;
+    line-height: 1;
+}
+.weather-widget-content .weather-today p {
+    margin: 0;
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.weather-widget-content .weather-forecast {
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    font-size: 0.85em;
+    color: #555;
+    padding: 8px 0; /* ddd.html 추가 스타일 반영 */
+    border-bottom: 1px dashed #eee; /* ddd.html 추가 스타일 반영 */
+}
+.weather-widget-content .forecast-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.weather-widget-content .forecast-day i {
+    font-size: 1.8em;
+    margin: 8px 0;
+    color: #3498db;
+}
