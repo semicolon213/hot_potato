@@ -50,16 +50,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
     ]);
     setChatInput("");
 
-    setTimeout(() => {
-      setChatMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          content: "메시지를 받았습니다. 조금만 기다려주세요.",
-          time: timeString,
-          type: "system",
-        },
-      ]);
-    }, 1000);
+    
   };
 
   useEffect(() => {
@@ -80,65 +71,68 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
   }, [isNotificationPanelOpen]);
 
   return (
-    <div className="header" data-oid="klo-qi-">
-      <div
-        className="new-doc-button"
-        onClick={() => onPageChange("new_document")}
-        data-oid="b._cfb5"
-      >
-        <div className="new-doc-button-text" data-oid="bm:nvgx">
-          + 새 문서
-        </div>
-      </div>
-
-      <div className="search-container" data-oid="ztfgwty">
-        <img
-          src={searchIcon}
-          alt="Search Icon"
-          className="icon"
-          data-oid="i8vx3cc"
-        />
-
-        <input
-          type="text"
-          className="search-input"
-          placeholder="문서 검색"
-          data-oid="750ewi9"
-        />
-      </div>
-
-      <div className="header-actions" data-oid="xq1uhkt">
+    <>
+      <div className="header" data-oid="klo-qi-">
         <div
-          className="chat-button"
-          onClick={handleChatButtonClick}
-          data-oid=".jf5:th"
+          className="new-doc-button"
+          onClick={() => onPageChange("new_document")}
+          data-oid="b._cfb5"
         >
-          <img
-            src={chatIcon}
-            alt="Chat Icon"
-            className="icon"
-            data-oid="pco6m-n"
-          />
-
-          <div className="chat-notification-dot" data-oid="czkq0wr"></div>
+          <div className="new-doc-button-text" data-oid="bm:nvgx">
+            + 새 문서
+          </div>
         </div>
 
-        <div
-          className="bell-button"
-          onClick={handleNotificationClick}
-          data-oid="gglwxgo"
-        >
+        <div className="search-container" data-oid="ztfgwty">
           <img
-            src={bellIcon}
-            alt="Bell Icon"
+            src={searchIcon}
+            alt="Search Icon"
             className="icon"
-            data-oid="6hxi9s."
+            data-oid="i8vx3cc"
           />
 
-          <div className="notification-dot" data-oid="99.ajod"></div>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="문서 검색"
+            data-oid="750ewi9"
+          />
+        </div>
 
-          {isNotificationPanelOpen && (
-            <div className="notification-panel" data-oid="uxrq5fu">
+        <div className="header-actions" data-oid="xq1uhkt">
+          <div
+            className="chat-button"
+            onClick={handleChatButtonClick}
+            data-oid=".jf5:th"
+          >
+            <img
+              src={chatIcon}
+              alt="Chat Icon"
+              className="icon"
+              data-oid="pco6m-n"
+            />
+
+            <div className="chat-notification-dot" data-oid="czkq0wr"></div>
+          </div>
+
+          <div
+            className="bell-button"
+            onClick={handleNotificationClick}
+            data-oid="gglwxgo"
+          >
+            <img
+              src={bellIcon}
+              alt="Bell Icon"
+              className="icon"
+              data-oid="6hxi9s."
+            />
+
+            <div className="notification-dot" data-oid="99.ajod"></div>
+
+            <div
+              className={`notification-panel ${isNotificationPanelOpen ? "active" : ""}`}
+              data-oid="uxrq5fu"
+            >
               <div className="notification-header" data-oid="u2d1xp2">
                 <div className="notification-title" data-oid="2lqe.ud">
                   알림
@@ -231,88 +225,88 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
                 모든 알림 보기
               </div>
             </div>
-          )}
-        </div>
-
-        <div
-          className="user-profile"
-          onClick={() => onPageChange("mypage")}
-          data-oid="piz:rdy"
-        >
-          <div className="avatar-container" data-oid="4ks-vou">
-            <img
-              src={userIcon}
-              alt="User Icon"
-              className="icon"
-              data-oid="1frgdye"
-            />
           </div>
-          <div className="user-name" data-oid="xz4ud-l">
-            나나
+
+          <div
+            className="user-profile"
+            onClick={() => onPageChange("mypage")}
+            data-oid="piz:rdy"
+          >
+            <div className="avatar-container" data-oid="4ks-vou">
+              <img
+                src={userIcon}
+                alt="User Icon"
+                className="icon"
+                data-oid="1frgdye"
+              />
+            </div>
+            <div className="user-name" data-oid="xz4ud-l">
+              나나
+            </div>
           </div>
         </div>
       </div>
-
-      {isChatOverlayOpen && (
-        <div className="chat-overlay" data-oid="hotwdvh">
-          <div className="chat-header" data-oid="ac7x51a">
-            <div className="chat-title" data-oid="c90k4.d">
-              채팅
-            </div>
-            <div className="chat-actions" data-oid="kbkw93h">
-              <div
-                className="chat-close"
-                onClick={() => setIsChatOverlayOpen(false)}
-                data-oid="gy2sd29"
-              >
-                &times;
-              </div>
-            </div>
+      <div
+        className={`chat-overlay ${isChatOverlayOpen ? "active" : ""}`}
+        data-oid="hotwdvh"
+      >
+        <div className="chat-header" data-oid="ac7x51a">
+          <div className="chat-title" data-oid="c90k4.d">
+            채팅
           </div>
-          <div className="chat-body" data-oid="ox-xech">
-            <div className="chat-messages" data-oid="f:q-y-k">
-              {chatMessages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`chat-message ${msg.type}-message`}
-                  data-oid="kcf1d-j"
-                >
-                  <div className="message-content" data-oid="kov4l5j">
-                    {msg.content}
-                  </div>
-                  <div className="message-time" data-oid="vxyum_h">
-                    {msg.time}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="chat-input-area" data-oid="5fntg-x">
-              <input
-                type="text"
-                className="chat-input"
-                placeholder="메시지 입력..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    handleSendMessage();
-                  }
-                }}
-                data-oid="36-l_qe"
-              />
-
-              <button
-                className="chat-send-button"
-                onClick={handleSendMessage}
-                data-oid="1:ctw8c"
-              >
-                전송
-              </button>
+          <div className="chat-actions" data-oid="kbkw93h">
+            <div
+              className="chat-close"
+              onClick={() => setIsChatOverlayOpen(false)}
+              data-oid="gy2sd29"
+            >
+              &times;
             </div>
           </div>
         </div>
-      )}
-    </div>
+        <div className="chat-body" data-oid="ox-xech">
+          <div className="chat-messages" data-oid="f:q-y-k">
+            {chatMessages.map((msg, index) => (
+              <div
+                key={index}
+                className={`chat-message ${msg.type}-message`}
+                data-oid="kcf1d-j"
+              >
+                <div className="message-content" data-oid="kov4l5j">
+                  {msg.content}
+                </div>
+                <div className="message-time" data-oid="vxyum_h">
+                  {msg.time}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="chat-input-area" data-oid="5fntg-x">
+            <input
+              type="text"
+              className="chat-input"
+              placeholder="메시지 입력..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleSendMessage();
+                }
+              }}
+              data-oid="36-l_qe"
+            />
+
+            <button
+              className="chat-send-button"
+              onClick={handleSendMessage}
+              data-oid="1:ctw8c"
+            >
+              전송
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
