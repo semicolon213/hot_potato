@@ -32,7 +32,7 @@ export default function TemplatePage() {
                 setSearchTerm={setSearchTerm}
                 filterOption={filterOption}
                 setFilterOption={setFilterOption}
-                setActiveTab={setActiveTab}
+                // setActiveTab={setActiveTab} 추후 기능 넣을거
                 reset={reset}
             />
             {/* 카테고리 탭: 현재 탭, 탭 변경 함수 전달 */}
