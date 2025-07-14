@@ -29,3 +29,23 @@
 .event-button:hover {
   background-color: #0056b3;
 }
+
+.calendar-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-event-button {
+    padding: 10px 15px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.add-event-button:hover {
+    background-color: #0056b3;
+}

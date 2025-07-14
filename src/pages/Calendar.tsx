@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import CalendarProvider from "../components/Calendar/CalendarProvider.tsx";
 import CalendarHeader from "../components/Calendar/CalendarHeader.tsx";
 import CalendarBody from "../components/Calendar/CalendarBody.tsx";
-import SelectDate from "../components/Calendar/SelectDate.tsx";
 import useCalendarContext from "../components/Calendar/useCalendarContext.ts";
 import EventDetailModal from "../components/Calendar/EventDetailModal.tsx";
 import AddEventModal from "../components/Calendar/AddEventModal.tsx";
@@ -14,10 +13,8 @@ const CalendarContent: React.FC = () => {
 
   return (
     <div id="Calendar">
-      <CalendarHeader />
+      <CalendarHeader onAddEvent={() => setIsAddModalOpen(true)} />
       <CalendarBody />
-      <SelectDate />
-      <button onClick={() => setIsAddModalOpen(true)}>Add Event</button>
       {isAddModalOpen && <AddEventModal onClose={() => setIsAddModalOpen(false)} />}
       <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>

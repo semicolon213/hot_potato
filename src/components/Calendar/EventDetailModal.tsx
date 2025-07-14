@@ -24,11 +24,13 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose }) =
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>{event.title}</h2>
-        <p><strong>Start Date:</strong> {event.startDate}</p>
-        <p><strong>End Date:</strong> {event.endDate}</p>
-        {event.description && <p><strong>Description:</strong> {event.description}</p>}
-        <button className="delete-button" onClick={handleDelete}>Delete</button>
-        <button className="close-button" onClick={onClose}>Close</button>
+        <p><strong>시작일:</strong> {event.startDate}</p>
+        <p><strong>종료일:</strong> {event.endDate}</p>
+        {event.description && <p><strong>설명:</strong> {event.description}</p>}
+        <div className="modal-actions">
+          <button className="delete-button" onClick={handleDelete}>삭제</button>
+          <button className="close-button" onClick={onClose}>닫기</button>
+        </div>
       </div>
     </div>
   );

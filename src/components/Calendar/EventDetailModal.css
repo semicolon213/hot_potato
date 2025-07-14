@@ -21,26 +21,35 @@
   position: relative;
 }
 
-.close-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.delete-button, .close-button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
 }
 
 .delete-button {
   background-color: #dc3545;
   color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
 }
 
 .delete-button:hover {
   background-color: #c82333;
+}
+
+.close-button {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.close-button:hover {
+    background-color: #e0e0e0;
 }

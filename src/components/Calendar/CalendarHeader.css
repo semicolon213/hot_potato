@@ -13,9 +13,20 @@
 }
 
 .month-navigation {
+  position: relative;
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 20px;
+  justify-content: center; 
+}
+
+.month-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .month-display {
