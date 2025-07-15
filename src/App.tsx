@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "./components/Sidebar.tsx";
 import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
 
 import Calendar from "./pages/Calendar";
-import Ddd from "./pages/Ddd";
+import Ddd from "./pages/Ddd/Ddd";
 import Docbox from "./pages/Docbox";
 import DocumentManagement from "./pages/DocumentManagement";
 import EmptyDocument from "./pages/EmptyDocument";
