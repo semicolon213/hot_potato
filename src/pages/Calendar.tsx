@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import CalendarProvider from "../components/Calendar/CalendarProvider.tsx";
-import CalendarHeader from "../components/Calendar/CalendarHeader.tsx";
-import CalendarBody from "../components/Calendar/CalendarBody.tsx";
-import useCalendarContext from "../components/Calendar/useCalendarContext.ts";
+import Calendar from "../components/Calendar/Calendar.tsx";
+import useCalendarContext from "../hooks/useCalendarContext.ts";
 import EventDetailModal from "../components/Calendar/EventDetailModal.tsx";
 import AddEventModal from "../components/Calendar/AddEventModal.tsx";
 import "./Calendar.css";
@@ -13,15 +12,14 @@ const CalendarContent: React.FC = () => {
 
   return (
     <div id="Calendar">
-      <CalendarHeader onAddEvent={() => setIsAddModalOpen(true)} />
-      <CalendarBody />
+      <Calendar onAddEvent={() => setIsAddModalOpen(true)} />
       {isAddModalOpen && <AddEventModal onClose={() => setIsAddModalOpen(false)} />}
       <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 };
 
-const Calendar: React.FC = () => {
+const CalendarPage: React.FC = () => {
   return (
     <CalendarProvider>
       <CalendarContent />
@@ -29,4 +27,4 @@ const Calendar: React.FC = () => {
   );
 };
 
-export default Calendar;
+export default CalendarPage;

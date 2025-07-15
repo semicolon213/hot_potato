@@ -1,6 +1,6 @@
 import React from "react";
-import type { Event } from "./useCalendarContext.ts";
-import useCalendarContext from "./useCalendarContext.ts";
+import type { Event } from "../../hooks/useCalendarContext.ts";
+import useCalendarContext from "../../hooks/useCalendarContext.ts";
 import "./EventDetailModal.css";
 
 interface EventDetailModalProps {

@@ -25,7 +25,7 @@ interface CalendarContextType {
     };
     selectedDate: {
         date: string;
-        selectDate: (date: string) => void;
+        selectDate: (date: Date) => void;
     };
     events: Event[];
     addEvent: (event: Event) => void;

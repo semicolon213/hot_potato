@@ -1,4 +1,4 @@
-import useCalendarContext from "./useCalendarContext.ts";
+import useCalendarContext from "../../hooks/useCalendarContext.ts";
 
 const SelectedDate = () => {
     const { selectedDate } = useCalendarContext();

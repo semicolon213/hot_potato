@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useCalendarContext from './useCalendarContext.ts';
+import useCalendarContext from '../../hooks/useCalendarContext.ts';
 import './AddEventModal.css';
 
 interface AddEventModalProps {

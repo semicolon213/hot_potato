@@ -1,5 +1,5 @@
 import React, { useState, useMemo, type ReactNode } from "react";
-import { CalendarContext, type Event } from "./useCalendarContext.ts";
+import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
 
 interface CalendarProviderProps {
   children: ReactNode;
