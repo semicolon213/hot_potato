@@ -43,23 +43,23 @@ const App: React.FC = () => {
         );
 
       case "docbox":
-        return <Docbox data-oid="t94yibd" />;
+        return <Docbox data-oid="t94yibd" />; // Pass onPageChange to Docbox
       case "new_document":
         return (
           <NewDocument onPageChange={handlePageChange} data-oid="ou.h__l" />
         );
 
       case "calendar":
-        return <Calendar data-oid="uz.ewbm" />;
+        return <Calendar data-oid="uz.ewbm" />; // Pass onPageChange to Calendar
       case "preferences":
         return (
           <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
         );
 
       case "mypage":
-        return <Mypage data-oid="d01oi2r" />;
+        return <Mypage data-oid="d01oi2r" />; // Pass onPageChange to Mypage
       case "empty_document":
-        return <EmptyDocument data-oid="n.rsz_n" />;
+        return <EmptyDocument data-oid="n.rsz_n" />; // Pass onPageChange to EmptyDocument
       case "ddd":
       default:
         return <Ddd data-oid="4au2z.y" />;
