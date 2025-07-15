@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "./components/Sidebar.tsx";
+import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
 
 import Calendar from "./pages/Calendar";
-import Ddd from "./pages/Ddd/Ddd";
+import Dashboard from "./pages/Dashboard";
 import Docbox from "./pages/Docbox";
 import DocumentManagement from "./pages/DocumentManagement";
 import EmptyDocument from "./pages/EmptyDocument";
@@ -13,7 +13,7 @@ import NewDocument from "./pages/NewDocument";
 import Preferences from "./pages/Preferences";
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<string>("ddd"); // Default to ddd.html content
+  const [currentPage, setCurrentPage] = useState<string>("dashboard"); // Default to ddd.html content
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -43,26 +43,26 @@ const App: React.FC = () => {
         );
 
       case "docbox":
-        return <Docbox data-oid="t94yibd" />; // Pass onPageChange to Docbox
+        return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
           <NewDocument onPageChange={handlePageChange} data-oid="ou.h__l" />
         );
 
       case "calendar":
-        return <Calendar data-oid="uz.ewbm" />; // Pass onPageChange to Calendar
+        return <Calendar data-oid="uz.ewbm" />;
       case "preferences":
         return (
           <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
         );
 
       case "mypage":
-        return <Mypage data-oid="d01oi2r" />; // Pass onPageChange to Mypage
+        return <Mypage data-oid="d01oi2r" />;
       case "empty_document":
-        return <EmptyDocument data-oid="n.rsz_n" />; // Pass onPageChange to EmptyDocument
-      case "ddd":
+        return <EmptyDocument data-oid="n.rsz_n" />;
+      case "dashboard":
       default:
-        return <Ddd data-oid="4au2z.y" />;
+        return <Dashboard data-oid="4au2z.y" />;
     }
   };
 

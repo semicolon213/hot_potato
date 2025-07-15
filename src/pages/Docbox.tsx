@@ -11,10 +11,6 @@ interface Document {
   status: string;
 }
 
-interface DocboxProps {
-  onPageChange: (pageName: string) => void;
-}
-
 const initialDocuments: Document[] = [
   {
     id: "doc-1",
@@ -108,7 +104,7 @@ const initialDocuments: Document[] = [
   },
 ];
 
-const Docbox: React.FC<DocboxProps> = ({ onPageChange }) => {
+const Docbox: React.FC = () => {
   const [documents] = useState<Document[]>(initialDocuments);
   const [selectedStatus, setSelectedStatus] = useState<string>("전체");
   const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
@@ -172,7 +168,6 @@ const Docbox: React.FC<DocboxProps> = ({ onPageChange }) => {
 
   return (
     <div className="content" id="dynamicContent">
-      <button onClick={() => onPageChange('ddd')}>Go to Dashboard</button>
       <div className="filter-section">
         <div className="filter-row">
           <div className="filter-group">

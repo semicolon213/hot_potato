@@ -1,16 +1,8 @@
 import React from "react";
 import "./Calendar.css";
 
-interface CalendarProps {
-  onPageChange: (pageName: string) => void;
-}
-
-const Calendar: React.FC<CalendarProps> = ({ onPageChange }) => {
-  return (
-    <div id="Calendar">
-      <button onClick={() => onPageChange('ddd')}>Go to Dashboard</button>
-    </div>
-  );
+const Calendar: React.FC = () => {
+  return <div id="Calendar"></div>;
 };
 
 export default Calendar;
