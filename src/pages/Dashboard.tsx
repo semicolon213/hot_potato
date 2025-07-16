@@ -1,8 +1,9 @@
 import React from "react";
 import { useWidgetManagement } from "../hooks/useWidgetManagement";
+import "./Dashboard.css";
 import WidgetGrid from "../components/Dashboard/WidgetGrid";
 import AddWidgetModal from "../components/Dashboard/AddWidgetModal";
-import "./Dashboard.css";
+
 
 const Dashboard: React.FC = () => {
   const {

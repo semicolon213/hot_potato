@@ -1,4 +1,5 @@
 import React from "react";
+import "./AddWidgetModal.css";
 
 interface WidgetOption {
   type: string;
