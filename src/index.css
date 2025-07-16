@@ -37,11 +37,11 @@ body, html, * {
 
 /* 색상 팔레트 */
 :root {
-  --primary: rgb(56, 67, 86);          
-  --secondary: rgb(103, 123, 139);     
-  --secondary-light: rgb(115, 130, 143); 
-  --accent: rgb(200, 211, 228);         
-  --background: #F5EFEB;             
+  --primary: rgb(56, 67, 86);
+  --secondary: rgb(103, 123, 139);
+  --secondary-light: rgb(115, 130, 143);
+  --accent: rgb(200, 211, 228);
+  --background: #F5EFEB;
   --white: #FFFFFF;
   --lightgrey: #f5f5f5;
   --border-color: #ddd;
@@ -92,7 +92,7 @@ body {
   --secondary-light: rgb(115, 130, 143); /* 이전 tealsb */
   --accent: rgb(200, 211, 228);         /* 이전 skyBlue */
   --background: #F5EFEB;                /* 이전 beige */
-  
+
   /* 공통 색상 */
   --white: #FFFFFF;
   --lightgrey: #f5f5f5;
@@ -105,15 +105,15 @@ body {
   --success: #34c759;
   --gray-light: #f5f5f5;
   --gray-border: #e0e0e0;
-  
+
   /* 명명된 색상 */
   --menu-bg: rgb(72, 83, 101);          /* 메뉴 배경 (primary 보다 약간 밝은) */
   --table-header-bg: rgb(243, 245, 248); /* 테이블 헤더 배경 */
-  
+
   /* 효과 */
   --card-shadow: 0 1px 3px rgba(0,0,0,0.05);
   --card-shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
-  
+
   /* 크기 */
   --border-radius-lg: 20px;
   --border-radius-md: 10px;
@@ -126,53 +126,53 @@ body {
   --secondary-light: #827397;        /* 라벤더-네이비 3단계 */
   --accent: #B1A6C3;                 /* 라벤더-네이비 2단계 */
   --background: #E9D5DA;             /* 라벤더-네이비 1단계 (가장 밝은) */
-  
+
   /* 조화롭게 맞춘 부분 */
   --lightgrey: #F4ECF0;              /* 연한 라벤더-핑크 */
   --border-color: #D0C1D3;           /* 중간 라벤더 */
   --border-light: #E1D6E3;           /* 연한 라벤더 */
   --border-lighter: #F1EBF3;         /* 매우 연한 라벤더 */
-  
+
   --text-dark: #363062;              /* 라벤더-네이비 5단계 */
   --text-medium: #4D4C7D;            /* 라벤더-네이비 4단계 */
   --text-light: #827397;             /* 라벤더-네이비 3단계 */
   --gray-light: #B1A6C3;             /* 라벤더-네이비 2단계 */
   --gray-border: #E9D5DA;            /* 라벤더-네이비 1단계 */
-  
+
   --menu-bg: #39364f;                /* 라벤더-네이비 5단계보다 약간 어두운 색 */
   --table-header-bg: #D9CBD0;        /* 연한 라벤더-핑크 색상으로 조화롭게 변경 */
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
 .theme-purple .submenu-item:hover .menu-text {
-  color: #35343e;   
+  color: #35343e;
 }
 
 
 /* 초록색 테마 */
 .theme-green {
-  --primary: rgb(98, 110, 86);               
-  --secondary: rgb(161, 179, 149);           
-  --secondary-light: rgb(201, 216, 185);       
-  --accent: rgb(236, 239, 214);                 
-  --background: rgb(242, 243, 236);            
+  --primary: rgb(98, 110, 86);
+  --secondary: rgb(161, 179, 149);
+  --secondary-light: rgb(201, 216, 185);
+  --accent: rgb(236, 239, 214);
+  --background: rgb(242, 243, 236);
   --lightgrey: #f0f7f4;
   --border-color: #d6deda;
   --border-light: #d8ebe3;
   --border-lighter: #e6e7e749;
-  --text-dark: rgb(98, 110, 86); 
-  --text-medium: rgb(144, 160, 132); 
+  --text-dark: rgb(98, 110, 86);
+  --text-medium: rgb(144, 160, 132);
   --text-light:rgb(183, 197, 169);
-  --gray-light: rgb(236, 239, 214);   
-  --gray-border: rgb(242, 243, 236); 
-  
+  --gray-light: rgb(236, 239, 214);
+  --gray-border: rgb(242, 243, 236);
+
   --menu-bg: rgb(74, 92, 74);
-  --table-header-bg: rgb(201, 216, 185);     
+  --table-header-bg: rgb(201, 216, 185);
 }
 
 /* 초록색 테마의 서브메뉴 아이템 색상 변경 */
 .theme-green .submenu-item .menu-text {
-  color: #52704f; 
+  color: #52704f;
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
@@ -182,29 +182,29 @@ body {
 
 /* 갈색 테마 */
 .theme-brown {
-  --primary: rgb(73, 54, 40);               
-  --secondary: rgb(171, 136, 109);              
-  --secondary-light: rgb(190, 164, 143);         
-  --accent: rgb(214, 192, 179);                  
-  --background: rgb(228, 224, 225);             
-  
+  --primary: rgb(73, 54, 40);
+  --secondary: rgb(171, 136, 109);
+  --secondary-light: rgb(190, 164, 143);
+  --accent: rgb(214, 192, 179);
+  --background: rgb(228, 224, 225);
+
   --lightgrey: #efebe9;
   --border-color: #d7ccc8;
   --border-light: #e0d9d5;
   --border-lighter: #e7e0dd;
-  --text-dark: rgb(73, 54, 40);   
-  --text-medium: rgb(171, 136, 109);  
-  --text-light:  rgb(190, 164, 143); 
-  --gray-light: rgb(214, 192, 179);  
-  --gray-border: rgb(228, 224, 225); 
-  
-  --menu-bg: rgb(102, 83, 67); 
+  --text-dark: rgb(73, 54, 40);
+  --text-medium: rgb(171, 136, 109);
+  --text-light:  rgb(190, 164, 143);
+  --gray-light: rgb(214, 192, 179);
+  --gray-border: rgb(228, 224, 225);
+
+  --menu-bg: rgb(102, 83, 67);
   --table-header-bg: #efebe9;
 }
 
 /* 초록색 테마의 서브메뉴 아이템 색상 변경 */
 .theme-brown .submenu-item .menu-text {
-  color: rgb(73, 54, 40);  
+  color: rgb(73, 54, 40);
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
@@ -219,7 +219,7 @@ body {
   --secondary-light: #888888;         /* 이전 tealsb */
   --accent: #cccccc;                  /* 이전 skyBlue */
   --background: #f0f0f0;              /* 이전 beige */
-  
+
   --lightgrey: #f0f0f0;
   --border-color: #d0d0d0;
   --border-light: #e0e0e0;
@@ -229,7 +229,7 @@ body {
   --text-light: #888888;
   --gray-light: #f0f0f0;
   --gray-border: #d0d0d0;
-  
+
   --menu-bg: #333333;
   --table-header-bg: #e6e6e6;
 }
@@ -447,7 +447,7 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  margin: 10px 0 0 200px; /* 위 10px, 왼쪽 200px(사이드바 공간) */
+  margin: 10px 15px 0 210px;
   border-radius: var(--border-radius-lg);
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
   background: #fff;

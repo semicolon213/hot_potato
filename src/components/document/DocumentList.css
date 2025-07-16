@@ -1,0 +1,157 @@
+/* ===== 문서함 테이블 영역 ===== */
+.document-container {
+  border: 1px solid var(--border-color);
+  margin-top: 40px;
+  margin-bottom: 1px;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.table-container {
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+/* 테이블 헤더 스타일 */
+.table-header {
+  display: flex;
+  padding: 20px 0;
+  background-color: var(--table-header-bg);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.table-header-cell {
+  font-size: 15px;
+  font-weight: 500;
+  color: #232323;
+  padding: 0 16px;
+}
+
+/* 테이블 행 스타일 */
+.table-row {
+  display: flex;
+  border-bottom: 1px solid var(--border-lighter);
+  padding: 18px 0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.table-row:hover {
+  background-color: #f9f9f9;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  font-size: 15px;
+  color: var(--text-medium);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* 테이블 셀 너비 및 정렬 클래스 */
+.doc-number-cell {
+  padding-left: 30px;
+  font-size: 13px;
+}
+
+.title-cell {
+  padding-left: 20px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.author-cell {
+  padding-left: 20px;
+}
+
+.date-cell {
+  /* 날짜 셀은 특별한 스타일이 필요 없습니다. */
+}
+
+.status-cell {
+  /* 상태 셀은 특별한 스타일이 필요 없습니다. */
+}
+
+
+/* 상태 뱃지 스타일 */
+.status-badge {
+  min-width: 50px;
+  padding: 5px 3px;
+  border-radius: 30px;
+  background-color: #5a6578;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.status-text {
+  font-size: 11px;
+  color: white;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-badge.progress, .status-badge.진행중 {
+  background-color: #5a6578;
+}
+
+.status-badge.complete, .status-badge.완료 {
+  background-color: #4CAF50;
+}
+
+.status-badge.rejected, .status-badge.반려 {
+  background-color: #F44336;
+}
+
+.status-badge.temp, .status-badge.임시저장 {
+  background-color: #9E9E9E;
+}
+
+/* 섹션 헤더 스타일 - 테이블 상단 제목 영역 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+
+}
+
+.section-title-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-left: 30px;
+  margin-top: 2px;
+}
+
+.view-all-button {
+  font-size: 14px;
+  color: var(--text-medium);
+  cursor: pointer;
+  margin-right: 20px;
+  padding: 10px 0;
+  align-self: center;
+}
+
+.section-header .submenu-item:hover {
+  background-color: transparent;
+}
+
+.section-header .view-all-button:hover {
+  color: white;
+  background-color: transparent;
+}
