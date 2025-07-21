@@ -3,19 +3,27 @@ import "./Header.css";
 import {
   searchIcon,
   bellIcon,
-  userIcon,
   fileIcon,
   usersIcon,
   calendarIcon,
   messageIcon as chatIcon,
 } from "../assets/Icons";
+import Login from "./Login"; // Import the new Login component
+
+// Define the structure of the user profile object
+interface UserProfile {
+  name: string;
+  picture: string;
+  email: string;
+}
 
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
-  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<
       { content: string; time: string; type: "user" | "system" }[]
@@ -36,8 +44,28 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
     tag: ""
   });
 
+  // Check for logged-in user on component mount
+  useEffect(() => {
+    const storedProfile = localStorage.getItem("userProfile");
+    if (storedProfile) {
+      setUserProfile(JSON.parse(storedProfile));
+    }
+  }, []);
+
+
+  const handleLoginSuccess = (profile: any) => {
+    localStorage.setItem("userProfile", JSON.stringify(profile));
+    setUserProfile(profile);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("userProfile");
+    setUserProfile(null);
+  };
+
+
   const handleNotificationClick = () => {
-    setIsNotificationPanelOpen(!isNotificationPanelOpen);
+    setIsNotificationPanelPanelOpen(!isNotificationPanelOpen);
   };
 
   const handleChatButtonClick = () => {
@@ -115,7 +143,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
           !(event.target as HTMLElement).closest(".bell-button") &&
           !(event.target as HTMLElement).closest(".notification-panel")
       ) {
-        setIsNotificationPanelOpen(false);
+        setIsNotificationPanelPanelOpen(false);
       }
     };
 
@@ -290,23 +318,31 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
             )}
           </div>
 
-          <div
-              className="user-profile"
-              onClick={() => onPageChange("mypage")}
-              data-oid="piz:rdy"
-          >
-            <div className="avatar-container" data-oid="4ks-vou">
-              <img
-                  src={userIcon}
-                  alt="User Icon"
-                  className="icon"
-                  data-oid="1frgdye"
-              />
-            </div>
-            <div className="user-name" data-oid="xz4ud-l">
-              나나
-            </div>
-          </div>
+          {userProfile ? (
+            <>
+              <div
+                className="user-profile"
+                onClick={() => onPageChange("mypage")}
+                data-oid="piz:rdy"
+              >
+                <div className="avatar-container" data-oid="4ks-vou">
+                  <img
+                      src={userProfile.picture}
+                      alt="User profile"
+                      style={{ borderRadius: '50%', width: '28px', height: '28px' }}
+                  />
+                </div>
+                <div className="user-name" data-oid="xz4ud-l">
+                  {userProfile.name}
+                </div>
+              </div>
+              <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <Login onLoginSuccess={handleLoginSuccess} />
+          )}
         </div>
 
         {/* 새 문서 모달 - 3개 필드 */}
