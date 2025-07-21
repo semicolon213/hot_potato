@@ -48,7 +48,7 @@ export function useTemplateUI() {
     }, [searchTerm, filterOption, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
-    const onUseTemplate = (type: string, title: string) => {
+    const onUseTemplate = (_type: string, title: string) => {
         alert(`"${title}" 템플릿을 사용합니다!`);
         // 실제로는 템플릿 생성 등 추가 로직을 구현할 수 있음
     };
