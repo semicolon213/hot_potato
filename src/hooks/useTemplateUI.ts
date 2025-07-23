@@ -17,7 +17,7 @@ const initialTemplates: Template[] = [
 ];
 
 // 3. 템플릿 관련 상태와 로직을 관리하는 커스텀 훅
-export function useTemplateUI() {
+export function useTemplateUI(onPageChange: (pageName: string) => void) {
     // 검색어 상태
     const [searchTerm, setSearchTerm] = useState("");
     // 필터 옵션 상태 ("자주 사용", "최신순", "이름순" 등)
@@ -49,7 +49,11 @@ export function useTemplateUI() {
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = (type: string, title: string) => {
-        alert(`"${title}" 템플릿을 사용합니다!`);
+        if (type === "meeting" && title === "회의록") {
+            onPageChange("proceedings");
+        } else {
+            alert(`"${title}" 템플릿을 사용합니다!`);
+        }
         // 실제로는 템플릿 생성 등 추가 로직을 구현할 수 있음
     };
 

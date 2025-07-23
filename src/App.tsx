@@ -11,6 +11,7 @@ import EmptyDocument from "./pages/EmptyDocument";
 import Mypage from "./pages/Mypage";
 import NewDocument from "./pages/NewDocument";
 import Preferences from "./pages/Preferences";
+import Proceedings from "./pages/proceedings";
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard"); // Default to ddd.html content
@@ -60,6 +61,8 @@ const App: React.FC = () => {
         return <Mypage data-oid="d01oi2r" />;
       case "empty_document":
         return <EmptyDocument data-oid="n.rsz_n" />;
+      case "proceedings":
+        return <Proceedings />;
       case "dashboard":
       default:
         return <Dashboard data-oid="4au2z.y" />;
