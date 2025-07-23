@@ -124,7 +124,7 @@ const Board: React.FC = () => {
             <div key={post.id} className="post-card">
               <div className="card-header">
                 <h3>{post.title}</h3>
-                <button className="delete-button" onClick={() => handleDeletePost(post.id)}>삭제</button>
+                <button className="delete-button" onClick={() => handleDeletePost(post.id)}>x</button>
               </div>
               <div className="post-meta">
                 <span className="author">{post.author}</span>
