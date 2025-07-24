@@ -11,6 +11,8 @@ import EmptyDocument from "./pages/EmptyDocument";
 import Mypage from "./pages/Mypage";
 import NewDocument from "./pages/NewDocument";
 import Preferences from "./pages/Preferences";
+import Board from "./pages/Board/Board";
+import Announcements from "./pages/Announcements/Announcements";
 import Proceedings from "./pages/proceedings";
 
 const App: React.FC = () => {
@@ -47,7 +49,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} data-oid="ou.h__l" />
+          <NewDocument data-oid="ou.h__l" />
         );
 
       case "calendar":
@@ -59,6 +61,10 @@ const App: React.FC = () => {
 
       case "mypage":
         return <Mypage data-oid="d01oi2r" />;
+      case "board":
+        return <Board data-oid="d01oi2r" />;
+      case "announcements":
+        return <Announcements data-oid="d01oi2r" />;
       case "empty_document":
         return <EmptyDocument data-oid="n.rsz_n" />;
       case "proceedings":

@@ -60,15 +60,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
               <div className="submenu">
                 <div
                   className="submenu-item"
-                  onClick={() => onPageChange("notice")}
+                  onClick={() => onPageChange("board")}
                 >
-                  공지사항
+                  자유 게시판
                 </div>
                 <div
                   className="submenu-item"
-                  onClick={() => onPageChange("freeboard")}
+                  onClick={() => onPageChange("announcements")}
                 >
-                  자유 게시판
+                  공지사항
                 </div>
               </div>
             )}

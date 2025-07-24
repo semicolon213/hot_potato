@@ -1,5 +1,5 @@
 // React import (React 17+에서는 JSX만 쓸 때는 생략 가능)
-import React from "react";
+
 
 // SearchBar 컴포넌트의 props 타입 정의
 interface Props {
