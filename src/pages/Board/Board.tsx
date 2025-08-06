@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './Board.css';
 
 interface Post {
@@ -11,95 +12,98 @@ interface Post {
   contentPreview: string;
 }
 
-const Board: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 1,
-      title: "자유게시판 첫 글입니다!",
-      author: "김철수",
-      date: "2024-07-22",
-      views: 120,
-      likes: 15,
-      contentPreview: "안녕하세요, 자유게시판에 처음으로 글을 남겨봅니다. 다들 잘 부탁드립니다!"
-    },
-    {
-      id: 2,
-      title: "오늘 점심 메뉴 추천 받아요",
-      author: "이영희",
-      date: "2024-07-21",
-      views: 88,
-      likes: 8,
-      contentPreview: "점심시간이 다가오는데 뭘 먹어야 할지 고민이네요. 맛있는 메뉴 추천해주실 분?"
-    },
-    {
-      id: 3,
-      title: "주말에 가볼 만한 곳 추천해주세요",
-      author: "박지성",
-      date: "2024-07-20",
-      views: 205,
-      likes: 25,
-      contentPreview: "이번 주말에 나들이 가려고 하는데, 괜찮은 장소 있으면 공유 부탁드립니다!"
-    },
-    {
-      id: 4,
-      title: "새로운 프로젝트 아이디어 공유",
-      author: "최수정",
-      date: "2024-07-19",
-      views: 95,
-      likes: 10,
-      contentPreview: "최근에 생각한 프로젝트 아이디어가 있는데, 같이 이야기 나눠볼 분 계신가요?"
-    },
-    {
-      id: 5,
-      title: "개발 환경 설정 팁 공유합니다",
-      author: "정우성",
-      date: "2024-07-18",
-      views: 300,
-      likes: 40,
-      contentPreview: "초보 개발자분들을 위한 개발 환경 설정 팁을 정리해봤습니다. 도움이 되셨으면 좋겠네요."
-    },
-  ]);
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5Rzoc4jNPb4s5AR_3plso5sIe8lPLlroUVVva_H-XIG3WUY_P1OxPz3MZcUW3NfQ/exec";
 
+const Board: React.FC = () => {
+  const [posts, setPosts] = useState<Post[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
-  const [newAuthor, setNewAuthor] = useState(''); // 작성자 추가
+  const [newAuthor, setNewAuthor] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddPost = () => {
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(SCRIPT_URL);
+      const data = response.data;
+      // The first row is headers, so slice(1)
+      const formattedPosts: Post[] = data.slice(1).map((row: any, index: number) => ({
+        id: row[0] || index + 1, // Assuming ID is in the first column
+        title: row[1],
+        author: row[2],
+        date: new Date(row[3]).toISOString().slice(0, 10),
+        views: row[4] || 0,
+        likes: row[5] || 0,
+        contentPreview: row[6] || '',
+      }));
+      setPosts(formattedPosts.reverse()); // Show latest posts first
+      setError(null);
+    } catch (err) {
+      setError("데이터를 불러오는데 실패했습니다.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const handleAddPost = async () => {
     if (newTitle.trim() === '' || newContent.trim() === '' || newAuthor.trim() === '') {
       alert('제목, 작성자, 내용을 모두 입력해주세요.');
       return;
     }
 
-    const newPost: Post = {
-      id: posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1,
+    const newPostData = {
       title: newTitle,
       author: newAuthor,
-      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD 형식
-      views: 0,
-      likes: 0,
-      contentPreview: newContent,
+      content: newContent,
     };
 
-    setPosts([newPost, ...posts]); // 최신 글이 위로 오도록
-    setNewTitle('');
-    setNewContent('');
-    setNewAuthor('');
-    setShowModal(false);
+    try {
+      await axios.post(SCRIPT_URL, newPostData);
+      // Refetch posts to show the new post
+      fetchPosts();
+      setNewTitle('');
+      setNewContent('');
+      setNewAuthor('');
+      setShowModal(false);
+    } catch (err) {
+      alert("게시글을 추가하는데 실패했습니다.");
+      console.error(err);
+    }
   };
 
-  const handleDeletePost = (id: number) => {
+  const handleDeletePost = async (id: number) => {
     if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
-      setPosts(posts.filter(post => post.id !== id));
+      try {
+        await axios.post(SCRIPT_URL, { delete: id });
+        fetchPosts(); // Refetch posts to reflect deletion
+      } catch (err) {
+        alert("게시글을 삭제하는데 실패했습니다.");
+        console.error(err);
+      }
     }
   };
 
   const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.contentPreview.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (post.contentPreview && post.contentPreview.toLowerCase().includes(searchTerm.toLowerCase())) ||
     post.author.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return <div className="board-container"><p>로딩 중...</p></div>;
+  }
+
+  if (error) {
+    return <div className="board-container"><p>{error}</p></div>;
+  }
 
   return (
     <div className="board-container">
