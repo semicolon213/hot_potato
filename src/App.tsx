@@ -49,7 +49,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} data-oid="ou.h__l" />
         );
 
       case "calendar":
