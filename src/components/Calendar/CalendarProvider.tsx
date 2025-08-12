@@ -1,15 +1,91 @@
-import React, { useState, useMemo, type ReactNode } from "react";
+import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
 
 interface CalendarProviderProps {
   children: ReactNode;
+  accessToken: string | null; // Add accessToken prop
+  selectedRole: string; // Add selectedRole prop
 }
 
-const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
+const ROLE_PREFIX_MAP: { [key: string]: string[] } = {
+  'admin': ['01', '02', '03'], // Example: Admin can see all
+  'professor': ['02', '03'], // Example: Professor can see 02 and 03
+  'student': ['03'], // Example: Student can see 03
+};
+
+const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessToken, selectedRole }) => { // Destructure accessToken and selectedRole
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [events, setEvents] = useState<Event[]>([]);
+  const [localEvents, setLocalEvents] = useState<Event[]>([]); // Rename events to localEvents
+  const [googleEvents, setGoogleEvents] = useState<Event[]>([]); // New state for Google events
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  // Fetch Google Calendar events
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const fetchGoogleEvents = async () => {
+      try {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+
+        const timeMin = firstDayOfMonth.toISOString();
+        const timeMax = lastDayOfMonth.toISOString();
+
+        const response = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error fetching Google Calendar events: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const transformedEvents: Event[] = data.items.map((item: any) => ({
+          id: item.id,
+          title: item.summary || 'No Title',
+          startDate: item.start.date || item.start.dateTime.split('T')[0], // Handle all-day vs. specific time
+          endDate: item.end.date || item.end.dateTime.split('T')[0],
+          description: item.description || '',
+        }));
+        setGoogleEvents(transformedEvents);
+      } catch (error) {
+        console.error("Failed to fetch Google Calendar events:", error);
+        setGoogleEvents([]); // Clear events on error
+      }
+    };
+
+    fetchGoogleEvents();
+  }, [accessToken, currentDate]); // Re-fetch when token or current month changes
+
+  // Merge local and Google events, then filter by role
+  const events = useMemo(() => {
+    const allEvents = [...localEvents, ...googleEvents];
+    const allowedPrefixes = ROLE_PREFIX_MAP[selectedRole] || [];
+
+    if (allowedPrefixes.length === 0) {
+      return []; // If no prefixes are allowed for the role, return empty
+    }
+
+    return allEvents.filter(event => {
+      const title = event.title || '';
+      const prefixMatch = title.match(/^(\d{2})/); // Extract first two digits as prefix
+
+      if (prefixMatch && prefixMatch[1]) {
+        return allowedPrefixes.includes(prefixMatch[1]);
+      }
+      // If no prefix, or prefix not found, include if role is admin (or if no specific prefix filtering is desired for non-prefixed events)
+      // For now, only include if it has an allowed prefix.
+      return false; // Events without a matching prefix are excluded
+    });
+  }, [localEvents, googleEvents, selectedRole]); // Add selectedRole to dependencies
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -32,7 +108,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
   };
 
   const addEvent = (event: Event) => {
-    setEvents((prevEvents) => [...prevEvents, event]);
+    setLocalEvents((prevEvents) => [...prevEvents, event]);
   };
 
   const formatDate = (date: Date) => {
@@ -43,7 +119,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
   };
 
   const deleteEvent = (id: string) => {
-    setEvents((prevEvents) => prevEvents.filter((event) => event.id !== id));
+    setLocalEvents((prevEvents) => prevEvents.filter((event) => event.id !== id));
     setSelectedEvent(null); // Close modal after deleting
   };
 

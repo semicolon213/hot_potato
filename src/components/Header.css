@@ -360,6 +360,7 @@
 .notification-time {
   font-size: 11px;
   color: var(--text-light);
+  margin-top: 3px;
 }
 
 .notification-new {

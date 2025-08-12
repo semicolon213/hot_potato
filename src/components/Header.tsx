@@ -19,9 +19,10 @@ interface UserProfile {
 
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
+  onGoogleLoginSuccess: (profile: any, accessToken: string) => void; // Add this prop
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
+const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) => { // Destructure new prop
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -53,13 +54,15 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
   }, []);
 
 
-  const handleLoginSuccess = (profile: any) => {
+  const handleLoginSuccess = (profile: any, accessToken: string) => { // Add accessToken parameter
     localStorage.setItem("userProfile", JSON.stringify(profile));
     setUserProfile(profile);
+    onGoogleLoginSuccess(profile, accessToken); // Call the new prop
   };
 
   const handleLogout = () => {
     localStorage.removeItem("userProfile");
+    localStorage.removeItem("googleAccessToken"); // Clear Google access token
     setUserProfile(null);
   };
 

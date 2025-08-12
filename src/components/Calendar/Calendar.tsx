@@ -41,7 +41,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                             const startDate = new Date(event.startDate);
                             const endDate = new Date(event.endDate);
                             const currentDate = new Date(date.date);
-                            return currentDate >= startDate && currentDate <= endDate;
+                            return currentDate >= startDate && currentDate < endDate;
                         });
                         const isSelected = selectedDate.date === date.date;
                         const isSunday = date.dayIndexOfWeek === 0;
@@ -56,7 +56,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                                 <ul className="event-list">
                                     {dayEvents.map(event => (
                                         <li key={event.id} className="event-item" onClick={() => setSelectedEvent(event)}>
-                                            {event.title}
+                                            {event.title.replace(/^\d{2}\s*/, '')}
                                         </li>
                                     ))}
                                 </ul>
