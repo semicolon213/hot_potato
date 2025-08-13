@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from 'docx';
 import { saveAs } from 'file-saver';
+import { gapiInit, appendRow } from 'papyrus-db';
 import "./proceedings.css";
 
 const Proceedings: React.FC = () => {
   const [formData, setFormData] = useState({
+    title: "",
     dateTime: "",
     location: "",
     author: "",
@@ -27,6 +29,8 @@ const Proceedings: React.FC = () => {
     password: "",
   });
 
+  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
+
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -42,13 +46,34 @@ const Proceedings: React.FC = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log("회의록 저장:", { formData, settings });
-    alert("회의록이 저장되었습니다. (콘솔 확인)");
+  const handleGoogleAuth = async () => {
+    try {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        alert("Google Client ID가 .env 파일에 설정되지 않았습니다.");
+        return;
+      }
+      await gapiInit(clientId);
+
+      // Get user's name after successful authentication
+      const gapi = (window as any).gapi;
+      const profile = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile();
+      const authorName = profile.getName();
+
+      setFormData((prevData) => ({ ...prevData, author: authorName }));
+      alert('Google 인증 성공!');
+      setIsGoogleAuthenticated(true);
+    } catch (e) {
+      alert('Google 인증 실패: ' + (e as Error).message);
+      setIsGoogleAuthenticated(false);
+    }
   };
 
-  const handleExport = () => {
+  const handleSaveAndExport = () => {
+    console.log("회의록 저장 및 내보내기:", { formData, settings });
+
     const {
+      title,
       dateTime,
       location,
       author,
@@ -76,41 +101,23 @@ const Proceedings: React.FC = () => {
               rows: [
                 new TableRow({
                   children: [
-                    new TableCell({
-                      children: [new Paragraph("일 시")],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(dateTime)],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph("장 소")],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(location)],
-                    }),
+                    new TableCell({ children: [new Paragraph("일 시")] }),
+                    new TableCell({ children: [new Paragraph(dateTime)] }),
+                    new TableCell({ children: [new Paragraph("장 소")] }),
+                    new TableCell({ children: [new Paragraph(location)] }),
                   ],
                 }),
                 new TableRow({
                   children: [
-                    new TableCell({
-                      children: [new Paragraph("작성자")],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(author)],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph("작성일")],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(creationDate)],
-                    }),
+                    new TableCell({ children: [new Paragraph("작성자")] }),
+                    new TableCell({ children: [new Paragraph(author)] }),
+                    new TableCell({ children: [new Paragraph("작성일")] }),
+                    new TableCell({ children: [new Paragraph(creationDate)] }),
                   ],
                 }),
                 new TableRow({
                   children: [
-                    new TableCell({
-                      children: [new Paragraph("참석자")],
-                    }),
+                    new TableCell({ children: [new Paragraph("참석자")] }),
                     new TableCell({
                       children: [new Paragraph(attendees)],
                       columnSpan: 3,
@@ -119,9 +126,7 @@ const Proceedings: React.FC = () => {
                 }),
                 new TableRow({
                   children: [
-                    new TableCell({
-                      children: [new Paragraph("안 건")],
-                    }),
+                    new TableCell({ children: [new Paragraph("안 건")] }),
                     new TableCell({
                       children: [new Paragraph(agenda)],
                       columnSpan: 3,
@@ -181,8 +186,32 @@ const Proceedings: React.FC = () => {
       ],
     });
 
-    Packer.toBlob(doc).then((blob) => {
-      saveAs(blob, "회의록.docx");
+    Packer.toBlob(doc).then(async (blob) => {
+      const fileName = title ? `${title}.docx` : "회의록.docx";
+      saveAs(blob, fileName);
+
+      try {
+        const fileInfo = {
+          'no_file': 'doc-' + new Date().getTime(),
+          'name_file': fileName,
+          'priv_file': settings.roleAccess ? '역할 기반 접근' : '공개',
+          'writer_file': author,
+          'path_file': `/내문서/회의록/${fileName}`,
+          'class_file': 'docx',
+        };
+
+        const sheetId = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
+        const sheetName = 'file';
+
+        await appendRow(sheetId, sheetName, fileInfo);
+
+        console.log('File information successfully exported to Google Sheet.');
+        alert('파일이 저장되고 정보가 Google Sheet에 기록되었습니다.');
+
+      } catch (error) {
+        console.error('Google Sheet export error:', error);
+        alert('Google Sheet에 파일 정보를 저장하는 중 오류가 발생했습니다. papyrus-db가 설치되어 있는지, 그리고 사용법이 올바른지 확인해주세요.');
+      }
     });
   };
 
@@ -192,17 +221,35 @@ const Proceedings: React.FC = () => {
         <div className="proceedings-container">
           <div className="proceedings-header">
             <h1 className="proceedings-title">회의록</h1>
-            <button className="save-button" onClick={handleSave}>
-              저장
+            <button className="auth-button" onClick={handleGoogleAuth}>
+              Google 인증
             </button>
-            <button className="export-button" onClick={handleExport}>
-              Word로 내보내기
+            <button 
+              className="save-export-button" 
+              onClick={handleSaveAndExport} 
+              disabled={!isGoogleAuthenticated}
+              title={!isGoogleAuthenticated ? "Google 인증이 필요합니다." : ""}
+            >
+              저장 및 내보내기
             </button>
           </div>
           <div className="proceedings-section">
             <h2 className="section-title">1. 회의 개요</h2>
             <table className="proceedings-table">
               <tbody>
+                <tr>
+                  <td className="table-label">제 목</td>
+                  <td colSpan={3} className="table-value">
+                    <input
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleFormChange}
+                      className="table-input"
+                      placeholder="파일 이름으로 사용됩니다"
+                    />
+                  </td>
+                </tr>
                 <tr>
                   <td className="table-label">일 시</td>
                   <td className="table-value">
@@ -234,6 +281,7 @@ const Proceedings: React.FC = () => {
                       value={formData.author}
                       onChange={handleFormChange}
                       className="table-input"
+                      readOnly
                     />
                   </td>
                   <td className="table-label">작성일</td>
