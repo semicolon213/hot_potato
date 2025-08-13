@@ -9,7 +9,7 @@ import {
   messageIcon as chatIcon,
 } from "../assets/Icons";
 import Login from "./Login"; // Import the new Login component
-
+import { gapiInit } from 'papyrus-db';
 // Define the structure of the user profile object
 interface UserProfile {
   name: string;
@@ -17,6 +17,19 @@ interface UserProfile {
   email: string;
 }
 
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // .env에서 불러오기
+
+async function handleGoogleAuth() {
+  try {
+    await gapiInit(clientId);
+    // 인증 성공 후, 구글 시트/드라이브 API 사용 가능
+    alert('구글 인증 성공!');
+  } catch (e) {
+    alert('구글 인증 실패: ' + (e as Error).message);
+
+  }
+
+}
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
   onGoogleLoginSuccess: (profile: any, accessToken: string) => void; // Add this prop
@@ -322,32 +335,32 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) =
           </div>
 
           {userProfile ? (
-            <>
-              <div
-                className="user-profile"
-                onClick={() => onPageChange("mypage")}
-                data-oid="piz:rdy"
-              >
-                <div className="avatar-container" data-oid="4ks-vou">
-                  <img
-                      src={userProfile.picture}
-                      alt="User profile"
-                      style={{ borderRadius: '50%', width: '28px', height: '28px' }}
-                  />
+              <>
+                <div
+                    className="user-profile"
+                    onClick={() => onPageChange("mypage")}
+                    data-oid="piz:rdy"
+                >
+                  <div className="avatar-container" data-oid="4ks-vou">
+                    <img
+                        src={userProfile.picture}
+                        alt="User profile"
+                        style={{ borderRadius: '50%', width: '28px', height: '28px' }}
+                    />
+                  </div>
+                  <div className="user-name" data-oid="xz4ud-l">
+                    {userProfile.name}
+                  </div>
                 </div>
-                <div className="user-name" data-oid="xz4ud-l">
-                  {userProfile.name}
-                </div>
-              </div>
-              <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
-                로그아웃
-              </button>
-            </>
+                <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
+                  로그아웃
+                </button>
+              </>
           ) : (
-            <Login onLoginSuccess={handleLoginSuccess} />
+              <button onClick={handleGoogleAuth}>Google 로그인</button>
+              //<Login onLoginSuccess={handleLoginSuccess} />
           )}
         </div>
-
         {/* 새 문서 모달 - 3개 필드 */}
         {showNewDocModal && (
             <div className="modal-overlay" onClick={handleNewDocCancel}>
