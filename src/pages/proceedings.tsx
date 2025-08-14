@@ -281,7 +281,6 @@ const Proceedings: React.FC = () => {
                       value={formData.author}
                       onChange={handleFormChange}
                       className="table-input"
-                      readOnly
                     />
                   </td>
                   <td className="table-label">작성일</td>
