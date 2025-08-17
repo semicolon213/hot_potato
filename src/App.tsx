@@ -15,7 +15,8 @@ import NewDocument from "./pages/NewDocument";
 import Preferences from "./pages/Preferences";
 import Board from "./pages/Board/Board";
 import NewBoardPost from "./pages/Board/NewBoardPost";
-import Announcements from "./pages/Announcements/Announcements";
+import AnnouncementsPage from "./pages/Announcements/Announcements";
+import NewAnnouncementPost from "./pages/Announcements/NewAnnouncementPost";
 import Proceedings from "./pages/proceedings";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -34,19 +35,24 @@ export interface Post {
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  
+
   // State for Board
   const [posts, setPosts] = useState<Post[]>([]);
   const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
 
+  // State for Announcements
+  const [announcements, setAnnouncements] = useState<Post[]>([]);
+  const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
+
   const sheetId = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
-  const sheetName = 'free_board';
+  const boardSheetName = 'free_board';
+  const announcementSheetName = 'notice';
 
   const fetchPosts = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
           spreadsheetId: sheetId,
-          range: `${sheetName}!A:E`,
+          range: `${boardSheetName}!A:E`,
       });
 
       const data = response.result.values;
@@ -68,6 +74,32 @@ const App: React.FC = () => {
     }
   };
 
+  const fetchAnnouncements = async () => {
+    try {
+      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: `${announcementSheetName}!A:E`,
+      });
+
+      const data = response.result.values;
+      if (data && data.length > 1) {
+        const parsedAnnouncements: Post[] = data.slice(1).map((row: string[]) => ({
+          id: row[0],
+          author: row[1],
+          title: row[2],
+          contentPreview: row[3],
+          date: new Date().toISOString().slice(0, 10),
+          views: 0,
+          likes: 0,
+        })).reverse();
+        setAnnouncements(parsedAnnouncements);
+      }
+    } catch (error) {
+      console.error('Error fetching announcements from Google Sheet:', error);
+      alert('공지사항을 불러오는 중 오류가 발생했습니다.');
+    }
+  };
+
   const handleBoardAuth = async () => {
     try {
       await gapiInit(GOOGLE_CLIENT_ID);
@@ -80,11 +112,23 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAnnouncementsAuth = async () => {
+    try {
+      await gapiInit(GOOGLE_CLIENT_ID);
+      setIsGoogleAuthenticatedForAnnouncements(true);
+      alert('Google 인증 성공!');
+      fetchAnnouncements();
+    } catch (e: any) {
+      alert('Google 인증 실패: ' + e.message);
+      setIsGoogleAuthenticatedForAnnouncements(false);
+    }
+  };
+
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${sheetName}!A:A`,
+        range: `${boardSheetName}!A:A`,
       });
 
       const lastRow = response.result.values ? response.result.values.length : 0;
@@ -98,13 +142,41 @@ const App: React.FC = () => {
         'file_freeBoard': '', // File handling logic can be added here
       };
 
-      await appendRow(sheetId, sheetName, newPostForSheet);
+      await appendRow(sheetId, boardSheetName, newPostForSheet);
       await fetchPosts(); // Refetch posts after adding a new one
       alert('게시글이 성공적으로 저장되었습니다.');
       handlePageChange('board');
     } catch (error) {
       console.error('Error saving post to Google Sheet:', error);
       alert('게시글 저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
+    try {
+      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: `${announcementSheetName}!A:A`,
+      });
+
+      const lastRow = response.result.values ? response.result.values.length : 0;
+      const newPostId = `an-${lastRow + 1}`;
+
+      const newPostForSheet = {
+        'no_notice': newPostId,
+        'writer_notice': postData.author,
+        'title_notice': postData.title,
+        'content_notice': postData.contentPreview,
+        'file_notice': '', // File handling logic can be added here
+      };
+
+      await appendRow(sheetId, announcementSheetName, newPostForSheet);
+      await fetchAnnouncements(); // Refetch announcements after adding a new one
+      alert('공지사항이 성공적으로 저장되었습니다.');
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error saving announcement to Google Sheet:', error);
+      alert('공지사항 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -148,6 +220,15 @@ const App: React.FC = () => {
           data-oid="d01oi2r" />;
       case "new-board-post":
         return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} />;
+      case "announcements":
+        return <AnnouncementsPage 
+          onPageChange={handlePageChange} 
+          posts={announcements} 
+          onAuth={handleAnnouncementsAuth} 
+          isAuthenticated={isGoogleAuthenticatedForAnnouncements} 
+          data-oid="d01oi2r" />;
+      case "new-announcement-post":
+        return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} />;
       // other cases
       case "document_management":
         return (
@@ -173,8 +254,6 @@ const App: React.FC = () => {
 
       case "mypage":
         return <Mypage data-oid="d01oi2r" />;
-      case "announcements":
-        return <Announcements data-oid="d01oi2r" />;
       case "empty_document":
         return <EmptyDocument data-oid="n.rsz_n" />;
       case "proceedings":
