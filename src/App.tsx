@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
+import Login from "./components/Login";
 import "./index.css"; // Global styles and theme variables
 import { GoogleOAuthProvider } from '@react-oauth/google'; // Import GoogleOAuthProvider
+import { useAuthStore } from "./hooks/useAuthStore";
 
 import Calendar from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
@@ -19,21 +21,8 @@ import Proceedings from "./pages/proceedings";
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Access from .env
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<string>("dashboard"); // Default to ddd.html content
-  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); // State for Google Calendar accessToken
-
-  useEffect(() => {
-    const storedAccessToken = localStorage.getItem('googleAccessToken');
-    if (storedAccessToken) {
-      setGoogleAccessToken(storedAccessToken);
-    }
-  }, []);
-
-  const handleGoogleLoginSuccess = (profile: any, token: string) => {
-    console.log("Google Login Success (App.tsx):", profile);
-    setGoogleAccessToken(token);
-    localStorage.setItem('googleAccessToken', token);
-  };
+  const [currentPage, setCurrentPage] = useState<string>("dashboard"); // Default to dashboard
+  const { user, isAuthenticated, isApproved } = useAuthStore();
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -70,7 +59,7 @@ const App: React.FC = () => {
         );
 
       case "calendar":
-        return <Calendar data-oid="uz.ewbm" accessToken={googleAccessToken} />; // Pass accessToken to Calendar
+        return <Calendar data-oid="uz.ewbm" accessToken={user?.googleAccessToken} />; // Pass accessToken to Calendar
       case "preferences":
         return (
           <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
@@ -92,12 +81,22 @@ const App: React.FC = () => {
     }
   };
 
+  // 로그인하지 않았거나 승인되지 않은 경우 로그인 화면 표시
+  if (!isAuthenticated || !user?.isApproved) {
+    return (
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <Login />
+      </GoogleOAuthProvider>
+    );
+  }
+
+  // 승인된 사용자는 메인 화면 표시
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}> {/* Wrap with GoogleOAuthProvider */}
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header onPageChange={handlePageChange} onGoogleLoginSuccess={handleGoogleLoginSuccess} /> {/* Pass handleGoogleLoginSuccess to Header */}
+          <Header onPageChange={handlePageChange} />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             {renderPageContent()}
           </div>
