@@ -19,6 +19,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
   const [localEvents, setLocalEvents] = useState<Event[]>([]); // Rename events to localEvents
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]); // New state for Google events
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [semesterStartDate, setSemesterStartDate] = useState(new Date());
 
   // Fetch Google Calendar events
   useEffect(() => {
@@ -35,12 +36,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
         const timeMax = lastDayOfMonth.toISOString();
 
         const response = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+            `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
         );
 
         if (!response.ok) {
@@ -158,16 +159,16 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
     // Days from next month
     const lastDayOfWeek = lastDayOfMonth.getDay();
     for (let i = 1; i < 7 - lastDayOfWeek; i++) {
-        const date = new Date(year, month + 1, i);
-        days.push({
-            year: String(date.getFullYear()),
-            month: String(date.getMonth() + 1),
-            day: String(date.getDate()),
-            date: formatDate(date),
-            dayIndexOfWeek: date.getDay(),
-        });
+      const date = new Date(year, month + 1, i);
+      days.push({
+        year: String(date.getFullYear()),
+        month: String(date.getMonth() + 1),
+        day: String(date.getDate()),
+        date: formatDate(date),
+        dayIndexOfWeek: date.getDay(),
+      });
     }
-    
+
     return days;
   }, [currentDate]);
 
@@ -193,12 +194,14 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
     deleteEvent,
     selectedEvent,
     setSelectedEvent,
+    semesterStartDate,
+    setSemesterStartDate,
   };
 
   return (
-    <CalendarContext.Provider value={contextValue}>
-      {children}
-    </CalendarContext.Provider>
+      <CalendarContext.Provider value={contextValue}>
+        {children}
+      </CalendarContext.Provider>
   );
 };
 

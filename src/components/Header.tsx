@@ -357,8 +357,8 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) =
                 </button>
               </>
           ) : (
-              <button onClick={handleGoogleAuth}>Google 로그인</button>
-              //<Login onLoginSuccess={handleLoginSuccess} />
+              //<button onClick={handleGoogleAuth}>Google 로그인</button>
+              <Login onLoginSuccess={handleLoginSuccess} />
           )}
         </div>
         {/* 새 문서 모달 - 3개 필드 */}

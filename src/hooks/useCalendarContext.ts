@@ -32,6 +32,8 @@ interface CalendarContextType {
     deleteEvent: (id: string) => void;
     selectedEvent: Event | null;
     setSelectedEvent: (event: Event | null) => void;
+    semesterStartDate: Date;
+    setSemesterStartDate: (date: Date) => void;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);
