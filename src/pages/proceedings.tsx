@@ -69,7 +69,7 @@ const Proceedings: React.FC = () => {
     }
   };
 
-  const handleSaveAndExport = () => {
+  const handleExport = () => {
     console.log("회의록 저장 및 내보내기:", { formData, settings });
 
     const {
@@ -215,6 +215,11 @@ const Proceedings: React.FC = () => {
     });
   };
 
+  const handleSave = () => {
+    // 저장 기능 구현
+    alert("저장되었습니다.");
+  };
+
   return (
     <div className="proceedings-layout">
       <div className="form-wrapper">
@@ -226,11 +231,19 @@ const Proceedings: React.FC = () => {
             </button>
             <button 
               className="save-export-button" 
-              onClick={handleSaveAndExport} 
+              onClick={handleSave} 
               disabled={!isGoogleAuthenticated}
               title={!isGoogleAuthenticated ? "Google 인증이 필요합니다." : ""}
             >
-              저장 및 내보내기
+              저장
+            </button>
+            <button 
+              className="save-export-button" 
+              onClick={handleExport} 
+              disabled={!isGoogleAuthenticated}
+              title={!isGoogleAuthenticated ? "Google 인증이 필요합니다." : ""}
+            >
+              내보내기
             </button>
           </div>
           <div className="proceedings-section">
