@@ -1,4 +1,6 @@
 import { useTemplateUI } from "../hooks/useTemplateUI";
+import type { Template } from "../hooks/useTemplateUI";
+import "../components/TemplateUI/TemplateUI.css";
 
 // 2. UI 컴포넌트들 import (검색바, 카테고리 탭, 템플릿 리스트)
 import {
@@ -9,10 +11,11 @@ import {
 
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
+  templates: Template[];
 }
 
 // 3. TemplatePage 컴포넌트 정의 (메인 템플릿 페이지)
-export default function TemplatePage({ onPageChange }: TemplatePageProps) {
+export default function TemplatePage({ onPageChange, templates }: TemplatePageProps) {
     // 커스텀 훅에서 상태와 함수들을 가져옴
     const {
         searchTerm,         // 검색어 상태
@@ -24,7 +27,7 @@ export default function TemplatePage({ onPageChange }: TemplatePageProps) {
         filteredTemplates,  // 필터링/정렬된 템플릿 목록
         onUseTemplate,      // 템플릿 사용 이벤트 핸들러
         reset,              // 검색/필터/탭 상태 초기화 함수
-    } = useTemplateUI(onPageChange);
+    } = useTemplateUI(templates, onPageChange);
 
     // 4. UI 렌더링
     return (
@@ -43,4 +46,5 @@ export default function TemplatePage({ onPageChange }: TemplatePageProps) {
             {/* 템플릿 리스트: 필터링된 템플릿 데이터와 사용 이벤트 전달 */}
             <TemplateList templates={filteredTemplates} onUseTemplate={onUseTemplate} />
         </div>
-    );}
+    );
+}

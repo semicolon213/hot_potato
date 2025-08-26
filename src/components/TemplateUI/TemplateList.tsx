@@ -3,7 +3,7 @@ import { TemplateCard } from "./TemplateCard";
 
 interface Props {
     templates: Template[];
-    onUseTemplate: (type: string, title: string) => void;
+    onUseTemplate: () => void;
 }
 
 export function TemplateList({ templates, onUseTemplate }: Props) {

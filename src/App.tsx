@@ -18,6 +18,8 @@ import NewBoardPost from "./pages/Board/NewBoardPost";
 import AnnouncementsPage from "./pages/Announcements/Announcements";
 import NewAnnouncementPost from "./pages/Announcements/NewAnnouncementPost";
 import Proceedings from "./pages/proceedings";
+import { initialTemplates } from "./hooks/useTemplateUI";
+import type { Template } from "./hooks/useTemplateUI";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -35,6 +37,7 @@ export interface Post {
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
 
   // State for Board
   const [posts, setPosts] = useState<Post[]>([]);
@@ -47,6 +50,17 @@ const App: React.FC = () => {
   const sheetId = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
   const boardSheetName = 'free_board';
   const announcementSheetName = 'notice';
+
+  const addTemplate = (newDocData: { title: string; description: string; tag: string; }) => {
+    const newTemplate: Template = {
+        type: newDocData.title, // Or a slugified version
+        title: newDocData.title,
+        description: newDocData.description,
+        tag: newDocData.tag,
+    };
+    setTemplates(prevTemplates => [...prevTemplates, newTemplate]);
+    alert("새로운 템플릿이 생성되었습니다!"); // Optional: notify user
+  };
 
   const fetchPosts = async () => {
     try {
@@ -242,7 +256,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} templates={templates} data-oid="ou.h__l" />
         );
 
       case "calendar":
@@ -269,7 +283,7 @@ const App: React.FC = () => {
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header onPageChange={handlePageChange} onGoogleLoginSuccess={handleGoogleLoginSuccess} />
+          <Header onPageChange={handlePageChange} onGoogleLoginSuccess={handleGoogleLoginSuccess} addTemplate={addTemplate} />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             {renderPageContent()}
           </div>

@@ -8,7 +8,6 @@ import {
   calendarIcon,
   messageIcon as chatIcon,
 } from "../assets/Icons";
-import Login from "./Login"; // Import the new Login component
 import { gapiInit } from 'papyrus-db';
 import { tabs } from "./TemplateUI/CategoryTabs";
 // Define the structure of the user profile object
@@ -33,10 +32,10 @@ async function handleGoogleAuth() {
 }
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
-  onGoogleLoginSuccess: (profile: any, accessToken: string) => void; // Add this prop
+  addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) => { // Destructure new prop
+const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate }) => { // Destructure new prop
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -66,13 +65,6 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) =
       setUserProfile(JSON.parse(storedProfile));
     }
   }, []);
-
-
-  const handleLoginSuccess = (profile: any, accessToken: string) => { // Add accessToken parameter
-    localStorage.setItem("userProfile", JSON.stringify(profile));
-    setUserProfile(profile);
-    onGoogleLoginSuccess(profile, accessToken); // Call the new prop
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("userProfile");
@@ -122,9 +114,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) =
       return;
     }
 
-    // 여기에 실제 새 문서 생성 로직을 넣으세요
-    console.log("새 문서 생성:", newDocData);
-    alert(`새 문서가 생성되었습니다!\n제목: ${newDocData.title}\n상세정보: ${newDocData.description}\n태그: ${newDocData.tag}`);
+    addTemplate(newDocData);
 
     // 모달 닫기 및 상태 초기화
     setShowNewDocModal(false);
