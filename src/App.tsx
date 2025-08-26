@@ -62,6 +62,10 @@ const App: React.FC = () => {
     alert("새로운 템플릿이 생성되었습니다!"); // Optional: notify user
   };
 
+  const deleteTemplate = (templateType: string) => {
+    setTemplates(prevTemplates => prevTemplates.filter(t => t.type !== templateType));
+  };
+
   const fetchPosts = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
@@ -256,7 +260,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} templates={templates} data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} templates={templates} deleteTemplate={deleteTemplate} data-oid="ou.h__l" />
         );
 
       case "calendar":

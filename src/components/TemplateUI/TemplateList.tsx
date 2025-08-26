@@ -4,9 +4,10 @@ import { TemplateCard } from "./TemplateCard";
 interface Props {
     templates: Template[];
     onUseTemplate: () => void;
+    onDeleteTemplate: (templateType: string) => void;
 }
 
-export function TemplateList({ templates, onUseTemplate }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate }: Props) {
     return (
         <div className="new-templates-container">
             {templates.map((template, idx) => (
@@ -14,6 +15,7 @@ export function TemplateList({ templates, onUseTemplate }: Props) {
                     key={template.title + idx}
                     template={template}
                     onUse={onUseTemplate}
+                    onDelete={onDeleteTemplate}
                 />
             ))}
         </div>
