@@ -49,7 +49,7 @@ export function useTemplateUI(onPageChange: (pageName: string) => void) {
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = (type: string, title: string) => {
-        if (type === "meeting" && title === "회의록") {
+        if (type === "meeting" || type === "finance" || type === "event" || type === "report") {
             onPageChange("proceedings");
         } else {
             alert(`"${title}" 템플릿을 사용합니다!`);
