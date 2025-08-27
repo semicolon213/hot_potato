@@ -10,6 +10,7 @@ import {
 } from "../assets/Icons";
 import Login from "./Login"; // Import the new Login component
 import { gapiInit } from 'papyrus-db';
+import { tabs } from "./TemplateUI/CategoryTabs";
 // Define the structure of the user profile object
 interface UserProfile {
   name: string;
@@ -399,14 +400,17 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, onGoogleLoginSuccess }) =
 
                   <div className="form-group">
                     <label htmlFor="doc-tag">태그</label>
-                    <input
+                    <select
                         id="doc-tag"
-                        type="text"
                         className="modal-input"
-                        placeholder="태그를 입력하세요 (예: 회의)"
                         value={newDocData.tag}
                         onChange={(e) => handleInputChange("tag", e.target.value)}
-                    />
+                    >
+                        <option value="" disabled>태그를 선택하세요</option>
+                        {tabs.slice(1).map(tab => (
+                            <option key={tab} value={tab}>{tab}</option>
+                        ))}
+                    </select>
                   </div>
                 </div>
                 <div className="modal-footer">

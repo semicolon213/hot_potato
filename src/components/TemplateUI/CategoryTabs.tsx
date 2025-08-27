@@ -3,8 +3,9 @@ interface Props {
     setActiveTab: (v: string) => void;
 }
 
+export const tabs = ["전체", "회의", "재정", "행사", "보고서"];
+
 export function CategoryTabs({ activeTab, setActiveTab }: Props) {
-    const tabs = ["전체", "회의", "재정", "행사", "보고서"];
     return (
         <div className="new-tabs-container">
             {tabs.map((tab) => (

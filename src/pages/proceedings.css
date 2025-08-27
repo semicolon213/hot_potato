@@ -3,12 +3,18 @@
   display: flex;
   gap: 20px;
   padding: 20px;
-  align-items: flex-start;
+  height: 100%;
 }
 
 .form-wrapper {
-  flex: 3;
-  min-width: 600px;
+  flex-grow: 1; /* Takes up available space */
+  padding: 20px;
+  overflow-y: auto; /* Enable scrolling for content if it overflows */
+  background-color: #f9f9f9;
+  border-right: 1px solid #eee;
+  box-sizing: border-box; /* Include padding in element's total width and height */
+  display: flex; /* Use flexbox for its children */
+  flex-direction: column; /* Stack children vertically */
 }
 
 .settings-panel {

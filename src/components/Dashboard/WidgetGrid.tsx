@@ -18,12 +18,14 @@ const WidgetComponents: { [key: string]: React.FC<any> } = WidgetTemplates as an
 
 /**
  * 개별 위젯의 데이터 구조를 정의하는 인터페이스입니다.
- * @property {string} type - 위젯의 고유 식별자 (예: 'welcome', 'notice').
+ * @property {string} id - 위젯의 고유 식별자.
+ * @property {string} type - 위젯의 타입 (예: 'welcome', 'notice').
  * @property {string} title - 위젯 헤더에 표시될 제목.
  * @property {string} componentType - 렌더링할 위젯 컴포넌트의 이름 (AllWidgetTemplates.tsx에 정의된 이름).
  * @property {any} props - 위젯 컴포넌트에 전달될 데이터.
  */
 interface WidgetData {
+  id: string;
   type: string;
   title: string;
   componentType: string;
@@ -36,14 +38,14 @@ interface WidgetData {
  * @property {(index: number) => void} handleDragStart - 드래그 시작 시 호출될 함수.
  * @property {(index: number) => void} handleDragEnter - 드래그 요소가 다른 위젯 위로 진입 시 호출될 함수.
  * @property {() => void} handleDrop - 드롭 시 호출될 함수.
- * @property {(type: string) => void} handleRemoveWidget - 위젯 제거 시 호출될 함수.
+ * @property {(id: string) => void} handleRemoveWidget - 위젯 제거 시 호출될 함수.
  */
 interface WidgetGridProps {
   widgets: WidgetData[];
   handleDragStart: (index: number) => void;
   handleDragEnter: (index: number) => void;
   handleDrop: () => void;
-  handleRemoveWidget: (type: string) => void;
+  handleRemoveWidget: (id: string) => void;
 }
 
 /**
@@ -65,7 +67,7 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
         const WidgetContentComponent = WidgetComponents[widget.componentType] || DefaultMessage;
         return (
           <div
-            key={widget.type}
+            key={widget.id} // Key를 고유한 ID로 변경
             className="widget"
             data-widget-type={widget.type}
             draggable
@@ -79,7 +81,7 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
               <div className="widget-actions">
                 <button
                   className="widget-btn"
-                  onClick={() => handleRemoveWidget(widget.type)}
+                  onClick={() => handleRemoveWidget(widget.id)} // widget.type 대신 widget.id를 전달
                 >
                   <i className="fas fa-trash"></i>
                 </button>
