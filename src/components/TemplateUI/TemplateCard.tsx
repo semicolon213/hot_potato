@@ -3,7 +3,7 @@ import type { Template } from "../../hooks/useTemplateUI";
 
 interface Props {
     template: Template;
-    onUse: () => void;
+    onUse: (type: string, title: string) => void;
     onDelete: (rowIndex: number) => void;
     isFixed: boolean;
 }
@@ -42,7 +42,7 @@ export function TemplateCard({ template, onUse, onDelete, isFixed }: Props) {
             <div className="new-card-footer">
                 <button
                     className="new-use-button"
-                    onClick={() => onUse()}
+                    onClick={() => onUse(template.type, template.title)}
                 >
                     사용하기
                 </button>

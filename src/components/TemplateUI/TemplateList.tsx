@@ -3,7 +3,7 @@ import { TemplateCard } from "./TemplateCard";
 
 interface Props {
     templates: Template[];
-    onUseTemplate: () => void;
+    onUseTemplate: (type: string, title: string) => void;
     onDeleteTemplate: (rowIndex: number) => void;
 }
 
