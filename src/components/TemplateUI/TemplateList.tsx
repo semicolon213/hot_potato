@@ -4,7 +4,7 @@ import { TemplateCard } from "./TemplateCard";
 interface Props {
     templates: Template[];
     onUseTemplate: () => void;
-    onDeleteTemplate: (templateType: string) => void;
+    onDeleteTemplate: (rowIndex: number) => void;
 }
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);

@@ -12,7 +12,7 @@ import {
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
   templates: Template[];
-  deleteTemplate: (templateType: string) => void;
+  deleteTemplate: (rowIndex: number) => void;
 }
 
 // 3. TemplatePage 컴포넌트 정의 (메인 템플릿 페이지)
@@ -53,3 +53,6 @@ export default function TemplatePage({ onPageChange, templates, deleteTemplate }
         </div>
     );
 }
+
+// 5. 컴포넌트 export
+export { TemplatePage };

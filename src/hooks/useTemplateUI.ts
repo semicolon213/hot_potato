@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 
 // 1. 템플릿 데이터의 타입 정의
 export interface Template {
+    rowIndex?: number;      // Google Sheet row index, optional for initial templates
     type: string;          // 템플릿 종류 (예: meeting, finance 등)
     title: string;         // 템플릿 제목
     description: string;   // 템플릿 설명
