@@ -17,16 +17,16 @@
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center; 
+  justify-content: center;
 }
 
 .month-controls {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .month-display {
@@ -126,4 +126,79 @@
 .day.selected .event-item {
   background-color: #007bff;
   color: #ffffff;
+}
+
+.calendar-header-top {
+  display: flex;
+  justify-content: space-between; /* This will push year to the left and the new container to the right */
+  width: 100%;
+  align-items: center;
+}
+
+.header-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Adjust as needed */
+}
+
+.view-switcher {
+  display: flex;
+  gap: 10px;
+}
+
+.view-switcher button {
+  padding: 5px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.view-switcher button.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.week-navigation {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.week-navigation-buttons {
+  display: flex;
+  gap: 5px;
+  padding: 5px 0;
+}
+
+.week-navigation button {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #fff;
+  white-space: nowrap;
+}
+
+.week-navigation button.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.semester-start-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.semester-start-date label {
+  font-size: 14px;
+}
+
+.semester-start-date input[type="date"] {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
