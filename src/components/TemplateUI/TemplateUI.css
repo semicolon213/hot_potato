@@ -135,7 +135,7 @@ color: #4b5563;
 /* 템플릿 카드 영역  */
 .new-templates-container {
 display: grid;
-grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+grid-template-columns: repeat(4, 1fr);
 gap: 20px;
 }
 
