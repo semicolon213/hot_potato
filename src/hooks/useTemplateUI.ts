@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 
 // 1. 템플릿 데이터의 타입 정의
 export interface Template {
+    rowIndex?: number;      // Google Sheet row index, optional for initial templates
     type: string;          // 템플릿 종류 (예: meeting, finance 등)
     title: string;         // 템플릿 제목
     description: string;   // 템플릿 설명
@@ -9,7 +10,7 @@ export interface Template {
 }
 
 // 2. 초기 템플릿 데이터 배열
-const initialTemplates: Template[] = [
+export const initialTemplates: Template[] = [
     { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
     { type: "finance", title: "지출결의서", description: "지출 내역을 작성하는 템플릿", tag: "재정" },
     { type: "event", title: "행사보고서", description: "행사 결과를 정리하는 템플릿", tag: "행사" },
@@ -17,7 +18,7 @@ const initialTemplates: Template[] = [
 ];
 
 // 3. 템플릿 관련 상태와 로직을 관리하는 커스텀 훅
-export function useTemplateUI(onPageChange: (pageName: string) => void) {
+export function useTemplateUI(templates: Template[], onPageChange: (pageName: string) => void) {
     // 검색어 상태
     const [searchTerm, setSearchTerm] = useState("");
     // 필터 옵션 상태 ("자주 사용", "최신순", "이름순" 등)
@@ -27,7 +28,7 @@ export function useTemplateUI(onPageChange: (pageName: string) => void) {
 
     // 필터링 및 정렬된 템플릿 목록을 계산 (searchTerm, filterOption, activeTab이 바뀔 때마다 재계산)
     const filteredTemplates = useMemo(() => {
-        let result = initialTemplates;
+        let result = templates;
 
         // 1) 탭(카테고리) 필터링
         if (activeTab !== "전체") result = result.filter((t) => t.tag === activeTab);
@@ -45,7 +46,7 @@ export function useTemplateUI(onPageChange: (pageName: string) => void) {
         // "자주 사용", "최신순" 등은 별도 정렬 로직 필요시 추가
 
         return result;
-    }, [searchTerm, filterOption, activeTab]);
+    }, [templates, searchTerm, filterOption, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = (type: string, title: string) => {
