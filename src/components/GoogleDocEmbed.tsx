@@ -18,7 +18,7 @@ function GoogleDocEmbed() {
     return (
         <div style={styles.container}>
             <iframe
-                src="https://docs.google.com/document/d/1LfesL3YNCquGUjwpSKvdH16jQRL5w9yMjbGf4Pq5bQs/edit?rm=minimal&amp;ui=false&amp;title=false&amp;embedded=true"
+                src="https://docs.google.com/document/d/1LfesL3YNCquGUjwpSKvdH16jQRL5w9yMjbGf4Pq5bQs/edit"
                 style={styles.iframe}
                 title="Google Doc"
             ></iframe>
