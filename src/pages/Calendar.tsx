@@ -13,13 +13,37 @@ interface CalendarPageProps {
 
 const CalendarContent: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const { selectedEvent, setSelectedEvent } = useCalendarContext();
+  const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
+  const { selectedEvent, setSelectedEvent, deleteEvent } = useCalendarContext();
+
+  const handleEdit = (event: Event) => {
+    setEventToEdit(event);
+    setSelectedEvent(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setIsAddModalOpen(false);
+    setEventToEdit(null); // 모달이 닫힐 때 수정 상태 초기화
+  };
 
   return (
     <div id="Calendar">
       <Calendar onAddEvent={() => setIsAddModalOpen(true)} />
-      {isAddModalOpen && <AddEventModal onClose={() => setIsAddModalOpen(false)} />}
-      <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      {isAddModalOpen && (
+        <AddEventModal
+          eventToEdit={eventToEdit}
+          onClose={handleCloseAddModal}
+        />
+      )}
+      {selectedEvent && (
+          <EventDetailModal
+              event={selectedEvent}
+              onClose={() => setSelectedEvent(null)}
+              onDelete={deleteEvent}
+              onEdit={handleEdit}
+          />
+      )}
     </div>
   );
 };

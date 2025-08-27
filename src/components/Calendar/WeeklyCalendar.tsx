@@ -34,22 +34,31 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
 
     useEffect(() => {
         if (weekDays.length > 0) {
-            const firstDayOfWeek = weekDays[0];
-            const currentMonth = Number(currentDate.month);
-            if (firstDayOfWeek.month !== currentMonth) {
-                const year = new Date(firstDayOfWeek.date).getFullYear();
-                if (new Date(currentDate.year, currentMonth -1, 1).getFullYear() !== year) {
-                    if(new Date(currentDate.year, currentMonth -1, 1).getFullYear() < year){
-                        dispatch.handleNextYear();
-                    } else {
-                        dispatch.handlePrevYear();
-                    }
+            let targetDate = new Date(weekDays[0].date); // Default to first day of week
+
+            for (const day of weekDays) {
+                if (day.day === 1) {
+                    targetDate = new Date(day.date);
+                    break; // Found the 1st, so we use this month.
                 }
-                if (firstDayOfWeek.month > currentMonth) {
-                    dispatch.handleNextMonth();
-                } else {
-                    dispatch.handlePrevMonth();
-                }
+            }
+
+            const targetYear = targetDate.getFullYear();
+            const targetMonth = targetDate.getMonth(); // 0-11
+
+            const currentYear = Number(currentDate.year);
+            const currentMonth = Number(currentDate.month) - 1; // 0-11
+
+            if (targetYear === currentYear && targetMonth === currentMonth) {
+                return;
+            }
+
+            const monthDiff = (targetYear - currentYear) * 12 + (targetMonth - currentMonth);
+
+            if (monthDiff > 0) {
+                dispatch.handleNextMonth();
+            } else if (monthDiff < 0) {
+                dispatch.handlePrevMonth();
             }
         }
     }, [weekDays, currentDate, dispatch]);
@@ -77,7 +86,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                     return (
                         <div
                             onClick={() => selectedDate.selectDate(new Date(date.date))}
-                            className={`day ${date.isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''}`}
+                            className={`day ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''}`}
                             key={date.date}>
                             <span className="day-number">{date.day}</span>
                             <ul className="event-list">
