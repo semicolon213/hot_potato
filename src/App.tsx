@@ -37,7 +37,7 @@ export interface Post {
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [tags, setTags] = useState<string[]>([]);
 
   const deleteTag = (tagToDelete: string) => {
@@ -46,17 +46,17 @@ const App: React.FC = () => {
     }
 
     // Optimistic UI update
-    const oldTemplates = templates;
+    const oldTemplates = customTemplates;
     const oldTags = tags;
 
     setTags(tags.filter(tag => tag !== tagToDelete));
-    setTemplates(templates.filter(t => t.tag !== tagToDelete));
+    setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
     alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
 
     // Background sheet update
     const deleteFromSheet = async () => {
       if (documentTemplateSheetId === null) {
-        setTemplates(oldTemplates);
+        setCustomTemplates(oldTemplates);
         setTags(oldTags);
         alert('오류: 시트 정보가 로드되지 않았습니다. 태그 삭제에 실패했습니다.');
         return;
@@ -106,7 +106,7 @@ const App: React.FC = () => {
       } catch (error) {
         console.error('Error deleting tag from Google Sheet (background):', error);
         alert('백그라운드 저장 실패: 태그 삭제가 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
-        setTemplates(oldTemplates);
+        setCustomTemplates(oldTemplates);
         setTags(oldTags);
       }
     };
@@ -116,17 +116,17 @@ const App: React.FC = () => {
 
   const updateTag = (oldTag: string, newTag: string) => {
     // Optimistic UI update
-    const oldTemplates = templates;
+    const oldTemplates = customTemplates;
     const oldTags = tags;
 
     setTags(tags.map(t => t === oldTag ? newTag : t));
-    setTemplates(templates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
+    setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
     alert(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
 
     // Background sheet update
     const updateSheet = async () => {
       if (documentTemplateSheetId === null) {
-        setTemplates(oldTemplates);
+        setCustomTemplates(oldTemplates);
         setTags(oldTags);
         alert('오류: 시트 정보가 로드되지 않았습니다. 태그 수정에 실패했습니다.');
         return;
@@ -171,7 +171,7 @@ const App: React.FC = () => {
       } catch (error) {
         console.error('Error updating tag in Google Sheet (background):', error);
         alert('백그라운드 저장 실패: 태그 수정이 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
-        setTemplates(oldTemplates);
+        setCustomTemplates(oldTemplates);
         setTags(oldTags);
       }
     };
@@ -229,13 +229,13 @@ const App: React.FC = () => {
       const newTemplate: Template = {
           // rowIndex is not available directly from append, refetching is an option
           // but for now, a local optimistic update is faster.
-          rowIndex: templates.length + 1, // This is an approximation for the key
+          rowIndex: customTemplates.length + 1, // This is an approximation for the key
           type: newDocData.title, 
           title: newDocData.title,
           description: newDocData.description,
           tag: newDocData.tag,
       };
-      setTemplates(prevTemplates => [...prevTemplates, newTemplate]);
+      setCustomTemplates(prevTemplates => [...prevTemplates, newTemplate]);
 
       alert('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
@@ -269,7 +269,7 @@ const App: React.FC = () => {
         },
       });
 
-      setTemplates(prevTemplates => prevTemplates.filter(t => t.rowIndex !== rowIndex));
+      setCustomTemplates(prevTemplates => prevTemplates.filter(t => t.rowIndex !== rowIndex));
       alert('템플릿이 성공적으로 삭제되었습니다.');
 
     } catch (error) {
@@ -346,9 +346,9 @@ const App: React.FC = () => {
           tag: row[2],
           type: row[0],
         }));
-        setTemplates([...initialTemplates, ...parsedTemplates]);
+        setCustomTemplates(parsedTemplates);
       } else {
-        setTemplates(initialTemplates); // If no templates are on the sheet, just show the initial one
+        setCustomTemplates([]); // If no templates are on the sheet, clear the state
       }
     } catch (error) {
       console.error('Error fetching templates from Google Sheet:', error);
@@ -576,7 +576,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} templates={templates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} data-oid="ou.h__l" />
         );
 
       case "calendar":

@@ -9,19 +9,23 @@ export interface Template {
     tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
 }
 
-// 2. 초기 템플릿 데이터 배열
-export const initialTemplates: Template[] = [
-    { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" }
+export const defaultTemplates: Template[] = [
+    { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" },
+    { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
 ];
 
+// 2. 초기 템플릿 데이터 배열
+export const initialTemplates: Template[] = [];
+
 // 3. 템플릿 관련 상태와 로직을 관리하는 커스텀 훅
-export function useTemplateUI(templates: Template[], onPageChange: (pageName: string) => void) {
-    // 검색어 상태
-    const [searchTerm, setSearchTerm] = useState("");
+export function useTemplateUI(
+    templates: Template[], 
+    onPageChange: (pageName: string) => void,
+    searchTerm: string,
+    activeTab: string
+) {
     // 필터 옵션 상태 ("자주 사용", "최신순", "이름순" 등)
     const [filterOption, setFilterOption] = useState("자주 사용");
-    // 현재 활성화된 탭(카테고리) 상태 ("전체", "회의", "재정" 등)
-    const [activeTab, setActiveTab] = useState("전체");
 
     // 필터링 및 정렬된 템플릿 목록을 계산 (searchTerm, filterOption, activeTab이 바뀔 때마다 재계산)
     const filteredTemplates = useMemo(() => {
@@ -59,23 +63,11 @@ export function useTemplateUI(templates: Template[], onPageChange: (pageName: st
         // 실제로는 템플릿 생성 등 추가 로직을 구현할 수 있음
     };
 
-    // 검색, 필터, 탭 상태를 모두 초기화하는 함수
-    const reset = () => {
-        setSearchTerm("");
-        setFilterOption("자주 사용");
-        setActiveTab("전체");
-    };
-
     // 훅에서 관리하는 상태, 함수들을 객체로 반환
     return {
-        searchTerm,        // 검색어
-        setSearchTerm,     // 검색어 변경 함수
         filterOption,      // 필터 옵션
         setFilterOption,   // 필터 옵션 변경 함수
-        activeTab,         // 현재 활성 탭
-        setActiveTab,      // 탭 변경 함수
         filteredTemplates, // 필터링/정렬된 템플릿 목록
         onUseTemplate,     // 템플릿 사용 함수
-        reset,             // 상태 초기화 함수
     };
 }
