@@ -9,7 +9,7 @@ import {
   messageIcon as chatIcon,
 } from "../assets/Icons";
 import { gapiInit } from 'papyrus-db';
-import { tabs } from "./TemplateUI/CategoryTabs";
+
 // Define the structure of the user profile object
 interface UserProfile {
   name: string;
@@ -33,9 +33,10 @@ async function handleGoogleAuth() {
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
   addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
+  tags: string[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate }) => { // Destructure new prop
+const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate, tags }) => { // Destructure new prop
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -397,8 +398,8 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate }) => { // De
                         onChange={(e) => handleInputChange("tag", e.target.value)}
                     >
                         <option value="" disabled>태그를 선택하세요</option>
-                        {tabs.slice(1).map(tab => (
-                            <option key={tab} value={tab}>{tab}</option>
+                        {tags.map(tag => (
+                            <option key={tag} value={tag}>{tag}</option>
                         ))}
                     </select>
                   </div>

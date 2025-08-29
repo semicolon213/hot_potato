@@ -38,6 +38,13 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+  const [tags, setTags] = useState<string[]>(["회의", "재정", "행사", "보고서"]);
+
+  const addTag = (newTag: string) => {
+    if (newTag && !tags.includes(newTag)) {
+      setTags([...tags, newTag]);
+    }
+  };
 
   // State for Board
   const [posts, setPosts] = useState<Post[]>([]);
@@ -371,7 +378,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} templates={templates} deleteTemplate={deleteTemplate} data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} templates={templates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} data-oid="ou.h__l" />
         );
 
       case "calendar":
@@ -398,7 +405,7 @@ const App: React.FC = () => {
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header onPageChange={handlePageChange} onGoogleLoginSuccess={handleGoogleLoginSuccess} addTemplate={addTemplate} />
+          <Header onPageChange={handlePageChange} addTemplate={addTemplate} tags={tags} />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             {renderPageContent()}
           </div>
