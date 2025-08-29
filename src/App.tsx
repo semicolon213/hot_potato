@@ -38,11 +38,18 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Template[]>(initialTemplates);
-  const [tags, setTags] = useState<string[]>(["회의", "재정", "행사", "보고서"]);
+  const [tags, setTags] = useState<string[]>([]);
 
-  const addTag = (newTag: string) => {
+  const addTag = async (newTag: string) => {
     if (newTag && !tags.includes(newTag)) {
-      setTags([...tags, newTag]);
+      try {
+        await appendRow(sheetId, 'document_template', { 'tag_name': newTag });
+        setTags([...tags, newTag]);
+        alert('새로운 태그가 추가되었습니다.');
+      } catch (error) {
+        console.error('Error saving tag to Google Sheet:', error);
+        alert('태그 저장 중 오류가 발생했습니다.');
+      }
     }
   };
 
@@ -65,6 +72,7 @@ const App: React.FC = () => {
         'template_title': newDocData.title,
         'template_parttitle': newDocData.description,
         'tag': newDocData.tag,
+        'tag_name': newDocData.tag,
       };
 
       await appendRow(sheetId, 'document_template', newTemplateForSheet);
@@ -193,6 +201,34 @@ const App: React.FC = () => {
     }
   };
 
+  const fetchTags = async () => {
+    try {
+      const [tagsResponseD, tagsResponseE] = await Promise.all([
+        (window as any).gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: `document_template!D2:D`,
+        }),
+        (window as any).gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: `document_template!E2:E`,
+        }),
+      ]);
+
+      const tagsD = tagsResponseD.result.values?.flat() || [];
+      const tagsE = tagsResponseE.result.values?.flat() || [];
+      
+      const allTags = [...tagsD, ...tagsE].filter(tag => tag); // Filter out empty values
+      const uniqueTags = [...new Set(allTags)];
+
+      setTags(["회의", "재정", "행사", "보고서", ...uniqueTags]);
+
+    } catch (error) {
+      console.error('Error fetching tags from Google Sheet:', error);
+      // Fallback to default tags in case of an error
+      setTags(["회의", "재정", "행사", "보고서"]);
+    }
+  };
+
   const handleBoardAuth = async () => {
     try {
       await gapiInit(GOOGLE_CLIENT_ID);
@@ -307,6 +343,7 @@ const App: React.FC = () => {
             setDocumentTemplateSheetId(docSheet.properties.sheetId);
           }
           fetchTemplates();
+          fetchTags();
         }
       } catch (error) {
         console.error("Error during initial gapi load", error);
