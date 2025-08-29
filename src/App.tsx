@@ -40,6 +40,105 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>(initialTemplates);
   const [tags, setTags] = useState<string[]>([]);
 
+  const deleteTag = async (tagToDelete: string) => {
+    if (documentTemplateSheetId === null) {
+      alert('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
+      return;
+    }
+
+    try {
+      // 1. Get all data from the sheet
+      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: 'document_template!A:E',
+      });
+
+      const rows = response.result.values;
+      if (!rows) {
+        alert('시트에서 데이터를 찾을 수 없습니다.');
+        return;
+      }
+
+      // 2. Find rows to delete
+      const requests = rows
+        .map((row, index) => ({
+          row, 
+          rowIndex: index + 1, // 1-based index
+        }))
+        .filter(({ row }) => row[3] === tagToDelete || row[4] === tagToDelete)
+        .map(({ rowIndex }) => ({
+          deleteDimension: {
+            range: {
+              sheetId: documentTemplateSheetId, // This needs to be available
+              dimension: 'ROWS',
+              startIndex: rowIndex - 1,
+              endIndex: rowIndex,
+            },
+          },
+        }));
+
+      if (requests.length === 0) {
+        // If no templates use the tag, it might be a tag-only row. Let's just remove from state.
+        setTags(tags.filter(tag => tag !== tagToDelete));
+        alert('태그가 삭제되었습니다. (사용하는 템플릿 없음)');
+        return;
+      }
+
+      // 3. Execute batch update (requests should be in reverse order, but deleteDimension handles this)
+      await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        resource: { requests: requests.reverse() }, // Reverse to delete from bottom up
+      });
+
+      // 4. Update local state
+      await fetchTemplates();
+      await fetchTags();
+
+      alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+
+    } catch (error) {
+      console.error('Error deleting tag from Google Sheet:', error);
+      alert('태그 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const updateTag = async (oldTag: string, newTag: string) => {
+    if (documentTemplateSheetId === null) {
+      alert('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    try {
+      await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        resource: {
+          requests: [
+            {
+              findReplace: {
+                find: oldTag,
+                replacement: newTag,
+                sheetId: documentTemplateSheetId,
+              },
+            },
+          ],
+        },
+      });
+
+      await fetchTemplates();
+      await fetchTags();
+
+      alert(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
+
+    } catch (error) {
+      console.error('Error updating tag in Google Sheet:', error);
+      alert('태그 수정 중 오류가 발생했습니다.');
+    }
+  };
+
   const addTag = async (newTag: string) => {
     if (newTag && !tags.includes(newTag)) {
       try {
@@ -415,7 +514,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} templates={templates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} templates={templates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} data-oid="ou.h__l" />
         );
 
       case "calendar":

@@ -15,10 +15,12 @@ interface TemplatePageProps {
   deleteTemplate: (rowIndex: number) => void;
   tags: string[];
   addTag: (newTag: string) => void;
+  deleteTag: (tagToDelete: string) => void;
+  updateTag: (oldTag: string, newTag: string) => void;
 }
 
 // 3. TemplatePage 컴포넌트 정의 (메인 템플릿 페이지)
-export default function TemplatePage({ onPageChange, templates, deleteTemplate, tags, addTag }: TemplatePageProps) {
+export default function TemplatePage({ onPageChange, templates, deleteTemplate, tags, addTag, deleteTag, updateTag }: TemplatePageProps) {
     // 커스텀 훅에서 상태와 함수들을 가져옴
     const {
         searchTerm,         // 검색어 상태
@@ -45,7 +47,7 @@ export default function TemplatePage({ onPageChange, templates, deleteTemplate, 
                 reset={reset}
             />
             {/* 카테고리 탭: 현재 탭, 탭 변경 함수 전달 */}
-            <CategoryTabs activeTab={activeTab} setActiveTab={setActiveTab} tags={tags} addTag={addTag} />
+            <CategoryTabs activeTab={activeTab} setActiveTab={setActiveTab} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} />
             {/* 템플릿 리스트: 필터링된 템플릿 데이터와 사용 이벤트 전달 */}
             <TemplateList
                 templates={filteredTemplates}

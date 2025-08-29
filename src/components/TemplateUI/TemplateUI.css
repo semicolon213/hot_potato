@@ -305,3 +305,36 @@ gap: 20px;
 .new-tag-button.cancel {
     background-color: #6c757d;
 }
+
+.manage-tag-button {
+    margin-left: auto; /* Pushes the button to the far right */
+    color: #6c757d;
+}
+
+.delete-tag-button {
+    margin-left: 8px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+}
+
+.edit-tag-button {
+    margin-left: 8px;
+    background: #ffc107;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+}
