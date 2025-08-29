@@ -10,12 +10,7 @@ export interface Template {
 }
 
 // 2. 초기 템플릿 데이터 배열
-export const initialTemplates: Template[] = [
-    { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
-    { type: "finance", title: "지출결의서", description: "지출 내역을 작성하는 템플릿", tag: "재정" },
-    { type: "event", title: "행사보고서", description: "행사 결과를 정리하는 템플릿", tag: "행사" },
-    { type: "report", title: "월간보고서", description: "월간 업무보고용 템플릿", tag: "보고서" },
-];
+export const initialTemplates: Template[] = [];
 
 // 3. 템플릿 관련 상태와 로직을 관리하는 커스텀 훅
 export function useTemplateUI(templates: Template[], onPageChange: (pageName: string) => void) {

@@ -37,7 +37,7 @@ export interface Post {
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [tags, setTags] = useState<string[]>([]);
 
   const deleteTag = async (tagToDelete: string) => {
@@ -293,7 +293,9 @@ const App: React.FC = () => {
           tag: row[2],
           type: row[0],
         }));
-        setTemplates([...initialTemplates, ...parsedTemplates]);
+        setTemplates(parsedTemplates);
+      } else {
+        setTemplates([]); // If no templates are on the sheet, clear the state
       }
     } catch (error) {
       console.error('Error fetching templates from Google Sheet:', error);
@@ -316,15 +318,14 @@ const App: React.FC = () => {
       const tagsD = tagsResponseD.result.values?.flat() || [];
       const tagsE = tagsResponseE.result.values?.flat() || [];
       
-      const allTags = [...tagsD, ...tagsE].filter(tag => tag); // Filter out empty values
       const uniqueTags = [...new Set(allTags)];
 
-      setTags(["회의", "재정", "행사", "보고서", ...uniqueTags]);
+      setTags(uniqueTags);
 
     } catch (error) {
       console.error('Error fetching tags from Google Sheet:', error);
-      // Fallback to default tags in case of an error
-      setTags(["회의", "재정", "행사", "보고서"]);
+      // Fallback to empty array in case of an error
+      setTags([]);
     }
   };
 
