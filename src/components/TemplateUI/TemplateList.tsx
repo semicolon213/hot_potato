@@ -16,7 +16,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate }: Pro
                 const isFixed = fixedTemplateTypes.includes(template.type);
                 return (
                     <TemplateCard
-                        key={template.title + idx}
+                        key={template.rowIndex || template.title}
                         template={template}
                         onUse={onUseTemplate}
                         onDelete={onDeleteTemplate}

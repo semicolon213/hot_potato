@@ -40,142 +40,143 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>(initialTemplates);
   const [tags, setTags] = useState<string[]>([]);
 
-  const deleteTag = async (tagToDelete: string) => {
-    if (documentTemplateSheetId === null) {
-      alert('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
-
+  const deleteTag = (tagToDelete: string) => {
     if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
       return;
     }
 
-    try {
-      // 1. Get all data from the sheet
-      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: 'document_template!A:E',
-      });
+    // Optimistic UI update
+    const oldTemplates = templates;
+    const oldTags = tags;
 
-      const rows = response.result.values;
-      if (!rows) {
-        alert('시트에서 데이터를 찾을 수 없습니다.');
+    setTags(tags.filter(tag => tag !== tagToDelete));
+    setTemplates(templates.filter(t => t.tag !== tagToDelete));
+    alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+
+    // Background sheet update
+    const deleteFromSheet = async () => {
+      if (documentTemplateSheetId === null) {
+        setTemplates(oldTemplates);
+        setTags(oldTags);
+        alert('오류: 시트 정보가 로드되지 않았습니다. 태그 삭제에 실패했습니다.');
         return;
       }
 
-      // 2. Find rows to delete
-      const requests = rows
-        .map((row, index) => ({
-          row, 
-          rowIndex: index + 1, // 1-based index
-        }))
-        .filter(({ row }) => row[3] === tagToDelete || row[4] === tagToDelete)
-        .map(({ rowIndex }) => ({
-          deleteDimension: {
-            range: {
-              sheetId: documentTemplateSheetId, // This needs to be available
-              dimension: 'ROWS',
-              startIndex: rowIndex - 1,
-              endIndex: rowIndex,
+      try {
+        const response = await (window as any).gapi.client.sheets.spreadsheets.get({
+          spreadsheetId: sheetId,
+          ranges: ['document_template!A:E'],
+          includeGridData: true,
+        });
+
+        const gridData = response.result.sheets[0].data[0];
+        const rowsToDelete = new Set<number>();
+
+        if (gridData.rowData) {
+          for (let rowIndex = 0; rowIndex < gridData.rowData.length; rowIndex++) {
+            const row = gridData.rowData[rowIndex];
+            if (row.values) {
+              // Check column D (index 3) and E (index 4)
+              const tagD = row.values[3]?.formattedValue;
+              const tagE = row.values[4]?.formattedValue;
+              if (tagD === tagToDelete || tagE === tagToDelete) {
+                rowsToDelete.add(rowIndex);
+              }
+            }
+          }
+        }
+
+        if (rowsToDelete.size > 0) {
+          const requests = Array.from(rowsToDelete).sort((a, b) => b - a).map(rowIndex => ({
+            deleteDimension: {
+              range: {
+                sheetId: documentTemplateSheetId,
+                dimension: 'ROWS',
+                startIndex: rowIndex,
+                endIndex: rowIndex + 1,
+              },
             },
-          },
-        }));
+          }));
 
-      if (requests.length === 0) {
-        // If no templates use the tag, it might be a tag-only row. Let's just remove from state.
-        setTags(tags.filter(tag => tag !== tagToDelete));
-        alert('태그가 삭제되었습니다. (사용하는 템플릿 없음)');
-        return;
+          await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheetId,
+            resource: { requests },
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting tag from Google Sheet (background):', error);
+        alert('백그라운드 저장 실패: 태그 삭제가 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
+        setTemplates(oldTemplates);
+        setTags(oldTags);
       }
+    };
 
-      // 3. Execute batch update (requests should be in reverse order, but deleteDimension handles this)
-      await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: sheetId,
-        resource: { requests: requests.reverse() }, // Reverse to delete from bottom up
-      });
-
-      // 4. Update local state
-      await fetchTemplates();
-      await fetchTags();
-
-      alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
-
-    } catch (error) {
-      console.error('Error deleting tag from Google Sheet:', error);
-      alert('태그 삭제 중 오류가 발생했습니다.');
-    }
+    deleteFromSheet();
   };
 
-  const updateTag = async (oldTag: string, newTag: string) => {
-    if (documentTemplateSheetId === null) {
-      alert('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
+  const updateTag = (oldTag: string, newTag: string) => {
+    // Optimistic UI update
+    const oldTemplates = templates;
+    const oldTags = tags;
 
-    try {
-      // 1. Get all data from the sheet
-      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: 'document_template!A:E',
-      });
+    setTags(tags.map(t => t === oldTag ? newTag : t));
+    setTemplates(templates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
+    alert(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
 
-      const rows = response.result.values;
-      if (!rows) {
-        alert('시트에서 데이터를 찾을 수 없습니다.');
+    // Background sheet update
+    const updateSheet = async () => {
+      if (documentTemplateSheetId === null) {
+        setTemplates(oldTemplates);
+        setTags(oldTags);
+        alert('오류: 시트 정보가 로드되지 않았습니다. 태그 수정에 실패했습니다.');
         return;
       }
 
-      // 2. Find all cells with the old tag and create update requests
-      const requests = rows.flatMap((row, rowIndex) => {
-        if (rowIndex === 0) return []; // Skip header row
+      try {
+        const response = await (window as any).gapi.client.sheets.spreadsheets.get({
+          spreadsheetId: sheetId,
+          ranges: ['document_template!A:E'],
+          includeGridData: true,
+        });
 
-        return row.map((cell, colIndex) => {
-          if (cell === oldTag) {
-            return {
-              updateCells: {
-                rows: [
-                  {
-                    values: [
-                      {
-                        userEnteredValue: { stringValue: newTag },
-                      },
-                    ],
-                  },
-                ],
-                fields: 'userEnteredValue',
-                start: {
-                  sheetId: documentTemplateSheetId,
-                  rowIndex: rowIndex,
-                  columnIndex: colIndex,
-                },
-              },
-            };
+        const gridData = response.result.sheets[0].data[0];
+        const requests = [];
+
+        if (gridData.rowData) {
+          for (let rowIndex = 0; rowIndex < gridData.rowData.length; rowIndex++) {
+            const row = gridData.rowData[rowIndex];
+            if (row.values) {
+              for (let colIndex = 0; colIndex < row.values.length; colIndex++) {
+                const cell = row.values[colIndex];
+                if (cell.formattedValue === oldTag) {
+                  requests.push({
+                    updateCells: {
+                      rows: [{ values: [{ userEnteredValue: { stringValue: newTag } }] }],
+                      fields: 'userEnteredValue',
+                      start: { sheetId: documentTemplateSheetId, rowIndex, columnIndex: colIndex },
+                    },
+                  });
+                }
+              }
+            }
           }
-          return null;
-        }).filter(Boolean)
-      });
+        }
 
-      if (requests.length === 0) {
-        alert('수정할 태그를 시트에서 찾지 못했습니다.');
-        return;
+        if (requests.length > 0) {
+          await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheetId,
+            resource: { requests },
+          });
+        }
+      } catch (error) {
+        console.error('Error updating tag in Google Sheet (background):', error);
+        alert('백그라운드 저장 실패: 태그 수정이 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
+        setTemplates(oldTemplates);
+        setTags(oldTags);
       }
+    };
 
-      // 3. Execute the batch update
-      await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: sheetId,
-        resource: { requests },
-      });
-
-      // 4. Refresh the UI
-      await fetchTemplates();
-      await fetchTags();
-
-      alert(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
-
-    } catch (error) {
-      console.error('Error updating tag in Google Sheet:', error);
-      alert('태그 수정 중 오류가 발생했습니다.');
-    }
+    updateSheet();
   };
 
   const addTag = async (newTag: string) => {
