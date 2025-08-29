@@ -10,7 +10,9 @@ export interface Template {
 }
 
 // 2. 초기 템플릿 데이터 배열
-export const initialTemplates: Template[] = [];
+export const initialTemplates: Template[] = [
+    { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" }
+];
 
 // 3. 템플릿 관련 상태와 로직을 관리하는 커스텀 훅
 export function useTemplateUI(templates: Template[], onPageChange: (pageName: string) => void) {
@@ -45,7 +47,9 @@ export function useTemplateUI(templates: Template[], onPageChange: (pageName: st
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = (type: string, title: string) => {
-        if (type === "meeting") {
+        if (type === "empty") {
+            onPageChange("empty_document");
+        } else if (type === "meeting") {
             window.open("https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku", "_blank");
         } else if (type === "finance" || type === "event" || type === "report") {
             onPageChange("proceedings");

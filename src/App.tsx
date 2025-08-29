@@ -37,7 +37,7 @@ export interface Post {
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
   const [tags, setTags] = useState<string[]>([]);
 
   const deleteTag = async (tagToDelete: string) => {
@@ -113,21 +113,60 @@ const App: React.FC = () => {
     }
 
     try {
-      await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+      // 1. Get all data from the sheet
+      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        resource: {
-          requests: [
-            {
-              findReplace: {
-                find: oldTag,
-                replacement: newTag,
-                sheetId: documentTemplateSheetId,
-              },
-            },
-          ],
-        },
+        range: 'document_template!A:E',
       });
 
+      const rows = response.result.values;
+      if (!rows) {
+        alert('시트에서 데이터를 찾을 수 없습니다.');
+        return;
+      }
+
+      // 2. Find all cells with the old tag and create update requests
+      const requests = rows.flatMap((row, rowIndex) => {
+        if (rowIndex === 0) return []; // Skip header row
+
+        return row.map((cell, colIndex) => {
+          if (cell === oldTag) {
+            return {
+              updateCells: {
+                rows: [
+                  {
+                    values: [
+                      {
+                        userEnteredValue: { stringValue: newTag },
+                      },
+                    ],
+                  },
+                ],
+                fields: 'userEnteredValue',
+                start: {
+                  sheetId: documentTemplateSheetId,
+                  rowIndex: rowIndex,
+                  columnIndex: colIndex,
+                },
+              },
+            };
+          }
+          return null;
+        }).filter(Boolean)
+      });
+
+      if (requests.length === 0) {
+        alert('수정할 태그를 시트에서 찾지 못했습니다.');
+        return;
+      }
+
+      // 3. Execute the batch update
+      await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        resource: { requests },
+      });
+
+      // 4. Refresh the UI
       await fetchTemplates();
       await fetchTags();
 
@@ -167,17 +206,30 @@ const App: React.FC = () => {
 
   const addTemplate = async (newDocData: { title: string; description: string; tag: string; }) => {
     try {
-      const newTemplateForSheet = {
-        'template_title': newDocData.title,
-        'template_parttitle': newDocData.description,
-        'tag': newDocData.tag,
-        'tag_name': newDocData.tag,
-      };
+      const newRowData = [
+        '', // A column - empty
+        newDocData.title, // B column
+        newDocData.description, // C column
+        newDocData.tag, // D column
+        '', // E column - empty
+      ];
 
-      await appendRow(sheetId, 'document_template', newTemplateForSheet);
+      await (window as any).gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId,
+        range: 'document_template!A1',
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        resource: {
+          values: [newRowData],
+        },
+      });
 
+      // Local state update
       const newTemplate: Template = {
-          type: newDocData.title, // Or a slugified version
+          // rowIndex is not available directly from append, refetching is an option
+          // but for now, a local optimistic update is faster.
+          rowIndex: templates.length + 1, // This is an approximation for the key
+          type: newDocData.title, 
           title: newDocData.title,
           description: newDocData.description,
           tag: newDocData.tag,
@@ -293,9 +345,9 @@ const App: React.FC = () => {
           tag: row[2],
           type: row[0],
         }));
-        setTemplates(parsedTemplates);
+        setTemplates([...initialTemplates, ...parsedTemplates]);
       } else {
-        setTemplates([]); // If no templates are on the sheet, clear the state
+        setTemplates(initialTemplates); // If no templates are on the sheet, just show the initial one
       }
     } catch (error) {
       console.error('Error fetching templates from Google Sheet:', error);
@@ -431,19 +483,27 @@ const App: React.FC = () => {
     const savedTheme = localStorage.getItem("selectedTheme") || "default";
     document.body.classList.add(`theme-${savedTheme}`);
 
+    const fetchInitialData = async () => {
+      try {
+        const gapi = (window as any).gapi;
+        const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
+        const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
+        if (docSheet && docSheet.properties) {
+          setDocumentTemplateSheetId(docSheet.properties.sheetId);
+        }
+        fetchTemplates();
+        fetchTags();
+      } catch (error) {
+        console.error("Error during initial data fetch", error);
+      }
+    };
+
     const initAndFetch = async () => {
       try {
         await gapiInit(GOOGLE_CLIENT_ID);
-        const gapi = (window as any).gapi;
-        const authInstance = gapi.auth2.getAuthInstance();
+        const authInstance = (window as any).gapi.auth2.getAuthInstance();
         if (authInstance.isSignedIn.get()) {
-          const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
-          const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
-          if (docSheet && docSheet.properties) {
-            setDocumentTemplateSheetId(docSheet.properties.sheetId);
-          }
-          fetchTemplates();
-          fetchTags();
+          fetchInitialData();
         }
       } catch (error) {
         console.error("Error during initial gapi load", error);
@@ -463,7 +523,7 @@ const App: React.FC = () => {
     console.log("Google Login Success (App.tsx):", profile);
     setGoogleAccessToken(token);
     localStorage.setItem('googleAccessToken', token);
-    fetchTemplates(); // Fetch templates on login
+    fetchInitialData(); // Fetch all data on login
   };
 
   useEffect(() => {
