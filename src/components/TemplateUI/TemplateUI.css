@@ -135,8 +135,8 @@ color: #4b5563;
 /* 템플릿 카드 영역  */
 .new-templates-container {
 display: grid;
-grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-gap: 20px;
+grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+gap: 18px;
 }
 
 .new-template-card {
@@ -145,28 +145,28 @@ gap: 20px;
     flex-direction: column;
     background-color: white;
     border: 1px solid #e1e4e8;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .new-template-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
 }
 
 .new-card-content {
     flex: 1;
-    padding: 24px;
+    padding: 20px;
 }
 
 .new-card-tag {
     display: inline-block;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 12px;
     font-weight: 500;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .new-card-tag.new-meeting {
@@ -195,14 +195,14 @@ gap: 20px;
 }
 
 .new-card-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
-    margin: 0 0 8px 0;
+    margin: 0 0 6px 0;
     color: #212529;
 }
 
 .new-card-description {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.5;
     color: #495057;
     margin: 0;
@@ -212,7 +212,7 @@ gap: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
+    padding: 14px 20px;
     background-color: #f8f9fa;
     border-top: 1px solid #e9ecef;
 }
@@ -360,7 +360,6 @@ gap: 20px;
 .layout-sidebar {
     flex: 1;
     padding-right: 20px;
-    border-right: 1px solid #e0e0e0;
 }
 
 .layout-main {
@@ -372,4 +371,155 @@ gap: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.default-template-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.default-template-item:hover {
+    background-color: #f8f9fa;
+}
+
+.default-template-icon {
+    margin-right: 15px;
+    color: #495057;
+}
+
+.default-template-info {
+    flex: 1;
+}
+
+.default-template-title {
+    font-weight: 600;
+    color: #212529;
+}
+
+.default-template-description {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.use-default-button {
+    padding: 8px 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background-color: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.use-default-button:hover {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.custom-templates-section {
+    margin-top: 40px;
+}
+
+.custom-templates-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.add-template-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-template-button:hover {
+    background-color: #367cde;
+}
+
+.custom-templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 22px;
+}
+
+.modal-content .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-content .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.modal-content .form-group input,
+.modal-content .form-group textarea,
+.modal-content .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.modal-content .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.modal-content .modal-actions button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.modal-content .modal-actions .save-btn {
+    background-color: var(--primary);
+    color: white;
+}
+
+.modal-content .modal-actions .cancel-btn {
+    background-color: #f1f3f5;
+    color: #495057;
 }
