@@ -11,9 +11,12 @@ import {
 
 interface SidebarProps {
   onPageChange: (pageName: string) => void;
+  user?: {
+    isAdmin: boolean;
+  };
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const handleMenuClick = (pageName: string, hasSubmenu: boolean = false) => {
@@ -156,6 +159,22 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
           </div>
         </div>
       </div>
+
+      {/* 관리자 메뉴 */}
+      {user?.isAdmin && (
+        <div className="menu-section">
+          <div className="menu-section-title">관리자</div>
+          <div className="menu-container">
+            <div
+              className="menu-item"
+              onClick={() => handleMenuClick("admin_panel")}
+            >
+              <img src={usersIcon} alt="Admin Icon" className="icon" />
+              <div className="menu-text">관리자 패널</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="menu-section">
         <div className="menu-section-title">설정</div>

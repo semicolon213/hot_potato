@@ -1,223 +1,356 @@
-import React, { useState } from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
-import { useAuthStore, type User } from '../hooks/useAuthStore';
+import React, { useState, useEffect } from 'react';
 import './Login.css';
 
-const Login: React.FC = () => {
-  const [step, setStep] = useState<'login' | 'id-input' | 'pending'>('login');
-  const [studentId, setStudentId] = useState('');
-  const [teacherId, setTeacherId] = useState('');
-  const [userType, setUserType] = useState<'student' | 'teacher'>('student');
-  const [tempUser, setTempUser] = useState<Partial<User> | null>(null);
+interface LoginProps {
+  onLogin: (userData: any) => void;
+}
 
-  const { setUser, setLoading, setError } = useAuthStore();
-
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setLoading(true);
-        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
-          },
-        });
-        const profile = await userInfoResponse.json();
-        
-        // 임시 사용자 정보 저장
-        const tempUserData: Partial<User> = {
-          id: profile.sub,
-          email: profile.email,
-          name: profile.name,
-          picture: profile.picture,
-          googleAccessToken: tokenResponse.access_token,
-          role: 'student', // 기본값
-          isApproved: false,
+// Google Identity Services (GIS) 타입 정의
+declare global {
+  interface Window {
+    google: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, options: any) => void;
+          prompt: () => void;
+          disableAutoSelect: () => void;
+          storeCredential: (credential: any) => void;
+          cancel: () => void;
+          revoke: (hint: string, callback: () => void) => void;
         };
-        
-        setTempUser(tempUserData);
-        setStep('id-input');
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-        setError("사용자 정보를 가져오는데 실패했습니다.");
-      } finally {
-        setLoading(false);
+      };
+    };
+  }
+}
+
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const [showAdminKey, setShowAdminKey] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Google Identity Services (GIS) 초기화
+  useEffect(() => {
+    const initializeGoogleGIS = () => {
+      console.log('Google GIS 초기화 시작');
+      console.log('window.google 존재:', typeof window.google !== 'undefined');
+      console.log('window.google.accounts 존재:', typeof window.google?.accounts !== 'undefined');
+      
+      // Google GIS 스크립트가 로드될 때까지 대기
+      if (typeof window.google === 'undefined' || !window.google.accounts) {
+        console.log('Google GIS 스크립트 로딩 대기 중...');
+        setTimeout(initializeGoogleGIS, 1000);
+        return;
       }
-    },
-    onError: () => {
-      setError("구글 로그인에 실패했습니다.");
-    },
-    scope: 'https://www.googleapis.com/auth/calendar.readonly profile email',
-  });
 
-  const handleIdSubmit = async () => {
-    if (!tempUser) return;
+      try {
+        // Google GIS 초기화
+        window.google.accounts.id.initialize({
+          client_id: '651515712118-8293tiue05sgfau7ujig52m5m37cfjoo.apps.googleusercontent.com',
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
 
+        console.log('Google GIS 초기화 성공');
+        setIsGoogleLoaded(true);
+        setError('');
+
+        // Google 로그인 버튼 렌더링 - 지연 실행
+        setTimeout(() => {
+          const buttonElement = document.getElementById('google-login-button');
+          if (buttonElement) {
+            console.log('Google 로그인 버튼 렌더링 시작');
+            try {
+              window.google.accounts.id.renderButton(buttonElement, {
+                type: 'standard',
+                theme: 'outline',
+                size: 'large',
+                text: 'signin_with',
+                shape: 'rectangular',
+                logo_alignment: 'left',
+              });
+              console.log('Google 로그인 버튼 렌더링 완료');
+            } catch (renderError) {
+              console.error('Google 로그인 버튼 렌더링 실패:', renderError);
+              // 대안 버튼 표시
+              const fallbackBtn = document.querySelector('.google-login-fallback-btn') as HTMLButtonElement;
+              if (fallbackBtn) {
+                fallbackBtn.style.display = 'block';
+              }
+            }
+          } else {
+            console.error('Google 로그인 버튼 요소를 찾을 수 없습니다');
+            // 대안 버튼 표시
+            const fallbackBtn = document.querySelector('.google-login-fallback-btn') as HTMLButtonElement;
+            if (fallbackBtn) {
+              fallbackBtn.style.display = 'block';
+            }
+          }
+        }, 100);
+
+      } catch (error) {
+        console.error('Google GIS 초기화 실패:', error);
+        setError('Google 로그인 초기화에 실패했습니다.');
+      }
+    };
+
+    // 즉시 초기화 시작
+    initializeGoogleGIS();
+  }, []);
+
+  // Google 로그인 성공 콜백
+  const handleCredentialResponse = async (response: any) => {
     try {
-      setLoading(true);
+      console.log('Google 로그인 성공:', response);
       
-      // 여기서 스프레드시트에 사용자 정보를 추가하는 API 호출
-      // 실제 구현에서는 백엔드 API를 호출해야 합니다
-      const userData: User = {
-        ...tempUser,
-        studentId: userType === 'student' ? studentId : undefined,
-        teacherId: userType === 'teacher' ? teacherId : undefined,
-        role: userType,
-        isApproved: false,
-      } as User;
-
-      // 임시로 로컬 스토리지에 저장 (실제로는 스프레드시트에 저장)
-      localStorage.setItem('pendingUser', JSON.stringify(userData));
+      // JWT 토큰에서 사용자 정보 추출
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      const email = payload.email;
       
-      setStep('pending');
+      console.log('사용자 이메일:', email);
+      setUserEmail(email);
+      setIsLoggedIn(true);
+      setError('');
+      
+      // 승인 상태 확인
+      await checkApprovalStatus(email);
+      
     } catch (error) {
-      console.error("Failed to submit user info:", error);
-      setError("사용자 정보 제출에 실패했습니다.");
-    } finally {
-      setLoading(false);
+      console.error('Google 로그인 처리 실패:', error);
+      setError('Google 로그인 처리 중 오류가 발생했습니다.');
     }
   };
 
-  const renderLoginStep = () => (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <img src="/src/assets/image/potato.png" alt="Hot Potato" className="logo" />
-          <h1>Hot Potato</h1>
-          <p>구글 계정으로 로그인하여 시작하세요</p>
+  // 승인 상태 확인
+  const checkApprovalStatus = async (email: string) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/checkApprovalStatus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email
+        })
+      });
+      
+             const result = await response.json();
+       console.log('백엔드 응답:', result);
+
+       if (result.success) {
+         if (result.isApproved) {
+           // 승인된 사용자 - 바로 메인 화면으로
+           console.log('승인된 사용자 - 메인 화면으로 이동');
+           onLogin({
+             email: email,
+             studentId: result.studentId || '',
+             isAdmin: result.isAdmin || false,
+             isApproved: true
+           });
+         } else {
+           // 승인 대기 중 - 회원가입 화면 유지
+           console.log('승인 대기 중인 사용자');
+         }
+       } else {
+         // 등록되지 않은 사용자 - 회원가입 화면 유지
+         console.log('새로운 사용자');
+       }
+      
+    } catch (error) {
+      console.error('승인 상태 확인 실패:', error);
+      // 오류 시 회원가입 화면 유지
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 관리자 키 인증
+  const handleVerifyAdminKey = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/verifyAdminKey', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminKey: adminKey
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.isValid) {
+        setIsAdminVerified(true);
+        setError('');
+      } else {
+        setError('관리자 키가 일치하지 않습니다.');
+        setIsAdminVerified(false);
+      }
+      
+    } catch (error) {
+      console.error('키 검증 실패:', error);
+      setError('키 검증 중 오류가 발생했습니다.');
+      setIsAdminVerified(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 회원가입 요청
+  const handleSignupRequest = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      const signupData = {
+        googleEmail: userEmail,
+        studentId: studentId,
+        isAdmin: isAdminVerified,
+      };
+      
+      // 여기서 회원가입 요청을 서버로 보냄
+      // 실제 구현에서는 hp_member 스프레드시트에 데이터 추가
+      console.log('회원가입 요청:', signupData);
+      
+      // 임시로 성공 처리
+      onLogin({
+        email: userEmail,
+        studentId: studentId,
+        isAdmin: isAdminVerified,
+        isApproved: false // 관리자 승인 대기 중
+      });
+      
+    } catch (error) {
+      console.error('회원가입 실패:', error);
+      setError('회원가입 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isGoogleLoaded) {
+    return (
+      <div className="login-container">
+        <div className="login-loading">
+          <div className="loading-spinner"></div>
+          <p>Google 로그인 초기화 중...</p>
         </div>
-        <button 
-          className="google-login-btn"
-          onClick={() => login()}
-          disabled={false}
-        >
-          <svg className="google-icon" viewBox="0 0 24 24">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          구글로 로그인
-        </button>
       </div>
-    </div>
-  );
-
-  const renderIdInputStep = () => (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h2>사용자 정보 입력</h2>
-          <p>학번 또는 교번을 입력해주세요</p>
-        </div>
-        
-        <div className="user-type-selector">
-          <label>
-            <input
-              type="radio"
-              name="userType"
-              value="student"
-              checked={userType === 'student'}
-              onChange={(e) => setUserType(e.target.value as 'student' | 'teacher')}
-            />
-            학생
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="userType"
-              value="teacher"
-              checked={userType === 'teacher'}
-              onChange={(e) => setUserType(e.target.value as 'student' | 'teacher')}
-            />
-            교직원
-          </label>
-        </div>
-
-        <div className="input-group">
-          {userType === 'student' ? (
-            <input
-              type="text"
-              placeholder="학번을 입력하세요"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              className="id-input"
-            />
-          ) : (
-            <input
-              type="text"
-              placeholder="교번을 입력하세요"
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
-              className="id-input"
-            />
-          )}
-        </div>
-
-        <div className="button-group">
-          <button 
-            className="back-btn"
-            onClick={() => setStep('login')}
-          >
-            뒤로가기
-          </button>
-          <button 
-            className="submit-btn"
-            onClick={handleIdSubmit}
-            disabled={!studentId && !teacherId}
-          >
-            제출하기
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderPendingStep = () => (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h2>승인 대기 중</h2>
-          <p>관리자 승인을 기다리고 있습니다</p>
-        </div>
-        
-        <div className="pending-info">
-          <div className="info-item">
-            <strong>이름:</strong> {tempUser?.name}
-          </div>
-          <div className="info-item">
-            <strong>이메일:</strong> {tempUser?.email}
-          </div>
-          <div className="info-item">
-            <strong>구분:</strong> {userType === 'student' ? '학생' : '교직원'}
-          </div>
-          <div className="info-item">
-            <strong>번호:</strong> {userType === 'student' ? studentId : teacherId}
-          </div>
-        </div>
-
-        <div className="pending-message">
-          <p>관리자가 승인하면 자동으로 로그인됩니다.</p>
-          <p>승인 상태를 확인하려면 페이지를 새로고침하세요.</p>
-        </div>
-
-        <button 
-          className="refresh-btn"
-          onClick={() => window.location.reload()}
-        >
-          새로고침
-        </button>
-      </div>
-    </div>
-  );
-
-  switch (step) {
-    case 'id-input':
-      return renderIdInputStep();
-    case 'pending':
-      return renderPendingStep();
-    default:
-      return renderLoginStep();
+    );
   }
+
+  return (
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <img src="/src/assets/image/potato.png" alt="Hot Potato" className="login-logo" />
+          <h1>Hot Potato</h1>
+          <p>관리자 승인이 필요한 로그인 시스템</p>
+        </div>
+
+                  {!isLoggedIn ? (
+            <div className="login-section">
+              <h2>Google 계정으로 로그인</h2>
+              <div id="google-login-button" className="google-login-button"></div>
+              {/* 대안 버튼 - GIS 버튼이 로드되지 않을 경우 */}
+              <button
+                type="button"
+                onClick={() => window.google?.accounts?.id?.prompt()}
+                className="google-login-fallback-btn"
+                style={{
+                  display: 'none', // 기본적으로 숨김
+                  background: '#4285f4',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  marginTop: '10px'
+                }}
+              >
+                Google로 로그인 (대안)
+              </button>
+              {error && <div className="error-message">{error}</div>}
+            </div>
+        ) : (
+          <div className="signup-section">
+            <div className="user-info">
+              <h2>회원가입 정보 입력</h2>
+              <p className="user-email">로그인된 계정: {userEmail}</p>
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="studentId">학번 또는 교번</label>
+              <input
+                type="text"
+                id="studentId"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                placeholder="학번 또는 교번을 입력하세요"
+                required
+              />
+            </div>
+
+            <div className="admin-key-section">
+              <button
+                type="button"
+                className="admin-key-toggle"
+                onClick={() => setShowAdminKey(!showAdminKey)}
+              >
+                {showAdminKey ? '▼' : '▶'} 관리자 키 인증 (선택사항)
+              </button>
+              
+              {showAdminKey && (
+                <div className="admin-key-input">
+                  <input
+                    type="password"
+                    value={adminKey}
+                    onChange={(e) => setAdminKey(e.target.value)}
+                    placeholder="관리자 키를 입력하세요"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyAdminKey}
+                    disabled={isLoading || !adminKey}
+                    className="verify-button"
+                  >
+                    {isLoading ? '인증 중...' : '인증하기'}
+                  </button>
+                  {isAdminVerified && (
+                    <div className="success-message">✓ 인증 완료</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSignupRequest}
+              disabled={isLoading || !studentId}
+              className="signup-button"
+            >
+              {isLoading ? '처리 중...' : '가입 요청'}
+            </button>
+
+            {error && <div className="error-message">{error}</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Login;
