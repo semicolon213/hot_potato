@@ -4,12 +4,14 @@ interface Props {
     activeTab: string;
     setActiveTab: (v: string) => void;
     tags: string[];
+    managedTags?: string[];
+    defaultTags?: string[];
     addTag: (newTag: string) => void;
     deleteTag: (tagToDelete: string) => void;
     updateTag: (oldTag: string, newTag: string) => void;
 }
 
-export function CategoryTabs({ activeTab, setActiveTab, tags, addTag, deleteTag, updateTag }: Props) {
+export function CategoryTabs({ activeTab, setActiveTab, tags, managedTags, defaultTags, addTag, deleteTag, updateTag }: Props) {
     const [isAdding, setIsAdding] = useState(false);
     const [newTag, setNewTag] = useState("");
     const [isEditMode, setIsEditMode] = useState(false);
@@ -64,7 +66,7 @@ export function CategoryTabs({ activeTab, setActiveTab, tags, addTag, deleteTag,
                         <>{tab}</>
                     )}
 
-                    {isEditMode && tab !== '전체' && (
+                    {isEditMode && tab !== '전체' && managedTags?.includes(tab) && !defaultTags?.includes(tab) && (
                         <>
                             <button onClick={() => startEditing(tab)} className="edit-tag-button">E</button>
                             <button onClick={() => deleteTag(tab)} className="delete-tag-button">X</button>

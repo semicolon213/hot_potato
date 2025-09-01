@@ -15,6 +15,8 @@ export const defaultTemplates: Template[] = [
     { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
 ];
 
+export const defaultTemplateTags = defaultTemplates.map(t => t.tag);
+
 // 2. 초기 템플릿 데이터 배열
 export const initialTemplates: Template[] = [];
 

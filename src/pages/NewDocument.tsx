@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTemplateUI, defaultTemplates } from "../hooks/useTemplateUI";
+import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/useTemplateUI";
 import type { Template } from "../hooks/useTemplateUI";
 import "../components/TemplateUI/TemplateUI.css";
 
@@ -78,6 +78,8 @@ export default function NewDocument({
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
                 tags={allTags} 
+                managedTags={tags}
+                defaultTags={defaultTemplateTags}
                 addTag={addTag} 
                 deleteTag={deleteTag} 
                 updateTag={updateTag} 
