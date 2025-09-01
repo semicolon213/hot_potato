@@ -68,6 +68,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
             title: item.summary || 'No Title',
             startDate: item.start.date || item.start.dateTime.split('T')[0], // Handle all-day vs. specific time
             endDate: endDate,
+            startDateTime: item.start.dateTime,
+            endDateTime: item.end.dateTime,
             description: item.description || '',
           };
         });

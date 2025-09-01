@@ -10,6 +10,8 @@ export interface Event {
     id: string;
     startDate: string;
     endDate: string;
+    startDateTime?: string; // For timed events
+    endDateTime?: string;   // For timed events
     title: string;
     description?: string;
 }

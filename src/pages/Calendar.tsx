@@ -1,9 +1,9 @@
 import React, { useState } from "react"; // Remove useEffect
-import CalendarProvider from "../components/Calendar/CalendarProvider.tsx";
-import Calendar from "../components/Calendar/Calendar.tsx";
-import useCalendarContext from "../hooks/useCalendarContext.ts";
-import EventDetailModal from "../components/Calendar/EventDetailModal.tsx";
-import AddEventModal from "../components/Calendar/AddEventModal.tsx";
+import CalendarProvider from "../components/Calendar/CalendarProvider";
+import Calendar from "../components/Calendar/Calendar";
+import useCalendarContext from "../hooks/useCalendarContext";
+import EventDetailModal from "../components/Calendar/EventDetailModal";
+import AddEventModal from "../components/Calendar/AddEventModal";
 // Remove Login and GoogleOAuthProvider imports
 import "./Calendar.css";
 

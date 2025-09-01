@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useCalendarContext from '../../hooks/useCalendarContext.ts';
+import useCalendarContext, { type Event } from '../../hooks/useCalendarContext.ts';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar.tsx";
 
@@ -19,6 +19,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
         setSemesterStartDate,
         addEvent,
         triggerRefresh, // 새로고침 함수 가져오기
+        selectedEvent,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -126,11 +127,36 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                                     key={date.date}>
                                     <span className="day-number">{date.day}</span>
                                     <ul className="event-list">
-                                        {dayEvents.map(event => (
-                                            <li key={event.id} className="event-item" onClick={() => setSelectedEvent(event)}>
-                                                {event.title.replace(/^\d{2}\s*/, '')}
-                                            </li>
-                                        ))}
+                                        {dayEvents.map(event => {
+                                            const eventStartDate = new Date(event.startDate);
+                                            const eventEndDate = new Date(event.endDate); // Exclusive
+                                            const currentDate = new Date(date.date);
+
+                                            const isFirstDayOfEvent = eventStartDate.getTime() === currentDate.getTime();
+                                            const actualEventEndDate = new Date(eventEndDate.getTime() - 24 * 60 * 60 * 1000); // Inclusive
+                                            const isLastDayOfEvent = actualEventEndDate.getTime() === currentDate.getTime();
+
+                                            let itemClasses = 'event-item';
+                                            if (!isFirstDayOfEvent) {
+                                                itemClasses += ' continuation-left';
+                                            }
+                                            if (!isLastDayOfEvent) {
+                                                itemClasses += ' continuation-right';
+                                            }
+
+                                            const isEventSelected = selectedEvent && selectedEvent.id === event.id;
+                                            if (isEventSelected) {
+                                                itemClasses += ' selected';
+                                            }
+
+                                            const showTitle = isFirstDayOfEvent || date.dayIndexOfWeek === 0;
+
+                                            return (
+                                                <li key={event.id} className={itemClasses} onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}>
+                                                    {showTitle ? event.title.replace(/^\d{2}\s*/, '') : <span>&nbsp;</span>}
+                                                </li>
+                                            );
+                                        })}
                                     </ul>
                                 </div>
                             );
