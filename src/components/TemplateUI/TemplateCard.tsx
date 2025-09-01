@@ -37,7 +37,7 @@ export function TemplateCard({ template, onUse, onDelete, isFixed }: Props) {
             <div className="new-card-content">
                 <div className={`new-card-tag new-${tagClassName}`}>{template.tag}</div>
                 <h3 className="new-card-title">{template.title}</h3>
-                <p className="new-card-description">{template.description}</p>
+                <p className="new-card-description">{template.parttitle || template.description}</p>
             </div>
             <div className="new-card-footer">
                 <button
