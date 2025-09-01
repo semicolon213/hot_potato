@@ -486,6 +486,10 @@ const App: React.FC = () => {
 
     const fetchInitialData = async () => {
       try {
+        // Set auth states to true since we know the user is signed in
+        setIsGoogleAuthenticatedForAnnouncements(true);
+        setIsGoogleAuthenticatedForBoard(true); // Also do this for the board for consistency
+
         const gapi = (window as any).gapi;
         const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
         const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
@@ -494,6 +498,8 @@ const App: React.FC = () => {
         }
         fetchTemplates();
         fetchTags();
+        fetchAnnouncements(); // Fetch announcements
+        fetchPosts(); // Fetch board posts
       } catch (error) {
         console.error("Error during initial data fetch", error);
       }
