@@ -182,7 +182,13 @@ const App: React.FC = () => {
   const addTag = async (newTag: string) => {
     if (newTag && !tags.includes(newTag)) {
       try {
-        await appendRow(sheetId, 'document_template', { 'tag_name': newTag });
+        // Explicitly set other columns to empty strings to avoid 'FALSE'
+        const newRow = {
+          'template_title': '',
+          'tamplateparttitle': '', // Typo as per user's message
+          'tag_name': newTag
+        };
+        await appendRow(sheetId, 'document_template', newRow);
         setTags([...tags, newTag]);
         alert('새로운 태그가 추가되었습니다.');
       } catch (error) {
@@ -334,21 +340,28 @@ const App: React.FC = () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
           spreadsheetId: sheetId,
-          range: 'document_template!B2:D',
+          range: 'document_template!B2:E', // Range is OK, covers B, C, D, E
       });
 
       const data = response.result.values;
       if (data && data.length > 0) {
-        const parsedTemplates: Template[] = data.map((row: string[], i: number) => ({
-          rowIndex: i + 2, // Row index in the sheet (since range starts from B2)
-          title: row[0],
-          description: row[1],
-          tag: row[2],
-          type: row[0],
+        const allTemplates: Template[] = data.map((row: string[], i: number) => ({
+          rowIndex: i + 2,
+          title: row[0] || '',       // Column B -> title
+          description: '',           // No source for description, set to empty
+          parttitle: row[1] || '',   // Column C -> parttitle
+          tag: row[2] || '',         // Column D -> tag
+          type: row[0] || '',
         }));
-        setCustomTemplates(parsedTemplates);
+
+        const filteredTemplates = allTemplates.filter(template => {
+          // Filter based on title (B), parttitle (C), and tag (D)
+          return template.title && template.parttitle && template.tag;
+        });
+
+        setCustomTemplates(filteredTemplates);
       } else {
-        setCustomTemplates([]); // If no templates are on the sheet, clear the state
+        setCustomTemplates([]);
       }
     } catch (error) {
       console.error('Error fetching templates from Google Sheet:', error);
@@ -357,21 +370,14 @@ const App: React.FC = () => {
 
   const fetchTags = async () => {
     try {
-      const [tagsResponseD, tagsResponseE] = await Promise.all([
-        (window as any).gapi.client.sheets.spreadsheets.values.get({
+      // Fetch tags ONLY from the 'tag_name' column (Column E)
+      const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
           spreadsheetId: sheetId,
-          range: `document_template!D2:D`,
-        }),
-        (window as any).gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: `document_template!E2:E`,
-        }),
-      ]);
+          range: `document_template!E2:E`, // Corrected to Column E
+      });
 
-      const tagsD = tagsResponseD.result.values?.flat() || [];
-      const tagsE = tagsResponseE.result.values?.flat() || [];
-      
-      const uniqueTags = [...new Set(allTags)];
+      const tagColumnValues = response.result.values?.flat().filter(Boolean) || [];
+      const uniqueTags = [...new Set(tagColumnValues)];
 
       setTags(uniqueTags);
 

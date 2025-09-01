@@ -7,6 +7,7 @@ export interface Template {
     title: string;         // 템플릿 제목
     description: string;   // 템플릿 설명
     tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
+    parttitle?: string;    // For filtering
 }
 
 export const defaultTemplates: Template[] = [
