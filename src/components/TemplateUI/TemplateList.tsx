@@ -5,11 +5,12 @@ interface Props {
     templates: Template[];
     onUseTemplate: (type: string, title: string) => void;
     onDeleteTemplate: (rowIndex: number) => void;
+    defaultTags: string[];
 }
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);
 
-export function TemplateList({ templates, onUseTemplate, onDeleteTemplate }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, defaultTags }: Props) {
     return (
         <div className="new-templates-container">
             {templates.map((template, idx) => {
@@ -21,6 +22,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate }: Pro
                         onUse={onUseTemplate}
                         onDelete={onDeleteTemplate}
                         isFixed={isFixed}
+                        defaultTags={defaultTags}
                     />
                 )
             })}

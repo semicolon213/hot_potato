@@ -151,6 +151,7 @@ export default function NewDocument({
                                     onUse={onUseTemplate}
                                     onDelete={() => {}} // No delete for default templates
                                     isFixed={true}
+                                    defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                 />
                             ))}
                         </div>
@@ -182,6 +183,7 @@ export default function NewDocument({
                                 templates={filteredCustomTemplates}
                                 onUseTemplate={onUseTemplate}
                                 onDeleteTemplate={deleteTemplate}
+                                defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                             />
                         </div>
                     </div>

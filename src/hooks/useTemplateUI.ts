@@ -19,7 +19,7 @@ export const defaultTemplates: Template[] = [
     { type: "fee_deposit_list", title: "학회비 입금자 명단", description: "학회비 입금자 명단 확인용 템플릿", tag: "재정" },
 ];
 
-export const defaultTemplateTags = defaultTemplates.map(t => t.tag);
+export const defaultTemplateTags = [...new Set(defaultTemplates.map(t => t.tag))];
 
 // 2. 초기 템플릿 데이터 배열
 export const initialTemplates: Template[] = [];

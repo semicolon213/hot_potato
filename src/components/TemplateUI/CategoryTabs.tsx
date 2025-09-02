@@ -25,11 +25,23 @@ export function CategoryTabs({ activeTab, setActiveTab, tags, managedTags, defau
     }, [isEditMode]);
 
     const handleAddTag = () => {
-        if (newTag.trim() !== "") {
-            addTag(newTag.trim());
-            setNewTag("");
+        const trimmedTag = newTag.trim();
+        if (trimmedTag === "") return;
+
+        if (managedTags && managedTags.length >= 10) {
+            alert("최대 10개의 태그만 추가할 수 있습니다.");
             setIsAdding(false);
+            return;
         }
+
+        if (trimmedTag.length > 8) {
+            alert("태그 이름은 최대 8글자까지 가능합니다.");
+            return;
+        }
+
+        addTag(trimmedTag);
+        setNewTag("");
+        setIsAdding(false);
     };
 
     const handleUpdateTag = () => {
@@ -76,22 +88,32 @@ export function CategoryTabs({ activeTab, setActiveTab, tags, managedTags, defau
             ))}
             
             {!isEditMode && (
-                isAdding ? (
-                    <div className="new-tag-input-container">
-                        <input
-                            type="text"
-                            value={newTag}
-                            onChange={(e) => setNewTag(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                            className="new-tag-input"
-                            autoFocus
-                        />
-                        <button onClick={handleAddTag} className="new-tag-button">추가</button>
-                        <button onClick={() => setIsAdding(false)} className="new-tag-button cancel">취소</button>
-                    </div>
+                managedTags && managedTags.length < 10 ? (
+                    isAdding ? (
+                        <div className="new-tag-input-container">
+                            <input
+                                type="text"
+                                value={newTag}
+                                onChange={(e) => {
+                                    if (e.target.value.length <= 8) {
+                                        setNewTag(e.target.value);
+                                    }
+                                }}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                                className="new-tag-input"
+                                autoFocus
+                            />
+                            <button onClick={handleAddTag} className="new-tag-button">추가</button>
+                            <button onClick={() => setIsAdding(false)} className="new-tag-button cancel">취소</button>
+                        </div>
+                    ) : (
+                        <div className="new-tab add-tag-button" onClick={() => setIsAdding(true)}>
+                            + 새 태그
+                        </div>
+                    )
                 ) : (
-                    <div className="new-tab add-tag-button" onClick={() => setIsAdding(true)}>
-                        + 새 태그
+                    <div className="new-tab add-tag-button disabled" title="최대 10개의 태그만 추가할 수 있습니다.">
+                        최대 태그 수 도달
                     </div>
                 )
             )}

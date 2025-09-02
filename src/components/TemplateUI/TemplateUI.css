@@ -97,21 +97,14 @@ background-color: #f1f2f4;
 /* 무선 탭 스타일 */
 .new-tabs-container {
 display: flex;
+flex-wrap: wrap; /* Allow tags to wrap to the next line */
 margin-bottom: 20px;
 padding-bottom: 8px;
 padding-left: 20px;
 position: relative;
 }
 
-.new-tabs-container::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 20px;
-    right: 0;
-    height: 1px;
-    background-color: #e5e7eb;
-}
+
 
 .new-tab {
 position: relative;
@@ -128,16 +121,7 @@ font-weight: bold;
 color: #212529;
 }
 
-.new-tab.new-active::after {
-content: "";
-position: absolute;
-bottom: -9px;
-left: 0;
-width: 30px;
-height: 3px;
-background-color: var(--primary);
-border-radius: 1.5px;
-}
+
 
 .new-tab:hover:not(.new-active) {
 color: #4b5563;
@@ -192,6 +176,11 @@ margin-left: 0;
     color: #0ca678;
 }
 
+.new-card-tag.new-certification {
+    background-color: #FFFBEB; /* Light Yellow Background */
+    color: #F59E0B; /* Darker Yellow/Amber Text */
+}
+
 .new-card-tag.new-event {
     background-color: #fff4e5;
     color: #f59f00;
@@ -206,6 +195,18 @@ margin-left: 0;
     background-color: #f1f3f5;
     color: #495057;
 }
+
+.new-card-tag.new-custom-color-0 { background-color: #FEE2E2; color: #DC2626; } /* Vibrant Red */
+.new-card-tag.new-custom-color-1 { background-color: #FFEDD5; color: #F97316; } /* Bright Orange */
+.new-card-tag.new-custom-color-2 { background-color: #FFFBEB; color: #F59E0B; } /* Sunny Yellow */
+.new-card-tag.new-custom-color-3 { background-color: #ECFDF5; color: #10B981; } /* Lime Green */
+.new-card-tag.new-custom-color-4 { background-color: #E0F7FA; color: #06B6D4; } /* Aqua Blue */
+.new-card-tag.new-custom-color-5 { background-color: #DBEAFE; color: #3B82F6; } /* Royal Blue */
+.new-card-tag.new-custom-color-6 { background-color: #EDE9FE; color: #7C3AED; } /* Deep Purple */
+.new-card-tag.new-custom-color-7 { background-color: #FCE7F3; color: #EC4899; } /* Magenta */
+.new-card-tag.new-custom-color-8 { background-color: #D1FAE5; color: #912a61; } /* Dark Teal */
+.new-card-tag.new-custom-color-9 { background-color: #E5E7EB; color: #4B5563; } /* Gray */
+
 
 .new-card-title {
     font-size: 17px;
@@ -289,6 +290,12 @@ margin-left: 0;
 .add-tag-button {
     color: #007bff;
     cursor: pointer;
+}
+
+.add-tag-button.disabled {
+    color: #999; /* Gray out the text */
+    cursor: not-allowed; /* Indicate it's not clickable */
+    opacity: 0.6; /* Slightly fade it */
 }
 
 .new-tag-input-container {

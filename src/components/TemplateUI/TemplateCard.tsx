@@ -1,22 +1,41 @@
 import type { Template } from "../../hooks/useTemplateUI";
 
-
 interface Props {
     template: Template;
     onUse: (type: string, title: string) => void;
     onDelete: (rowIndex: number) => void;
     isFixed: boolean;
+    defaultTags: string[]; // Add this prop
 }
 
 const tagToClassMap: { [key: string]: string } = {
     "회의": "meeting",
     "재정": "finance",
+    "증명": "certification",
     "행사": "event",
     "보고서": "report",
 };
 
-export function TemplateCard({ template, onUse, onDelete, isFixed }: Props) {
-    const tagClassName = tagToClassMap[template.tag] || 'default';
+function getCustomTagColorClass(tagName: string): string {
+    let hash = 0;
+    for (let i = 0; i < tagName.length; i++) {
+        const char = tagName.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char; // hash * 31 + char
+        hash |= 0; // Convert to 32bit integer
+    }
+    const index = Math.abs(hash % 10);
+    return `custom-color-${index}`;
+}
+
+export function TemplateCard({ template, onUse, onDelete, isFixed, defaultTags }: Props) {
+    console.log("TemplateCard rendering for tag:", template.tag);
+    console.log("Default Tags received:", defaultTags);
+    const isDefaultTag = defaultTags.includes(template.tag);
+    console.log("Is Default Tag?", isDefaultTag);
+    const tagClassName = isDefaultTag
+        ? tagToClassMap[template.tag] || 'default'
+        : getCustomTagColorClass(template.tag);
+    console.log("Final tagClassName:", tagClassName);
 
     const handleDelete = () => {
         if (template.rowIndex) {
