@@ -146,7 +146,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
     return googleEvents
       .map(event => ({
         ...event,
-        color: (eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#3174ad'),
+        color: (eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB'),
       }))
       .filter(event => {
         const title = event.title || '';
