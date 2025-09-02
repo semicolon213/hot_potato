@@ -8,7 +8,9 @@
   padding: 0 20px;
   background-color: var(--secondary);
   border-bottom: 1px solid #e0e0e0;
-  margin-left: 200px; /* 사이드바 너비만큼 왼쪽 마진 */
+  margin: 0;
+  border-top-left-radius: var(--border-radius-lg);
+  border-top-right-radius: var(--border-radius-lg);
 }
 
 /* 새 문서 버튼 스타일 */
