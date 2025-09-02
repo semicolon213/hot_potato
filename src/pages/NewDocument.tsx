@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/useTemplateUI";
 import type { Template } from "../hooks/useTemplateUI";
 import "../components/TemplateUI/TemplateUI.css";
@@ -105,10 +105,16 @@ export default function NewDocument({
     const { 
         filteredTemplates: filteredCustomTemplates, 
         onUseTemplate 
-    } = useTemplateUI(customTemplates, onPageChange, searchTerm, activeTab);
+    } = useTemplateUI(customTemplates, onPageChange, searchTerm, activeTab, filterOption);
 
-    // Combine all unique tags for the CategoryTabs
-    const allTags = [...new Set([...tags, ...defaultTemplates.map(t => t.tag)])];
+    // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
+    const orderedTags = useMemo(() => {
+        // Create a unique array of default tags, preserving their first-seen order.
+        const uniqueDefaultTags = [...new Set(defaultTemplateTags)];
+        const defaultTagSet = new Set(uniqueDefaultTags);
+        const customTags = tags.filter(tag => !defaultTagSet.has(tag));
+        return [...uniqueDefaultTags, ...customTags];
+    }, [tags, defaultTemplateTags]);
 
     return (
         <div>
@@ -123,7 +129,7 @@ export default function NewDocument({
             <CategoryTabs 
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
-                tags={allTags} 
+                tags={orderedTags} 
                 managedTags={tags}
                 defaultTags={defaultTemplateTags}
                 addTag={addTag} 
@@ -226,7 +232,7 @@ export default function NewDocument({
                                     onChange={(e) => handleInputChange("tag", e.target.value)}
                                 >
                                     <option value="" disabled>태그를 선택하세요</option>
-                                    {tags.map(tag => (
+                                    {orderedTags.map(tag => (
                                         <option key={tag} value={tag}>{tag}</option>
                                     ))}
                                 </select>

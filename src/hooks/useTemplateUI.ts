@@ -29,10 +29,10 @@ export function useTemplateUI(
     templates: Template[], 
     onPageChange: (pageName: string) => void,
     searchTerm: string,
-    activeTab: string
+    activeTab: string,
+    filterOption: string // filterOption을 인자로 받습니다.
 ) {
-    // 필터 옵션 상태 ("자주 사용", "최신순", "이름순" 등)
-    const [filterOption, setFilterOption] = useState("자주 사용");
+    
 
     // 필터링 및 정렬된 템플릿 목록을 계산 (searchTerm, filterOption, activeTab이 바뀔 때마다 재계산)
     const filteredTemplates = useMemo(() => {
@@ -80,8 +80,6 @@ export function useTemplateUI(
 
     // 훅에서 관리하는 상태, 함수들을 객체로 반환
     return {
-        filterOption,      // 필터 옵션
-        setFilterOption,   // 필터 옵션 변경 함수
         filteredTemplates, // 필터링/정렬된 템플릿 목록
         onUseTemplate,     // 템플릿 사용 함수
     };
