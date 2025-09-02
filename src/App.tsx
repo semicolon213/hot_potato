@@ -4,7 +4,7 @@ import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
 import { GoogleOAuthProvider } from '@react-oauth/google'; // Import GoogleOAuthProvider
 
-import Calendar from "./pages/Calendar";
+import MyCalendarPage from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
 import Docbox from "./pages/Docbox";
 import DocumentManagement from "./pages/DocumentManagement";
@@ -70,7 +70,7 @@ const App: React.FC = () => {
         );
 
       case "calendar":
-        return <Calendar data-oid="uz.ewbm" accessToken={googleAccessToken} />; // Pass accessToken to Calendar
+        return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />; // Pass accessToken to Calendar
       case "preferences":
         return (
           <Preferences onPageChange={handlePageChange} data-oid="1db782u" />

@@ -25,7 +25,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
     },
     onError: () => console.log('Login Failed'),
-    scope: 'https://www.googleapis.com/auth/calendar.events profile email', // Keep these scopes
+    scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly profile email', // Keep these scopes
   });
 
   return (

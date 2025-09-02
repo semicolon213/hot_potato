@@ -120,7 +120,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             {showTime ? '시간 제거' : '시간 추가'}
           </button>
           <button className="submit-button" onClick={handleSubmit}>
-            {isEditMode ? '수정' : '일정 추가'}
+            {isEditMode ? '수정' : '+일정 추가'}
           </button>
           <button className="cancel-button" onClick={onClose}>취소</button>
         </div>

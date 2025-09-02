@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import useCalendarContext, { type Event } from '../../hooks/useCalendarContext.ts';
+import React, { useState, useRef } from 'react';
+import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
 import './Calendar.css';
-import WeeklyCalendar from "./WeeklyCalendar.tsx";
+import WeeklyCalendar from "./WeeklyCalendar";
+import MoreEventsModal from './MoreEventsModal';
+
 
 interface CalendarProps {
     onAddEvent: () => void;
+    onSelectEvent: (event: Event, position: { top: number; left: number }) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
     const {
         dispatch,
         currentDate,
@@ -25,6 +28,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
     const [viewMode, setViewMode] = useState('monthly'); // 기본 뷰를 '월간'으로 변경
     const [selectedWeek, setSelectedWeek] = useState(1);
+    const [moreEventsModal, setMoreEventsModal] = useState<{
+        isOpen: boolean;
+        events: Event[];
+        position: { top: number; left: number };
+    }>({ isOpen: false, events: [], position: { top: 0, left: 0 } });
+
+    const moreButtonRef = useRef<HTMLButtonElement>(null);
 
     // input에서만 관리할 임시 날짜 상태
     const [tempStartDate, setTempStartDate] = useState(
@@ -49,6 +59,37 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
             triggerRefresh(); // 확정 버튼 클릭 시 캘린더 새로고침 실행
             setViewMode('weekly'); // 주간 뷰로 전환
         }
+    };
+
+    const handleMoreClick = (dayEvents: Event[], e: React.MouseEvent<HTMLButtonElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+
+        const modalWidth = 250; // As defined in MoreEventsModal.css
+        const modalHeight = 200; // Approximate height
+
+        const { innerWidth, innerHeight } = window;
+
+        let { top, left } = rect;
+
+        if (left + modalWidth > innerWidth) {
+            left = innerWidth - modalWidth - 20; // Adjust with some padding
+        }
+
+        if (top + modalHeight > innerHeight) {
+            top = innerHeight - modalHeight - 60; // Adjust with some padding
+        }
+
+        setMoreEventsModal({
+            isOpen: true,
+            events: dayEvents,
+            position: { top, left },
+        });
+    };
+
+    const handleEventClick = (event: Event, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        onSelectEvent(event, { top: rect.top, left: rect.left });
     };
 
     return (
@@ -83,7 +124,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                         <span className="month-display">{currentDate.month}월</span>
                         {viewMode === 'monthly' && <button className="arrow-button" onClick={dispatch.handleNextMonth}>&#8250;</button>}
                     </div>
-                    <button onClick={onAddEvent} className="add-event-button" style={{ marginLeft: 'auto' }}>일정추가</button>
+                    <button onClick={onAddEvent} className="add-event-button" style={{ marginLeft: 'auto' }}>+일정추가</button>
                 </div>
                 {viewMode === 'weekly' && (
                     <div className="week-navigation">
@@ -127,7 +168,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                                     key={date.date}>
                                     <span className="day-number">{date.day}</span>
                                     <ul className="event-list">
-                                        {dayEvents.map(event => {
+                                        {dayEvents.slice(0, 2).map(event => {
                                             const eventStartDate = new Date(event.startDate);
                                             const eventEndDate = new Date(event.endDate); // Exclusive
                                             const currentDate = new Date(date.date);
@@ -152,11 +193,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                                             const showTitle = isFirstDayOfEvent || date.dayIndexOfWeek === 0;
 
                                             return (
-                                                <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}>
+                                                <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
                                                     {event.title.replace(/^\d{2}\s*/, '')}
                                                 </li>
                                             );
                                         })}
+                                        {dayEvents.length > 2 && (
+                                            <button ref={moreButtonRef} className="more-button" onClick={(e) => handleMoreClick(dayEvents, e)}>
+                                                {dayEvents.length - 2}개 더보기
+                                            </button>
+                                        )}
                                     </ul>
                                 </div>
                             );
@@ -165,6 +211,17 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                 </div>
             ) : (
                 <WeeklyCalendar selectedWeek={selectedWeek} />
+            )}
+            {moreEventsModal.isOpen && (
+                <MoreEventsModal
+                    events={moreEventsModal.events}
+                    onClose={() => setMoreEventsModal({ ...moreEventsModal, isOpen: false })}
+                    position={moreEventsModal.position}
+                    onSelectEvent={(event) => {
+                        onSelectEvent(event, moreEventsModal.position);
+                        setMoreEventsModal({ ...moreEventsModal, isOpen: false });
+                    }}
+                />
             )}
         </>
     );

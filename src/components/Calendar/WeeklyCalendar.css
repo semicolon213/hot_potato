@@ -20,7 +20,7 @@
 .day-header {
     flex: 1;
     text-align: center;
-    padding: 10px 0;
+    padding: 8px 0;
     border-left: 1px solid #e0e0e0;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .day-number {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
     display: block;
 }
@@ -51,7 +51,7 @@
 .all-day-column {
     flex: 1;
     border-left: 1px solid #e0e0e0;
-    min-height: 34px; /* Allows for at least one event to be visible */
+    min-height: 30px;
     padding-top: 4px;
 }
 
@@ -65,7 +65,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    height: 24px;
+    height: 20px;
     display: flex;
     align-items: center;
 }
@@ -92,7 +92,7 @@
 
 .weekly-body {
     display: flex;
-    height: 1200px; /* 24 hours * 50px/hour */
+    height: 1000px;
 }
 
 .time-column {
@@ -124,13 +124,13 @@
 }
 
 .time-grid-line {
-    height: 50px; /* Corresponds to 1 hour */
+    height: 41.66px;
     border-bottom: 1px solid #f0f0f0;
 }
 
 .timed-event-item {
     position: absolute;
-    left: 4px;
+    left: 4
     right: 4px;
     color: #000;
     border: 1px solid #1967d2;
