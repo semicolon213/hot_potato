@@ -11,9 +11,13 @@ import {
 
 interface SidebarProps {
   onPageChange: (pageName: string) => void;
+  user?: {
+    isAdmin: boolean;
+  };
+  currentPage?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const handleMenuClick = (pageName: string, hasSubmenu: boolean = false) => {
@@ -30,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
       <div className="sidebar-header">
         <a
           href="#"
-          onClick={() => onPageChange("ddd")}
+          onClick={() => onPageChange("dashboard")}
           style={{ textDecoration: "none" }}
         >
           <div className="logo-container">
@@ -50,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
         <div className="menu-section-title">메인 메뉴</div>
         <div className="menu-container">
           <div
-            className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""}`}
+            className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""} ${currentPage === 'board' ? 'active' : ''}`}
             onClick={() => handleMenuClick("board", true)}
           >
             <img src={listIcon} alt="List Icon" className="icon" />
@@ -156,6 +160,22 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
           </div>
         </div>
       </div>
+
+      {/* 관리자 메뉴 */}
+      {user?.isAdmin && (
+        <div className="menu-section">
+          <div className="menu-section-title">관리자</div>
+          <div className="menu-container">
+            <div
+              className={`menu-item ${currentPage === 'admin' ? 'active' : ''}`}
+              onClick={() => handleMenuClick("admin")}
+            >
+              <img src={usersIcon} alt="Admin Icon" className="icon" />
+              <div className="menu-text">관리자 패널</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="menu-section">
         <div className="menu-section-title">설정</div>

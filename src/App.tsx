@@ -4,6 +4,8 @@ import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { gapiInit, appendRow } from 'papyrus-db';
+import Login from './components/Login';
+import AdminPanel from './components/AdminPanel';
 
 import MyCalendarPage from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
@@ -18,7 +20,7 @@ import NewBoardPost from "./pages/Board/NewBoardPost";
 import AnnouncementsPage from "./pages/Announcements/Announcements";
 import NewAnnouncementPost from "./pages/Announcements/NewAnnouncementPost";
 import Proceedings from "./pages/proceedings";
-import { initialTemplates } from "./hooks/useTemplateUI";
+
 import type { Template } from "./hooks/useTemplateUI";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -34,11 +36,40 @@ export interface Post {
   contentPreview: string;
 }
 
+// User interface from feature/login
+interface User {
+  email: string;
+  name: string;
+  studentId: string;
+  isAdmin: boolean;
+  isApproved: boolean;
+}
+
+type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings';
+
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<string>("dashboard");
+  // User authentication state (from feature/login)
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Original app state (from develop)
+  const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+
+  // State for Board
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
+
+  // State for Announcements
+  const [announcements, setAnnouncements] = useState<Post[]>([]);
+  const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
+  const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
+
+  const sheetId = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
+  const boardSheetName = 'free_board';
+  const announcementSheetName = 'notice';
 
   const deleteTag = (tagToDelete: string) => {
     if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
@@ -197,19 +228,6 @@ const App: React.FC = () => {
       }
     }
   };
-
-  // State for Board
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
-
-  // State for Announcements
-  const [announcements, setAnnouncements] = useState<Post[]>([]);
-  const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
-  const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
-
-  const sheetId = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
-  const boardSheetName = 'free_board';
-  const announcementSheetName = 'notice';
 
   const addTemplate = async (newDocData: { title: string; description: string; tag: string; }) => {
     try {
@@ -377,7 +395,7 @@ const App: React.FC = () => {
       });
 
       const tagColumnValues = response.result.values?.flat().filter(Boolean) || [];
-      const uniqueTags = [...new Set(tagColumnValues)];
+      const uniqueTags = [...new Set(tagColumnValues as string[])];
 
       setTags(uniqueTags);
 
@@ -468,11 +486,13 @@ const App: React.FC = () => {
     }
   };
 
+  // 로그인 상태 확인 (from feature/login)
   useEffect(() => {
-    const storedAccessToken = localStorage.getItem('googleAccessToken');
-    if (storedAccessToken) {
-      setGoogleAccessToken(storedAccessToken);
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
     }
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -484,17 +504,18 @@ const App: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const page = urlParams.get("page");
     if (page) {
-      setCurrentPage(page);
+      setCurrentPage(page as PageType);
     }
 
     const savedTheme = localStorage.getItem("selectedTheme") || "default";
     document.body.classList.add(`theme-${savedTheme}`);
 
+    // Google Sheets 데이터는 로그인된 사용자만 가져오도록 수정
     const fetchInitialData = async () => {
       try {
         // Set auth states to true since we know the user is signed in
         setIsGoogleAuthenticatedForAnnouncements(true);
-        setIsGoogleAuthenticatedForBoard(true); // Also do this for the board for consistency
+        setIsGoogleAuthenticatedForBoard(true);
 
         const gapi = (window as any).gapi;
         const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
@@ -504,8 +525,8 @@ const App: React.FC = () => {
         }
         fetchTemplates();
         fetchTags();
-        fetchAnnouncements(); // Fetch announcements
-        fetchPosts(); // Fetch board posts
+        fetchAnnouncements();
+        fetchPosts();
       } catch (error) {
         console.error("Error during initial data fetch", error);
       }
@@ -522,40 +543,72 @@ const App: React.FC = () => {
         console.error("Error during initial gapi load", error);
       }
     }
+    
+    // 로그인된 사용자가 있을 때만 Google Sheets 데이터 로드
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      initAndFetch();
+    }
+  }, []);
+
+  // 로그인 처리 (from feature/login)
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // 로그인 성공 후 Google Sheets 데이터 로드
+    const initAndFetch = async () => {
+      try {
+        await gapiInit(GOOGLE_CLIENT_ID);
+        const authInstance = (window as any).gapi.auth2.getAuthInstance();
+        if (authInstance.isSignedIn.get()) {
+          const fetchInitialData = async () => {
+            try {
+              setIsGoogleAuthenticatedForAnnouncements(true);
+              setIsGoogleAuthenticatedForBoard(true);
+
+              const gapi = (window as any).gapi;
+              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
+              const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
+              if (docSheet && docSheet.properties) {
+                setDocumentTemplateSheetId(docSheet.properties.sheetId);
+              }
+              fetchTemplates();
+              fetchTags();
+              fetchAnnouncements();
+              fetchPosts();
+            } catch (error) {
+              console.error("Error during initial data fetch", error);
+            }
+          };
+          fetchInitialData();
+        }
+      } catch (error) {
+        console.error("Error during initial gapi load", error);
+      }
+    }
     initAndFetch();
-  }, []);
-
-  useEffect(() => {
-    const storedAccessToken = localStorage.getItem('googleAccessToken');
-    if (storedAccessToken) {
-      setGoogleAccessToken(storedAccessToken);
-    }
-  }, []);
-
-  const handleGoogleLoginSuccess = (profile: any, token: string) => {
-    console.log("Google Login Success (App.tsx):", profile);
-    setGoogleAccessToken(token);
-    localStorage.setItem('googleAccessToken', token);
-    fetchInitialData(); // Fetch all data on login
   };
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const page = urlParams.get("page");
-    if (page) {
-      setCurrentPage(page);
+  // 로그아웃 처리 (from feature/login)
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('google_token');
+    localStorage.removeItem('googleAccessToken');
+    // Google 로그아웃
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.disableAutoSelect();
     }
+  };
 
-    const savedTheme = localStorage.getItem("selectedTheme") || "default";
-    document.body.classList.add(`theme-${savedTheme}`);
-  }, []);
-
+  // 페이지 전환 처리
   const handlePageChange = (pageName: string) => {
-    setCurrentPage(pageName);
-    history.pushState({ page: pageName }, pageName, `?page=${pageName}`);
+    setCurrentPage(pageName as PageType);
   };
 
-  const renderPageContent = () => {
+  // 현재 페이지에 따른 컴포넌트 렌더링 (develop의 모든 페이지 유지)
+  const renderCurrentPage = () => {
     switch (currentPage) {
       case "board":
         return <Board
@@ -575,7 +628,6 @@ const App: React.FC = () => {
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} />;
-      // other cases
       case "document_management":
         return (
           <DocumentManagement
@@ -583,42 +635,79 @@ const App: React.FC = () => {
             data-oid="i8mtyop"
           />
         );
-
       case "docbox":
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
           <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
         );
-
       case "calendar":
-
-        return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />; // Pass accessToken to Calendar
+        return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />;
       case "preferences":
         return (
           <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
         );
-
       case "mypage":
         return <Mypage data-oid="d01oi2r" />;
       case "empty_document":
         return <EmptyDocument data-oid="n.rsz_n" />;
       case "proceedings":
         return <Proceedings />;
-      case "dashboard":
+      case 'dashboard':
+        return <Dashboard />;
+      case 'admin':
+        return <AdminPanel />;
+      case 'documents':
+        return <div>문서 페이지 (구현 예정)</div>;
+      case 'users':
+        return <div>사용자 관리 페이지 (구현 예정)</div>;
+      case 'settings':
+        return <div>설정 페이지 (구현 예정)</div>;
       default:
-        return <Dashboard data-oid="4au2z.y" />;
+        return <Dashboard />;
     }
   };
 
+  // 로딩 중
+  if (isLoading) {
+    return <div className="loading">로딩 중...</div>;
+  }
+
+  // 로그인하지 않은 사용자 (feature/login 방식)
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  // 승인되지 않은 사용자 (feature/login 방식)
+  if (!user.isApproved) {
+    return (
+      <div className="pending-approval">
+        <div className="pending-card">
+          <h2>승인 대기 중</h2>
+          <p>관리자 승인을 기다리고 있습니다.</p>
+          <div className="user-info">
+            <p><strong>이름:</strong> {user.name}</p>
+            <p><strong>이메일:</strong> {user.email}</p>
+            <p><strong>학번/교번:</strong> {user.studentId}</p>
+            <p><strong>구분:</strong> {user.isAdmin ? '관리자 요청' : '일반 사용자'}</p>
+          </div>
+          <button onClick={handleLogout} className="logout-btn">
+            로그아웃
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 승인된 사용자 - develop의 레이아웃과 디자인 유지
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <div className="app-container" data-oid="g1w-gjq">
-        <Sidebar onPageChange={handlePageChange} data-oid="7q1u3ax" />
+        <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header onPageChange={handlePageChange} />
+          <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
-            {renderPageContent()}
+            {renderCurrentPage()}
           </div>
         </div>
       </div>

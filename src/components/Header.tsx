@@ -8,7 +8,8 @@ import {
   calendarIcon,
   messageIcon as chatIcon,
 } from "../assets/Icons";
-import { gapiInit } from 'papyrus-db';
+
+import { useAuthStore } from "../hooks/useAuthStore";
 
 // Define the structure of the user profile object
 interface UserProfile {
@@ -17,24 +18,17 @@ interface UserProfile {
   email: string;
 }
 
-const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // .env에서 불러오기
-
-async function handleGoogleAuth() {
-  try {
-    await gapiInit(clientId);
-    // 인증 성공 후, 구글 시트/드라이브 API 사용 가능
-    alert('구글 인증 성공!');
-  } catch (e) {
-    alert('구글 인증 실패: ' + (e as Error).message);
-
-  }
-
-}
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
+  userInfo?: {
+    name: string;
+    email: string;
+    isAdmin: boolean;
+  };
+  onLogout?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new prop
+const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -49,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
   ]);
   const [chatInput, setChatInput] = useState("");
 
-  
+  const { user: authUser, logout } = useAuthStore();
 
   // Check for logged-in user on component mount
   useEffect(() => {
@@ -60,11 +54,12 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("userProfile");
-    localStorage.removeItem("googleAccessToken"); // Clear Google access token
-    setUserProfile(null);
+    if (onLogout) {
+      onLogout();
+    } else {
+      logout();
+    }
   };
-
 
   const handleNotificationClick = () => {
     setIsNotificationPanelPanelOpen(!isNotificationPanelOpen);
@@ -100,8 +95,6 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
     }, 1000);
   };
 
-  
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -119,6 +112,9 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
       document.removeEventListener("click", handleClickOutside);
     };
   }, [isNotificationPanelOpen]);
+
+  // Determine which user info to display
+  const displayUser = userInfo || authUser || userProfile;
 
   return (
       <div className="header" data-oid="klo-qi-">
@@ -266,7 +262,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
             )}
           </div>
 
-          {userProfile ? (
+          {displayUser ? (
               <>
                 <div
                     className="user-profile"
@@ -275,13 +271,13 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
                 >
                   <div className="avatar-container" data-oid="4ks-vou">
                     <img
-                        src={userProfile.picture}
+                        src={(displayUser as any).picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayUser.name)}&background=random`}
                         alt="User profile"
                         style={{ borderRadius: '50%', width: '28px', height: '28px' }}
-                    />
-                  </div>
-                  <div className="user-name" data-oid="xz4ud-l">
-                    {userProfile.name}
+                      />
+                    </div>
+                    <div className="user-name" data-oid="xz4ud-l">
+                      {displayUser.name}
                   </div>
                 </div>
                 <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
@@ -289,8 +285,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new
                 </button>
               </>
           ) : (
-              <button onClick={handleGoogleAuth}>Google 로그인</button>
-              //<Login onLoginSuccess={handleLoginSuccess} />
+              <button onClick={() => onPageChange("login")}>Google 로그인</button>
           )}
         </div>
         
