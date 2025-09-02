@@ -32,11 +32,9 @@ async function handleGoogleAuth() {
 }
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
-  addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
-  tags: string[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate, tags }) => { // Destructure new prop
+const Header: React.FC<HeaderProps> = ({ onPageChange }) => { // Destructure new prop
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -51,13 +49,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate, tags }) => {
   ]);
   const [chatInput, setChatInput] = useState("");
 
-  // + 새 문서 모달 상태 추가 (3개 필드)
-  const [showNewDocModal, setShowNewDocModal] = useState(false);
-  const [newDocData, setNewDocData] = useState({
-    title: "",
-    description: "",
-    tag: ""
-  });
+  
 
   // Check for logged-in user on component mount
   useEffect(() => {
@@ -108,41 +100,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate, tags }) => {
     }, 1000);
   };
 
-  // 새 문서 모달 제출 처리
-  const handleNewDocSubmit = () => {
-    if (!newDocData.title.trim() || !newDocData.description.trim() || !newDocData.tag.trim()) {
-      alert("모든 필드를 입력해주세요.");
-      return;
-    }
-
-    addTemplate(newDocData);
-
-    // 모달 닫기 및 상태 초기화
-    setShowNewDocModal(false);
-    setNewDocData({
-      title: "",
-      description: "",
-      tag: ""
-    });
-  };
-
-  // 모달 취소 처리
-  const handleNewDocCancel = () => {
-    setShowNewDocModal(false);
-    setNewDocData({
-      title: "",
-      description: "",
-      tag: ""
-    });
-  };
-
-  // 입력값 변경 처리
-  const handleInputChange = (field: string, value: string) => {
-    setNewDocData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -155,33 +113,15 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate, tags }) => {
       }
     };
 
-    // ESC 키로 모달 닫기
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && showNewDocModal) {
-        handleNewDocCancel();
-      }
-    };
-
     document.addEventListener("click", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("click", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isNotificationPanelOpen, showNewDocModal]);
+  }, [isNotificationPanelOpen]);
 
   return (
       <div className="header" data-oid="klo-qi-">
-        <div
-            className="new-doc-button"
-            onClick={() => setShowNewDocModal(true)}
-            data-oid="b._cfb5"
-        >
-          <div className="new-doc-button-text" data-oid="bm:nvgx">
-            + 새 문서
-          </div>
-        </div>
 
         <div className="search-container" data-oid="ztfgwty">
           <img
@@ -353,68 +293,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, addTemplate, tags }) => {
               //<Login onLoginSuccess={handleLoginSuccess} />
           )}
         </div>
-        {/* 새 문서 모달 - 3개 필드 */}
-        {showNewDocModal && (
-            <div className="modal-overlay" onClick={handleNewDocCancel}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                  <h2>새 문서 만들기</h2>
-                  <button className="modal-close" onClick={handleNewDocCancel}>
-                    &times;
-                  </button>
-                </div>
-                <div className="modal-body">
-                  <div className="form-group">
-                    <label htmlFor="doc-title">제목</label>
-                    <input
-                        id="doc-title"
-                        type="text"
-                        className="modal-input"
-                        placeholder="문서 제목을 입력하세요 (예: 회의록)"
-                        value={newDocData.title}
-                        onChange={(e) => handleInputChange("title", e.target.value)}
-                        autoFocus
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="doc-description">상세정보</label>
-                    <textarea
-                        id="doc-description"
-                        className="modal-textarea"
-                        placeholder="문서에 대한 상세 설명을 입력하세요 (예: 회의 내용을 기록하는 템플릿)"
-                        value={newDocData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
-                        rows={3}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="doc-tag">태그</label>
-                    <select
-                        id="doc-tag"
-                        className="modal-input"
-                        value={newDocData.tag}
-                        onChange={(e) => handleInputChange("tag", e.target.value)}
-                    >
-                        <option value="" disabled>태그를 선택하세요</option>
-                        {tags.map(tag => (
-                            <option key={tag} value={tag}>{tag}</option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button className="modal-button cancel" onClick={handleNewDocCancel}>
-                    취소
-                  </button>
-                  <button className="modal-button confirm" onClick={handleNewDocSubmit}>
-                    확인
-                  </button>
-                </div>
-              </div>
-            </div>
-        )}
+        
 
         {isChatOverlayOpen && (
             <div className="chat-overlay" data-oid="hotwdvh">

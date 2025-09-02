@@ -137,6 +137,8 @@ color: #4b5563;
 display: grid;
 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 gap: 18px;
+padding-left: 0;
+margin-left: 0;
 }
 
 .new-template-card {

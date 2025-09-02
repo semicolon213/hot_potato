@@ -13,22 +13,7 @@
   border-top-right-radius: var(--border-radius-lg);
 }
 
-/* 새 문서 버튼 스타일 */
-.new-doc-button {
-  display: flex;
-  align-items: center;
-  padding: 8px 15px;
-  border-radius: var(--border-radius-md);
-  background-color: var(--primary);
-  cursor: pointer;
-  margin-left: 6px;
-}
 
-.new-doc-button-text {
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-}
 
 /* 검색 영역 스타일 */
 .search-container {

@@ -588,7 +588,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} data-oid="ou.h__l" />
+          <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
         );
 
       case "calendar":
@@ -615,7 +615,7 @@ const App: React.FC = () => {
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header onPageChange={handlePageChange} addTemplate={addTemplate} tags={tags} />
+          <Header onPageChange={handlePageChange} />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             {renderPageContent()}
           </div>
