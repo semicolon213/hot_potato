@@ -488,6 +488,13 @@ const App: React.FC = () => {
 
   // 로그인 상태 확인 (from feature/login)
   useEffect(() => {
+    // 개발 모드에서 로그인 화면을 강제로 표시하려면 아래 주석을 해제하세요
+    if (import.meta.env.DEV) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('google_token');
+      localStorage.removeItem('googleAccessToken');
+    }
+    
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));

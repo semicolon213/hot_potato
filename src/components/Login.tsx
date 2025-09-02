@@ -48,12 +48,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setTimeout(initializeGoogleGIS, 1000);
         return;
       }
-<<<<<<< HEAD
-    },
-    onError: () => console.log('Login Failed'),
-    scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly profile email', // Keep these scopes
-  });
-=======
 
       try {
         // Google GIS 초기화
@@ -306,7 +300,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
     );
   }
->>>>>>> feature/login
 
   return (
     <div className="login-container">
