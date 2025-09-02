@@ -19,27 +19,34 @@ const AdminPanel: React.FC = () => {
 
   // 사용자 목록 가져오기 (실제로는 hp_member 스프레드시트에서 가져옴)
   useEffect(() => {
-    // 임시 데이터 - 실제로는 API 호출
-    const mockUsers: User[] = [
-      {
-        id: '1',
-        email: 'student1@example.com',
-        studentId: '2024001',
-        isAdmin: false,
-        isApproved: false,
-        requestDate: '2024-01-15'
-      },
-      {
-        id: '2',
-        email: 'teacher1@example.com',
-        studentId: 'T001',
-        isAdmin: true,
-        isApproved: false,
-        requestDate: '2024-01-16'
-      }
-    ];
-    setUsers(mockUsers);
+    fetchPendingUsers();
   }, []);
+
+  const fetchPendingUsers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'getPendingUsers' })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setUsers(result.users);
+      } else {
+        setMessage('사용자 목록을 가져오는데 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('사용자 목록 조회 실패:', error);
+      setMessage('사용자 목록을 가져오는데 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 사용자 승인
   const handleApproveUser = async (userId: string) => {
@@ -47,16 +54,26 @@ const AdminPanel: React.FC = () => {
       setIsLoading(true);
       setMessage('');
       
-      // 실제로는 hp_member 스프레드시트 업데이트
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.id === userId 
-            ? { ...user, isApproved: true }
-            : user
-        )
-      );
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'approveUser',
+          studentId: userId
+        })
+      });
       
-      setMessage('사용자가 승인되었습니다.');
+      const result = await response.json();
+      
+      if (result.success) {
+        setMessage('사용자가 승인되었습니다.');
+        // 목록 새로고침
+        fetchPendingUsers();
+      } else {
+        setMessage(result.error || '사용자 승인에 실패했습니다.');
+      }
       
     } catch (error) {
       console.error('사용자 승인 실패:', error);
@@ -72,12 +89,26 @@ const AdminPanel: React.FC = () => {
       setIsLoading(true);
       setMessage('');
       
-      // 실제로는 hp_member 스프레드시트에서 삭제 또는 상태 변경
-      setUsers(prevUsers => 
-        prevUsers.filter(user => user.id !== userId)
-      );
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'rejectUser',
+          studentId: userId
+        })
+      });
       
-      setMessage('사용자가 거부되었습니다.');
+      const result = await response.json();
+      
+      if (result.success) {
+        setMessage('사용자가 거부되었습니다.');
+        // 목록 새로고침
+        fetchPendingUsers();
+      } else {
+        setMessage(result.error || '사용자 거부에 실패했습니다.');
+      }
       
     } catch (error) {
       console.error('사용자 거부 실패:', error);
@@ -103,7 +134,7 @@ const AdminPanel: React.FC = () => {
       const googleUser = auth2.currentUser.get();
       const adminAccessToken = googleUser.getAuthResponse().access_token;
       
-      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/sendAdminKeyEmail', {
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

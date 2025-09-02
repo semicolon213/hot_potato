@@ -1,170 +1,42 @@
-/* 전체 앱 레이아웃 */
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: #f8f9fa;
+#root {
+  /* max-width: 1280px; */
+  /* margin: 0 auto; */
+  /* padding: 2rem; */
+  /* text-align: center; */
 }
 
-.main-content {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-/* 로딩 화면 */
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 18px;
-  color: #666;
-  background: #f8f9fa;
-}
-
-/* 승인 대기 화면 */
-.pending-approval {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-}
-
-.pending-card {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
-  width: 100%;
-  max-width: 500px;
-  text-align: center;
-}
-
-.pending-card h2 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 28px;
-  font-weight: 600;
-}
-
-.pending-card p {
-  color: #666;
-  margin-bottom: 30px;
-  font-size: 16px;
-}
-
-.pending-card .user-info {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 30px;
-  text-align: left;
-}
-
-.pending-card .user-info p {
-  margin: 8px 0;
-  color: #333;
-}
-
-.pending-card .user-info strong {
-  color: #667eea;
-  margin-right: 10px;
-}
-
-.logout-btn {
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 50px;
-  padding: 12px 30px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.logout-btn:hover {
-  background: #c82333;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(220, 53, 69, 0.3);
-}
-
-/* 관리자 대시보드 */
-.admin-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
-  width: 100%;
-}
-
-.admin-options {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-}
-
-.admin-options h3 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.admin-option-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.admin-card {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.admin-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-color: #667eea;
-}
-
-.admin-card h4 {
-  color: #333;
-  margin-bottom: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-.admin-card p {
-  color: #666;
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-  .main-content {
-    flex-direction: column;
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
   }
-  
-  .pending-card {
-    padding: 30px 20px;
-    margin: 10px;
+  to {
+    transform: rotate(360deg);
   }
-  
-  .pending-card h2 {
-    font-size: 24px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
   }
-  
-  .admin-option-cards {
-    grid-template-columns: 1fr;
-  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
 }

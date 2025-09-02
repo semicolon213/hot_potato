@@ -514,10 +514,10 @@ async function checkUserApprovalStatus(email) {
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
-    // hp_member 시트에서 사용자 정보 조회
+    // user 시트에서 사용자 정보 조회
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId,
-      range: 'hp_member!A:Z' // 전체 범위 조회
+      range: 'user!A:Z' // 전체 범위 조회
     });
 
     const rows = response.data.values;
@@ -538,9 +538,9 @@ async function checkUserApprovalStatus(email) {
       const row = rows[i];
       console.log(`행 ${i} 데이터:`, row);
       
-      const userEmail = row[5]; // google_member 컬럼 (F열)
-      const approvalStatus = row[6]; // Approval 컬럼 (G열)
-      const isAdmin = row[7]; // is_admin 컬럼 (H열)
+      const userEmail = row[3]; // google_member 컬럼 (D열)
+      const approvalStatus = row[4]; // Approval 컬럼 (E열)
+      const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
       
       console.log(`행 ${i} - 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}`);
@@ -574,8 +574,349 @@ async function checkUserApprovalStatus(email) {
   }
 }
 
+// ===== 관리자 패널 관련 함수들 =====
+
+// 승인 대기 중인 사용자 목록 가져오기
+async function handleGetPendingUsers(req, res) {
+  try {
+    console.log('handleGetPendingUsers 호출됨');
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    // user 시트에서 승인 대기 중인 사용자 조회
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z'
+    });
+    
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return res.json({
+        success: true,
+        users: []
+      });
+    }
+    
+    const pendingUsers = [];
+    
+    // 헤더 행 제외하고 데이터 검색
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const studentId = row[0]; // A열: 학번/교번
+      const active = row[1]; // B열: 활성화 상태
+      const name = row[2]; // C열: 이름
+      const email = row[3]; // D열: Google 계정 이메일
+      const approvalStatus = row[4]; // E열: 승인 상태
+      const isAdmin = row[5]; // F열: 관리자 여부
+      
+      // 승인 대기 중이고 Google 계정이 연결된 사용자만 포함
+      if (approvalStatus === 'X' && email && email.trim() !== '') {
+        pendingUsers.push({
+          id: studentId,
+          email: email,
+          studentId: studentId,
+          name: name,
+          isAdmin: isAdmin === 'O',
+          isApproved: false,
+          requestDate: new Date().toISOString().split('T')[0] // 임시로 오늘 날짜
+        });
+      }
+    }
+    
+    console.log(`승인 대기 중인 사용자 ${pendingUsers.length}명 발견`);
+    
+    res.json({
+      success: true,
+      users: pendingUsers
+    });
+    
+  } catch (error) {
+    console.error('승인 대기 사용자 목록 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// 사용자 승인
+async function handleApproveUser(req, res) {
+  try {
+    const { studentId } = req.body;
+    
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        error: '학번이 필요합니다.'
+      });
+    }
+    
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    // user 시트에서 해당 사용자 찾기
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z'
+    });
+    
+    const rows = response.data.values;
+    let userRowIndex = -1;
+    
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row[0] === studentId) {
+        userRowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (userRowIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: '해당 사용자를 찾을 수 없습니다.'
+      });
+    }
+    
+    // E열(승인 상태)을 'O'로 업데이트
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `user!E${userRowIndex}`,
+      valueInputOption: 'RAW',
+      resource: { 
+        values: [['O']]
+      }
+    });
+    
+    console.log(`사용자 승인 완료: ${studentId}`);
+    
+    res.json({
+      success: true,
+      message: '사용자가 승인되었습니다.'
+    });
+    
+  } catch (error) {
+    console.error('사용자 승인 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// 사용자 거부
+async function handleRejectUser(req, res) {
+  try {
+    const { studentId } = req.body;
+    
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        error: '학번이 필요합니다.'
+      });
+    }
+    
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    // user 시트에서 해당 사용자 찾기
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z'
+    });
+    
+    const rows = response.data.values;
+    let userRowIndex = -1;
+    
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row[0] === studentId) {
+        userRowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (userRowIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: '해당 사용자를 찾을 수 없습니다.'
+      });
+    }
+    
+    // D열(Google 계정)을 비우고 E열(승인 상태)을 'R'(거부)로 업데이트
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `user!D${userRowIndex}:E${userRowIndex}`,
+      valueInputOption: 'RAW',
+      resource: { 
+        values: [['', 'R']]
+      }
+    });
+    
+    console.log(`사용자 거부 완료: ${studentId}`);
+    
+    res.json({
+      success: true,
+      message: '사용자가 거부되었습니다.'
+    });
+    
+  } catch (error) {
+    console.error('사용자 거부 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// ===== 사용자 등록 상태 확인 함수 =====
+// Google 로그인 후 가입 요청 전에 사용자 상태를 확인하는 함수
+async function checkUserRegistrationStatus(email) {
+  try {
+    console.log('checkUserRegistrationStatus 시작, 이메일:', email);
+    const auth = await getAuthClient();
+    console.log('인증 클라이언트 생성 완료');
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    console.log('스프레드시트 찾기 완료, ID:', spreadsheetId);
+    
+    // user 시트에서 사용자 정보 조회
+    console.log('user 시트 데이터 조회 시작');
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z' // 전체 범위 조회
+    });
+    console.log('user 시트 데이터 조회 완료');
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return {
+        success: true,
+        isRegistered: false,
+        isApproved: false,
+        message: '등록되지 않은 사용자입니다. 가입 요청을 진행할 수 있습니다.'
+      };
+    }
+
+    console.log('전체 사용자 데이터:', rows);
+    console.log('검색할 이메일:', email);
+    
+    // 헤더 행 제외하고 데이터 검색
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      console.log(`행 ${i} 데이터:`, row);
+      
+      const userEmail = row[3]; // google_member 컬럼 (D열)
+      const approvalStatus = row[4]; // Approval 컬럼 (E열)
+      const isAdmin = row[5]; // is_admin 컬럼 (F열)
+      const studentId = row[0]; // no_member 컬럼 (A열)
+      const name = row[2]; // name_member 컬럼 (C열)
+      
+      console.log(`행 ${i} - 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
+
+      if (userEmail === email) {
+        const isApproved = approvalStatus === 'O';
+        const isAdminUser = isAdmin === 'O';
+        
+        console.log(`사용자 찾음! 승인: ${isApproved}, 관리자: ${isAdminUser}`);
+
+        if (isApproved) {
+          return {
+            success: true,
+            isRegistered: true,
+            isApproved: true,
+            isAdmin: isAdminUser,
+            studentId: studentId || '',
+            name: name || '',
+            message: '이미 승인된 회원입니다. 로그인을 진행하세요.'
+          };
+        } else {
+          return {
+            success: true,
+            isRegistered: true,
+            isApproved: false,
+            isAdmin: isAdminUser,
+            studentId: studentId || '',
+            name: name || '',
+            message: '가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.'
+          };
+        }
+      }
+    }
+
+    // 사용자를 찾지 못한 경우 (새로운 사용자)
+    return {
+      success: true,
+      isRegistered: false,
+      isApproved: false,
+      message: '등록되지 않은 사용자입니다. 가입 요청을 진행할 수 있습니다.'
+    };
+
+  } catch (error) {
+    console.error('사용자 등록 상태 확인 실패:', error);
+    throw new Error('사용자 등록 상태 확인 중 오류가 발생했습니다.');
+  }
+}
+
+// ===== 사용자 가입 요청 추가 함수 =====
+// user 시트에 새로운 사용자 가입 요청 추가
+async function addUserRegistrationRequest(userData) {
+  try {
+    console.log('addUserRegistrationRequest 호출됨:', userData);
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    // user 시트에서 기존 사용자 정보 찾기
+    console.log('user 시트에서 기존 사용자 정보 조회');
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z'
+    });
+    
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      throw new Error('user 시트에 데이터가 없습니다.');
+    }
+    
+    // 해당 학번의 사용자 찾기 (A열: 학번/교번)
+    let userRowIndex = -1;
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const studentId = row[0]; // A열: 학번/교번
+      
+      if (studentId === userData.studentId) {
+        userRowIndex = i + 1; // 시트 행 번호 (1부터 시작)
+        break;
+      }
+    }
+    
+    if (userRowIndex === -1) {
+      throw new Error('해당 학번의 사용자를 찾을 수 없습니다. 학번을 확인해주세요.');
+    }
+    
+    // 기존 사용자 발견 - D열(google_member)에 구글 계정 이메일 추가
+    const approvalStatus = 'X'; // 승인 대기
+    const isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
+    
+    // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `user!D${userRowIndex}:F${userRowIndex}`,
+      valueInputOption: 'RAW',
+      resource: { 
+        values: [[userData.userEmail, approvalStatus, isAdminStatus]]
+      }
+    });
+    
+    console.log(`사용자 가입 요청 업데이트: ${userData.studentId} (${userData.userEmail}) - 승인: ${approvalStatus}, 관리자: ${isAdminStatus}`);
+    
+  } catch (error) {
+    console.error('사용자 가입 요청 업데이트 실패:', error);
+    throw new Error('가입 요청 처리 중 오류가 발생했습니다.');
+  }
+}
+
 // ===== Cloud Functions Export =====
-// 관리자 키 자동 갱신 (Cloud Scheduler용)
+// 메인 라우터 함수 (모든 요청을 처리)
 exports.dailyKeyUpdate = async (req, res) => {
   // CORS 헤더 설정
   setCorsHeaders(res);
@@ -586,6 +927,45 @@ exports.dailyKeyUpdate = async (req, res) => {
     return;
   }
   
+  try {
+    // 요청 경로에 따라 적절한 함수 호출
+    const path = req.path || req.url || '';
+    console.log(`요청 경로: ${path}`);
+    console.log(`요청 body:`, req.body);
+    
+    // 경로별 라우팅
+    if (path.includes('/verifyAdminKey') || (req.body && req.body.adminKey)) {
+      return await handleVerifyAdminKey(req, res);
+    } else if (path.includes('/sendAdminKeyEmail') || (req.body && req.body.userEmail && req.body.adminAccessToken)) {
+      return await handleSendAdminKeyEmail(req, res);
+    } else if (path.includes('/submitRegistrationRequest') || (req.body && req.body.studentId)) {
+      return await handleSubmitRegistrationRequest(req, res);
+    } else if (path.includes('/checkApprovalStatus') || (req.body && req.body.email && req.body.studentId !== undefined)) {
+      return await handleCheckApprovalStatus(req, res);
+    } else if (path.includes('/checkRegistrationStatus') || (req.body && req.body.email && !req.body.studentId)) {
+      return await handleCheckRegistrationStatus(req, res);
+    } else if (path.includes('/getPendingUsers') || (req.body && req.body.action === 'getPendingUsers')) {
+      return await handleGetPendingUsers(req, res);
+    } else if (path.includes('/approveUser') || (req.body && req.body.action === 'approveUser')) {
+      return await handleApproveUser(req, res);
+    } else if (path.includes('/rejectUser') || (req.body && req.body.action === 'rejectUser')) {
+      return await handleRejectUser(req, res);
+    } else {
+      // 기본: 관리자 키 자동 갱신
+      return await handleDailyKeyUpdate(req, res);
+    }
+    
+  } catch (error) {
+    console.error('라우팅 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// 관리자 키 자동 갱신 핸들러
+async function handleDailyKeyUpdate(req, res) {
   try {
     const kstTime = getKSTTime();
     console.log(`[${kstTime}] 확장된 다중 레이어 관리자 키 자동 갱신 시작`);
@@ -613,19 +993,10 @@ exports.dailyKeyUpdate = async (req, res) => {
       error: error.message 
     });
   }
-};
+}
 
-// 관리자 키 검증
-exports.verifyAdminKey = async (req, res) => {
-  // CORS 헤더 설정
-  setCorsHeaders(res);
-  
-  // OPTIONS 요청 처리
-  if (req.method === 'OPTIONS') {
-    res.status(200).send('');
-    return;
-  }
-  
+// 관리자 키 검증 핸들러
+async function handleVerifyAdminKey(req, res) {
   try {
     const { adminKey } = req.body;
     
@@ -650,19 +1021,10 @@ exports.verifyAdminKey = async (req, res) => {
       error: error.message
     });
   }
-};
+}
 
-// 관리자 키 이메일 전송 (관리자 계정으로)
-exports.sendAdminKeyEmail = async (req, res) => {
-  // CORS 헤더 설정
-  setCorsHeaders(res);
-  
-  // OPTIONS 요청 처리
-  if (req.method === 'OPTIONS') {
-    res.status(200).send('');
-    return;
-  }
-  
+// 관리자 키 이메일 전송 핸들러
+async function handleSendAdminKeyEmail(req, res) {
   try {
     const { userEmail, adminAccessToken } = req.body;
     
@@ -720,19 +1082,10 @@ exports.sendAdminKeyEmail = async (req, res) => {
       error: error.message
     });
   }
-};
+}
 
-// 승인 상태 확인 API
-exports.checkApprovalStatus = async (req, res) => {
-  // CORS 헤더 설정
-  setCorsHeaders(res);
-  
-  // OPTIONS 요청 처리
-  if (req.method === 'OPTIONS') {
-    res.status(200).send('');
-    return;
-  }
-  
+// 승인 상태 확인 핸들러
+async function handleCheckApprovalStatus(req, res) {
   try {
     const { email } = req.body;
 
@@ -753,4 +1106,84 @@ exports.checkApprovalStatus = async (req, res) => {
       error: error.message
     });
   }
-};
+}
+
+// 사용자 등록 상태 확인 핸들러
+async function handleCheckRegistrationStatus(req, res) {
+  try {
+    console.log('handleCheckRegistrationStatus 호출됨');
+    const { email } = req.body;
+    console.log('받은 이메일:', email);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: '이메일이 필요합니다.'
+      });
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: '올바른 이메일 형식을 입력해주세요'
+      });
+    }
+
+    console.log('checkUserRegistrationStatus 함수 호출 시작');
+    const result = await checkUserRegistrationStatus(email);
+    console.log('checkUserRegistrationStatus 결과:', result);
+    res.json(result);
+
+  } catch (error) {
+    console.error('사용자 등록 상태 확인 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// 가입 요청 제출 핸들러 (새로 추가)
+async function handleSubmitRegistrationRequest(req, res) {
+  try {
+    const { userEmail, userName, studentId, isAdminVerified } = req.body;
+
+    if (!userEmail || !userName || !studentId) {
+      return res.status(400).json({
+        success: false,
+        error: '필수 정보가 누락되었습니다.'
+      });
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: '올바른 이메일 형식을 입력해주세요'
+      });
+    }
+
+    // 사용자 데이터를 user 시트에 추가
+    await addUserRegistrationRequest({
+      userEmail,
+      userName,
+      studentId,
+      isAdminVerified: isAdminVerified || false
+    });
+
+    res.json({
+      success: true,
+      message: '가입 요청이 제출되었습니다. 관리자의 승인을 기다려주세요.'
+    });
+
+  } catch (error) {
+    console.error('가입 요청 제출 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}

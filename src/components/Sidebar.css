@@ -97,22 +97,6 @@
   opacity: 0.8;
 }
 
-/* 관리자 메뉴 스타일 */
-.menu-section:nth-last-child(2) {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: 16px;
-  padding-top: 16px;
-}
-
-.menu-section:nth-last-child(2) .menu-item {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.menu-section:nth-last-child(2) .menu-item:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-}
-
 .menu-item {
   display: flex;
   align-items: center;

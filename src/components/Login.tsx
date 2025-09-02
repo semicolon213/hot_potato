@@ -110,17 +110,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       console.log('Google 로그인 성공:', response);
       
+      // JWT 토큰을 localStorage에 저장
+      localStorage.setItem('google_token', response.credential);
+      
       // JWT 토큰에서 사용자 정보 추출
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
       const email = payload.email;
+      const name = payload.name;
       
       console.log('사용자 이메일:', email);
+      console.log('사용자 이름:', name);
       setUserEmail(email);
-      setIsLoggedIn(true);
       setError('');
       
-      // 승인 상태 확인
-      await checkApprovalStatus(email);
+      // 사용자 등록 상태 확인 (새로운 API 사용)
+      await checkUserRegistrationStatus(email, name);
       
     } catch (error) {
       console.error('Google 로그인 처리 실패:', error);
@@ -128,12 +132,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  // 승인 상태 확인
-  const checkApprovalStatus = async (email: string) => {
+    // 사용자 등록 상태 확인 (새로운 API 사용)
+  const checkUserRegistrationStatus = async (email: string, name: string) => {
     try {
       setIsLoading(true);
       
-      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/checkApprovalStatus', {
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,31 +147,48 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         })
       });
       
-             const result = await response.json();
-       console.log('백엔드 응답:', result);
+      const result = await response.json();
+      console.log('사용자 등록 상태 확인 응답:', result);
 
-       if (result.success) {
-         if (result.isApproved) {
-           // 승인된 사용자 - 바로 메인 화면으로
-           console.log('승인된 사용자 - 메인 화면으로 이동');
-           onLogin({
-             email: email,
-             studentId: result.studentId || '',
-             isAdmin: result.isAdmin || false,
-             isApproved: true
-           });
-         } else {
-           // 승인 대기 중 - 회원가입 화면 유지
-           console.log('승인 대기 중인 사용자');
-         }
-       } else {
-         // 등록되지 않은 사용자 - 회원가입 화면 유지
-         console.log('새로운 사용자');
-       }
+      if (result.success) {
+        if (result.isRegistered && result.isApproved) {
+          // 이미 승인된 회원 - 바로 메인 화면으로
+          console.log('이미 승인된 회원 - 메인 화면으로 이동');
+          alert('이미 가입된 회원입니다. 로그인을 진행합니다.');
+          onLogin({
+            email: email,
+            name: name,
+            studentId: result.studentId || '',
+            isAdmin: result.isAdmin || false,
+            isApproved: true
+          });
+        } else if (result.isRegistered && !result.isApproved) {
+          // 승인 대기 중 - 승인 대기 화면으로
+          console.log('승인 대기 중인 사용자');
+          alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
+          onLogin({
+            email: email,
+            name: name,
+            studentId: result.studentId || '',
+            isAdmin: result.isAdmin || false,
+            isApproved: false
+          });
+        } else {
+          // 새로운 사용자 - 회원가입 화면 표시
+          console.log('새로운 사용자 - 회원가입 화면 표시');
+          setIsLoggedIn(true);
+        }
+      } else {
+        // 오류 발생 - 회원가입 화면 표시
+        console.log('오류 발생 - 회원가입 화면 표시');
+        setIsLoggedIn(true);
+      }
       
     } catch (error) {
-      console.error('승인 상태 확인 실패:', error);
-      // 오류 시 회원가입 화면 유지
+      console.error('사용자 등록 상태 확인 실패:', error);
+      setError('사용자 상태 확인 중 오류가 발생했습니다.');
+      // 오류 시 회원가입 화면 표시
+      setIsLoggedIn(true);
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +200,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/verifyAdminKey', {
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -214,23 +235,52 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsLoading(true);
       setError('');
       
+      // JWT 토큰에서 사용자 이름 추출 (이미 로그인된 상태)
+      const token = localStorage.getItem('google_token');
+      let userName = '';
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userName = payload.name || '';
+        } catch (e) {
+          console.error('토큰 파싱 실패:', e);
+        }
+      }
+      
       const signupData = {
-        googleEmail: userEmail,
+        userEmail: userEmail,
+        userName: userName,
         studentId: studentId,
-        isAdmin: isAdminVerified,
+        isAdminVerified: isAdminVerified,
       };
       
-      // 여기서 회원가입 요청을 서버로 보냄
-      // 실제 구현에서는 hp_member 스프레드시트에 데이터 추가
       console.log('회원가입 요청:', signupData);
       
-      // 임시로 성공 처리
-      onLogin({
-        email: userEmail,
-        studentId: studentId,
-        isAdmin: isAdminVerified,
-        isApproved: false // 관리자 승인 대기 중
+      // 실제 서버로 회원가입 요청 전송
+      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupData)
       });
+      
+      const result = await response.json();
+      console.log('회원가입 응답:', result);
+      
+      if (result.success) {
+        // 회원가입 성공 - 승인 대기 상태로 로그인
+        alert('회원가입 요청이 성공적으로 제출되었습니다. 관리자의 승인을 기다려주세요.');
+        onLogin({
+          email: userEmail,
+          name: userName,
+          studentId: studentId,
+          isAdmin: isAdminVerified,
+          isApproved: false // 관리자 승인 대기 중
+        });
+      } else {
+        setError(result.error || '회원가입 중 오류가 발생했습니다.');
+      }
       
     } catch (error) {
       console.error('회원가입 실패:', error);
@@ -285,6 +335,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </button>
               {error && <div className="error-message">{error}</div>}
             </div>
+        ) : isLoading ? (
+          <div className="login-loading">
+            <div className="loading-spinner"></div>
+            <p>사용자 상태 확인 중...</p>
+          </div>
         ) : (
           <div className="signup-section">
             <div className="user-info">
@@ -293,7 +348,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             <div className="input-group">
-              <label htmlFor="studentId">학번 또는 교번</label>
+              <label htmlFor="studentId">학번 또는 교번 *</label>
               <input
                 type="text"
                 id="studentId"

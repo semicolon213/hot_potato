@@ -12,7 +12,7 @@
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["google-cloud", "sheets", "admin-key"],
+  "keywords": ["googleapis", "spreadsheet", "admin-key"],
   "author": "Hot Potato Team",
   "license": "MIT"
 }

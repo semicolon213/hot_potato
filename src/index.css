@@ -1,456 +1,456 @@
 @font-face {
-    font-family: 'GmarketSansMedium';
-    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
+  font-family: 'GmarketSansMedium';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'LanaPixel';
-    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/LanaPixel.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
+  font-family: 'LanaPixel';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/LanaPixel.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'SUITE-Regular';
-    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
+  font-family: 'SUITE-Regular';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
 }
 
 :root {
-  --main-font: system-ui;
+--main-font: system-ui;
 }
 
 body, html, * {
-  font-family: var(--main-font), system-ui, sans-serif !important;
+font-family: var(--main-font), system-ui, sans-serif !important;
 }
 
 /* 기본 설정 및 변수 */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
 }
 
 /* 색상 팔레트 */
 :root {
-  --primary: rgb(56, 67, 86);
-  --secondary: rgb(103, 123, 139);
-  --secondary-light: rgb(115, 130, 143);
-  --accent: rgb(200, 211, 228);
-  --background: #F5EFEB;
-  --white: #FFFFFF;
-  --lightgrey: #f5f5f5;
-  --border-color: #ddd;
-  --border-light: #eee;
-  --border-lighter: #f0f0f0;
-  --text-dark: #333;
-  --text-medium: #666;
-  --text-light: #999;
-  --menu-bg: rgb(72, 83, 101);
-  --table-header-bg: rgb(243, 245, 248);
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  --card-shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
-  --border-radius-lg: 20px;
-  --border-radius-md: 10px;
-  --border-radius-sm: 8px;
+--primary: rgb(56, 67, 86);
+--secondary: rgb(103, 123, 139);
+--secondary-light: rgb(115, 130, 143);
+--accent: rgb(200, 211, 228);
+--background: #F5EFEB;
+--white: #FFFFFF;
+--lightgrey: #f5f5f5;
+--border-color: #ddd;
+--border-light: #eee;
+--border-lighter: #f0f0f0;
+--text-dark: #333;
+--text-medium: #666;
+--text-light: #999;
+--menu-bg: rgb(72, 83, 101);
+--table-header-bg: rgb(243, 245, 248);
+--card-shadow: 0 1px 3px rgba(0,0,0,0.05);
+--card-shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
+--border-radius-lg: 20px;
+--border-radius-md: 10px;
+--border-radius-sm: 8px;
 }
 
 /* === app-container 레이아웃 개선 === */
 .app-container {
-  display: flex;
-  flex-direction: row;
-  height: 100vh;
-  width: 100vw;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  background: #f7f7f7;
+display: flex;
+flex-direction: row;
+height: 100vh;
+width: 100vw;
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+background: #f7f7f7;
 }
 
 body {
-  display: flex;
-  background-color: rgb(239, 234, 230);
-  margin: 0;
-  padding: 0;
-  min-width: 1200px;
-  width: 100%;
-  height: 100vh;
-  overflow: auto;
+display: flex;
+background-color: rgb(239, 234, 230);
+margin: 0;
+padding: 0;
+min-width: 1200px;
+width: 100%;
+height: 100vh;
+overflow: auto;
 }
 
 /* 테마 CSS 파일 */
 
 /* 기본 테마 (현재 사용 중인 테마) */
 .theme-default {
-  /* 의미론적 색상 변수 */
-  --primary: rgb(56, 67, 86);           /* 이전 navy */
-  --secondary: rgb(103, 123, 139);      /* 이전 teal */
-  --secondary-light: rgb(115, 130, 143); /* 이전 tealsb */
-  --accent: rgb(200, 211, 228);         /* 이전 skyBlue */
-  --background: #F5EFEB;                /* 이전 beige */
+/* 의미론적 색상 변수 */
+--primary: rgb(56, 67, 86);           /* 이전 navy */
+--secondary: rgb(103, 123, 139);      /* 이전 teal */
+--secondary-light: rgb(115, 130, 143); /* 이전 tealsb */
+--accent: rgb(200, 211, 228);         /* 이전 skyBlue */
+--background: #F5EFEB;                /* 이전 beige */
 
-  /* 공통 색상 */
-  --white: #FFFFFF;
-  --lightgrey: #f5f5f5;
-  --border-color: #ddd;
-  --border-light: #eee;
-  --border-lighter: #f0f0f0;
-  --text-dark: #333;
-  --text-medium: #666;
-  --text-light: #999;
-  --success: #34c759;
-  --gray-light: #f5f5f5;
-  --gray-border: #e0e0e0;
+/* 공통 색상 */
+--white: #FFFFFF;
+--lightgrey: #f5f5f5;
+--border-color: #ddd;
+--border-light: #eee;
+--border-lighter: #f0f0f0;
+--text-dark: #333;
+--text-medium: #666;
+--text-light: #999;
+--success: #34c759;
+--gray-light: #f5f5f5;
+--gray-border: #e0e0e0;
 
-  /* 명명된 색상 */
-  --menu-bg: rgb(72, 83, 101);          /* 메뉴 배경 (primary 보다 약간 밝은) */
-  --table-header-bg: rgb(243, 245, 248); /* 테이블 헤더 배경 */
+/* 명명된 색상 */
+--menu-bg: rgb(72, 83, 101);          /* 메뉴 배경 (primary 보다 약간 밝은) */
+--table-header-bg: rgb(243, 245, 248); /* 테이블 헤더 배경 */
 
-  /* 효과 */
-  --card-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  --card-shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
+/* 효과 */
+--card-shadow: 0 1px 3px rgba(0,0,0,0.05);
+--card-shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
 
-  /* 크기 */
-  --border-radius-lg: 20px;
-  --border-radius-md: 10px;
-  --border-radius-sm: 8px;
+/* 크기 */
+--border-radius-lg: 20px;
+--border-radius-md: 10px;
+--border-radius-sm: 8px;
 }
 
 .theme-purple {
-  --primary: #4a4760;                /* 라벤더-네이비 5단계 (가장 어두운) */
-  --secondary: #5b5a79;              /* 라벤더-네이비 4단계 */
-  --secondary-light: #827397;        /* 라벤더-네이비 3단계 */
-  --accent: #B1A6C3;                 /* 라벤더-네이비 2단계 */
-  --background: #E9D5DA;             /* 라벤더-네이비 1단계 (가장 밝은) */
+--primary: #4a4760;                /* 라벤더-네이비 5단계 (가장 어두운) */
+--secondary: #5b5a79;              /* 라벤더-네이비 4단계 */
+--secondary-light: #827397;        /* 라벤더-네이비 3단계 */
+--accent: #B1A6C3;                 /* 라벤더-네이비 2단계 */
+--background: #E9D5DA;             /* 라벤더-네이비 1단계 (가장 밝은) */
 
-  /* 조화롭게 맞춘 부분 */
-  --lightgrey: #F4ECF0;              /* 연한 라벤더-핑크 */
-  --border-color: #D0C1D3;           /* 중간 라벤더 */
-  --border-light: #E1D6E3;           /* 연한 라벤더 */
-  --border-lighter: #F1EBF3;         /* 매우 연한 라벤더 */
+/* 조화롭게 맞춘 부분 */
+--lightgrey: #F4ECF0;              /* 연한 라벤더-핑크 */
+--border-color: #D0C1D3;           /* 중간 라벤더 */
+--border-light: #E1D6E3;           /* 연한 라벤더 */
+--border-lighter: #F1EBF3;         /* 매우 연한 라벤더 */
 
-  --text-dark: #363062;              /* 라벤더-네이비 5단계 */
-  --text-medium: #4D4C7D;            /* 라벤더-네이비 4단계 */
-  --text-light: #827397;             /* 라벤더-네이비 3단계 */
-  --gray-light: #B1A6C3;             /* 라벤더-네이비 2단계 */
-  --gray-border: #E9D5DA;            /* 라벤더-네이비 1단계 */
+--text-dark: #363062;              /* 라벤더-네이비 5단계 */
+--text-medium: #4D4C7D;            /* 라벤더-네이비 4단계 */
+--text-light: #827397;             /* 라벤더-네이비 3단계 */
+--gray-light: #B1A6C3;             /* 라벤더-네이비 2단계 */
+--gray-border: #E9D5DA;            /* 라벤더-네이비 1단계 */
 
-  --menu-bg: #39364f;                /* 라벤더-네이비 5단계보다 약간 어두운 색 */
-  --table-header-bg: #D9CBD0;        /* 연한 라벤더-핑크 색상으로 조화롭게 변경 */
+--menu-bg: #39364f;                /* 라벤더-네이비 5단계보다 약간 어두운 색 */
+--table-header-bg: #D9CBD0;        /* 연한 라벤더-핑크 색상으로 조화롭게 변경 */
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
 .theme-purple .submenu-item:hover .menu-text {
-  color: #35343e;
+color: #35343e;
 }
 
 
 /* 초록색 테마 */
 .theme-green {
-  --primary: rgb(98, 110, 86);
-  --secondary: rgb(161, 179, 149);
-  --secondary-light: rgb(201, 216, 185);
-  --accent: rgb(236, 239, 214);
-  --background: rgb(242, 243, 236);
-  --lightgrey: #f0f7f4;
-  --border-color: #d6deda;
-  --border-light: #d8ebe3;
-  --border-lighter: #e6e7e749;
-  --text-dark: rgb(98, 110, 86);
-  --text-medium: rgb(144, 160, 132);
-  --text-light:rgb(183, 197, 169);
-  --gray-light: rgb(236, 239, 214);
-  --gray-border: rgb(242, 243, 236);
+--primary: rgb(98, 110, 86);
+--secondary: rgb(161, 179, 149);
+--secondary-light: rgb(201, 216, 185);
+--accent: rgb(236, 239, 214);
+--background: rgb(242, 243, 236);
+--lightgrey: #f0f7f4;
+--border-color: #d6deda;
+--border-light: #d8ebe3;
+--border-lighter: #e6e7e749;
+--text-dark: rgb(98, 110, 86);
+--text-medium: rgb(144, 160, 132);
+--text-light:rgb(183, 197, 169);
+--gray-light: rgb(236, 239, 214);
+--gray-border: rgb(242, 243, 236);
 
-  --menu-bg: rgb(74, 92, 74);
-  --table-header-bg: rgb(201, 216, 185);
+--menu-bg: rgb(74, 92, 74);
+--table-header-bg: rgb(201, 216, 185);
 }
 
 /* 초록색 테마의 서브메뉴 아이템 색상 변경 */
 .theme-green .submenu-item .menu-text {
-  color: #52704f;
+color: #52704f;
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
 .theme-green .submenu-item:hover .menu-text {
-  color: #000000; /* 호버 시 검은색으로 변경 */
+color: #000000; /* 호버 시 검은색으로 변경 */
 }
 
 /* 갈색 테마 */
 .theme-brown {
-  --primary: rgb(73, 54, 40);
-  --secondary: rgb(171, 136, 109);
-  --secondary-light: rgb(190, 164, 143);
-  --accent: rgb(214, 192, 179);
-  --background: rgb(228, 224, 225);
+--primary: rgb(73, 54, 40);
+--secondary: rgb(171, 136, 109);
+--secondary-light: rgb(190, 164, 143);
+--accent: rgb(214, 192, 179);
+--background: rgb(228, 224, 225);
 
-  --lightgrey: #efebe9;
-  --border-color: #d7ccc8;
-  --border-light: #e0d9d5;
-  --border-lighter: #e7e0dd;
-  --text-dark: rgb(73, 54, 40);
-  --text-medium: rgb(171, 136, 109);
-  --text-light:  rgb(190, 164, 143);
-  --gray-light: rgb(214, 192, 179);
-  --gray-border: rgb(228, 224, 225);
+--lightgrey: #efebe9;
+--border-color: #d7ccc8;
+--border-light: #e0d9d5;
+--border-lighter: #e7e0dd;
+--text-dark: rgb(73, 54, 40);
+--text-medium: rgb(171, 136, 109);
+--text-light:  rgb(190, 164, 143);
+--gray-light: rgb(214, 192, 179);
+--gray-border: rgb(228, 224, 225);
 
-  --menu-bg: rgb(102, 83, 67);
-  --table-header-bg: #efebe9;
+--menu-bg: rgb(102, 83, 67);
+--table-header-bg: #efebe9;
 }
 
 /* 초록색 테마의 서브메뉴 아이템 색상 변경 */
 .theme-brown .submenu-item .menu-text {
-  color: rgb(73, 54, 40);
+color: rgb(73, 54, 40);
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
 .theme-brown .submenu-item:hover .menu-text {
-  color: #000000; /* 호버 시 검은색으로 변경 */
+color: #000000; /* 호버 시 검은색으로 변경 */
 }
 
 /* 회색 테마 */
 .theme-gray {
-  --primary: #444444;                 /* 이전 navy */
-  --secondary: #777777;               /* 이전 teal */
-  --secondary-light: #888888;         /* 이전 tealsb */
-  --accent: #cccccc;                  /* 이전 skyBlue */
-  --background: #f0f0f0;              /* 이전 beige */
+--primary: #444444;                 /* 이전 navy */
+--secondary: #777777;               /* 이전 teal */
+--secondary-light: #888888;         /* 이전 tealsb */
+--accent: #cccccc;                  /* 이전 skyBlue */
+--background: #f0f0f0;              /* 이전 beige */
 
-  --lightgrey: #f0f0f0;
-  --border-color: #d0d0d0;
-  --border-light: #e0e0e0;
-  --border-lighter: #eaeaea;
-  --text-dark: #333333;
-  --text-medium: #666666;
-  --text-light: #888888;
-  --gray-light: #f0f0f0;
-  --gray-border: #d0d0d0;
+--lightgrey: #f0f0f0;
+--border-color: #d0d0d0;
+--border-light: #e0e0e0;
+--border-lighter: #eaeaea;
+--text-dark: #333333;
+--text-medium: #666666;
+--text-light: #888888;
+--gray-light: #f0f0f0;
+--gray-border: #d0d0d0;
 
-  --menu-bg: #333333;
-  --table-header-bg: #e6e6e6;
+--menu-bg: #333333;
+--table-header-bg: #e6e6e6;
 }
 
 /* 서브메뉴 아이템 호버 시 색상 */
 .theme-gray .submenu-item:hover .menu-text {
-  color: #000000; /* 호버 시 검은색으로 변경 */
+color: #000000; /* 호버 시 검은색으로 변경 */
 }
 
 /* 환경설정 페이지 스타일 */
 .settings-container {
-  max-width: 1000px;
-  margin: 20px auto;
-  background-color: var(--white);
-  border-radius: var(--border-radius-lg);
-  padding: 30px;
-  box-shadow: var(--card-shadow);
+max-width: 1000px;
+margin: 20px auto;
+background-color: var(--white);
+border-radius: var(--border-radius-lg);
+padding: 30px;
+box-shadow: var(--card-shadow);
 }
 
 .settings-header {
-  margin-bottom: 30px;
+margin-bottom: 30px;
 }
 
 .settings-header h1 {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--text-dark);
-  margin-bottom: 5px;
+font-size: 24px;
+font-weight: bold;
+color: var(--text-dark);
+margin-bottom: 5px;
 }
 
 .settings-header p {
-  font-size: 15px;
-  color: var(--text-medium);
+font-size: 15px;
+color: var(--text-medium);
 }
 
 .settings-section {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-light);
+margin-bottom: 30px;
+padding-bottom: 20px;
+border-bottom: 1px solid var(--border-light);
 }
 
 .settings-section:last-child {
-  border-bottom: none;
+border-bottom: none;
 }
 
 .settings-section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-bottom: 10px;
+font-size: 18px;
+font-weight: 600;
+color: var(--text-dark);
+margin-bottom: 10px;
 }
 
 .settings-section-description {
-  font-size: 14px;
-  color: var(--text-medium);
-  margin-bottom: 20px;
+font-size: 14px;
+color: var(--text-medium);
+margin-bottom: 20px;
 }
 
 /* 테마 옵션 스타일 */
 .theme-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 10px;
+display: flex;
+flex-wrap: wrap;
+gap: 20px;
+margin-bottom: 10px;
 }
 
 .theme-option {
-  width: 160px;
-  background-color: var(--white);
-  border: 2px solid var(--border-light);
-  border-radius: var(--border-radius-md);
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
+width: 160px;
+background-color: var(--white);
+border: 2px solid var(--border-light);
+border-radius: var(--border-radius-md);
+padding: 12px;
+cursor: pointer;
+transition: all 0.2s;
+position: relative;
 }
 
 .theme-option:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--card-shadow-hover);
+transform: translateY(-3px);
+box-shadow: var(--card-shadow-hover);
 }
 
 .theme-option.active {
-  border-color: var(--primary);
+border-color: var(--primary);
 }
 
 .theme-preview {
-  display: flex;
-  height: 60px;
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-  margin-bottom: 10px;
+display: flex;
+height: 60px;
+border-radius: var(--border-radius-sm);
+overflow: hidden;
+margin-bottom: 10px;
 }
 
 .preview-color {
-  flex: 1;
+flex: 1;
 }
 
 .theme-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-dark);
-  text-align: center;
+font-size: 14px;
+font-weight: 500;
+color: var(--text-dark);
+text-align: center;
 }
 
 .theme-selected {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: none;
+position: absolute;
+top: 10px;
+right: 10px;
+display: none;
 }
 
 .theme-option.active .theme-selected {
-  display: block;
+display: block;
 }
 
 .checkmark {
-  width: 20px;
-  height: 20px;
-  background-color: var(--primary);
-  border-radius: 50%;
-  position: relative;
+width: 20px;
+height: 20px;
+background-color: var(--primary);
+border-radius: 50%;
+position: relative;
 }
 
 .checkmark:before, .checkmark:after {
-  content: '';
-  position: absolute;
-  background-color: white;
+content: '';
+position: absolute;
+background-color: white;
 }
 
 .checkmark:before {
-  width: 2px;
-  height: 6px;
-  transform: rotate(45deg);
-  top: 9px;
-  left: 6px;
+width: 2px;
+height: 6px;
+transform: rotate(45deg);
+top: 9px;
+left: 6px;
 }
 
 .checkmark:after {
-  width: 2px;
-  height: 10px;
-  transform: rotate(-45deg);
-  top: 6px;
-  left: 11px;
+width: 2px;
+height: 10px;
+transform: rotate(-45deg);
+top: 6px;
+left: 11px;
 }
 
 /* 설정 옵션 스타일 */
 .settings-option {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 0;
-  border-bottom: 1px solid var(--border-lighter);
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 15px 0;
+border-bottom: 1px solid var(--border-lighter);
 }
 
 .settings-option:last-child {
-  border-bottom: none;
+border-bottom: none;
 }
 
 .option-name {
-  font-size: 15px;
-  color: var(--text-dark);
+font-size: 15px;
+color: var(--text-dark);
 }
 
 .option-select {
-  width: 150px;
-  height: 36px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 0 10px;
-  font-size: 14px;
-  background-color: var(--white);
-  color: var(--text-dark);
+width: 150px;
+height: 36px;
+border: 1px solid var(--border-color);
+border-radius: var(--border-radius-sm);
+padding: 0 10px;
+font-size: 14px;
+background-color: var(--white);
+color: var(--text-dark);
 }
 
 
 /* 설정 버튼 */
 .settings-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-  margin-top: 30px;
+display: flex;
+justify-content: flex-end;
+gap: 15px;
+margin-top: 30px;
 }
 
 .settings-button {
-  padding: 10px 20px;
-  border-radius: var(--border-radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+padding: 10px 20px;
+border-radius: var(--border-radius-sm);
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s;
 }
 
 .cancel-button {
-  background-color: var(--lightgrey);
-  border: 1px solid var(--border-color);
-  color: var(--text-medium);
+background-color: var(--lightgrey);
+border: 1px solid var(--border-color);
+color: var(--text-medium);
 }
 
 .save-button {
-  background-color: var(--primary);
-  border: none;
-  color: white;
+background-color: var(--primary);
+border: none;
+color: white;
 }
 
 .cancel-button:hover {
-  background-color: var(--border-light);
+background-color: var(--border-light);
 }
 
 .save-button:hover {
-  filter: brightness(1.1);
+filter: brightness(1.1);
 }
 
 .main-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  margin: 10px 15px 0 210px;
-  border-radius: var(--border-radius-lg);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-  background: #fff;
-  min-height: calc(100vh - 10px);
-  overflow: hidden;
+display: flex;
+flex-direction: column;
+flex: 1;
+margin: 10px 15px 0 210px;
+border-radius: var(--border-radius-lg);
+box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+background: #fff;
+min-height: calc(100vh - 10px);
+overflow: hidden;
 }

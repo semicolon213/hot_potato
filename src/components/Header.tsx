@@ -19,9 +19,15 @@ interface UserProfile {
 
 interface HeaderProps {
   onPageChange: (pageName: string) => void;
+  userInfo?: {
+    name: string;
+    email: string;
+    isAdmin: boolean;
+  };
+  onLogout?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
+const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => {
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<
@@ -43,7 +49,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
     tag: ""
   });
 
-  const { user, logout } = useAuthStore();
+  const { user: authUser, logout } = useAuthStore();
 
   const handleLogout = () => {
     logout();
@@ -304,7 +310,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
             )}
           </div>
 
-          {user ? (
+          {authUser ? (
               <>
                 <div
                     className="user-profile"
@@ -313,13 +319,13 @@ const Header: React.FC<HeaderProps> = ({ onPageChange }) => {
                 >
                   <div className="avatar-container" data-oid="4ks-vou">
                     <img
-                        src={user.picture}
+                                                src={authUser.picture}
                         alt="User profile"
                         style={{ borderRadius: '50%', width: '28px', height: '28px' }}
-                    />
-                  </div>
-                  <div className="user-name" data-oid="xz4ud-l">
-                    {user.name}
+                      />
+                    </div>
+                    <div className="user-name" data-oid="xz4ud-l">
+                      {authUser.name}
                   </div>
                 </div>
                 <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
