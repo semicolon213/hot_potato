@@ -13,6 +13,10 @@ export interface Template {
 export const defaultTemplates: Template[] = [
     { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" },
     { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
+    { type: "receipt", title: "영수증", description: "지출 증빙을 위한 영수증 템플릿", tag: "재정" },
+    { type: "confirmation", title: "학과 행사 대표자 확인서", description: "학과 행사에 대한 대표자의 확인 서명 템플릿", tag: "증명" },
+    { type: "supporting_document_confirmation", title: "증빙서류 확인서", description: "증빙 서류 확인을 위한 템플릿", tag: "증명" },
+    { type: "fee_deposit_list", title: "학회비 입금자 명단", description: "학회비 입금자 명단 확인용 템플릿", tag: "재정" },
 ];
 
 export const defaultTemplateTags = defaultTemplates.map(t => t.tag);
@@ -55,9 +59,17 @@ export function useTemplateUI(
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = (type: string, title: string) => {
         if (type === "empty") {
-            onPageChange("empty_document");
+            window.open("https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0", "_blank");
         } else if (type === "meeting") {
             window.open("https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku", "_blank");
+        } else if (type === "receipt") {
+            window.open("https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0", "_blank");
+        } else if (type === "confirmation") {
+            window.open("https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh", "_blank");
+        } else if (type === "supporting_document_confirmation") {
+            window.open("https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0", "_blank");
+        } else if (type === "fee_deposit_list") {
+            window.open("https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0", "_blank");
         } else if (type === "finance" || type === "event" || type === "report") {
             onPageChange("proceedings");
         } else {
