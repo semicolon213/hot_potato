@@ -154,21 +154,30 @@ export default function NewDocument({
                 {/* Right Main Area: Custom Templates */}
                 <div className="layout-main">
                     <div className="template-section">
-                        <h2 className="section-title" style={{ position: 'relative' }}>
+                        <h2 className="section-title" style={{ position: 'relative', marginLeft: '-20px', width: 'calc(100% - 20px)' }}>
                             내 템플릿
                             <span
                                 className="new-tab add-tag-button"
                                 onClick={() => setShowNewDocModal(true)}
-                                style={{ position: 'absolute', right: 0, top: 0 }}
+                                style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: 0,
+                                    fontWeight: 'normal',
+                                    fontSize: '14px',
+                                    color: '#007bff'
+                                }}
                             >
                                 + 새 템플릿
                             </span>
                         </h2>
-                        <TemplateList
-                            templates={filteredCustomTemplates}
-                            onUseTemplate={onUseTemplate}
-                            onDeleteTemplate={deleteTemplate}
-                        />
+                        <div style={{ marginLeft: '-20px', paddingRight: '40px' }}>
+                            <TemplateList
+                                templates={filteredCustomTemplates}
+                                onUseTemplate={onUseTemplate}
+                                onDeleteTemplate={deleteTemplate}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

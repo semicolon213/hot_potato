@@ -98,8 +98,19 @@ background-color: #f1f2f4;
 .new-tabs-container {
 display: flex;
 margin-bottom: 20px;
-border-bottom: 1px solid #e5e7eb;
 padding-bottom: 8px;
+padding-left: 20px;
+position: relative;
+}
+
+.new-tabs-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20px;
+    right: 0;
+    height: 1px;
+    background-color: #e5e7eb;
 }
 
 .new-tab {
