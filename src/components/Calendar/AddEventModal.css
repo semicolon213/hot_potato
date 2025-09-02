@@ -48,12 +48,21 @@
   margin-top: 10px;
 }
 
-.submit-button, .cancel-button {
+.submit-button, .cancel-button, .time-add-button {
     padding: 10px 15px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+}
+
+.time-add-button {
+    background-color: #6c757d;
+    color: white;
+}
+
+.time-add-button:hover {
+    background-color: #5a6268;
 }
 
 .submit-button {
@@ -72,4 +81,21 @@
 
 .cancel-button:hover {
     background-color: #e0e0e0;
+}
+
+.color-palette {
+    display: flex;
+    gap: 10px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.color-swatch.selected {
+    border-color: #007bff;
 }

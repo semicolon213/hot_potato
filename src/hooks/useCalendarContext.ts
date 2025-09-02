@@ -10,8 +10,12 @@ export interface Event {
     id: string;
     startDate: string;
     endDate: string;
+    startDateTime?: string; // For timed events
+    endDateTime?: string;   // For timed events
     title: string;
     description?: string;
+    color?: string;
+    colorId?: string;
 }
 
 interface CalendarContextType {
@@ -34,6 +38,7 @@ interface CalendarContextType {
     setSelectedEvent: (event: Event | null) => void;
     semesterStartDate: Date;
     setSemesterStartDate: (date: Date) => void;
+    eventColors: any;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

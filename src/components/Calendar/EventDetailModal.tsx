@@ -1,15 +1,19 @@
 import React from 'react';
 import './EventDetailModal.css';
 import { type Event } from '../../hooks/useCalendarContext';
+import trashIcon from '../../assets/Icons/trash.svg';
+import editIcon from '../../assets/Icons/edit.svg';
+import xIcon from '../../assets/Icons/x.svg';
 
 interface EventDetailModalProps {
     event: Event;
     onClose: () => void;
     onDelete: (id: string) => void;
     onEdit: (event: Event) => void;
+    position: { top: number; left: number };
 }
 
-const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit }) => {
+const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position }) => {
     if (!event) {
         return null;
     }
@@ -46,10 +50,14 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
 
     return (
         <div className="event-detail-overlay" onClick={onClose}>
-            <div className="event-detail-container" onClick={(e) => e.stopPropagation()}>
+            <div className="event-detail-container" style={{ top: position.top, left: position.left }} onClick={(e) => e.stopPropagation()}>
                 <div className="event-detail-header">
                     <h2>{event.title.replace(/^(\d{2}w*)/, '')}</h2>
-                    <button onClick={onClose} className="close-button">&times;</button>
+                    <div className="header-actions">
+                        <img src={editIcon} alt="Edit" onClick={() => onEdit(event)} className="header-icon" />
+                        <img src={trashIcon} alt="Delete" onClick={handleDelete} className="header-icon" />
+                        <img src={xIcon} alt="Close" onClick={onClose} className="header-icon close-button" />
+                    </div>
                 </div>
                 <div className="event-detail-body">
                     <div className="detail-item">
@@ -62,14 +70,6 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
                             <p>{event.description}</p>
                         </div>
                     )}
-                </div>
-                <div className="event-detail-footer">
-                    <button onClick={() => onEdit(event)} className="edit-button">
-                        수정
-                    </button>
-                    <button onClick={handleDelete} className="calendar-delete-btn">
-                        삭제
-                    </button>
                 </div>
             </div>
         </div>

@@ -5,7 +5,7 @@ import "./index.css"; // Global styles and theme variables
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { gapiInit, appendRow } from 'papyrus-db';
 
-import Calendar from "./pages/Calendar";
+import MyCalendarPage from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
 import Docbox from "./pages/Docbox";
 import DocumentManagement from "./pages/DocumentManagement";
@@ -236,7 +236,7 @@ const App: React.FC = () => {
           // rowIndex is not available directly from append, refetching is an option
           // but for now, a local optimistic update is faster.
           rowIndex: customTemplates.length + 1, // This is an approximation for the key
-          type: newDocData.title, 
+          type: newDocData.title,
           title: newDocData.title,
           description: newDocData.description,
           tag: newDocData.tag,
@@ -558,20 +558,20 @@ const App: React.FC = () => {
   const renderPageContent = () => {
     switch (currentPage) {
       case "board":
-        return <Board 
-          onPageChange={handlePageChange} 
-          posts={posts} 
-          onAuth={handleBoardAuth} 
-          isAuthenticated={isGoogleAuthenticatedForBoard} 
+        return <Board
+          onPageChange={handlePageChange}
+          posts={posts}
+          onAuth={handleBoardAuth}
+          isAuthenticated={isGoogleAuthenticatedForBoard}
           data-oid="d01oi2r" />;
       case "new-board-post":
         return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} />;
       case "announcements":
-        return <AnnouncementsPage 
-          onPageChange={handlePageChange} 
-          posts={announcements} 
-          onAuth={handleAnnouncementsAuth} 
-          isAuthenticated={isGoogleAuthenticatedForAnnouncements} 
+        return <AnnouncementsPage
+          onPageChange={handlePageChange}
+          posts={announcements}
+          onAuth={handleAnnouncementsAuth}
+          isAuthenticated={isGoogleAuthenticatedForAnnouncements}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} />;
@@ -592,7 +592,8 @@ const App: React.FC = () => {
         );
 
       case "calendar":
-        return <Calendar data-oid="uz.ewbm" accessToken={googleAccessToken} />;
+
+        return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />; // Pass accessToken to Calendar
       case "preferences":
         return (
           <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
