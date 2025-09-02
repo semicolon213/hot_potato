@@ -152,8 +152,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent }) => {
                                             const showTitle = isFirstDayOfEvent || date.dayIndexOfWeek === 0;
 
                                             return (
-                                                <li key={event.id} className={itemClasses} onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}>
-                                                    {showTitle ? event.title.replace(/^\d{2}\s*/, '') : <span>&nbsp;</span>}
+                                                <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}>
+                                                    {event.title.replace(/^\d{2}\s*/, '')}
                                                 </li>
                                             );
                                         })}

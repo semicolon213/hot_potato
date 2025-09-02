@@ -4,46 +4,68 @@ import './AddEventModal.css';
 
 interface AddEventModalProps {
   onClose: () => void;
-  eventToEdit?: Event | null; // 수정할 이벤트를 prop으로 받음
+  eventToEdit?: Event | null;
 }
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
-  const { addEvent, updateEvent, selectedDate } = useCalendarContext();
+  const { addEvent, updateEvent, selectedDate, eventColors } = useCalendarContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState(selectedDate.date);
   const [endDate, setEndDate] = useState(selectedDate.date);
+  const [showTime, setShowTime] = useState(false);
+  const [startTime, setStartTime] = useState('00:00');
+  const [endTime, setEndTime] = useState('00:00');
+  const [colorId, setColorId] = useState('1');
 
   const isEditMode = !!eventToEdit;
 
   useEffect(() => {
-    if (isEditMode) {
-      // 수정 모드일 경우, 기존 데이터를 상태에 채워넣음
+    if (isEditMode && eventToEdit) {
       setTitle(eventToEdit.title);
       setDescription(eventToEdit.description || '');
       setStartDate(eventToEdit.startDate);
-
-      // 렌더링을 위해 하루 더해졌던 종료일을 다시 하루 빼서 설정
       const actualEndDate = new Date(eventToEdit.endDate);
       actualEndDate.setDate(actualEndDate.getDate() - 1);
       setEndDate(actualEndDate.toISOString().split('T')[0]);
+      setColorId(eventToEdit.colorId || '1');
+
+      if (eventToEdit.startDateTime && eventToEdit.endDateTime) {
+        setShowTime(true);
+        setStartTime(eventToEdit.startDateTime.split('T')[1].substring(0, 5));
+        setEndTime(eventToEdit.endDateTime.split('T')[1].substring(0, 5));
+      }
     }
   }, [eventToEdit, isEditMode]);
 
+  useEffect(() => {
+    if (showTime) {
+      setEndDate(startDate);
+    }
+  }, [showTime, startDate]);
+
   const handleSubmit = () => {
     if (title.trim()) {
-      const eventData = {
+      const eventData: Partial<Event> = {
         title: title.trim(),
         description: description.trim(),
-        startDate,
-        // 하루짜리 일정의 경우, 구글 API는 종료일이 시작일보다 하루 뒤여야 함
-        endDate: startDate > endDate ? startDate : endDate,
+        colorId: colorId,
       };
 
-      if (isEditMode) {
+      if (showTime) {
+        eventData.startDateTime = `${startDate}T${startTime}:00`;
+        eventData.endDateTime = `${startDate}T${endTime}:00`;
+        eventData.startDate = startDate;
+        eventData.endDate = startDate;
+      } else {
+        eventData.startDate = startDate;
+        eventData.endDate = endDate;
+      }
+
+      if (isEditMode && eventToEdit) {
         updateEvent(eventToEdit.id, eventData);
       } else {
-        addEvent(eventData);
+        addEvent(eventData as Event);
       }
       onClose();
     }
@@ -61,15 +83,42 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           설명:
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
         </label>
+        <div className="color-palette">
+          {Object.entries(eventColors).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([id, colorInfo]) => (
+            <div
+              key={id}
+              className={`color-swatch ${colorId === id ? 'selected' : ''}`}
+              style={{ backgroundColor: (colorInfo as any).background }}
+              onClick={() => setColorId(id)}
+            />
+          ))}
+        </div>
         <label>
           시작일:
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </label>
-        <label>
-          종료일:
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </label>
+        {showTime && (
+          <label>
+            시작 시간:
+            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </label>
+        )}
+        {!showTime && (
+          <label>
+            종료일:
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </label>
+        )}
+        {showTime && (
+          <label>
+            종료 시간:
+            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </label>
+        )}
         <div className="modal-actions">
+          <button className="time-add-button" onClick={() => setShowTime(!showTime)}>
+            {showTime ? '시간 제거' : '시간 추가'}
+          </button>
           <button className="submit-button" onClick={handleSubmit}>
             {isEditMode ? '수정' : '일정 추가'}
           </button>

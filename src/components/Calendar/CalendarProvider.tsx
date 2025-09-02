@@ -1,30 +1,71 @@
-import React, { useState, useMemo, useEffect, type ReactNode } from "react";
+  import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
 
 interface CalendarProviderProps {
   children: ReactNode;
-  accessToken: string | null; // Add accessToken prop
-  selectedRole: string; // Add selectedRole prop
+  accessToken: string | null;
+  selectedRole: string;
 }
 
 const ROLE_PREFIX_MAP: { [key: string]: string[] } = {
-  'admin': ['01', '02', '03'], // Example: Admin can see all
-  'professor': ['02', '03'], // Example: Professor can see 02 and 03
-  'student': ['03'], // Example: Student can see 03
+  'admin': ['01', '02', '03'],
+  'professor': ['02', '03'],
+  'student': ['03'],
 };
 
-const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessToken, selectedRole }) => { // Destructure accessToken and selectedRole
+const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessToken, selectedRole }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [localEvents, setLocalEvents] = useState<Event[]>([]); // Rename events to localEvents
-  const [googleEvents, setGoogleEvents] = useState<Event[]>([]); // New state for Google events
+  const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [semesterStartDate, setSemesterStartDate] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
+  const [eventColors, setEventColors] = useState<any>({});
+  const [calendarColor, setCalendarColor] = useState<string | undefined>();
 
   const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
 
-  // Fetch Google Calendar events
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const fetchCalendarData = async () => {
+      try {
+        const colorsResponse = await fetch(
+          `https://www.googleapis.com/calendar/v3/colors`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        if (!colorsResponse.ok) {
+          throw new Error(`Error fetching colors: ${colorsResponse.statusText}`);
+        }
+        const colorsData = await colorsResponse.json();
+        setEventColors(colorsData.event);
+
+        const calendarResponse = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        if (!calendarResponse.ok) {
+          throw new Error(`Error fetching calendar info: ${calendarResponse.statusText}`);
+        }
+        const calendarData = await calendarResponse.json();
+        setCalendarColor(calendarData.backgroundColor);
+
+      } catch (error) {
+        console.error("Failed to fetch calendar data:", error);
+      }
+    };
+
+    fetchCalendarData();
+  }, [accessToken]);
+
   useEffect(() => {
     if (!accessToken) return;
 
@@ -32,7 +73,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
       try {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
-        // Fetch a wider range to include events from adjacent weeks
         const firstDayOfMonth = new Date(year, month, 1 - 7);
         const lastDayOfMonth = new Date(year, month + 1, 7);
 
@@ -40,7 +80,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
         const timeMax = lastDayOfMonth.toISOString();
 
         const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+            `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&fields=items(id,summary,start,end,description,colorId)`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -53,57 +93,71 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
         }
 
         const data = await response.json();
-        const transformedEvents: Event[] = data.items.map((item: any) => {
-          let endDate = item.end.date || item.end.dateTime.split('T')[0];
-          // For all-day events, Google Calendar's endDate is exclusive.
-          // If an event is on a single day, the API might return the same start and end date.
-          // The rendering logic requires endDate to be the day after, so we adjust it here.
-          if (item.start.date && item.start.date === item.end.date) {
-            const date = new Date(endDate);
-            date.setDate(date.getDate() + 1);
-            endDate = date.toISOString().split('T')[0];
-          }
-          return {
-            id: item.id,
-            title: item.summary || 'No Title',
-            startDate: item.start.date || item.start.dateTime.split('T')[0], // Handle all-day vs. specific time
-            endDate: endDate,
-            startDateTime: item.start.dateTime,
-            endDateTime: item.end.dateTime,
-            description: item.description || '',
-          };
-        });
+        const transformedEvents: Event[] = data.items
+            .filter((item: any) => item.start && item.end)
+            .map((item: any) => {
+              try {
+                const startStr = item.start.date || item.start.dateTime;
+                const endStr = item.end.date || item.end.dateTime;
+
+                if (!startStr || !endStr) {
+                  return null;
+                }
+
+                let endDate = endStr.split('T')[0];
+                if (item.start.date && item.start.date === item.end.date) {
+                  const date = new Date(endDate);
+                  date.setDate(date.getDate() + 1);
+                  endDate = date.toISOString().split('T')[0];
+                }
+
+                return {
+                  id: item.id,
+                  title: item.summary || 'No Title',
+                  startDate: startStr.split('T')[0],
+                  endDate: endDate,
+                  startDateTime: item.start.dateTime,
+                  endDateTime: item.end.dateTime,
+                  description: item.description || '',
+                  colorId: item.colorId,
+                };
+              } catch (e) {
+                console.error("Failed to transform event item:", item, e);
+                return null;
+              }
+            })
+            .filter(Boolean) as Event[];
         setGoogleEvents(transformedEvents);
       } catch (error) {
         console.error("Failed to fetch Google Calendar events:", error);
-        setGoogleEvents([]); // Clear events on error
+        setGoogleEvents([]);
       }
     };
 
     fetchGoogleEvents();
-  }, [accessToken, currentDate, refreshKey]); // Re-fetch when token, month, or refreshKey changes
+  }, [accessToken, currentDate, refreshKey]);
 
-  // Merge local and Google events, then filter by role
   const events = useMemo(() => {
-    const allEvents = [...localEvents, ...googleEvents];
     const allowedPrefixes = ROLE_PREFIX_MAP[selectedRole] || [];
-
     if (allowedPrefixes.length === 0) {
-      return []; // If no prefixes are allowed for the role, return empty
+      return [];
     }
 
-    return allEvents.filter(event => {
-      const title = event.title || '';
-      const prefixMatch = title.match(/^(\d{2})/); // Extract first two digits as prefix
+    return googleEvents
+      .map(event => ({
+        ...event,
+        color: (eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#3174ad'),
+      }))
+      .filter(event => {
+        const title = event.title || '';
+        const prefixMatch = title.match(/^(\d{2})/);
 
-      if (prefixMatch && prefixMatch[1]) {
-        return allowedPrefixes.includes(prefixMatch[1]);
-      }
-      // If no prefix, or prefix not found, include if role is admin (or if no specific prefix filtering is desired for non-prefixed events)
-      // For now, only inclupde if it has an allowed prefix.
-      return false; // Events without a matching prefix are excluded
-    });
-  }, [localEvents, googleEvents, selectedRole]); // Add selectedRole to dependencies
+        if (prefixMatch && prefixMatch[1]) {
+          return allowedPrefixes.includes(prefixMatch[1]);
+        }
+        return false;
+      });
+  }, [googleEvents, selectedRole, eventColors, calendarColor]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -157,6 +211,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
               end: {
                 date: event.endDate,
               },
+              colorId: event.colorId,
             }),
           }
       );
@@ -166,7 +221,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
       }
 
       await response.json();
-      triggerRefresh(); // Refresh events after adding
+      triggerRefresh();
 
     } catch (error) {
       console.error("Failed to create Google Calendar event:", error);
@@ -201,6 +256,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
               end: {
                 date: event.endDate,
               },
+              colorId: event.colorId,
             }),
           }
       );
@@ -210,7 +266,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
       }
 
       await response.json();
-      triggerRefresh(); // Refresh events after updating
+      triggerRefresh();
 
     } catch (error) {
       console.error("Failed to update Google Calendar event:", error);
@@ -243,10 +299,10 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
             },
           }
       );
-      if (response.status !== 204) { // 204 No Content is success for DELETE
+      if (response.status !== 204) {
         throw new Error(`Error deleting Google Calendar event: ${response.statusText}`);
       }
-      triggerRefresh(); // Refresh events after deleting
+      triggerRefresh();
     } catch (error) {
       console.error("Failed to delete Google Calendar event:", error);
     }
@@ -254,7 +310,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
 
   const deleteEvent = (id: string) => {
     deleteGoogleEvent(id);
-    setSelectedEvent(null); // Close modal after deleting
+    setSelectedEvent(null);
   };
 
   const daysInMonth = useMemo(() => {
@@ -264,7 +320,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
     const lastDayOfMonth = new Date(year, month + 1, 0);
     const days = [];
 
-    // Days from previous month
     const firstDayOfWeek = firstDayOfMonth.getDay();
     for (let i = firstDayOfWeek; i > 0; i--) {
       const date = new Date(year, month, 1 - i);
@@ -277,7 +332,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
       });
     }
 
-    // Days of current month
     for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
       const date = new Date(year, month, i);
       days.push({
@@ -289,7 +343,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
       });
     }
 
-    // Days from next month
     const lastDayOfWeek = lastDayOfMonth.getDay();
     for (let i = 1; i < 7 - lastDayOfWeek; i++) {
       const date = new Date(year, month + 1, i);
@@ -324,13 +377,14 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
     },
     events,
     addEvent,
-    updateEvent, // Add updateEvent to context
+    updateEvent,
     deleteEvent,
     selectedEvent,
     setSelectedEvent,
     semesterStartDate,
     setSemesterStartDate,
     triggerRefresh,
+    eventColors,
   };
 
   return (

@@ -115,7 +115,6 @@
 
 .event-item {
   font-size: 12px;
-  background-color: #e0e0e0;
   border-radius: 3px;
   margin-bottom: 2px;
   padding: 2px 5px;
@@ -124,6 +123,8 @@
   text-overflow: ellipsis;
   margin-left: 5px;
   margin-right: 5px;
+  background-color: #a7d7ff; /* 기본 배경색 추가 */
+  color: #000; /* 기본 글자색 추가 */
 }
 
 .event-item.continuation-left {
