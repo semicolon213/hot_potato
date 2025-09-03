@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { generateWidgetContent } from "../utils/widgetContentGenerator";
-import { gapiInit } from "papyrus-db";
 
 /**
  * 위젯의 데이터 구조를 정의하는 인터페이스입니다.
@@ -26,6 +25,8 @@ interface WidgetData {
 const SPREADSHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
 const SHEET_NAME = 'user_custom';
 const RANGE = `${SHEET_NAME}!B2`;
+
+// Google API 초기화는 App.tsx에서 중앙화되어 처리됨
 
 // 위젯 옵션: 각 위젯 타입에 1-20 사이의 고정 ID를 할당합니다.
 const widgetOptions = [
@@ -183,127 +184,106 @@ export const useWidgetManagement = () => {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
-  // Google API를 초기화하고 시트에서 위젯 데이터를 불러옵니다.
+  // 초기 로딩 상태 설정 (Google Sheets에서 로드하지 않음)
   useEffect(() => {
     console.log("useWidgetManagement 훅이 실행되었습니다!");
+    console.log("위젯 데이터는 Google Sheets에서만 관리됩니다.");
     
-    const initAndLoad = async () => {
-      console.log("initAndLoad 함수가 시작되었습니다.");
-      try {
-        // Google API Client Library 초기화
-        console.log("gapiInit 시작...");
-        await gapiInit(import.meta.env.VITE_GOOGLE_CLIENT_ID);
-        console.log("gapiInit 완료!");
-        
-        const gapi = (window as any).gapi;
-        if (!gapi) {
-          throw new Error("gapi 객체를 찾을 수 없습니다.");
-        }
-        console.log("gapi 객체 확인됨:", !!gapi);
-        
-        // Google Sheets API 로드
-        await gapi.client.load('sheets', 'v4');
-        console.log("Google Sheets API 로드 완료");
-        
-        // Google API Key 설정 (공개 시트 접근용)
-        if (import.meta.env.VITE_GOOGLE_API_KEY) {
-          gapi.client.setApiKey(import.meta.env.VITE_GOOGLE_API_KEY);
-          console.log("Google API Key 설정 완료");
-        } else {
-          console.log("Google API Key가 없습니다. 공개 시트 접근을 시도합니다.");
-        }
-        
-        console.log("위젯 데이터 로드 시도 중...");
-        console.log("Spreadsheet ID:", SPREADSHEET_ID);
-        console.log("Range:", RANGE);
-        
-        // Google Sheets에서 위젯 데이터 로드 시도 (공개 시트 접근)
-        try {
-          const response = await gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: RANGE,
-            majorDimension: 'ROWS'
-          });
-
-          const cellContent = response.result.values?.[0]?.[0];
-          if (cellContent) {
-            try {
-              const savedIds: string[] = JSON.parse(cellContent);
-              
-              const loadedWidgets = savedIds.map(id => {
-                const option = widgetOptions.find(opt => opt.id === id);
-                if (!option) return null;
-
-                const { type } = option;
-                const { title, componentType, props } = generateWidgetContent(type);
-                return { id, type, title, componentType, props };
-              }).filter((w): w is WidgetData => w !== null);
-              
-              setWidgets(loadedWidgets);
-              console.log("위젯 데이터 로드 성공:", loadedWidgets.length, "개");
-            } catch (parseError) {
-              console.error("위젯 데이터 파싱 오류:", parseError);
-              setWidgets([]);
-            }
-          } else {
-            console.log("저장된 위젯 데이터가 없습니다.");
-            setWidgets([]);
-          }
-          
-          isDbReady.current = true;
-          
-        } catch (authError) {
-          console.error("Google API 인증 오류:", authError);
-          console.error("인증 오류 상세:", authError.message);
-          setWidgets([]);
-          isDbReady.current = true;
-        }
-        
-      } catch (error) {
-        console.error("Error loading widget data from Google Sheets:", error);
-        console.error("오류 상세:", error.message);
-        console.error("오류 스택:", error.stack);
-        setWidgets([]);
-        isDbReady.current = true;
-      } finally {
-        console.log("initAndLoad 함수 완료, isLoading을 false로 설정");
-        isLoading.current = false;
-      }
-    };
-    
-    // 더 긴 지연 후 초기화 (Google API 완전 초기화 대기)
-    const timer = setTimeout(initAndLoad, 3000);
-    return () => clearTimeout(timer);
+    // 초기 상태 설정
+    setWidgets([]);
+    isDbReady.current = true;
+    isLoading.current = false;
   }, []);
+
+  // Google Sheets에서 위젯 데이터를 동기화하는 함수 (사용자가 로그인한 후에만 호출)
+  const syncWidgetsWithGoogleSheets = async () => {
+    try {
+      console.log("Google Sheets와 위젯 데이터 동기화 시작");
+      
+      const gapi = (window as any).gapi;
+      if (!gapi || !gapi.client || !gapi.client.sheets) {
+        throw new Error("Google API가 초기화되지 않았습니다. 먼저 로그인해주세요.");
+      }
+      
+      // Google API Key 설정 (공개 시트 접근용)
+      if (import.meta.env.VITE_GOOGLE_API_KEY) {
+        gapi.client.setApiKey(import.meta.env.VITE_GOOGLE_API_KEY);
+        console.log("Google API Key 설정 완료");
+      }
+      
+      // Google Sheets에서 위젯 데이터 로드
+      console.log("Google Sheets에서 위젯 데이터 로드 시도...");
+      const response = await gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: RANGE,
+        majorDimension: 'ROWS'
+      });
+
+      const cellContent = response.result.values?.[0]?.[0];
+      if (cellContent) {
+        try {
+          const savedIds: string[] = JSON.parse(cellContent);
+          
+          const loadedWidgets = savedIds.map(id => {
+            const option = widgetOptions.find(opt => opt.id === id);
+            if (!option) return null;
+
+            const { type } = option;
+            const { title, componentType, props } = generateWidgetContent(type);
+            return { id, type, title, componentType, props };
+          }).filter((w): w is WidgetData => w !== null);
+          
+          setWidgets(loadedWidgets);
+          console.log("Google Sheets에서 위젯 데이터 동기화 성공:", loadedWidgets.length, "개");
+        } catch (parseError) {
+          console.error("위젯 데이터 파싱 오류:", parseError);
+          setWidgets([]);
+        }
+      } else {
+        console.log("저장된 위젯 데이터가 없습니다.");
+        setWidgets([]);
+      }
+      
+    } catch (error) {
+      console.error("Google Sheets 동기화 실패:", error);
+      alert("Google Sheets 동기화에 실패했습니다. 네트워크 연결을 확인하고 다시 시도해주세요.");
+    }
+  };
 
   // 위젯 상태가 변경되면 Google Sheets에 저장합니다.
   useEffect(() => {
     if (isLoading.current) return;
 
-    const saveWidgetsToSheet = async () => {
+    const saveWidgetsToGoogleSheets = async () => {
       if (!isDbReady.current) return;
       
+      // Google Sheets에 저장 (gapi가 사용 가능한 경우에만)
       try {
         const gapi = (window as any).gapi;
-        
-        // 위젯의 ID만 배열로 저장합니다.
-        const dataToSave = widgets.map(({ id }) => id);
-        await gapi.client.sheets.spreadsheets.values.update({
-          spreadsheetId: SPREADSHEET_ID,
-          range: RANGE,
-          valueInputOption: 'RAW',
-          resource: {
-            values: [[JSON.stringify(dataToSave)]],
-          },
-        });
-        console.log("위젯 데이터 저장 성공:", dataToSave);
+        if (gapi && gapi.client && gapi.client.sheets) {
+          const dataToSave = widgets.map(({ id }) => id);
+          console.log("Google Sheets에 위젯 데이터 저장 시도:", dataToSave);
+          
+          await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: SPREADSHEET_ID,
+            range: RANGE,
+            valueInputOption: 'RAW',
+            resource: {
+              values: [[JSON.stringify(dataToSave)]],
+            },
+          });
+          console.log("위젯 데이터 Google Sheets 저장 성공:", dataToSave);
+        } else {
+          console.log("Google API가 초기화되지 않았습니다. 위젯 데이터는 메모리에만 저장됩니다.");
+        }
       } catch (error) {
         console.error("Error saving widget data to Google Sheets:", error);
-        // 저장 실패 시 사용자에게 알림하지 않음 (백그라운드 작업)
+        console.log("위젯 데이터 저장 실패. Google 로그인 후 동기화 버튼을 클릭해주세요.");
+        // Google Sheets 저장 실패는 백그라운드 작업이므로 사용자에게 알리지 않음
       }
     };
 
-    saveWidgetsToSheet();
+    saveWidgetsToGoogleSheets();
   }, [widgets]);
 
   /**
@@ -373,5 +353,6 @@ export const useWidgetManagement = () => {
     handleDragEnter,
     handleDrop,
     widgetOptions,
+    syncWidgetsWithGoogleSheets,
   };
 };

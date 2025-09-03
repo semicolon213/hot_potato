@@ -3,7 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { gapiInit, appendRow } from 'papyrus-db';
+import { appendRow } from 'papyrus-db'; // Google Sheets API 접근용
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 
@@ -24,6 +24,99 @@ import Proceedings from "./pages/proceedings";
 import type { Template } from "./hooks/useTemplateUI";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+// Google Sheets API 접근을 위한 설정
+const SHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
+
+// 중앙화된 Google API 초기화 상태 관리
+let isGoogleAPIInitialized = false;
+let googleAPIInitPromise: Promise<void> | null = null;
+
+// 직접 구현한 Google API 초기화 함수
+const initializeGoogleAPIOnce = async (): Promise<void> => {
+  // 이미 초기화되었으면 바로 반환
+  if (isGoogleAPIInitialized) {
+    return;
+  }
+  
+  // 이미 초기화 중이면 기존 Promise 반환
+  if (googleAPIInitPromise) {
+    return googleAPIInitPromise;
+  }
+  
+  // 새로운 초기화 Promise 생성
+  googleAPIInitPromise = (async () => {
+    try {
+      console.log("Google API 초기화 시작 (직접 구현)");
+      
+      // gapi 스크립트가 로드될 때까지 대기
+      const waitForGapi = (): Promise<void> => {
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 50; // 5초 대기
+          
+          const checkGapi = () => {
+            attempts++;
+            
+            if (typeof window !== 'undefined' && (window as any).gapi) {
+              console.log("gapi 스크립트 로드 완료");
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              reject(new Error("gapi 스크립트 로드 타임아웃"));
+            } else {
+              setTimeout(checkGapi, 100);
+            }
+          };
+          
+          checkGapi();
+        });
+      };
+      
+      await waitForGapi();
+      
+      const gapi = (window as any).gapi;
+      
+      // 이미 초기화되어 있는지 확인
+      if (gapi.client && gapi.client.getToken && gapi.client.getToken()) {
+        console.log("Google API가 이미 초기화되어 있습니다.");
+        isGoogleAPIInitialized = true;
+        return;
+      }
+      
+      console.log("Google API Client Library 초기화 중...");
+      
+      // Google API Client Library 초기화
+      await new Promise<void>((resolve, reject) => {
+        gapi.load('client:auth2', async () => {
+          try {
+            console.log("gapi.load 완료, client.init 시작...");
+            
+            await gapi.client.init({
+              clientId: GOOGLE_CLIENT_ID,
+              discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+              scope: 'https://www.googleapis.com/auth/spreadsheets'
+            });
+            
+            console.log("Google API Client Library 초기화 성공!");
+            isGoogleAPIInitialized = true;
+            resolve();
+          } catch (error) {
+            console.error("Google API Client Library 초기화 실패:", error);
+            reject(error);
+          }
+        });
+      });
+      
+    } catch (error) {
+      console.error("Google API 초기화 실패:", error);
+      isGoogleAPIInitialized = false;
+      googleAPIInitPromise = null;
+      throw error;
+    }
+  })();
+  
+  return googleAPIInitPromise;
+};
 
 // Post interface shared between Board and App
 export interface Post {
@@ -68,7 +161,7 @@ const App: React.FC = () => {
   const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
   const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
 
-  const sheetId = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
+  // SHEET_ID는 상수로 정의됨
   const boardSheetName = 'free_board';
   const announcementSheetName = 'notice';
 
@@ -214,13 +307,12 @@ const App: React.FC = () => {
   const addTag = async (newTag: string) => {
     if (newTag && !tags.includes(newTag)) {
       try {
-        // Explicitly set other columns to empty strings to avoid 'FALSE'
         const newRow = {
           'template_title': '',
           'tamplateparttitle': '', // Typo as per user's message
           'tag_name': newTag
         };
-        await appendRow(sheetId, 'document_template', newRow);
+        await appendRow(SHEET_ID, 'document_template', newRow);
         setTags([...tags, newTag]);
         alert('새로운 태그가 추가되었습니다.');
       } catch (error) {
@@ -241,7 +333,7 @@ const App: React.FC = () => {
       ];
 
       await (window as any).gapi.client.sheets.spreadsheets.values.append({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         range: 'document_template!A1',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
@@ -250,17 +342,10 @@ const App: React.FC = () => {
         },
       });
 
-      // Local state update
-      const newTemplate: Template = {
-        // rowIndex is not available directly from append, refetching is an option
-        // but for now, a local optimistic update is faster.
-        rowIndex: customTemplates.length + 1, // This is an approximation for the key
-        type: newDocData.title,
-        title: newDocData.title,
-        description: newDocData.description,
-        tag: newDocData.tag,
-      };
-      setCustomTemplates(prevTemplates => [...prevTemplates, newTemplate]);
+      console.log('Template saved to Google Sheets successfully');
+      
+      // Refresh templates from Google Sheets to get the latest data
+      await fetchTemplates();
 
       alert('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
@@ -277,7 +362,7 @@ const App: React.FC = () => {
 
     try {
       await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         resource: {
           requests: [
             {
@@ -294,7 +379,11 @@ const App: React.FC = () => {
         },
       });
 
-      setCustomTemplates(prevTemplates => prevTemplates.filter(t => t.rowIndex !== rowIndex));
+      console.log('Template deleted from Google Sheets successfully');
+      
+      // Refresh templates from Google Sheets to get the latest data
+      await fetchTemplates();
+      
       alert('템플릿이 성공적으로 삭제되었습니다.');
 
     } catch (error) {
@@ -306,7 +395,7 @@ const App: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         range: `${boardSheetName}!A:E`,
       });
 
@@ -332,7 +421,7 @@ const App: React.FC = () => {
   const fetchAnnouncements = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         range: `${announcementSheetName}!A:E`,
       });
 
@@ -358,8 +447,8 @@ const App: React.FC = () => {
   const fetchTemplates = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: 'document_template!B2:E', // Range is OK, covers B, C, D, E
+        spreadsheetId: SHEET_ID,
+        range: 'document_template!B2:E', // Range covers B, C, D, E columns
       });
 
       const data = response.result.values;
@@ -367,19 +456,21 @@ const App: React.FC = () => {
         const allTemplates: Template[] = data.map((row: string[], i: number) => ({
           rowIndex: i + 2,
           title: row[0] || '',       // Column B -> title
-          description: '',           // No source for description, set to empty
-          parttitle: row[1] || '',   // Column C -> parttitle
+          description: row[1] || '', // Column C -> description (was parttitle)
+          parttitle: row[1] || '',   // Column C -> parttitle (same as description for compatibility)
           tag: row[2] || '',         // Column D -> tag
-          type: row[0] || '',
+          type: row[0] || '',        // Use title as type
         }));
 
         const filteredTemplates = allTemplates.filter(template => {
-          // Filter based on title (B), parttitle (C), and tag (D)
-          return template.title && template.parttitle && template.tag;
+          // Filter based on title (B), description (C), and tag (D)
+          return template.title && template.description && template.tag;
         });
 
+        console.log('Loaded templates from Google Sheets:', filteredTemplates);
         setCustomTemplates(filteredTemplates);
       } else {
+        console.log('No template data found in Google Sheets');
         setCustomTemplates([]);
       }
     } catch (error) {
@@ -391,7 +482,7 @@ const App: React.FC = () => {
     try {
       // Fetch tags ONLY from the 'tag_name' column (Column E)
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         range: `document_template!E2:E`, // Corrected to Column E
       });
 
@@ -409,11 +500,19 @@ const App: React.FC = () => {
 
   const handleBoardAuth = async () => {
     try {
-      await gapiInit(GOOGLE_CLIENT_ID);
+      await initializeGoogleAPIOnce();
       setIsGoogleAuthenticatedForBoard(true);
       alert('Google 인증 성공!');
-      fetchPosts();
+      
+      // 인증 후 데이터 로드
+      try {
+        fetchPosts();
+      } catch (error) {
+        console.error("Error fetching posts after auth:", error);
+        alert('인증은 성공했지만 데이터 로드에 실패했습니다.');
+      }
     } catch (e: any) {
+      console.error('Google 인증 실패:', e);
       alert('Google 인증 실패: ' + e.message);
       setIsGoogleAuthenticatedForBoard(false);
     }
@@ -421,11 +520,19 @@ const App: React.FC = () => {
 
   const handleAnnouncementsAuth = async () => {
     try {
-      await gapiInit(GOOGLE_CLIENT_ID);
+      await initializeGoogleAPIOnce();
       setIsGoogleAuthenticatedForAnnouncements(true);
       alert('Google 인증 성공!');
-      fetchAnnouncements();
+      
+      // 인증 후 데이터 로드
+      try {
+        fetchAnnouncements();
+      } catch (error) {
+        console.error("Error fetching announcements after auth:", error);
+        alert('인증은 성공했지만 데이터 로드에 실패했습니다.');
+      }
     } catch (e: any) {
+      console.error('Google 인증 실패:', e);
       alert('Google 인증 실패: ' + e.message);
       setIsGoogleAuthenticatedForAnnouncements(false);
     }
@@ -434,7 +541,7 @@ const App: React.FC = () => {
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         range: `${boardSheetName}!A:A`,
       });
 
@@ -449,7 +556,7 @@ const App: React.FC = () => {
         'file_freeBoard': '', // File handling logic can be added here
       };
 
-      await appendRow(sheetId, boardSheetName, newPostForSheet);
+      await appendRow(SHEET_ID, boardSheetName, newPostForSheet);
       await fetchPosts(); // Refetch posts after adding a new one
       alert('게시글이 성공적으로 저장되었습니다.');
       handlePageChange('board');
@@ -462,7 +569,7 @@ const App: React.FC = () => {
   const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
+        spreadsheetId: SHEET_ID,
         range: `${announcementSheetName}!A:A`,
       });
 
@@ -477,7 +584,7 @@ const App: React.FC = () => {
         'file_notice': '', // File handling logic can be added here
       };
 
-      await appendRow(sheetId, announcementSheetName, newPostForSheet);
+      await appendRow(SHEET_ID, announcementSheetName, newPostForSheet);
       await fetchAnnouncements(); // Refetch announcements after adding a new one
       alert('공지사항이 성공적으로 저장되었습니다.');
       handlePageChange('announcements');
@@ -537,13 +644,53 @@ const App: React.FC = () => {
 
     const initAndFetch = async () => {
       try {
-        await gapiInit(GOOGLE_CLIENT_ID);
-        const authInstance = (window as any).gapi.auth2.getAuthInstance();
-        if (authInstance.isSignedIn.get()) {
-          fetchInitialData();
-        }
+        await initializeGoogleAPIOnce();
+        
+        // gapi가 초기화된 후 데이터 로드
+        const fetchInitialData = async () => {
+          try {
+            const gapi = (window as any).gapi;
+            if (gapi && gapi.client && gapi.client.sheets) {
+              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+              const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
+              if (docSheet && docSheet.properties) {
+                setDocumentTemplateSheetId(docSheet.properties.sheetId);
+              }
+              fetchTemplates();
+              fetchTags();
+              fetchAnnouncements();
+              fetchPosts();
+            } else {
+              console.log("Google API가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.");
+              // 2초 후 다시 시도
+              setTimeout(fetchInitialData, 2000);
+            }
+          } catch (error) {
+            console.error("Error during initial data fetch", error);
+            // 오류 발생 시에도 기본 데이터는 로드 시도
+            try {
+              fetchTemplates();
+              fetchTags();
+              fetchAnnouncements();
+              fetchPosts();
+            } catch (fallbackError) {
+              console.error("Fallback data fetch also failed", fallbackError);
+            }
+          }
+        };
+        
+        fetchInitialData();
       } catch (error) {
         console.error("Error during initial gapi load", error);
+        // gapi 초기화 실패 시에도 기본 데이터 로드 시도
+        try {
+          fetchTemplates();
+          fetchTags();
+          fetchAnnouncements();
+          fetchPosts();
+        } catch (fallbackError) {
+          console.error("Fallback data fetch failed", fallbackError);
+        }
       }
     }
 
@@ -562,16 +709,18 @@ const App: React.FC = () => {
     // 로그인 성공 후 Google Sheets 데이터 로드
     const initAndFetch = async () => {
       try {
-        await gapiInit(GOOGLE_CLIENT_ID);
-        const authInstance = (window as any).gapi.auth2.getAuthInstance();
-        if (authInstance.isSignedIn.get()) {
-          const fetchInitialData = async () => {
-            try {
-              setIsGoogleAuthenticatedForAnnouncements(true);
-              setIsGoogleAuthenticatedForBoard(true);
+        // 중앙화된 Google API 초기화 사용
+        await initializeGoogleAPIOnce();
+        
+        // gapi가 초기화된 후 데이터 로드
+        const fetchInitialData = async () => {
+          try {
+            setIsGoogleAuthenticatedForAnnouncements(true);
+            setIsGoogleAuthenticatedForBoard(true);
 
-              const gapi = (window as any).gapi;
-              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
+            const gapi = (window as any).gapi;
+            if (gapi && gapi.client && gapi.client.sheets) {
+              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
               const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
               if (docSheet && docSheet.properties) {
                 setDocumentTemplateSheetId(docSheet.properties.sheetId);
@@ -580,14 +729,38 @@ const App: React.FC = () => {
               fetchTags();
               fetchAnnouncements();
               fetchPosts();
-            } catch (error) {
-              console.error("Error during initial data fetch", error);
+            } else {
+              console.log("Google API가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.");
+              // 2초 후 다시 시도
+              setTimeout(fetchInitialData, 2000);
             }
-          };
-          fetchInitialData();
-        }
+          } catch (error) {
+            console.error("Error during initial data fetch", error);
+            // 오류 발생 시에도 기본 데이터는 로드 시도
+            try {
+              fetchTemplates();
+              fetchTags();
+              fetchAnnouncements();
+              fetchPosts();
+            } catch (fallbackError) {
+              console.error("Fallback data fetch also failed", fallbackError);
+            }
+          }
+        };
+        
+        // gapi 초기화 완료 후 데이터 로드
+        fetchInitialData();
       } catch (error) {
         console.error("Error during initial gapi load", error);
+        // gapi 초기화 실패 시에도 기본 데이터 로드 시도
+        try {
+          fetchTemplates();
+          fetchTags();
+          fetchAnnouncements();
+          fetchPosts();
+        } catch (fallbackError) {
+          console.error("Fallback data fetch failed", fallbackError);
+        }
       }
     }
     initAndFetch();

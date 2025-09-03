@@ -30,6 +30,12 @@ body {
     margin-bottom: 30px;
 }
 
+.dashboard-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 .dashboard-header h1 {
     color: #2c3e50;
     font-size: 28px;
@@ -71,6 +77,43 @@ body {
 .add-widget-btn i {
     margin-right: 8px;
     font-size: 16px;
+}
+
+.sync-btn {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;
+    box-shadow: 0 3px 10px rgba(39, 174, 96, 0.3);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sync-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+}
+
+.sync-btn i {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.sync-btn:disabled {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 3px 10px rgba(149, 165, 166, 0.3);
+}
+
+.sync-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 3px 10px rgba(149, 165, 166, 0.3);
 }
 
 /* 빈 대시보드 스타일 */

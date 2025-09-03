@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { gapiInit } from 'papyrus-db';
+// papyrus-db는 appendRow만 사용, 초기화는 직접 구현
 import './NewAnnouncementPost.css';
 import type { Post } from '../../App';
 
@@ -17,19 +17,24 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
   useEffect(() => {
     const checkAuth = async () => {
         try {
-            await gapiInit(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+            // Google API가 이미 초기화되어 있는지 확인
             const gapi = (window as any).gapi;
-            const authInstance = gapi.auth2.getAuthInstance();
-            if (authInstance.isSignedIn.get()) {
-                const profile = authInstance.currentUser.get().getBasicProfile();
-                setAuthor(profile.getName());
-                setIsAuthenticated(true);
+            if (gapi && gapi.auth2) {
+                const authInstance = gapi.auth2.getAuthInstance();
+                if (authInstance.isSignedIn.get()) {
+                    const profile = authInstance.currentUser.get().getBasicProfile();
+                    setAuthor(profile.getName());
+                    setIsAuthenticated(true);
+                } else {
+                    alert('Google 인증이 필요합니다.');
+                    onPageChange('announcements');
+                }
             } else {
-                alert('Google 인증이 필요합니다.');
+                alert('Google API가 초기화되지 않았습니다. 먼저 로그인해주세요.');
                 onPageChange('announcements');
             }
         } catch (error) {
-            alert('Google 인증 초기화에 실패했습니다.');
+            alert('Google 인증 확인에 실패했습니다.');
             onPageChange('announcements');
         }
     };
