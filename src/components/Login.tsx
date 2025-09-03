@@ -1,6 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import './Login.css';
 
+// 한글 디코딩을 위한 유틸리티 함수
+const decodeKoreanText = (text: string): string => {
+  try {
+    // 이미 올바른 한글이면 그대로 반환
+    if (/[가-힣]/.test(text)) {
+      return text;
+    }
+    
+    // 깨진 한글을 복구 시도
+    const decoded = decodeURIComponent(escape(text));
+    return decoded;
+  } catch (e) {
+    console.warn('한글 디코딩 실패:', e);
+    return text; // 실패 시 원본 반환
+  }
+};
+
+// JWT 토큰 만료 확인 함수
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const base64Payload = token.split('.')[1];
+    const paddedPayload = base64Payload + '='.repeat((4 - base64Payload.length % 4) % 4);
+    const decodedPayload = atob(paddedPayload);
+    const payload = JSON.parse(decodedPayload);
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (e) {
+    console.error('토큰 파싱 실패:', e);
+    return true; // 파싱 실패 시 만료된 것으로 간주
+  }
+};
+
 interface LoginProps {
   onLogin: (userData: any) => void;
 }
@@ -37,6 +70,37 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   // Google Identity Services (GIS) 초기화
   useEffect(() => {
+    // Google OAuth 관련 오류 필터링
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    
+    console.error = (...args) => {
+      const message = args.join(' ');
+      // Google OAuth 관련 오류는 필터링
+      if (message.includes('Cross-Origin-Opener-Policy') || 
+          message.includes('window.closed') || 
+          message.includes('window.postMessage') ||
+          message.includes('cspreport') ||
+          message.includes('400 (Bad Request)') ||
+          message.includes('Failed to load resource')) {
+        return; // 오류 메시지 출력하지 않음
+      }
+      originalConsoleError.apply(console, args);
+    };
+
+    console.warn = (...args) => {
+      const message = args.join(' ');
+      // Google OAuth 관련 경고는 필터링
+      if (message.includes('Cross-Origin-Opener-Policy') || 
+          message.includes('Refused to frame') ||
+          message.includes('Content Security Policy') ||
+          message.includes('iframe') ||
+          message.includes('sandbox')) {
+        return; // 경고 메시지 출력하지 않음
+      }
+      originalConsoleWarn.apply(console, args);
+    };
+
     const initializeGoogleGIS = () => {
       console.log('Google GIS 초기화 시작');
       console.log('window.google 존재:', typeof window.google !== 'undefined');
@@ -56,6 +120,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           callback: handleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,
+          use_fedcm_for_prompt: false,
+          itp_support: true,
         });
 
         console.log('Google GIS 초기화 성공');
@@ -103,6 +169,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     // 즉시 초기화 시작
     initializeGoogleGIS();
+
+    // cleanup 함수에서 원래 console 함수들 복원
+    return () => {
+      console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
+    };
   }, []);
 
   // Google 로그인 성공 콜백
@@ -112,14 +184,34 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       
       // JWT 토큰을 localStorage에 저장
       localStorage.setItem('google_token', response.credential);
+      console.log('Google JWT Token 저장됨:', response.credential.substring(0, 50) + '...');
       
-      // JWT 토큰에서 사용자 정보 추출
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      // JWT 토큰에서 사용자 정보 추출 (한글 인코딩 문제 해결)
+      const base64Payload = response.credential.split('.')[1];
+      // Base64 패딩 추가 (필요한 경우)
+      const paddedPayload = base64Payload + '='.repeat((4 - base64Payload.length % 4) % 4);
+      
+      // UTF-8로 안전하게 디코딩
+      let decodedPayload;
+      try {
+        // 먼저 일반 atob 시도
+        decodedPayload = atob(paddedPayload);
+      } catch (e) {
+        // 실패 시 URL-safe Base64 디코딩 시도
+        const urlSafePayload = paddedPayload.replace(/-/g, '+').replace(/_/g, '/');
+        decodedPayload = atob(urlSafePayload);
+      }
+      
+      const payload = JSON.parse(decodedPayload);
+      
       const email = payload.email;
-      const name = payload.name;
+      const name = decodeKoreanText(payload.name);
       
       console.log('사용자 이메일:', email);
-      console.log('사용자 이름:', name);
+      console.log('사용자 이름 (원본):', payload.name);
+      console.log('사용자 이름 (복구 후):', name);
+      console.log('사용자 이름 (인코딩 확인):', encodeURIComponent(name));
+      
       setUserEmail(email);
       setError('');
       
@@ -240,8 +332,22 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       let userName = '';
       if (token) {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          userName = payload.name || '';
+          const base64Payload = token.split('.')[1];
+          const paddedPayload = base64Payload + '='.repeat((4 - base64Payload.length % 4) % 4);
+          
+          // UTF-8로 안전하게 디코딩
+          let decodedPayload;
+          try {
+            decodedPayload = atob(paddedPayload);
+          } catch (e) {
+            const urlSafePayload = paddedPayload.replace(/-/g, '+').replace(/_/g, '/');
+            decodedPayload = atob(urlSafePayload);
+          }
+          
+          const payload = JSON.parse(decodedPayload);
+          userName = decodeKoreanText(payload.name || '');
+          console.log('회원가입용 사용자 이름 (원본):', payload.name);
+          console.log('회원가입용 사용자 이름 (복구 후):', userName);
         } catch (e) {
           console.error('토큰 파싱 실패:', e);
         }

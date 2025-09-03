@@ -24,7 +24,7 @@
 }
 
 body, html, * {
-font-family: var(--main-font), system-ui, sans-serif !important;
+font-family: var(--main-font), 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif !important;
 }
 
 /* 기본 설정 및 변수 */
@@ -32,7 +32,7 @@ font-family: var(--main-font), system-ui, sans-serif !important;
 margin: 0;
 padding: 0;
 box-sizing: border-box;
-font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regular', sans-serif;
 }
 
 /* 색상 팔레트 */

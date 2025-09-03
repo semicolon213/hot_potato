@@ -488,24 +488,32 @@ const App: React.FC = () => {
 
   // 로그인 상태 확인 (from feature/login)
   useEffect(() => {
-    // 개발 모드에서 로그인 화면을 강제로 표시하려면 아래 주석을 해제하세요
-    if (import.meta.env.DEV) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('google_token');
-      localStorage.removeItem('googleAccessToken');
-    }
-    
+    // 개발 모드에서도 로그인 상태 유지
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        console.log('저장된 사용자 정보 복원:', userData);
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error);
+        localStorage.removeItem('user');
+      }
     }
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
     const storedAccessToken = localStorage.getItem('googleAccessToken');
+    const storedGoogleToken = localStorage.getItem('google_token');
+    
     if (storedAccessToken) {
       setGoogleAccessToken(storedAccessToken);
+      console.log('Google Access Token 복원됨');
+    }
+    
+    if (storedGoogleToken) {
+      console.log('Google JWT Token 복원됨');
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -541,20 +549,58 @@ const App: React.FC = () => {
 
     const initAndFetch = async () => {
       try {
+        // Google API Client Library 초기화
         await gapiInit(GOOGLE_CLIENT_ID);
-        const authInstance = (window as any).gapi.auth2.getAuthInstance();
-        if (authInstance.isSignedIn.get()) {
-          fetchInitialData();
+        const gapi = (window as any).gapi;
+        
+        // Google Sheets API 로드
+        await gapi.client.load('sheets', 'v4');
+        console.log("App.tsx: Google Sheets API 로드 완료");
+        
+        // Google API Key 설정 (공개 시트 접근용)
+        if (import.meta.env.VITE_GOOGLE_API_KEY) {
+          gapi.client.setApiKey(import.meta.env.VITE_GOOGLE_API_KEY);
+          console.log("App.tsx: Google API Key 설정 완료");
         }
+        
+        console.log("App.tsx: 데이터 로드 시작");
+        fetchInitialData();
       } catch (error) {
-        console.error("Error during initial gapi load", error);
+        console.error("App.tsx: Error during initial gapi load", error);
       }
     }
     
     // 로그인된 사용자가 있을 때만 Google Sheets 데이터 로드
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      initAndFetch();
+    const savedGoogleToken = localStorage.getItem('google_token');
+    
+    if (savedUser && savedGoogleToken) {
+      // 토큰 만료 확인
+      try {
+        const base64Payload = savedGoogleToken.split('.')[1];
+        const paddedPayload = base64Payload + '='.repeat((4 - base64Payload.length % 4) % 4);
+        const decodedPayload = atob(paddedPayload);
+        const payload = JSON.parse(decodedPayload);
+        const currentTime = Math.floor(Date.now() / 1000);
+        
+        if (payload.exp > currentTime) {
+          console.log('토큰이 유효함 - 자동 로그인 시도 중...');
+          initAndFetch();
+        } else {
+          console.log('토큰이 만료됨 - 재로그인 필요');
+          localStorage.removeItem('user');
+          localStorage.removeItem('google_token');
+        }
+      } catch (error) {
+        console.error('토큰 검증 실패:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('google_token');
+      }
+    } else if (savedUser && !savedGoogleToken) {
+      console.log('사용자 정보는 있지만 Google 토큰이 없음 - 재로그인 필요');
+      localStorage.removeItem('user');
+    } else {
+      console.log('저장된 로그인 정보 없음');
     }
   }, []);
 
@@ -566,30 +612,40 @@ const App: React.FC = () => {
     // 로그인 성공 후 Google Sheets 데이터 로드
     const initAndFetch = async () => {
       try {
+        // Google API Client Library 초기화
         await gapiInit(GOOGLE_CLIENT_ID);
-        const authInstance = (window as any).gapi.auth2.getAuthInstance();
-        if (authInstance.isSignedIn.get()) {
-          const fetchInitialData = async () => {
-            try {
-              setIsGoogleAuthenticatedForAnnouncements(true);
-              setIsGoogleAuthenticatedForBoard(true);
-
-              const gapi = (window as any).gapi;
-              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
-              const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
-              if (docSheet && docSheet.properties) {
-                setDocumentTemplateSheetId(docSheet.properties.sheetId);
-              }
-              fetchTemplates();
-              fetchTags();
-              fetchAnnouncements();
-              fetchPosts();
-            } catch (error) {
-              console.error("Error during initial data fetch", error);
-            }
-          };
-          fetchInitialData();
+        const gapi = (window as any).gapi;
+        
+        // Google Sheets API 로드
+        await gapi.client.load('sheets', 'v4');
+        console.log("로그인 후: Google Sheets API 로드 완료");
+        
+        // Google API Key 설정 (공개 시트 접근용)
+        if (import.meta.env.VITE_GOOGLE_API_KEY) {
+          gapi.client.setApiKey(import.meta.env.VITE_GOOGLE_API_KEY);
+          console.log("로그인 후: Google API Key 설정 완료");
         }
+        
+        const fetchInitialData = async () => {
+          try {
+            setIsGoogleAuthenticatedForAnnouncements(true);
+            setIsGoogleAuthenticatedForBoard(true);
+
+            const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
+            const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
+            if (docSheet && docSheet.properties) {
+              setDocumentTemplateSheetId(docSheet.properties.sheetId);
+            }
+            fetchTemplates();
+            fetchTags();
+            fetchAnnouncements();
+            fetchPosts();
+          } catch (error) {
+            console.error("Error during initial data fetch", error);
+          }
+        };
+        
+        fetchInitialData();
       } catch (error) {
         console.error("Error during initial gapi load", error);
       }
