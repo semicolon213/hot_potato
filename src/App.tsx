@@ -32,6 +32,18 @@ const SHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
 let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
 
+// gapi 초기화 상태 리셋 함수 (새로고침 시 호출)
+const resetGoogleAPIState = () => {
+  console.log("Google API 상태 리셋");
+  isGoogleAPIInitialized = false;
+  googleAPIInitPromise = null;
+};
+
+// 페이지 로드 시 상태 리셋
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', resetGoogleAPIState);
+}
+
 // 직접 구현한 Google API 초기화 함수
 const initializeGoogleAPIOnce = async (): Promise<void> => {
   // 이미 초기화되었으면 바로 반환
@@ -49,21 +61,24 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
     try {
       console.log("Google API 초기화 시작 (직접 구현)");
       
-      // gapi 스크립트가 로드될 때까지 대기
+      // gapi 스크립트가 로드될 때까지 대기 (더 빠른 체크)
       const waitForGapi = (): Promise<void> => {
         return new Promise((resolve, reject) => {
           let attempts = 0;
-          const maxAttempts = 50; // 5초 대기
+          const maxAttempts = 30; // 3초로 더 단축
           
           const checkGapi = () => {
             attempts++;
             
-            if (typeof window !== 'undefined' && (window as any).gapi) {
+            // gapiLoaded 플래그와 gapi 객체 모두 확인
+            if (typeof window !== 'undefined' && 
+                ((window as any).gapiLoaded || (window as any).gapi)) {
               console.log("gapi 스크립트 로드 완료");
               resolve();
             } else if (attempts >= maxAttempts) {
               reject(new Error("gapi 스크립트 로드 타임아웃"));
             } else {
+              // 더 빠른 체크 간격 (100ms)
               setTimeout(checkGapi, 100);
             }
           };
@@ -76,9 +91,42 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
       
       const gapi = (window as any).gapi;
       
-      // 이미 초기화되어 있는지 확인
-      if (gapi.client && gapi.client.getToken && gapi.client.getToken()) {
+      // 더 정확한 초기화 상태 확인
+      const isClientInitialized = gapi.client && 
+        gapi.client.sheets && 
+        gapi.client.sheets.spreadsheets;
+      
+      if (isClientInitialized) {
         console.log("Google API가 이미 초기화되어 있습니다.");
+        
+        // 새로고침 시 저장된 토큰 복원 시도
+        const savedToken = localStorage.getItem('googleAccessToken');
+        if (savedToken) {
+          console.log("저장된 토큰을 gapi client에 복원 시도");
+          try {
+            // gapi client에 토큰 설정
+            gapi.client.setToken({ access_token: savedToken });
+            console.log("토큰 복원 성공");
+            
+            // 토큰 유효성 검증 (더 빠른 방법)
+            try {
+              // 간단한 API 호출로 토큰 유효성 확인
+              await gapi.client.sheets.spreadsheets.get({ 
+                spreadsheetId: SHEET_ID,
+                ranges: ['document_template!A1:A1'],
+                includeGridData: false // 데이터를 가져오지 않아 더 빠름
+              });
+              console.log("토큰 유효성 검증 성공");
+            } catch (tokenError) {
+              console.warn("토큰 유효성 검증 실패, 토큰이 만료되었을 수 있습니다:", tokenError);
+              // 토큰이 만료된 경우 localStorage에서 제거
+              localStorage.removeItem('googleAccessToken');
+            }
+          } catch (error) {
+            console.error("토큰 복원 실패:", error);
+          }
+        }
+        
         isGoogleAPIInitialized = true;
         return;
       }
@@ -98,6 +146,35 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
             });
             
             console.log("Google API Client Library 초기화 성공!");
+            
+            // 새로고침 시 저장된 토큰 복원 시도
+            const savedToken = localStorage.getItem('googleAccessToken');
+            if (savedToken) {
+              console.log("저장된 토큰을 gapi client에 복원 시도");
+              try {
+                // gapi client에 토큰 설정
+                gapi.client.setToken({ access_token: savedToken });
+                console.log("토큰 복원 성공");
+                
+                // 토큰 유효성 검증 (더 빠른 방법)
+                try {
+                  // 간단한 API 호출로 토큰 유효성 확인
+                  await gapi.client.sheets.spreadsheets.get({ 
+                    spreadsheetId: SHEET_ID,
+                    ranges: ['document_template!A1:A1'],
+                    includeGridData: false // 데이터를 가져오지 않아 더 빠름
+                  });
+                  console.log("토큰 유효성 검증 성공");
+                } catch (tokenError) {
+                  console.warn("토큰 유효성 검증 실패, 토큰이 만료되었을 수 있습니다:", tokenError);
+                  // 토큰이 만료된 경우 localStorage에서 제거
+                  localStorage.removeItem('googleAccessToken');
+                }
+              } catch (error) {
+                console.error("토큰 복원 실패:", error);
+              }
+            }
+            
             isGoogleAPIInitialized = true;
             resolve();
           } catch (error) {
@@ -644,37 +721,51 @@ const App: React.FC = () => {
 
     const initAndFetch = async () => {
       try {
+        console.log("새로고침 후 Google API 초기화 시작");
         await initializeGoogleAPIOnce();
         
         // gapi가 초기화된 후 데이터 로드
-        const fetchInitialData = async () => {
+        const fetchInitialData = async (retryCount = 0) => {
           try {
             const gapi = (window as any).gapi;
-            if (gapi && gapi.client && gapi.client.sheets) {
+            if (gapi && gapi.client && gapi.client.sheets && gapi.client.sheets.spreadsheets) {
+              console.log("Google API 초기화 완료, 데이터 로드 시작");
+              
+              // Set auth states to true since we know the user is signed in
+              setIsGoogleAuthenticatedForAnnouncements(true);
+              setIsGoogleAuthenticatedForBoard(true);
+              
               const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
               const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
               if (docSheet && docSheet.properties) {
                 setDocumentTemplateSheetId(docSheet.properties.sheetId);
               }
-              fetchTemplates();
-              fetchTags();
-              fetchAnnouncements();
-              fetchPosts();
+              
+              // 데이터 로드
+              await Promise.all([
+                fetchTemplates(),
+                fetchTags(),
+                fetchAnnouncements(),
+                fetchPosts()
+              ]);
+              
+              console.log("모든 데이터 로드 완료");
             } else {
-              console.log("Google API가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.");
-              // 2초 후 다시 시도
-              setTimeout(fetchInitialData, 2000);
+              console.log(`Google API가 아직 초기화되지 않았습니다. 재시도 ${retryCount + 1}/3`);
+              if (retryCount < 3) {
+                // 500ms 후 다시 시도 (더 빠르게)
+                setTimeout(() => fetchInitialData(retryCount + 1), 500);
+              } else {
+                console.error("Google API 초기화 최대 재시도 횟수 초과");
+              }
             }
           } catch (error) {
             console.error("Error during initial data fetch", error);
-            // 오류 발생 시에도 기본 데이터는 로드 시도
-            try {
-              fetchTemplates();
-              fetchTags();
-              fetchAnnouncements();
-              fetchPosts();
-            } catch (fallbackError) {
-              console.error("Fallback data fetch also failed", fallbackError);
+            if (retryCount < 2) {
+              console.log(`데이터 로드 재시도 ${retryCount + 1}/2`);
+              setTimeout(() => fetchInitialData(retryCount + 1), 1000);
+            } else {
+              console.error("데이터 로드 최대 재시도 횟수 초과");
             }
           }
         };
@@ -682,15 +773,11 @@ const App: React.FC = () => {
         fetchInitialData();
       } catch (error) {
         console.error("Error during initial gapi load", error);
-        // gapi 초기화 실패 시에도 기본 데이터 로드 시도
-        try {
-          fetchTemplates();
-          fetchTags();
-          fetchAnnouncements();
-          fetchPosts();
-        } catch (fallbackError) {
-          console.error("Fallback data fetch failed", fallbackError);
-        }
+        // gapi 초기화 실패 시 재시도 (더 빠르게)
+        setTimeout(() => {
+          console.log("gapi 초기화 재시도");
+          initAndFetch();
+        }, 1500);
       }
     }
 
@@ -709,41 +796,51 @@ const App: React.FC = () => {
     // 로그인 성공 후 Google Sheets 데이터 로드
     const initAndFetch = async () => {
       try {
+        console.log("로그인 후 Google API 초기화 시작");
         // 중앙화된 Google API 초기화 사용
         await initializeGoogleAPIOnce();
         
         // gapi가 초기화된 후 데이터 로드
-        const fetchInitialData = async () => {
+        const fetchInitialData = async (retryCount = 0) => {
           try {
-            setIsGoogleAuthenticatedForAnnouncements(true);
-            setIsGoogleAuthenticatedForBoard(true);
-
             const gapi = (window as any).gapi;
-            if (gapi && gapi.client && gapi.client.sheets) {
+            if (gapi && gapi.client && gapi.client.sheets && gapi.client.sheets.spreadsheets) {
+              console.log("로그인 후 Google API 초기화 완료, 데이터 로드 시작");
+              
+              setIsGoogleAuthenticatedForAnnouncements(true);
+              setIsGoogleAuthenticatedForBoard(true);
+
               const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
               const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
               if (docSheet && docSheet.properties) {
                 setDocumentTemplateSheetId(docSheet.properties.sheetId);
               }
-              fetchTemplates();
-              fetchTags();
-              fetchAnnouncements();
-              fetchPosts();
+              
+              // 데이터 로드
+              await Promise.all([
+                fetchTemplates(),
+                fetchTags(),
+                fetchAnnouncements(),
+                fetchPosts()
+              ]);
+              
+              console.log("로그인 후 모든 데이터 로드 완료");
             } else {
-              console.log("Google API가 아직 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.");
-              // 2초 후 다시 시도
-              setTimeout(fetchInitialData, 2000);
+              console.log(`로그인 후 Google API가 아직 초기화되지 않았습니다. 재시도 ${retryCount + 1}/3`);
+              if (retryCount < 3) {
+                // 500ms 후 다시 시도 (더 빠르게)
+                setTimeout(() => fetchInitialData(retryCount + 1), 500);
+              } else {
+                console.error("로그인 후 Google API 초기화 최대 재시도 횟수 초과");
+              }
             }
           } catch (error) {
-            console.error("Error during initial data fetch", error);
-            // 오류 발생 시에도 기본 데이터는 로드 시도
-            try {
-              fetchTemplates();
-              fetchTags();
-              fetchAnnouncements();
-              fetchPosts();
-            } catch (fallbackError) {
-              console.error("Fallback data fetch also failed", fallbackError);
+            console.error("Error during login data fetch", error);
+            if (retryCount < 2) {
+              console.log(`로그인 후 데이터 로드 재시도 ${retryCount + 1}/2`);
+              setTimeout(() => fetchInitialData(retryCount + 1), 1000);
+            } else {
+              console.error("로그인 후 데이터 로드 최대 재시도 횟수 초과");
             }
           }
         };
@@ -751,16 +848,12 @@ const App: React.FC = () => {
         // gapi 초기화 완료 후 데이터 로드
         fetchInitialData();
       } catch (error) {
-        console.error("Error during initial gapi load", error);
-        // gapi 초기화 실패 시에도 기본 데이터 로드 시도
-        try {
-          fetchTemplates();
-          fetchTags();
-          fetchAnnouncements();
-          fetchPosts();
-        } catch (fallbackError) {
-          console.error("Fallback data fetch failed", fallbackError);
-        }
+        console.error("Error during login gapi load", error);
+        // gapi 초기화 실패 시 재시도 (더 빠르게)
+        setTimeout(() => {
+          console.log("로그인 후 gapi 초기화 재시도");
+          initAndFetch();
+        }, 1500);
       }
     }
     initAndFetch();

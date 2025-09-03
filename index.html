@@ -10,8 +10,8 @@
     <title>Hot Potato</title>
     <!-- Google Identity Services (GIS) - 새로운 인증 라이브러리 -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- Google API Client Library -->
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <!-- Google API Client Library - 로딩 순서 보장 및 빠른 로딩 -->
+    <script src="https://apis.google.com/js/api.js" async defer onload="console.log('Google API script loaded'); window.gapiLoaded = true;" onerror="console.error('Google API script failed to load')"></script>
   </head>
   <body>
     <div id="root"></div>
