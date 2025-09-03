@@ -27,6 +27,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Google Sheets API 접근을 위한 설정
 const SHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
+const BOARD_SHEET_ID = '1VrHOyPDDD6QI3MCxAKeakJN7Obx4MjOBLvyy0VMiYiA';
 
 // 중앙화된 Google API 초기화 상태 관리
 let isGoogleAPIInitialized = false;
@@ -207,7 +208,7 @@ export interface Post {
 }
 
 // User interface from feature/login
-interface User {
+export interface User {
   email: string;
   name: string;
   studentId: string;
@@ -239,7 +240,7 @@ const App: React.FC = () => {
   const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
 
   // SHEET_ID는 상수로 정의됨
-  const boardSheetName = 'free_board';
+  const boardSheetName = '시트1';
   const announcementSheetName = 'notice';
 
   const deleteTag = (tagToDelete: string) => {
@@ -472,7 +473,7 @@ const App: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: BOARD_SHEET_ID,
         range: `${boardSheetName}!A:E`,
       });
 
@@ -618,7 +619,7 @@ const App: React.FC = () => {
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: BOARD_SHEET_ID,
         range: `${boardSheetName}!A:A`,
       });
 
@@ -633,7 +634,7 @@ const App: React.FC = () => {
         'file_freeBoard': '', // File handling logic can be added here
       };
 
-      await appendRow(SHEET_ID, boardSheetName, newPostForSheet);
+      await appendRow(BOARD_SHEET_ID, boardSheetName, newPostForSheet);
       await fetchPosts(); // Refetch posts after adding a new one
       alert('게시글이 성공적으로 저장되었습니다.');
       handlePageChange('board');
@@ -886,7 +887,7 @@ const App: React.FC = () => {
             isAuthenticated={isGoogleAuthenticatedForBoard}
             data-oid="d01oi2r" />;
       case "new-board-post":
-        return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} />;
+        return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} user={user} isAuthenticated={isGoogleAuthenticatedForBoard} />;
       case "announcements":
         return <AnnouncementsPage
             onPageChange={handlePageChange}
