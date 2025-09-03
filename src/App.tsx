@@ -43,6 +43,7 @@ interface User {
   studentId: string;
   isAdmin: boolean;
   isApproved: boolean;
+  accessToken?: string; // accessToken을 포함하도록 수정
 }
 
 type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings';
@@ -51,7 +52,7 @@ const App: React.FC = () => {
   // User authentication state (from feature/login)
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Original app state (from develop)
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
@@ -488,16 +489,11 @@ const App: React.FC = () => {
 
   // 로그인 상태 확인 (from feature/login)
   useEffect(() => {
-    // 개발 모드에서 로그인 화면을 강제로 표시하려면 아래 주석을 해제하세요
-    if (import.meta.env.DEV) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('google_token');
-      localStorage.removeItem('googleAccessToken');
-    }
-    
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const savedToken = localStorage.getItem('googleAccessToken');
+    if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
+      setGoogleAccessToken(savedToken);
     }
     setIsLoading(false);
   }, []);
@@ -550,7 +546,7 @@ const App: React.FC = () => {
         console.error("Error during initial gapi load", error);
       }
     }
-    
+
     // 로그인된 사용자가 있을 때만 Google Sheets 데이터 로드
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -562,7 +558,7 @@ const App: React.FC = () => {
   const handleLogin = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    
+
     // 로그인 성공 후 Google Sheets 데이터 로드
     const initAndFetch = async () => {
       try {
@@ -601,8 +597,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('google_token');
-    localStorage.removeItem('googleAccessToken');
+    localStorage.removeItem('googleAccessToken'); // 키 이름 수정
     // Google 로그아웃
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();

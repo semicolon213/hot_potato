@@ -1,31 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useGoogleLogin } from '@react-oauth/google';
 import './Login.css';
 
 interface LoginProps {
   onLogin: (userData: any) => void;
 }
 
-// Google Identity Services (GIS) 타입 정의
-declare global {
-  interface Window {
-    google: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, options: any) => void;
-          prompt: () => void;
-          disableAutoSelect: () => void;
-          storeCredential: (credential: any) => void;
-          cancel: () => void;
-          revoke: (hint: string, callback: () => void) => void;
-        };
-      };
-    };
-  }
-}
-
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -35,108 +16,49 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Google Identity Services (GIS) 초기화
-  useEffect(() => {
-    const initializeGoogleGIS = () => {
-      console.log('Google GIS 초기화 시작');
-      console.log('window.google 존재:', typeof window.google !== 'undefined');
-      console.log('window.google.accounts 존재:', typeof window.google?.accounts !== 'undefined');
-      
-      // Google GIS 스크립트가 로드될 때까지 대기
-      if (typeof window.google === 'undefined' || !window.google.accounts) {
-        console.log('Google GIS 스크립트 로딩 대기 중...');
-        setTimeout(initializeGoogleGIS, 1000);
-        return;
-      }
+  const login = useGoogleLogin({
+      onSuccess: async tokenResponse => {
+          try {
+              console.log('Google 로그인 성공:', tokenResponse);
+              // access_token을 localStorage에 저장
+              localStorage.setItem('googleAccessToken', tokenResponse.access_token);
 
-      try {
-        // Google GIS 초기화
-        window.google.accounts.id.initialize({
-          client_id: '651515712118-8293tiue05sgfau7ujig52m5m37cfjoo.apps.googleusercontent.com',
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-
-        console.log('Google GIS 초기화 성공');
-        setIsGoogleLoaded(true);
-        setError('');
-
-        // Google 로그인 버튼 렌더링 - 지연 실행
-        setTimeout(() => {
-          const buttonElement = document.getElementById('google-login-button');
-          if (buttonElement) {
-            console.log('Google 로그인 버튼 렌더링 시작');
-            try {
-              window.google.accounts.id.renderButton(buttonElement, {
-                type: 'standard',
-                theme: 'outline',
-                size: 'large',
-                text: 'signin_with',
-                shape: 'rectangular',
-                logo_alignment: 'left',
+              // 사용자 정보 가져오기
+              const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: {
+                      Authorization: `Bearer ${tokenResponse.access_token}`,
+                  },
               });
-              console.log('Google 로그인 버튼 렌더링 완료');
-            } catch (renderError) {
-              console.error('Google 로그인 버튼 렌더링 실패:', renderError);
-              // 대안 버튼 표시
-              const fallbackBtn = document.querySelector('.google-login-fallback-btn') as HTMLButtonElement;
-              if (fallbackBtn) {
-                fallbackBtn.style.display = 'block';
-              }
-            }
-          } else {
-            console.error('Google 로그인 버튼 요소를 찾을 수 없습니다');
-            // 대안 버튼 표시
-            const fallbackBtn = document.querySelector('.google-login-fallback-btn') as HTMLButtonElement;
-            if (fallbackBtn) {
-              fallbackBtn.style.display = 'block';
-            }
+              const profile = await userInfoResponse.json();
+              const email = profile.email;
+              const name = profile.name;
+
+              console.log('사용자 이메일:', email);
+              console.log('사용자 이름:', name);
+              setUserEmail(email);
+              setError('');
+
+              // 사용자 등록 상태 확인
+              await checkUserRegistrationStatus(email, name, tokenResponse.access_token);
+
+          } catch (error) {
+              console.error('Google 로그인 처리 실패:', error);
+              setError('Google 로그인 처리 중 오류가 발생했습니다.');
           }
-        }, 100);
+      },
+      onError: () => {
+          console.log('Login Failed');
+          setError('Google 로그인에 실패했습니다.');
+      },
+      scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly profile email',
+  });
 
-      } catch (error) {
-        console.error('Google GIS 초기화 실패:', error);
-        setError('Google 로그인 초기화에 실패했습니다.');
-      }
-    };
 
-    // 즉시 초기화 시작
-    initializeGoogleGIS();
-  }, []);
-
-  // Google 로그인 성공 콜백
-  const handleCredentialResponse = async (response: any) => {
-    try {
-      console.log('Google 로그인 성공:', response);
-      
-      // JWT 토큰을 localStorage에 저장
-      localStorage.setItem('google_token', response.credential);
-      
-      // JWT 토큰에서 사용자 정보 추출
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      const email = payload.email;
-      const name = payload.name;
-      
-      console.log('사용자 이메일:', email);
-      console.log('사용자 이름:', name);
-      setUserEmail(email);
-      setError('');
-      
-      // 사용자 등록 상태 확인 (새로운 API 사용)
-      await checkUserRegistrationStatus(email, name);
-      
-    } catch (error) {
-      console.error('Google 로그인 처리 실패:', error);
-      setError('Google 로그인 처리 중 오류가 발생했습니다.');
-    }
-  };
-
-    // 사용자 등록 상태 확인 (새로운 API 사용)
-  const checkUserRegistrationStatus = async (email: string, name: string) => {
+  // 사용자 등록 상태 확인 (새로운 API 사용)
+  const checkUserRegistrationStatus = async (email: string, name: string, accessToken: string) => {
     try {
       setIsLoading(true);
-      
+
       const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
@@ -146,7 +68,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           email: email
         })
       });
-      
+
       const result = await response.json();
       console.log('사용자 등록 상태 확인 응답:', result);
 
@@ -160,7 +82,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             name: name,
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
-            isApproved: true
+            isApproved: true,
+            accessToken: accessToken
           });
         } else if (result.isRegistered && !result.isApproved) {
           // 승인 대기 중 - 승인 대기 화면으로
@@ -183,7 +106,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         console.log('오류 발생 - 회원가입 화면 표시');
         setIsLoggedIn(true);
       }
-      
+
     } catch (error) {
       console.error('사용자 등록 상태 확인 실패:', error);
       setError('사용자 상태 확인 중 오류가 발생했습니다.');
@@ -199,7 +122,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       setIsLoading(true);
       setError('');
-      
+
       const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
@@ -209,9 +132,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           adminKey: adminKey
         })
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success && result.isValid) {
         setIsAdminVerified(true);
         setError('');
@@ -219,7 +142,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError('관리자 키가 일치하지 않습니다.');
         setIsAdminVerified(false);
       }
-      
+
     } catch (error) {
       console.error('키 검증 실패:', error);
       setError('키 검증 중 오류가 발생했습니다.');
@@ -234,28 +157,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       setIsLoading(true);
       setError('');
-      
-      // JWT 토큰에서 사용자 이름 추출 (이미 로그인된 상태)
-      const token = localStorage.getItem('google_token');
+
+      // access token을 사용하여 사용자 이름 다시 가져오기 (더 안정적)
+      const accessToken = localStorage.getItem('googleAccessToken');
       let userName = '';
-      if (token) {
+      if (accessToken) {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          userName = payload.name || '';
+            const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const profile = await userInfoResponse.json();
+            userName = profile.name || '';
         } catch (e) {
-          console.error('토큰 파싱 실패:', e);
+          console.error('사용자 정보 가져오기 실패:', e);
         }
       }
-      
+
       const signupData = {
         userEmail: userEmail,
         userName: userName,
         studentId: studentId,
         isAdminVerified: isAdminVerified,
       };
-      
+
       console.log('회원가입 요청:', signupData);
-      
+
       // 실제 서버로 회원가입 요청 전송
       const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
@@ -264,10 +190,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         },
         body: JSON.stringify(signupData)
       });
-      
+
       const result = await response.json();
       console.log('회원가입 응답:', result);
-      
+
       if (result.success) {
         // 회원가입 성공 - 승인 대기 상태로 로그인
         alert('회원가입 요청이 성공적으로 제출되었습니다. 관리자의 승인을 기다려주세요.');
@@ -281,7 +207,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       } else {
         setError(result.error || '회원가입 중 오류가 발생했습니다.');
       }
-      
+
     } catch (error) {
       console.error('회원가입 실패:', error);
       setError('회원가입 중 오류가 발생했습니다.');
@@ -289,17 +215,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsLoading(false);
     }
   };
-
-  if (!isGoogleLoaded) {
-    return (
-      <div className="login-container">
-        <div className="login-loading">
-          <div className="loading-spinner"></div>
-          <p>Google 로그인 초기화 중...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="login-container">
@@ -310,26 +225,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <p>관리자 승인이 필요한 로그인 시스템</p>
         </div>
 
-                  {!isLoggedIn ? (
+        {!isLoggedIn ? (
             <div className="login-section">
               <h2>Google 계정으로 로그인</h2>
-              <div id="google-login-button" className="google-login-button"></div>
-              {/* 대안 버튼 - GIS 버튼이 로드되지 않을 경우 */}
               <button
                 type="button"
-                onClick={() => window.google?.accounts?.id?.prompt()}
-                className="google-login-fallback-btn"
-                style={{
-                  display: 'none', // 기본적으로 숨김
-                  background: '#4285f4',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  marginTop: '10px'
-                }}
+                onClick={() => login()}
+                className="google-login-button"
               >
                 Google로 로그인 (대안)
               </button>
@@ -367,7 +269,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               >
                 {showAdminKey ? '▼' : '▶'} 관리자 키 인증 (선택사항)
               </button>
-              
+
               {showAdminKey && (
                 <div className="admin-key-input">
                   <input
