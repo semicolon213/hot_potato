@@ -17,40 +17,40 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
 
   const login = useGoogleLogin({
-      onSuccess: async tokenResponse => {
-          try {
-              console.log('Google 로그인 성공:', tokenResponse);
-              // access_token을 localStorage에 저장
-              localStorage.setItem('googleAccessToken', tokenResponse.access_token);
+    onSuccess: async tokenResponse => {
+      try {
+        console.log('Google 로그인 성공:', tokenResponse);
+        // access_token을 localStorage에 저장
+        localStorage.setItem('googleAccessToken', tokenResponse.access_token);
 
-              // 사용자 정보 가져오기
-              const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                  headers: {
-                      Authorization: `Bearer ${tokenResponse.access_token}`,
-                  },
-              });
-              const profile = await userInfoResponse.json();
-              const email = profile.email;
-              const name = profile.name;
+        // 사용자 정보 가져오기
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+        const profile = await userInfoResponse.json();
+        const email = profile.email;
+        const name = profile.name;
 
-              console.log('사용자 이메일:', email);
-              console.log('사용자 이름:', name);
-              setUserEmail(email);
-              setError('');
+        console.log('사용자 이메일:', email);
+        console.log('사용자 이름:', name);
+        setUserEmail(email);
+        setError('');
 
-              // 사용자 등록 상태 확인
-              await checkUserRegistrationStatus(email, name, tokenResponse.access_token);
+        // 사용자 등록 상태 확인
+        await checkUserRegistrationStatus(email, name, tokenResponse.access_token);
 
-          } catch (error) {
-              console.error('Google 로그인 처리 실패:', error);
-              setError('Google 로그인 처리 중 오류가 발생했습니다.');
-          }
-      },
-      onError: () => {
-          console.log('Login Failed');
-          setError('Google 로그인에 실패했습니다.');
-      },
-      scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly profile email',
+      } catch (error) {
+        console.error('Google 로그인 처리 실패:', error);
+        setError('Google 로그인 처리 중 오류가 발생했습니다.');
+      }
+    },
+    onError: () => {
+      console.log('Login Failed');
+      setError('Google 로그인에 실패했습니다.');
+    },
+    scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly profile email',
   });
 
 
@@ -163,11 +163,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       let userName = '';
       if (accessToken) {
         try {
-            const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-            const profile = await userInfoResponse.json();
-            userName = profile.name || '';
+          const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const profile = await userInfoResponse.json();
+          userName = profile.name || '';
         } catch (e) {
           console.error('사용자 정보 가져오기 실패:', e);
         }
@@ -217,96 +217,96 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <img src="/src/assets/image/potato.png" alt="Hot Potato" className="login-logo" />
-          <h1>Hot Potato</h1>
-          <p>관리자 승인이 필요한 로그인 시스템</p>
-        </div>
-
-        {!isLoggedIn ? (
-            <div className="login-section">
-              <h2>Google 계정으로 로그인</h2>
-              <button
-                type="button"
-                onClick={() => login()}
-                className="google-login-button"
-              >
-                Google로 로그인 (대안)
-              </button>
-              {error && <div className="error-message">{error}</div>}
-            </div>
-        ) : isLoading ? (
-          <div className="login-loading">
-            <div className="loading-spinner"></div>
-            <p>사용자 상태 확인 중...</p>
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <img src="/src/assets/image/potato.png" alt="Hot Potato" className="login-logo" />
+            <h1>Hot Potato</h1>
+            <p>관리자 승인이 필요한 로그인 시스템</p>
           </div>
-        ) : (
-          <div className="signup-section">
-            <div className="user-info">
-              <h2>회원가입 정보 입력</h2>
-              <p className="user-email">로그인된 계정: {userEmail}</p>
-            </div>
 
-            <div className="input-group">
-              <label htmlFor="studentId">학번 또는 교번 *</label>
-              <input
-                type="text"
-                id="studentId"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                placeholder="학번 또는 교번을 입력하세요"
-                required
-              />
-            </div>
-
-            <div className="admin-key-section">
-              <button
-                type="button"
-                className="admin-key-toggle"
-                onClick={() => setShowAdminKey(!showAdminKey)}
-              >
-                {showAdminKey ? '▼' : '▶'} 관리자 키 인증 (선택사항)
-              </button>
-
-              {showAdminKey && (
-                <div className="admin-key-input">
-                  <input
-                    type="password"
-                    value={adminKey}
-                    onChange={(e) => setAdminKey(e.target.value)}
-                    placeholder="관리자 키를 입력하세요"
-                  />
-                  <button
+          {!isLoggedIn ? (
+              <div className="login-section">
+                <h2>Google 계정으로 로그인</h2>
+                <button
                     type="button"
-                    onClick={handleVerifyAdminKey}
-                    disabled={isLoading || !adminKey}
-                    className="verify-button"
+                    onClick={() => login()}
+                    className="google-login-button"
+                >
+                  Google로 로그인 (대안)
+                </button>
+                {error && <div className="error-message">{error}</div>}
+              </div>
+          ) : isLoading ? (
+              <div className="login-loading">
+                <div className="loading-spinner"></div>
+                <p>사용자 상태 확인 중...</p>
+              </div>
+          ) : (
+              <div className="signup-section">
+                <div className="user-info">
+                  <h2>회원가입 정보 입력</h2>
+                  <p className="user-email">로그인된 계정: {userEmail}</p>
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="studentId">학번 또는 교번 *</label>
+                  <input
+                      type="text"
+                      id="studentId"
+                      value={studentId}
+                      onChange={(e) => setStudentId(e.target.value)}
+                      placeholder="학번 또는 교번을 입력하세요"
+                      required
+                  />
+                </div>
+
+                <div className="admin-key-section">
+                  <button
+                      type="button"
+                      className="admin-key-toggle"
+                      onClick={() => setShowAdminKey(!showAdminKey)}
                   >
-                    {isLoading ? '인증 중...' : '인증하기'}
+                    {showAdminKey ? '▼' : '▶'} 관리자 키 인증 (선택사항)
                   </button>
-                  {isAdminVerified && (
-                    <div className="success-message">✓ 인증 완료</div>
+
+                  {showAdminKey && (
+                      <div className="admin-key-input">
+                        <input
+                            type="password"
+                            value={adminKey}
+                            onChange={(e) => setAdminKey(e.target.value)}
+                            placeholder="관리자 키를 입력하세요"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleVerifyAdminKey}
+                            disabled={isLoading || !adminKey}
+                            className="verify-button"
+                        >
+                          {isLoading ? '인증 중...' : '인증하기'}
+                        </button>
+                        {isAdminVerified && (
+                            <div className="success-message">✓ 인증 완료</div>
+                        )}
+                      </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            <button
-              type="button"
-              onClick={handleSignupRequest}
-              disabled={isLoading || !studentId}
-              className="signup-button"
-            >
-              {isLoading ? '처리 중...' : '가입 요청'}
-            </button>
+                <button
+                    type="button"
+                    onClick={handleSignupRequest}
+                    disabled={isLoading || !studentId}
+                    className="signup-button"
+                >
+                  {isLoading ? '처리 중...' : '가입 요청'}
+                </button>
 
-            {error && <div className="error-message">{error}</div>}
-          </div>
-        )}
+                {error && <div className="error-message">{error}</div>}
+              </div>
+          )}
+        </div>
       </div>
-    </div>
   );
 };
 

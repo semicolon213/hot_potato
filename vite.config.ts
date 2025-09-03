@@ -5,8 +5,26 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    fs: {
+      strict: false
     },
+    middlewareMode: false,
+    hmr: {
+      overlay: true
+    }
   },
+  build: {
+    charset: 'utf8',
+    rollupOptions: {
+      output: {
+        charset: 'utf8'
+      }
+    }
+  },
+  esbuild: {
+    charset: 'utf8',
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+  }
 })

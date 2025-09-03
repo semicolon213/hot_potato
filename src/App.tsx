@@ -252,13 +252,13 @@ const App: React.FC = () => {
 
       // Local state update
       const newTemplate: Template = {
-          // rowIndex is not available directly from append, refetching is an option
-          // but for now, a local optimistic update is faster.
-          rowIndex: customTemplates.length + 1, // This is an approximation for the key
-          type: newDocData.title,
-          title: newDocData.title,
-          description: newDocData.description,
-          tag: newDocData.tag,
+        // rowIndex is not available directly from append, refetching is an option
+        // but for now, a local optimistic update is faster.
+        rowIndex: customTemplates.length + 1, // This is an approximation for the key
+        type: newDocData.title,
+        title: newDocData.title,
+        description: newDocData.description,
+        tag: newDocData.tag,
       };
       setCustomTemplates(prevTemplates => [...prevTemplates, newTemplate]);
 
@@ -306,8 +306,8 @@ const App: React.FC = () => {
   const fetchPosts = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: `${boardSheetName}!A:E`,
+        spreadsheetId: sheetId,
+        range: `${boardSheetName}!A:E`,
       });
 
       const data = response.result.values;
@@ -332,8 +332,8 @@ const App: React.FC = () => {
   const fetchAnnouncements = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: `${announcementSheetName}!A:E`,
+        spreadsheetId: sheetId,
+        range: `${announcementSheetName}!A:E`,
       });
 
       const data = response.result.values;
@@ -358,8 +358,8 @@ const App: React.FC = () => {
   const fetchTemplates = async () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: 'document_template!B2:E', // Range is OK, covers B, C, D, E
+        spreadsheetId: sheetId,
+        range: 'document_template!B2:E', // Range is OK, covers B, C, D, E
       });
 
       const data = response.result.values;
@@ -391,8 +391,8 @@ const App: React.FC = () => {
     try {
       // Fetch tags ONLY from the 'tag_name' column (Column E)
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: `document_template!E2:E`, // Corrected to Column E
+        spreadsheetId: sheetId,
+        range: `document_template!E2:E`, // Corrected to Column E
       });
 
       const tagColumnValues = response.result.values?.flat().filter(Boolean) || [];
@@ -614,40 +614,40 @@ const App: React.FC = () => {
     switch (currentPage) {
       case "board":
         return <Board
-          onPageChange={handlePageChange}
-          posts={posts}
-          onAuth={handleBoardAuth}
-          isAuthenticated={isGoogleAuthenticatedForBoard}
-          data-oid="d01oi2r" />;
+            onPageChange={handlePageChange}
+            posts={posts}
+            onAuth={handleBoardAuth}
+            isAuthenticated={isGoogleAuthenticatedForBoard}
+            data-oid="d01oi2r" />;
       case "new-board-post":
         return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} />;
       case "announcements":
         return <AnnouncementsPage
-          onPageChange={handlePageChange}
-          posts={announcements}
-          onAuth={handleAnnouncementsAuth}
-          isAuthenticated={isGoogleAuthenticatedForAnnouncements}
-          data-oid="d01oi2r" />;
+            onPageChange={handlePageChange}
+            posts={announcements}
+            onAuth={handleAnnouncementsAuth}
+            isAuthenticated={isGoogleAuthenticatedForAnnouncements}
+            data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} />;
       case "document_management":
         return (
-          <DocumentManagement
-            onPageChange={handlePageChange}
-            data-oid="i8mtyop"
-          />
+            <DocumentManagement
+                onPageChange={handlePageChange}
+                data-oid="i8mtyop"
+            />
         );
       case "docbox":
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-          <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
         );
       case "calendar":
         return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />;
       case "preferences":
         return (
-          <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
+            <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
         );
       case "mypage":
         return <Mypage data-oid="d01oi2r" />;
@@ -683,37 +683,37 @@ const App: React.FC = () => {
   // 승인되지 않은 사용자 (feature/login 방식)
   if (!user.isApproved) {
     return (
-      <div className="pending-approval">
-        <div className="pending-card">
-          <h2>승인 대기 중</h2>
-          <p>관리자 승인을 기다리고 있습니다.</p>
-          <div className="user-info">
-            <p><strong>이름:</strong> {user.name}</p>
-            <p><strong>이메일:</strong> {user.email}</p>
-            <p><strong>학번/교번:</strong> {user.studentId}</p>
-            <p><strong>구분:</strong> {user.isAdmin ? '관리자 요청' : '일반 사용자'}</p>
+        <div className="pending-approval">
+          <div className="pending-card">
+            <h2>승인 대기 중</h2>
+            <p>관리자 승인을 기다리고 있습니다.</p>
+            <div className="user-info">
+              <p><strong>이름:</strong> {user.name}</p>
+              <p><strong>이메일:</strong> {user.email}</p>
+              <p><strong>학번/교번:</strong> {user.studentId}</p>
+              <p><strong>구분:</strong> {user.isAdmin ? '관리자 요청' : '일반 사용자'}</p>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">
+              로그아웃
+            </button>
           </div>
-          <button onClick={handleLogout} className="logout-btn">
-            로그아웃
-          </button>
         </div>
-      </div>
     );
   }
 
   // 승인된 사용자 - develop의 레이아웃과 디자인 유지
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="app-container" data-oid="g1w-gjq">
-        <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
-        <div className="main-panel" data-oid="n9gxxwr">
-          <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} />
-          <div className="content" id="dynamicContent" data-oid="nn2e18p">
-            {renderCurrentPage()}
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <div className="app-container" data-oid="g1w-gjq">
+          <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
+          <div className="main-panel" data-oid="n9gxxwr">
+            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} />
+            <div className="content" id="dynamicContent" data-oid="nn2e18p">
+              {renderCurrentPage()}
+            </div>
           </div>
         </div>
-      </div>
-    </GoogleOAuthProvider>
+      </GoogleOAuthProvider>
   );
 };
 
