@@ -27,7 +27,6 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Google Sheets API 접근을 위한 설정
 const SHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
-const BOARD_SHEET_ID = '1VrHOyPDDD6QI3MCxAKeakJN7Obx4MjOBLvyy0VMiYiA';
 
 // 중앙화된 Google API 초기화 상태 관리
 let isGoogleAPIInitialized = false;
