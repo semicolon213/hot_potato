@@ -972,6 +972,9 @@ const App: React.FC = () => {
 
   // 페이지 전환 처리
   const handlePageChange = (pageName: string) => {
+    const url = new URL(window.location.toString());
+    url.searchParams.set('page', pageName);
+    window.history.pushState({}, '', url.toString());
     setCurrentPage(pageName as PageType);
   };
 
