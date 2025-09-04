@@ -245,6 +245,7 @@ const App: React.FC = () => {
   const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
   const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
+  const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
 
   // SHEET_ID는 상수로 정의됨
   const boardSheetName = '시트1';
@@ -478,9 +479,10 @@ const App: React.FC = () => {
   };
 
   const fetchPosts = async () => {
+    if (!boardSpreadsheetId) return;
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: BOARD_SHEET_ID,
+        spreadsheetId: boardSpreadsheetId,
         range: `${boardSheetName}!A:E`,
       });
 
@@ -625,9 +627,13 @@ const App: React.FC = () => {
   };
 
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
+    if (!boardSpreadsheetId) {
+      alert('게시판 스프레드시트가 아직 로드되지 않았습니다.');
+      return;
+    }
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: BOARD_SHEET_ID,
+        spreadsheetId: boardSpreadsheetId,
         range: `${boardSheetName}!A:A`,
       });
 
@@ -642,7 +648,7 @@ const App: React.FC = () => {
         'file_freeBoard': '', // File handling logic can be added here
       };
 
-      await appendRow(BOARD_SHEET_ID, boardSheetName, newPostForSheet);
+      await appendRow(boardSpreadsheetId, boardSheetName, newPostForSheet);
       await fetchPosts(); // Refetch posts after adding a new one
       alert('게시글이 성공적으로 저장되었습니다.');
       handlePageChange('board');
@@ -735,8 +741,32 @@ const App: React.FC = () => {
             alert("Could not find spreadsheet with name 'notice_professor'");
           }
         } catch (error) {
-          console.error("Error searching for spreadsheet:", error);
-          alert("Error searching for spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.error("Error searching for announcement spreadsheet:", error);
+          alert("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
+        // Find the board spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='board_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'board_professor' spreadsheet with ID:", fileId);
+              setBoardSpreadsheetId(fileId);
+            } else {
+                console.error("'board_professor' spreadsheet found but has no ID.");
+                alert("'board_professor' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'board_professor'");
+            alert("Could not find spreadsheet with name 'board_professor'");
+          }
+        } catch (error) {
+          console.error("Error searching for board spreadsheet:", error);
+          alert("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
         
         // gapi가 초기화된 후 데이터 로드
@@ -835,8 +865,32 @@ const App: React.FC = () => {
             alert("Could not find spreadsheet with name 'notice_professor'");
           }
         } catch (error) {
-          console.error("Error searching for spreadsheet:", error);
-          alert("Error searching for spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.error("Error searching for announcement spreadsheet:", error);
+          alert("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
+        // Find the board spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='board_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'board_professor' spreadsheet with ID:", fileId);
+              setBoardSpreadsheetId(fileId);
+            } else {
+                console.error("'board_professor' spreadsheet found but has no ID.");
+                alert("'board_professor' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'board_professor'");
+            alert("Could not find spreadsheet with name 'board_professor'");
+          }
+        } catch (error) {
+          console.error("Error searching for board spreadsheet:", error);
+          alert("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
         
         // gapi가 초기화된 후 데이터 로드
@@ -923,6 +977,7 @@ const App: React.FC = () => {
             posts={posts}
             onAuth={handleBoardAuth}
             isAuthenticated={isGoogleAuthenticatedForBoard}
+            boardSpreadsheetId={boardSpreadsheetId}
             data-oid="d01oi2r" />;
       case "new-board-post":
         return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} user={user} isAuthenticated={isGoogleAuthenticatedForBoard} />;

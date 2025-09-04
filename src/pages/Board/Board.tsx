@@ -7,10 +7,11 @@ interface BoardProps {
   posts: Post[];
   onAuth: () => void;
   isAuthenticated: boolean;
+  boardSpreadsheetId: string | null;
   "data-oid": string;
 }
 
-const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthenticated }) => {
+const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthenticated, boardSpreadsheetId }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleDeletePost = (id: string) => {
@@ -42,7 +43,13 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthentica
           {!isAuthenticated ? (
             <button className="auth-button" onClick={onAuth}>Google 인증</button>
           ) : (
-            <button className="new-post-button" onClick={() => onPageChange('new-board-post')}>새 글 작성</button>
+            <button 
+              className="new-post-button" 
+              onClick={() => onPageChange('new-board-post')}
+              disabled={!boardSpreadsheetId}
+            >
+              {boardSpreadsheetId ? '새 글 작성' : '불러오는 중...'}
+            </button>
           )}
         </div>
       </div>
