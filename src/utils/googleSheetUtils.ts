@@ -101,3 +101,39 @@ export const useResetGoogleAPIStateOnUnload = () => {
     };
   }, []);
 };
+
+export const deleteSheetRow = async (spreadsheetId: string, sheetName: string, rowIndex: number): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  const sheetIdResponse = await gapi.client.sheets.spreadsheets.get({
+    spreadsheetId: spreadsheetId,
+  });
+
+  const sheet = sheetIdResponse.result.sheets.find(
+    (s: any) => s.properties.title === sheetName
+  );
+
+  if (!sheet) {
+    throw new Error(`Sheet "${sheetName}" not found in spreadsheet.`);
+  }
+  const sheetId = sheet.properties.sheetId;
+
+  await gapi.client.sheets.spreadsheets.batchUpdate({
+    spreadsheetId: spreadsheetId,
+    resource: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: sheetId,
+              dimension: 'ROWS',
+              startIndex: rowIndex,
+              endIndex: rowIndex + 1,
+            },
+          },
+        },
+      ],
+    },
+  });
+};

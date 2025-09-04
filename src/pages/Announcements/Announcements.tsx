@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Announcements.css';
 import type { Post } from '../../App'; // Import Post interface from App.tsx
+import { deleteSheetRow } from '../../utils/googleSheetUtils';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
@@ -13,10 +14,34 @@ interface AnnouncementsProps {
 
 const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, onAuth, isAuthenticated, announcementSpreadsheetId }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeletePost = (id: string) => {
-    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까? (기능 구현 필요)')) {
-      console.log(`Deleting post ${id}`);
+  const handleDeletePost = async (id: string) => {
+    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      if (!announcementSpreadsheetId) {
+        alert('오류: 스프레드시트 ID를 찾을 수 없습니다.');
+        return;
+      }
+      if (isDeleting) return;
+
+      setIsDeleting(true);
+      try {
+        const postIndex = posts.findIndex(p => p.id === id);
+        if (postIndex === -1) {
+          throw new Error('삭제할 게시물을 찾지 못했습니다.');
+        }
+
+        const rowIndexToDelete = (posts.length - 1) - postIndex + 1;
+
+        await deleteSheetRow(announcementSpreadsheetId, '시트1', rowIndexToDelete);
+        alert('공지사항이 삭제되었습니다.');
+        window.location.reload();
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('공지사항 삭제 중 오류가 발생했습니다.');
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -59,7 +84,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
             <div key={post.id} className="post-card">
               <div className="card-header">
                 <h3>{post.title}</h3>
-                <button className="delete-button" onClick={() => handleDeletePost(post.id)}>x</button>
+                <button className="delete-button" onClick={() => handleDeletePost(post.id)} disabled={isDeleting}>x</button>
               </div>
               <div className="post-meta">
                 <span className="author">{post.author}</span>
