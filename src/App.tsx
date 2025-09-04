@@ -276,7 +276,7 @@ const App: React.FC = () => {
 
       try {
         const response = await (window as any).gapi.client.sheets.spreadsheets.get({
-          spreadsheetId: sheetId,
+          spreadsheetId: SHEET_ID,
           ranges: ['document_template!A:E'],
           includeGridData: true,
         });
@@ -311,7 +311,7 @@ const App: React.FC = () => {
           }));
 
           await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-            spreadsheetId: sheetId,
+            spreadsheetId: SHEET_ID,
             resource: { requests },
           });
         }
@@ -346,7 +346,7 @@ const App: React.FC = () => {
 
       try {
         const response = await (window as any).gapi.client.sheets.spreadsheets.get({
-          spreadsheetId: sheetId,
+          spreadsheetId: SHEET_ID,
           ranges: ['document_template!A:E'],
           includeGridData: true,
         });
@@ -376,7 +376,7 @@ const App: React.FC = () => {
 
         if (requests.length > 0) {
           await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-            spreadsheetId: sheetId,
+            spreadsheetId: SHEET_ID,
             resource: { requests },
           });
         }
