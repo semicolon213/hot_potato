@@ -238,6 +238,7 @@ const App: React.FC = () => {
   // State for Board
   const [posts, setPosts] = useState<Post[]>([]);
   const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
+  const [isBoardLoading, setIsBoardLoading] = useState(false);
 
   // State for Announcements
   const [announcements, setAnnouncements] = useState<Post[]>([]);
@@ -479,6 +480,7 @@ const App: React.FC = () => {
 
   const fetchPosts = async () => {
     if (!boardSpreadsheetId) return;
+    setIsBoardLoading(true);
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: boardSpreadsheetId,
@@ -497,10 +499,14 @@ const App: React.FC = () => {
           likes: 0,
         })).reverse();
         setPosts(parsedPosts);
+      } else {
+        setPosts([]);
       }
     } catch (error) {
       console.error('Error fetching posts from Google Sheet:', error);
       alert('게시글을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsBoardLoading(false);
     }
   };
 
@@ -585,25 +591,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleBoardAuth = async () => {
-    try {
-      await initializeGoogleAPIOnce();
-      setIsGoogleAuthenticatedForBoard(true);
-      alert('Google 인증 성공!');
-      
-      // 인증 후 데이터 로드
-      try {
-        fetchPosts();
-      } catch (error) {
-        console.error("Error fetching posts after auth:", error);
-        alert('인증은 성공했지만 데이터 로드에 실패했습니다.');
-      }
-    } catch (e: any) {
-      console.error('Google 인증 실패:', e);
-      alert('Google 인증 실패: ' + e.message);
-      setIsGoogleAuthenticatedForBoard(false);
-    }
-  };
+  
 
   const handleAnnouncementsAuth = async () => {
     try {
@@ -985,9 +973,9 @@ const App: React.FC = () => {
         return <Board
             onPageChange={handlePageChange}
             posts={posts}
-            onAuth={handleBoardAuth}
             isAuthenticated={isGoogleAuthenticatedForBoard}
             boardSpreadsheetId={boardSpreadsheetId}
+            isLoading={isBoardLoading}
             data-oid="d01oi2r" />;
       case "new-board-post":
         return <NewBoardPost onPageChange={handlePageChange} onAddPost={addPost} user={user} isAuthenticated={isGoogleAuthenticatedForBoard} />;

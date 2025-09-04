@@ -6,13 +6,13 @@ import { deleteSheetRow } from '../../utils/googleSheetUtils';
 interface BoardProps {
   onPageChange: (pageName: string) => void;
   posts: Post[];
-  onAuth: () => void;
   isAuthenticated: boolean;
   boardSpreadsheetId: string | null;
+  isLoading: boolean;
   "data-oid": string;
 }
 
-const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthenticated, boardSpreadsheetId }) => {
+const Board: React.FC<BoardProps> = ({ onPageChange, posts, isAuthenticated, boardSpreadsheetId, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -65,9 +65,7 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthentica
             />
             <span className="search-icon">🔍</span>
           </div>
-          {!isAuthenticated ? (
-            <button className="auth-button" onClick={onAuth}>Google 인증</button>
-          ) : (
+          {isAuthenticated && (
             <button 
               className="new-post-button" 
               onClick={() => onPageChange('new-board-post')}
@@ -79,7 +77,9 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthentica
         </div>
       </div>
       <div className="post-list">
-        {filteredPosts.length > 0 ? (
+        {isLoading ? (
+          <p className="loading-message">게시글을 불러오는 중입니다...</p>
+        ) : filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
             <div key={post.id} className="post-card">
               <div className="card-header">
@@ -95,7 +95,7 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, onAuth, isAuthentica
             </div>
           ))
         ) : (
-          <p className="no-results">{isAuthenticated ? '게시글이 없습니다.' : 'Google 인증 후 게시글을 볼 수 있습니다.'}</p>
+          <p className="no-results">{isAuthenticated ? '게시글이 없습니다.' : '데이터를 불러오는 중입니다. 잠시만 기다려주세요...'}</p>
         )}
       </div>
     </div>
