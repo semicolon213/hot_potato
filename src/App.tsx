@@ -243,6 +243,7 @@ const App: React.FC = () => {
   // State for Announcements
   const [announcements, setAnnouncements] = useState<Post[]>([]);
   const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
+  const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
   const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
@@ -512,6 +513,7 @@ const App: React.FC = () => {
 
   const fetchAnnouncements = async () => {
     if (!announcementSpreadsheetId) return;
+    setIsAnnouncementsLoading(true);
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: announcementSpreadsheetId,
@@ -530,10 +532,14 @@ const App: React.FC = () => {
           likes: 0,
         })).reverse();
         setAnnouncements(parsedAnnouncements);
+      } else {
+        setAnnouncements([]);
       }
     } catch (error) {
       console.error('Error fetching announcements from Google Sheet:', error);
       alert('공지사항을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsAnnouncementsLoading(false);
     }
   };
 
@@ -593,25 +599,7 @@ const App: React.FC = () => {
 
   
 
-  const handleAnnouncementsAuth = async () => {
-    try {
-      await initializeGoogleAPIOnce();
-      setIsGoogleAuthenticatedForAnnouncements(true);
-      alert('Google 인증 성공!');
-      
-      // 인증 후 데이터 로드
-      try {
-        fetchAnnouncements();
-      } catch (error) {
-        console.error("Error fetching announcements after auth:", error);
-        alert('인증은 성공했지만 데이터 로드에 실패했습니다.');
-      }
-    } catch (e: any) {
-      console.error('Google 인증 실패:', e);
-      alert('Google 인증 실패: ' + e.message);
-      setIsGoogleAuthenticatedForAnnouncements(false);
-    }
-  };
+  
 
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     if (!boardSpreadsheetId) {
@@ -983,9 +971,9 @@ const App: React.FC = () => {
         return <AnnouncementsPage
             onPageChange={handlePageChange}
             posts={announcements}
-            onAuth={handleAnnouncementsAuth}
             isAuthenticated={isGoogleAuthenticatedForAnnouncements}
             announcementSpreadsheetId={announcementSpreadsheetId}
+            isLoading={isAnnouncementsLoading}
             data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} user={user} isAuthenticated={isGoogleAuthenticatedForAnnouncements} />;

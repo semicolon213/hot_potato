@@ -6,13 +6,13 @@ import { deleteSheetRow } from '../../utils/googleSheetUtils';
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
   posts: Post[];
-  onAuth: () => void;
   isAuthenticated: boolean;
   announcementSpreadsheetId: string | null;
+  isLoading: boolean;
   "data-oid": string;
 }
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, onAuth, isAuthenticated, announcementSpreadsheetId }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, isAuthenticated, announcementSpreadsheetId, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -65,9 +65,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
             />
             <span className="search-icon">🔍</span>
           </div>
-          {!isAuthenticated ? (
-            <button className="auth-button" onClick={onAuth}>Google 인증</button>
-          ) : (
+          {isAuthenticated && (
             <button 
               className="new-post-button" 
               onClick={() => onPageChange('new-announcement-post')}
@@ -79,7 +77,9 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
         </div>
       </div>
       <div className="post-list">
-        {filteredPosts.length > 0 ? (
+        {isLoading ? (
+          <p className="loading-message">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</p>
+        ) : filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
             <div key={post.id} className="post-card">
               <div className="card-header">
@@ -95,7 +95,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
             </div>
           ))
         ) : (
-          <p className="no-results">{isAuthenticated ? '공지사항이 없습니다.' : 'Google 인증 후 공지사항을 볼 수 있습니다.'}</p>
+          <p className="no-results">{isAuthenticated ? '공지사항이 없습니다.' : '데이터를 불러오는 중입니다. 잠시만 기다려주세요...'}</p>
         )}
       </div>
     </div>
