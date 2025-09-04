@@ -5,9 +5,11 @@ interface User {
   id: string;
   email: string;
   studentId: string;
+  name: string;
   isAdmin: boolean;
   isApproved: boolean;
   requestDate: string;
+  approvalDate?: string | null;
 }
 
 const AdminPanel: React.FC = () => {
@@ -35,13 +37,24 @@ const AdminPanel: React.FC = () => {
       
       const result = await response.json();
       
-      if (result.success) {
+      if (result.success && Array.isArray(result.users)) {
+        console.log('=== 사용자 목록 받음 ===');
+        console.log('사용자 수:', result.users.length);
+        console.log('사용자 목록:', result.users.map(user => ({
+          id: user.id,
+          studentId: user.studentId,
+          name: user.name,
+          email: user.email,
+          isApproved: user.isApproved
+        })));
         setUsers(result.users);
       } else {
+        setUsers([]); // 빈 배열로 초기화
         setMessage('사용자 목록을 가져오는데 실패했습니다.');
       }
     } catch (error) {
       console.error('사용자 목록 조회 실패:', error);
+      setUsers([]); // 오류 발생 시 빈 배열로 초기화
       setMessage('사용자 목록을 가져오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
@@ -54,15 +67,22 @@ const AdminPanel: React.FC = () => {
       setIsLoading(true);
       setMessage('');
       
+      const requestData = { 
+        action: 'approveUser',
+        studentId: userId
+      };
+      
+      console.log('=== 승인 요청 데이터 ===');
+      console.log('userId:', userId);
+      console.log('requestData:', requestData);
+      console.log('JSON.stringify:', JSON.stringify(requestData));
+      
       const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          action: 'approveUser',
-          studentId: userId
-        })
+        body: JSON.stringify(requestData)
       });
       
       const result = await response.json();
@@ -89,15 +109,22 @@ const AdminPanel: React.FC = () => {
       setIsLoading(true);
       setMessage('');
       
+      const requestData = { 
+        action: 'rejectUser',
+        studentId: userId
+      };
+      
+      console.log('=== 거부 요청 데이터 ===');
+      console.log('userId:', userId);
+      console.log('requestData:', requestData);
+      console.log('JSON.stringify:', JSON.stringify(requestData));
+      
       const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          action: 'rejectUser',
-          studentId: userId
-        })
+        body: JSON.stringify(requestData)
       });
       
       const result = await response.json();
@@ -162,8 +189,8 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const pendingUsers = users.filter(user => !user.isApproved);
-  const approvedUsers = users.filter(user => user.isApproved);
+  const pendingUsers = users?.filter(user => !user.isApproved) || [];
+  const approvedUsers = users?.filter(user => user.isApproved) || [];
 
   return (
     <div className="admin-panel">
@@ -180,7 +207,7 @@ const AdminPanel: React.FC = () => {
             type="email"
             value={emailToSend}
             onChange={(e) => setEmailToSend(e.target.value)}
-            placeholder="관리자 키를 받을 이메일 주소"
+            placeholder="📧 관리자 키를 받을 이메일 주소를 입력하세요"
             className="email-input"
           />
           <button 
@@ -188,7 +215,7 @@ const AdminPanel: React.FC = () => {
             disabled={isLoading || !emailToSend}
             className="send-key-btn"
           >
-            {isLoading ? '전송 중...' : '관리자 키 전송'}
+            {isLoading ? '⏳ 전송 중...' : '🚀 관리자 키 전송'}
           </button>
         </div>
       </div>
@@ -203,13 +230,18 @@ const AdminPanel: React.FC = () => {
             {pendingUsers.map(user => (
               <div key={user.id} className="user-card pending">
                 <div className="user-info">
-                  <div className="user-email">{user.email}</div>
-                  <div className="user-id">ID: {user.studentId}</div>
-                  <div className="user-type">
-                    {user.isAdmin ? '관리자 요청' : '일반 사용자'}
+                  <div className="user-details">
+                    <div className="user-name">{user.name || '이름 없음'}</div>
+                    <div className="user-email">{user.email}</div>
+                    <div className="user-id">ID: {user.studentId}</div>
+                    <div className="request-date">
+                      요청일: {user.requestDate}
+                    </div>
                   </div>
-                  <div className="request-date">
-                    요청일: {user.requestDate}
+                  <div className="user-badge">
+                    <div className={`user-type ${user.isAdmin ? 'admin' : 'user'}`}>
+                      {user.isAdmin ? '관리자 요청' : '일반 사용자'}
+                    </div>
                   </div>
                 </div>
                 <div className="user-actions">
@@ -218,14 +250,14 @@ const AdminPanel: React.FC = () => {
                     disabled={isLoading}
                     className="approve-btn"
                   >
-                    승인
+                    ✅ 승인
                   </button>
                   <button 
                     onClick={() => handleRejectUser(user.id)}
                     disabled={isLoading}
                     className="reject-btn"
                   >
-                    거부
+                    ❌ 거부
                   </button>
                 </div>
               </div>
@@ -244,13 +276,18 @@ const AdminPanel: React.FC = () => {
             {approvedUsers.map(user => (
               <div key={user.id} className="user-card approved">
                 <div className="user-info">
-                  <div className="user-email">{user.email}</div>
-                  <div className="user-id">ID: {user.studentId}</div>
-                  <div className="user-type">
-                    {user.isAdmin ? '관리자' : '일반 사용자'}
+                  <div className="user-details">
+                    <div className="user-name">{user.name || '이름 없음'}</div>
+                    <div className="user-email">{user.email}</div>
+                    <div className="user-id">ID: {user.studentId}</div>
+                    <div className="request-date">
+                      승인일: {user.approvalDate || user.requestDate}
+                    </div>
                   </div>
-                  <div className="request-date">
-                    승인일: {user.requestDate}
+                  <div className="user-badge">
+                    <div className={`user-type ${user.isAdmin ? 'admin' : 'user'}`}>
+                      {user.isAdmin ? '관리자' : '일반 사용자'}
+                    </div>
                   </div>
                 </div>
                 <div className="user-status">

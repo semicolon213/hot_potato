@@ -316,7 +316,8 @@ async function getAuthClient() {
       scopes: [
         'https://www.googleapis.com/auth/spreadsheets',
         'https://www.googleapis.com/auth/drive.readonly',
-        'https://www.googleapis.com/auth/gmail.send'
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.compose'
       ]
     });
     return await auth.getClient();
@@ -385,8 +386,7 @@ async function updateSpreadsheetKey(auth, newKey, layers) {
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
     const now = getKSTTime();
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const expiryKST = getKSTTime();
+    const expiryKST = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24시간 후 KST
     
     // admin_keys 시트의 현재 구조 확인
     const currentData = await sheets.spreadsheets.values.get({
@@ -396,10 +396,10 @@ async function updateSpreadsheetKey(auth, newKey, layers) {
     
     console.log('현재 admin_keys 시트 데이터:', currentData.data.values);
     
-    // 시트 구조에 맞게 업데이트
+    // 시트 구조에 맞게 업데이트 (KST 시간을 문자열로 저장)
     const updateData = [
       ['unified_admin_key', 'key_expiry', 'last_updated', 'layers_used'],
-      [newKey, expiryKST.toISOString(), now, layers.join(',')]
+      [newKey, formatKSTTime(expiryKST), formatKSTTime(now), layers.join(',')]
     ];
     
     await sheets.spreadsheets.values.update({
@@ -410,8 +410,8 @@ async function updateSpreadsheetKey(auth, newKey, layers) {
     });
     
     console.log('Spreadsheet key update complete');
-    console.log(`업데이트 시간: ${now}`);
-    console.log(`만료 시간: ${expiryKST}`);
+    console.log(`업데이트 시간: ${formatKSTTime(now)}`);
+    console.log(`만료 시간: ${formatKSTTime(expiryKST)}`);
     console.log(`사용된 레이어: ${layers.join(', ')}`);
   } catch (error) {
     console.error('Error updating spreadsheet key:', error);
@@ -456,56 +456,92 @@ async function verifyAdminKey(inputKey) {
 // ===== 관리자 계정으로 이메일 전송 함수 =====
 async function sendAdminKeyEmailWithUserToken(userEmail, adminKey, adminAccessToken) {
   try {
-    // 관리자의 액세스 토큰으로 Gmail API 사용
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({
-      access_token: adminAccessToken
-    });
+    console.log('이메일 전송 시작:', { userEmail, adminKey: adminKey.substring(0, 10) + '...', hasToken: !!adminAccessToken });
     
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    
-    // 이메일 내용 구성
-    const emailContent = `
-      안녕하세요!
-      
-      관리자 회원가입을 위한 관리자 키입니다.
-      
-      관리자 키: ${adminKey}
-      
-      이 키를 사용하여 관리자로 회원가입할 수 있습니다.
-      키는 매일 자정에 자동으로 갱신됩니다.
-      
-      감사합니다.
-    `;
-    
-    // Base64 인코딩된 이메일 생성
-    const email = [
-      'Content-Type: text/plain; charset=utf-8',
-      'MIME-Version: 1.0',
-      `To: ${userEmail}`,
-      'From: me',  // 관리자 계정에서 전송
-      'Subject: 관리자 회원가입 키',
-      '',
-      emailContent
-    ].join('\r\n');
-    
-    const encodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
-    
-    // 이메일 전송
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: encodedEmail
-      }
-    });
-    
-    console.log(`관리자 키 이메일 전송 완료: ${userEmail}`);
-    return { success: true, message: '이메일 전송이 완료되었습니다' };
+    // 서비스 계정으로 Gmail API 사용 (우선 방식)
+    console.log('서비스 계정으로 Gmail API 사용...');
+    const serviceAuth = await getAuthClient();
+    const gmail = google.gmail({ version: 'v1', auth: serviceAuth });
+    return await sendEmailWithGmailAPI(gmail, userEmail, adminKey);
     
   } catch (error) {
-    console.error('이메일 전송 실패:', error);
-    throw new Error('이메일 전송 중 오류가 발생했습니다');
+    console.error('이메일 전송 실패 상세:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      response: error.response?.data,
+      stack: error.stack
+    });
+    
+    // 구체적인 에러 메시지 제공
+    let errorMessage = '이메일 전송 중 오류가 발생했습니다';
+    if (error.code === 401) {
+      errorMessage = 'Gmail API 인증이 필요합니다. 서비스 계정 설정을 확인해주세요.';
+    } else if (error.code === 403) {
+      errorMessage = 'Gmail API 권한이 없습니다. 서비스 계정에 Gmail 전송 권한이 필요합니다.';
+    } else if (error.message.includes('quota')) {
+      errorMessage = 'Gmail API 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.';
+    } else if (error.message.includes('domain')) {
+      errorMessage = 'Gmail API 도메인 위임이 필요합니다. 관리자에게 문의해주세요.';
+    }
+    
+    throw new Error(errorMessage);
   }
+}
+
+// Gmail API를 사용한 이메일 전송 함수
+async function sendEmailWithGmailAPI(gmail, userEmail, adminKey) {
+  // 이메일 내용 구성
+  const emailContent = `
+안녕하세요!
+
+Hot Potato 관리자 회원가입을 위한 관리자 키입니다.
+
+관리자 키: ${adminKey}
+
+이 키를 사용하여 관리자로 회원가입할 수 있습니다.
+키는 매일 자정에 자동으로 갱신됩니다.
+
+감사합니다.
+Hot Potato 팀
+  `;
+  
+  // 서비스 계정의 경우 'me' 대신 실제 이메일 주소 사용
+  const fromEmail = process.env.SERVICE_ACCOUNT_EMAIL || 'me';
+  console.log('발신자 이메일:', fromEmail);
+  
+  // 이메일 헤더와 본문 구성
+  const email = [
+    'Content-Type: text/plain; charset=utf-8',
+    'MIME-Version: 1.0',
+    `To: ${userEmail}`,
+    `From: ${fromEmail}`,
+    'Subject: =?UTF-8?B?' + Buffer.from('Hot Potato 관리자 회원가입 키').toString('base64') + '?=',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(emailContent.trim()).toString('base64')
+  ].join('\r\n');
+  
+  // URL-safe Base64 인코딩
+  const encodedEmail = Buffer.from(email).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+  
+  console.log('Gmail API 호출 시작...');
+  console.log('이메일 정보:', { to: userEmail, from: fromEmail });
+  
+  // 이메일 전송
+  const result = await gmail.users.messages.send({
+    userId: 'me',
+    requestBody: {
+      raw: encodedEmail
+    }
+  });
+  
+  console.log('Gmail API 응답:', result.data);
+  console.log(`관리자 키 이메일 전송 완료: ${userEmail}`);
+  return { success: true, message: '이메일 전송이 완료되었습니다', messageId: result.data.id };
 }
 
 // ===== 승인 상태 확인 함수 =====
@@ -576,14 +612,14 @@ async function checkUserApprovalStatus(email) {
 
 // ===== 관리자 패널 관련 함수들 =====
 
-// 승인 대기 중인 사용자 목록 가져오기
+// 모든 사용자 목록 가져오기 (승인 대기 + 승인된 사용자)
 async function handleGetPendingUsers(req, res) {
   try {
     console.log('handleGetPendingUsers 호출됨');
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
-    // user 시트에서 승인 대기 중인 사용자 조회
+    // user 시트에서 모든 사용자 조회
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId,
       range: 'user!A:Z'
@@ -597,7 +633,7 @@ async function handleGetPendingUsers(req, res) {
       });
     }
     
-    const pendingUsers = [];
+    const allUsers = [];
     
     // 헤더 행 제외하고 데이터 검색
     for (let i = 1; i < rows.length; i++) {
@@ -608,30 +644,44 @@ async function handleGetPendingUsers(req, res) {
       const email = row[3]; // D열: Google 계정 이메일
       const approvalStatus = row[4]; // E열: 승인 상태
       const isAdmin = row[5]; // F열: 관리자 여부
+      const approvalDate = row[6]; // G열: 승인 날짜
       
-      // 승인 대기 중이고 Google 계정이 연결된 사용자만 포함
-      if (approvalStatus === 'X' && email && email.trim() !== '') {
-        pendingUsers.push({
+      // Google 계정이 연결된 사용자만 포함 (승인 대기 + 승인된 사용자)
+      if (email && email.trim() !== '' && (approvalStatus === 'X' || approvalStatus === 'O')) {
+        // 승인된 사용자는 승인일, 승인 대기 사용자는 요청일 표시
+        const currentKST = getKSTTime();
+        const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
+        const displayDate = approvalStatus === 'O' && approvalDate ? approvalDate : currentDate;
+        
+        allUsers.push({
           id: studentId,
           email: email,
           studentId: studentId,
           name: name,
           isAdmin: isAdmin === 'O',
-          isApproved: false,
-          requestDate: new Date().toISOString().split('T')[0] // 임시로 오늘 날짜
+          isApproved: approvalStatus === 'O',
+          requestDate: displayDate,
+          approvalDate: approvalDate || null
         });
       }
     }
     
-    console.log(`승인 대기 중인 사용자 ${pendingUsers.length}명 발견`);
+    console.log(`총 사용자 ${allUsers.length}명 발견 (승인 대기 + 승인된 사용자)`);
+    console.log('사용자 목록:', allUsers.map(user => ({
+      name: user.name,
+      email: user.email,
+      isApproved: user.isApproved,
+      requestDate: user.requestDate,
+      approvalDate: user.approvalDate
+    })));
     
     res.json({
       success: true,
-      users: pendingUsers
+      users: allUsers
     });
     
   } catch (error) {
-    console.error('승인 대기 사용자 목록 조회 실패:', error);
+    console.error('사용자 목록 조회 실패:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -642,14 +692,31 @@ async function handleGetPendingUsers(req, res) {
 // 사용자 승인
 async function handleApproveUser(req, res) {
   try {
-    const { studentId } = req.body;
+    console.log('=== 승인 요청 시작 ===');
+    console.log('전체 요청 body:', JSON.stringify(req.body, null, 2));
     
-    if (!studentId) {
+    const { studentId, id, action } = req.body;
+    const targetStudentId = studentId || id; // id 또는 studentId 둘 다 지원
+    
+    console.log('파싱된 데이터:', { 
+      studentId, 
+      id, 
+      action, 
+      targetStudentId,
+      hasStudentId: !!studentId,
+      hasId: !!id,
+      hasAction: !!action
+    });
+    
+    if (!targetStudentId) {
+      console.log('❌ 학번이 없음 - 오류 반환');
       return res.status(400).json({
         success: false,
         error: '학번이 필요합니다.'
       });
     }
+    
+    console.log('✅ 학번 확인됨:', targetStudentId);
     
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
@@ -665,7 +732,7 @@ async function handleApproveUser(req, res) {
     
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (row[0] === studentId) {
+      if (row[0] === targetStudentId) {
         userRowIndex = i + 1;
         break;
       }
@@ -678,21 +745,24 @@ async function handleApproveUser(req, res) {
       });
     }
     
-    // E열(승인 상태)을 'O'로 업데이트
+    // E열(승인 상태)을 'O'로, G열(승인 날짜)을 현재 KST 날짜로 업데이트
+    const currentKST = getKSTTime();
+    const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `user!E${userRowIndex}`,
+      range: `user!E${userRowIndex}:G${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [['O']]
+        values: [['O', '', currentDate]]
       }
     });
     
-    console.log(`사용자 승인 완료: ${studentId}`);
+    console.log(`사용자 승인 완료: ${targetStudentId}, 승인 날짜: ${currentDate}`);
     
     res.json({
       success: true,
-      message: '사용자가 승인되었습니다.'
+      message: '사용자가 승인되었습니다.',
+      approvalDate: currentDate
     });
     
   } catch (error) {
@@ -707,14 +777,31 @@ async function handleApproveUser(req, res) {
 // 사용자 거부
 async function handleRejectUser(req, res) {
   try {
-    const { studentId } = req.body;
+    console.log('=== 거부 요청 시작 ===');
+    console.log('전체 요청 body:', JSON.stringify(req.body, null, 2));
     
-    if (!studentId) {
+    const { studentId, id, action } = req.body;
+    const targetStudentId = studentId || id; // id 또는 studentId 둘 다 지원
+    
+    console.log('파싱된 데이터:', { 
+      studentId, 
+      id, 
+      action, 
+      targetStudentId,
+      hasStudentId: !!studentId,
+      hasId: !!id,
+      hasAction: !!action
+    });
+    
+    if (!targetStudentId) {
+      console.log('❌ 학번이 없음 - 오류 반환');
       return res.status(400).json({
         success: false,
         error: '학번이 필요합니다.'
       });
     }
+    
+    console.log('✅ 학번 확인됨:', targetStudentId);
     
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
@@ -730,7 +817,7 @@ async function handleRejectUser(req, res) {
     
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (row[0] === studentId) {
+      if (row[0] === targetStudentId) {
         userRowIndex = i + 1;
         break;
       }
@@ -743,17 +830,17 @@ async function handleRejectUser(req, res) {
       });
     }
     
-    // D열(Google 계정)을 비우고 E열(승인 상태)을 'R'(거부)로 업데이트
+    // D열(Google 계정)을 비우고 E열(승인 상태)을 'R'(거부)로, G열(승인 날짜)을 비우기
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `user!D${userRowIndex}:E${userRowIndex}`,
+      range: `user!D${userRowIndex}:G${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [['', 'R']]
+        values: [['', 'R', '']]
       }
     });
     
-    console.log(`사용자 거부 완료: ${studentId}`);
+    console.log(`사용자 거부 완료: ${targetStudentId}`);
     
     res.json({
       success: true,
@@ -933,23 +1020,23 @@ exports.dailyKeyUpdate = async (req, res) => {
     console.log(`요청 경로: ${path}`);
     console.log(`요청 body:`, req.body);
     
-    // 경로별 라우팅
-    if (path.includes('/verifyAdminKey') || (req.body && req.body.adminKey)) {
-      return await handleVerifyAdminKey(req, res);
-    } else if (path.includes('/sendAdminKeyEmail') || (req.body && req.body.userEmail && req.body.adminAccessToken)) {
-      return await handleSendAdminKeyEmail(req, res);
-    } else if (path.includes('/submitRegistrationRequest') || (req.body && req.body.studentId)) {
-      return await handleSubmitRegistrationRequest(req, res);
-    } else if (path.includes('/checkApprovalStatus') || (req.body && req.body.email && req.body.studentId !== undefined)) {
-      return await handleCheckApprovalStatus(req, res);
-    } else if (path.includes('/checkRegistrationStatus') || (req.body && req.body.email && !req.body.studentId)) {
-      return await handleCheckRegistrationStatus(req, res);
-    } else if (path.includes('/getPendingUsers') || (req.body && req.body.action === 'getPendingUsers')) {
+    // 경로별 라우팅 (action 기반 라우팅을 먼저 처리)
+    if (path.includes('/getPendingUsers') || (req.body && req.body.action === 'getPendingUsers')) {
       return await handleGetPendingUsers(req, res);
     } else if (path.includes('/approveUser') || (req.body && req.body.action === 'approveUser')) {
       return await handleApproveUser(req, res);
     } else if (path.includes('/rejectUser') || (req.body && req.body.action === 'rejectUser')) {
       return await handleRejectUser(req, res);
+    } else if (path.includes('/verifyAdminKey') || (req.body && req.body.adminKey)) {
+      return await handleVerifyAdminKey(req, res);
+    } else if (path.includes('/sendAdminKeyEmail') || (req.body && req.body.userEmail && req.body.adminAccessToken)) {
+      return await handleSendAdminKeyEmail(req, res);
+    } else if (path.includes('/submitRegistrationRequest') || (req.body && req.body.studentId && !req.body.action)) {
+      return await handleSubmitRegistrationRequest(req, res);
+    } else if (path.includes('/checkApprovalStatus') || (req.body && req.body.email && req.body.studentId !== undefined)) {
+      return await handleCheckApprovalStatus(req, res);
+    } else if (path.includes('/checkRegistrationStatus') || (req.body && req.body.email && !req.body.studentId)) {
+      return await handleCheckRegistrationStatus(req, res);
     } else {
       // 기본: 관리자 키 자동 갱신
       return await handleDailyKeyUpdate(req, res);
@@ -1026,9 +1113,17 @@ async function handleVerifyAdminKey(req, res) {
 // 관리자 키 이메일 전송 핸들러
 async function handleSendAdminKeyEmail(req, res) {
   try {
+    console.log('handleSendAdminKeyEmail 호출됨');
     const { userEmail, adminAccessToken } = req.body;
     
+    console.log('요청 데이터:', { 
+      userEmail, 
+      hasToken: !!adminAccessToken,
+      tokenLength: adminAccessToken?.length 
+    });
+    
     if (!userEmail) {
+      console.log('이메일 누락');
       return res.status(400).json({
         success: false,
         error: '사용자 이메일을 입력해주세요'
@@ -1036,6 +1131,7 @@ async function handleSendAdminKeyEmail(req, res) {
     }
     
     if (!adminAccessToken) {
+      console.log('액세스 토큰 누락');
       return res.status(400).json({
         success: false,
         error: '관리자 인증이 필요합니다'
@@ -1052,6 +1148,7 @@ async function handleSendAdminKeyEmail(req, res) {
     }
     
     // hp_member의 admin_keys 시트에서 현재 저장된 관리자 키 가져오기
+    console.log('관리자 키 조회 시작...');
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
@@ -1060,14 +1157,20 @@ async function handleSendAdminKeyEmail(req, res) {
       range: 'admin_keys!A2:A2'
     });
     
+    console.log('관리자 키 조회 응답:', response.data);
+    
     if (!response.data.values || response.data.values.length === 0) {
+      console.log('관리자 키를 찾을 수 없음');
       throw new Error('저장된 관리자 키를 찾을 수 없습니다');
     }
     
     const currentAdminKey = response.data.values[0][0];
+    console.log('관리자 키 조회 완료:', currentAdminKey.substring(0, 10) + '...');
     
     // 관리자 계정으로 이메일 전송
-    await sendAdminKeyEmailWithUserToken(userEmail, currentAdminKey, adminAccessToken);
+    console.log('이메일 전송 함수 호출...');
+    const emailResult = await sendAdminKeyEmailWithUserToken(userEmail, currentAdminKey, adminAccessToken);
+    console.log('이메일 전송 결과:', emailResult);
     
     res.json({
       success: true,
