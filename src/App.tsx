@@ -790,8 +790,6 @@ const App: React.FC = () => {
               await Promise.all([
                 fetchTemplates(),
                 fetchTags(),
-                fetchAnnouncements(),
-                fetchPosts()
               ]);
               
               console.log("모든 데이터 로드 완료");
@@ -913,8 +911,6 @@ const App: React.FC = () => {
               await Promise.all([
                 fetchTemplates(),
                 fetchTags(),
-                fetchAnnouncements(),
-                fetchPosts()
               ]);
               
               console.log("로그인 후 모든 데이터 로드 완료");
@@ -951,6 +947,18 @@ const App: React.FC = () => {
     }
     initAndFetch();
   };
+
+  useEffect(() => {
+    if (boardSpreadsheetId) {
+      fetchPosts();
+    }
+  }, [boardSpreadsheetId]);
+
+  useEffect(() => {
+    if (announcementSpreadsheetId) {
+      fetchAnnouncements();
+    }
+  }, [announcementSpreadsheetId]);
 
   // 로그아웃 처리 (from feature/login)
   const handleLogout = () => {
