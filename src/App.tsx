@@ -142,8 +142,14 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
             
             await gapi.client.init({
               clientId: GOOGLE_CLIENT_ID,
-              discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-              scope: 'https://www.googleapis.com/auth/spreadsheets'
+              discoveryDocs: [
+                'https://sheets.googleapis.com/$discovery/rest?version=v4',
+                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+              ],
+              scope: [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive.readonly'
+              ].join(' ')
             });
             
             console.log("Google API Client Library 초기화 성공!");
@@ -238,10 +244,11 @@ const App: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Post[]>([]);
   const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
   const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
+  const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
 
   // SHEET_ID는 상수로 정의됨
   const boardSheetName = '시트1';
-  const announcementSheetName = 'notice';
+  const announcementSheetName = '시트1';
 
   const deleteTag = (tagToDelete: string) => {
     if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
@@ -497,9 +504,10 @@ const App: React.FC = () => {
   };
 
   const fetchAnnouncements = async () => {
+    if (!announcementSpreadsheetId) return;
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: announcementSpreadsheetId,
         range: `${announcementSheetName}!A:E`,
       });
 
@@ -645,9 +653,13 @@ const App: React.FC = () => {
   };
 
   const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
+    if (!announcementSpreadsheetId) {
+      alert('공지사항 스프레드시트가 아직 로드되지 않았습니다.');
+      return;
+    }
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: announcementSpreadsheetId,
         range: `${announcementSheetName}!A:A`,
       });
 
@@ -662,7 +674,7 @@ const App: React.FC = () => {
         'file_notice': '', // File handling logic can be added here
       };
 
-      await appendRow(SHEET_ID, announcementSheetName, newPostForSheet);
+      await appendRow(announcementSpreadsheetId, announcementSheetName, newPostForSheet);
       await fetchAnnouncements(); // Refetch announcements after adding a new one
       alert('공지사항이 성공적으로 저장되었습니다.');
       handlePageChange('announcements');
@@ -698,32 +710,34 @@ const App: React.FC = () => {
     const savedTheme = localStorage.getItem("selectedTheme") || "default";
     document.body.classList.add(`theme-${savedTheme}`);
 
-    // Google Sheets 데이터는 로그인된 사용자만 가져오도록 수정
-    const fetchInitialData = async () => {
-      try {
-        // Set auth states to true since we know the user is signed in
-        setIsGoogleAuthenticatedForAnnouncements(true);
-        setIsGoogleAuthenticatedForBoard(true);
-
-        const gapi = (window as any).gapi;
-        const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: sheetId });
-        const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
-        if (docSheet && docSheet.properties) {
-          setDocumentTemplateSheetId(docSheet.properties.sheetId);
-        }
-        fetchTemplates();
-        fetchTags();
-        fetchAnnouncements();
-        fetchPosts();
-      } catch (error) {
-        console.error("Error during initial data fetch", error);
-      }
-    };
-
     const initAndFetch = async () => {
       try {
         console.log("새로고침 후 Google API 초기화 시작");
         await initializeGoogleAPIOnce();
+
+        // Find the announcement spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='notice_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'notice_professor' spreadsheet with ID:", fileId);
+              setAnnouncementSpreadsheetId(fileId);
+            } else {
+                console.error("'notice_professor' spreadsheet found but has no ID.");
+                alert("'notice_professor' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'notice_professor'");
+            alert("Could not find spreadsheet with name 'notice_professor'");
+          }
+        } catch (error) {
+          console.error("Error searching for spreadsheet:", error);
+          alert("Error searching for spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
         
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
@@ -800,6 +814,30 @@ const App: React.FC = () => {
         console.log("로그인 후 Google API 초기화 시작");
         // 중앙화된 Google API 초기화 사용
         await initializeGoogleAPIOnce();
+
+        // Find the announcement spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='notice_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'notice_professor' spreadsheet with ID:", fileId);
+              setAnnouncementSpreadsheetId(fileId);
+            } else {
+                console.error("'notice_professor' spreadsheet found but has no ID.");
+                alert("'notice_professor' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'notice_professor'");
+            alert("Could not find spreadsheet with name 'notice_professor'");
+          }
+        } catch (error) {
+          console.error("Error searching for spreadsheet:", error);
+          alert("Error searching for spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
         
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
@@ -850,7 +888,7 @@ const App: React.FC = () => {
         fetchInitialData();
       } catch (error) {
         console.error("Error during login gapi load", error);
-        // gapi 초기화 실패 시 재시도 (더 빠르게)
+        // gpi 초기화 실패 시 재시도 (더 빠르게)
         setTimeout(() => {
           console.log("로그인 후 gapi 초기화 재시도");
           initAndFetch();
@@ -894,6 +932,7 @@ const App: React.FC = () => {
             posts={announcements}
             onAuth={handleAnnouncementsAuth}
             isAuthenticated={isGoogleAuthenticatedForAnnouncements}
+            announcementSpreadsheetId={announcementSpreadsheetId}
             data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} user={user} isAuthenticated={isGoogleAuthenticatedForAnnouncements} />;

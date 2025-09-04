@@ -7,10 +7,11 @@ interface AnnouncementsProps {
   posts: Post[];
   onAuth: () => void;
   isAuthenticated: boolean;
+  announcementSpreadsheetId: string | null;
   "data-oid": string;
 }
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, onAuth, isAuthenticated }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, onAuth, isAuthenticated, announcementSpreadsheetId }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleDeletePost = (id: string) => {
@@ -42,7 +43,13 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
           {!isAuthenticated ? (
             <button className="auth-button" onClick={onAuth}>Google 인증</button>
           ) : (
-            <button className="new-post-button" onClick={() => onPageChange('new-announcement-post')}>새 공지 작성</button>
+            <button 
+              className="new-post-button" 
+              onClick={() => onPageChange('new-announcement-post')}
+              disabled={!announcementSpreadsheetId}
+            >
+              {announcementSpreadsheetId ? '새 공지 작성' : '불러오는 중...'}
+            </button>
           )}
         </div>
       </div>
