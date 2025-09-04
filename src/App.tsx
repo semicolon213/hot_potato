@@ -896,7 +896,7 @@ const App: React.FC = () => {
             isAuthenticated={isGoogleAuthenticatedForAnnouncements}
             data-oid="d01oi2r" />;
       case "new-announcement-post":
-        return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} />;
+        return <NewAnnouncementPost onPageChange={handlePageChange} onAddPost={addAnnouncement} user={user} isAuthenticated={isGoogleAuthenticatedForAnnouncements} />;
       case "document_management":
         return (
             <DocumentManagement
