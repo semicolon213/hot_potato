@@ -128,25 +128,25 @@
 }
 
 .more-button {
-    background: none;
-    border: none;
-    color: #007bff;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 2px 5px;
-    margin-left: 5px;
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 5px;
+  margin-left: 5px;
 }
 
 .event-item.continuation-left {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    margin-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: 0;
 }
 
 .event-item.continuation-right {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    margin-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-right: 0;
 }
 
 .event-item.selected {
@@ -174,16 +174,16 @@
 
 .view-switcher button {
   padding: 5px 15px;
-  border: 1px solid #ccc;
+  border: 1px solid transparent;
   border-radius: 5px;
   cursor: pointer;
-  background-color: #fff;
+  background-color: transparent;
+  transition: background-color 0.3s ease;
 }
 
 .view-switcher button.active {
-  background-color: #007bff;
-  color: #fff;
-  border-color: #007bff;
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 .week-navigation {
