@@ -141,8 +141,11 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
             
             await gapi.client.init({
               clientId: GOOGLE_CLIENT_ID,
-              discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-              scope: 'https://www.googleapis.com/auth/spreadsheets'
+              discoveryDocs: [
+                'https://sheets.googleapis.com/$discovery/rest?version=v4',
+                'https://gmail.googleapis.com/$discovery/rest?version=v1'
+              ],
+              scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.compose'
             });
             
             console.log("Google API Client Library 초기화 성공!");

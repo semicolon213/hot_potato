@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useAuthStore } from '../hooks/useAuthStore';
 import './Login.css';
 
 interface LoginProps {
@@ -15,6 +16,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isAdminVerified, setIsAdminVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // useAuthStore에서 setGoogleToken 함수 가져오기
+  const { setGoogleToken } = useAuthStore();
 
   const login = useGoogleLogin({
     onSuccess: async tokenResponse => {
@@ -22,6 +26,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         console.log('Google 로그인 성공:', tokenResponse);
         // access_token을 localStorage에 저장
         localStorage.setItem('googleAccessToken', tokenResponse.access_token);
+        
+        // useAuthStore에도 토큰 저장
+        setGoogleToken(tokenResponse.access_token);
 
         // 사용자 정보 가져오기
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -50,7 +57,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       console.log('Login Failed');
       setError('Google 로그인에 실패했습니다.');
     },
-    scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/spreadsheets profile email',
+    scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.compose profile email',
   });
 
 
