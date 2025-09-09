@@ -1,15 +1,29 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/useTemplateUI";
 import type { Template } from "../hooks/useTemplateUI";
 import "../components/TemplateUI/TemplateUI.css";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 // UI Components
 import {
     SearchBar,
     CategoryTabs,
     TemplateList,
-    TemplateCard
 } from "../components/TemplateUI";
+import { SortableTemplateCard } from "../components/TemplateUI/SortableTemplateCard";
 
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
@@ -37,6 +51,68 @@ export default function NewDocument({
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("전체");
     const [filterOption, setFilterOption] = useState("자주 사용");
+
+    const [defaultTemplateItems, setDefaultTemplateItems] = useState(defaultTemplates);
+    const [customTemplateItems, setCustomTemplateItems] = useState(customTemplates);
+
+    useEffect(() => {
+        const storedDefaultOrder = localStorage.getItem('defaultTemplateOrder');
+        if (storedDefaultOrder) {
+            const orderedIds = JSON.parse(storedDefaultOrder);
+            const orderedTemplates = orderedIds.map((id: string) => defaultTemplates.find(t => t.type === id)).filter(Boolean);
+            setDefaultTemplateItems(orderedTemplates as Template[]);
+        } else {
+            setDefaultTemplateItems(defaultTemplates);
+        }
+
+        const storedCustomOrder = localStorage.getItem('customTemplateOrder');
+        if (storedCustomOrder) {
+            const orderedIds = JSON.parse(storedCustomOrder);
+            const baseTemplates = [...customTemplates];
+            const orderedTemplates = orderedIds
+                .map((id: string) => baseTemplates.find(t => (t.rowIndex ? t.rowIndex.toString() : t.title) === id))
+                .filter((t): t is Template => !!t);
+            
+            const newTemplates = baseTemplates.filter(t => !orderedIds.includes(t.rowIndex ? t.rowIndex.toString() : t.title));
+            setCustomTemplateItems([...orderedTemplates, ...newTemplates]);
+
+        } else {
+            setCustomTemplateItems(customTemplates);
+        }
+    }, [customTemplates]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDefaultDragEnd = (event: any) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            setDefaultTemplateItems((items) => {
+                const oldIndex = items.findIndex((item) => item.type === active.id);
+                const newIndex = items.findIndex((item) => item.type === over.id);
+                const newItems = arrayMove(items, oldIndex, newIndex);
+                localStorage.setItem('defaultTemplateOrder', JSON.stringify(newItems.map(item => item.type)));
+                return newItems;
+            });
+        }
+    };
+
+    const handleCustomDragEnd = (event: any) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            setCustomTemplateItems((items) => {
+                const oldIndex = items.findIndex((item) => (item.rowIndex ? item.rowIndex.toString() : item.title) === active.id);
+                const newIndex = items.findIndex((item) => (item.rowIndex ? item.rowIndex.toString() : item.title) === over.id);
+                const newItems = arrayMove(items, oldIndex, newIndex);
+                localStorage.setItem('customTemplateOrder', JSON.stringify(newItems.map(item => item.rowIndex ? item.rowIndex.toString() : item.title)));
+                return newItems;
+            });
+        }
+    };
 
     // + 새 문서 모달 상태 추가 (3개 필드)
     const [showNewDocModal, setShowNewDocModal] = useState(false);
@@ -91,7 +167,7 @@ export default function NewDocument({
     // --- Filtering Logic ---
 
     // 1. Filter Default Templates
-    const filteredDefaultTemplates = defaultTemplates.filter(template => {
+    const filteredDefaultTemplates = defaultTemplateItems.filter(template => {
         if (activeTab !== "전체" && template.tag !== activeTab) {
             return false;
         }
@@ -105,7 +181,7 @@ export default function NewDocument({
     const { 
         filteredTemplates: filteredCustomTemplates, 
         onUseTemplate 
-    } = useTemplateUI(customTemplates, onPageChange, searchTerm, activeTab, filterOption);
+    } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab, filterOption);
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
     const orderedTags = useMemo(() => {
@@ -114,7 +190,7 @@ export default function NewDocument({
         const defaultTagSet = new Set(uniqueDefaultTags);
         const customTags = tags.filter(tag => !defaultTagSet.has(tag));
         return [...uniqueDefaultTags, ...customTags];
-    }, [tags, defaultTemplateTags]);
+    }, [tags]);
 
     return (
         <div>
@@ -143,18 +219,30 @@ export default function NewDocument({
                 <div className="layout-sidebar">
                     <div className="template-section">
                         <h2 className="section-title">기본 템플릿</h2>
-                        <div className="new-templates-container" style={{ paddingLeft: '20px' }}>
-                            {filteredDefaultTemplates.map(template => (
-                                <TemplateCard
-                                    key={template.type}
-                                    template={template}
-                                    onUse={onUseTemplate}
-                                    onDelete={() => {}} // No delete for default templates
-                                    isFixed={true}
-                                    defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
-                                />
-                            ))}
-                        </div>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDefaultDragEnd}
+                        >
+                            <SortableContext
+                                items={filteredDefaultTemplates.map(t => t.type)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="new-templates-container" style={{ paddingLeft: '20px' }}>
+                                    {filteredDefaultTemplates.map(template => (
+                                        <SortableTemplateCard
+                                            key={template.type}
+                                            id={template.type}
+                                            template={template}
+                                            onUse={onUseTemplate}
+                                            onDelete={() => {}} // No delete for default templates
+                                            isFixed={true}
+                                            defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
                     </div>
                 </div>
 
@@ -179,12 +267,23 @@ export default function NewDocument({
                             </span>
                         </h2>
                         <div style={{ marginLeft: '-20px', paddingRight: '40px' }}>
-                            <TemplateList
-                                templates={filteredCustomTemplates}
-                                onUseTemplate={onUseTemplate}
-                                onDeleteTemplate={deleteTemplate}
-                                defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
-                            />
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleCustomDragEnd}
+                            >
+                                <SortableContext
+                                    items={filteredCustomTemplates.map(t => t.rowIndex ? t.rowIndex.toString() : t.title)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    <TemplateList
+                                        templates={filteredCustomTemplates}
+                                        onUseTemplate={onUseTemplate}
+                                        onDeleteTemplate={deleteTemplate}
+                                        defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                                    />
+                                </SortableContext>
+                            </DndContext>
                         </div>
                     </div>
                 </div>

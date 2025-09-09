@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo, useCallback } from "react";
 
 // 1. 템플릿 데이터의 타입 정의
 export interface Template {
@@ -57,7 +57,11 @@ export function useTemplateUI(
     }, [templates, searchTerm, filterOption, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
-    const onUseTemplate = (type: string, title: string) => {
+    const onUseTemplate = useCallback((type: string, title: string) => {
+        if (type.startsWith('http')) {
+            window.open(type, '_blank');
+            return;
+        }
         if (type === "empty") {
             window.open("https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0", "_blank");
         } else if (type === "meeting") {
@@ -76,7 +80,7 @@ export function useTemplateUI(
             alert(`"${title}" 템플릿을 사용합니다!`);
         }
         // 실제로는 템플릿 생성 등 추가 로직을 구현할 수 있음
-    };
+    }, [onPageChange]);
 
     // 훅에서 관리하는 상태, 함수들을 객체로 반환
     return {
