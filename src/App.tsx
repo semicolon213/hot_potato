@@ -229,6 +229,7 @@ const App: React.FC = () => {
   // User authentication state (from feature/login)
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGapiReady, setIsGapiReady] = useState(false);
 
   // Original app state (from develop)
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
@@ -755,6 +756,7 @@ const App: React.FC = () => {
             const gapi = (window as any).gapi;
             if (gapi && gapi.client && gapi.client.sheets && gapi.client.sheets.spreadsheets) {
               console.log("Google API 초기화 완료, 데이터 로드 시작");
+              setIsGapiReady(true);
 
               // Set auth states to true since we know the user is signed in
               setIsGoogleAuthenticatedForAnnouncements(true);
@@ -877,6 +879,7 @@ const App: React.FC = () => {
             const gapi = (window as any).gapi;
             if (gapi && gapi.client && gapi.client.sheets && gapi.client.sheets.spreadsheets) {
               console.log("로그인 후 Google API 초기화 완료, 데이터 로드 시작");
+              setIsGapiReady(true);
 
               setIsGoogleAuthenticatedForAnnouncements(true);
               setIsGoogleAuthenticatedForBoard(true);
@@ -1008,7 +1011,7 @@ const App: React.FC = () => {
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard isAuthenticated={!!user} isGapiReady={isGapiReady} />;
       case 'admin':
         return <AdminPanel />;
       case 'documents':
@@ -1018,7 +1021,7 @@ const App: React.FC = () => {
       case 'settings':
         return <div>설정 페이지 (구현 예정)</div>;
       default:
-        return <Dashboard />;
+        return <Dashboard isAuthenticated={!!user} isGapiReady={isGapiReady} />;
     }
   };
 

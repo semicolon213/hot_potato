@@ -175,7 +175,7 @@ const widgetOptions = [
 /**
  * 대시보드 위젯 관리를 위한 커스텀 훅입니다.
  */
-export const useWidgetManagement = () => {
+export const useWidgetManagement = (isAuthenticated: boolean, isGapiReady: boolean) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
   const isDbReady = useRef(false);
@@ -194,6 +194,12 @@ export const useWidgetManagement = () => {
     isDbReady.current = true;
     isLoading.current = false;
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && isGapiReady) {
+      syncWidgetsWithGoogleSheets();
+    }
+  }, [isAuthenticated, isGapiReady]);
 
   // Google Sheets에서 위젯 데이터를 동기화하는 함수 (사용자가 로그인한 후에만 호출)
   const syncWidgetsWithGoogleSheets = async () => {

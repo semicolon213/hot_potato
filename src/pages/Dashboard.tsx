@@ -4,10 +4,13 @@ import "./Dashboard.css";
 import WidgetGrid from "../components/Dashboard/WidgetGrid";
 import AddWidgetModal from "../components/Dashboard/AddWidgetModal";
 
+interface DashboardProps {
+  isAuthenticated: boolean;
+  isGapiReady: boolean;
+}
 
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated, isGapiReady }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
   const {
     isModalOpen,
     setIsModalOpen,
@@ -18,8 +21,7 @@ const Dashboard: React.FC = () => {
     handleDragEnter,
     handleDrop,
     widgetOptions,
-    syncWidgetsWithGoogleSheets,
-  } = useWidgetManagement();
+  } = useWidgetManagement(isAuthenticated, isGapiReady);
 
   useEffect(() => {
     console.log("Dashboard 컴포넌트가 마운트되었습니다.");
@@ -39,22 +41,6 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-header">
         <h1>대시보드</h1>
         <div className="dashboard-actions">
-          <button 
-            className="sync-btn" 
-            onClick={async () => {
-              setIsSyncing(true);
-              try {
-                await syncWidgetsWithGoogleSheets();
-              } finally {
-                setIsSyncing(false);
-              }
-            }}
-            disabled={isSyncing}
-            title="Google Sheets와 동기화"
-          >
-            <i className={`fas ${isSyncing ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
-            {isSyncing ? '동기화 중...' : '동기화'}
-          </button>
           <button className="add-widget-btn" onClick={() => setIsModalOpen(true)}>
             <i className="fas fa-plus"></i>
             위젯 추가
@@ -75,7 +61,7 @@ const Dashboard: React.FC = () => {
           <div className="empty-message">
             <i className="fas fa-plus-circle"></i>
             <h3>위젯이 없습니다</h3>
-            <p>Google 로그인 후 동기화 버튼을 클릭하거나, 위젯 추가 버튼을 클릭하여 대시보드를 커스터마이징하세요.</p>
+            <p>위젯 추가 버튼을 클릭하여 대시보드를 커스터마이징하세요.</p>
             <button 
               className="add-first-widget-btn" 
               onClick={() => setIsModalOpen(true)}
