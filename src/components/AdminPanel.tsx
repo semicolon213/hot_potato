@@ -22,12 +22,23 @@ const AdminPanel: React.FC = () => {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   
   // useAuthStore에서 사용자 정보와 토큰 가져오기
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
 
   // 사용자 목록 가져오기 (실제로는 hp_member 스프레드시트에서 가져옴)
   useEffect(() => {
     fetchPendingUsers();
   }, []);
+
+  // 모든 메시지 자동 사라짐 기능
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage('');
+        setEmailStatus('idle');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   // 이메일 전송 성공 후 상태 초기화
   useEffect(() => {
@@ -105,6 +116,21 @@ const AdminPanel: React.FC = () => {
       
       if (result.success) {
         setMessage('사용자가 승인되었습니다.');
+        
+        // 승인된 사용자가 현재 로그인한 사용자인지 확인
+        const approvedUser = users.find(u => u.id === userId);
+        if (approvedUser && approvedUser.email === user?.email) {
+          // 현재 로그인한 사용자가 승인된 경우 상태 업데이트
+          const updatedUser = {
+            ...user,
+            isApproved: true,
+            isAdmin: approvedUser.isAdmin
+          };
+          // useAuthStore의 setUser 함수를 사용하여 상태 업데이트
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+        
         // 목록 새로고침
         fetchPendingUsers();
       } else {
@@ -461,12 +487,6 @@ const AdminPanel: React.FC = () => {
         )}
       </div>
 
-      {/* 메시지 표시 */}
-      {message && (
-        <div className={`message ${message.includes('실패') ? 'error' : 'success'}`}>
-          {message}
-        </div>
-      )}
     </div>
   );
 };

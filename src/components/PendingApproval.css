@@ -1,0 +1,261 @@
+/* 승인 대기 화면 스타일 */
+.pending-approval {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--background, #F5EFEB);
+  padding: 1rem;
+  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regular', sans-serif;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+}
+
+.pending-card {
+  background: var(--white, #ffffff);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+  margin: 0;
+  text-align: center;
+  animation: slideInUp 0.6s ease-out;
+  border: 1px solid var(--border-light, #eee);
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 상단 장식 */
+.pending-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary, rgb(56, 67, 86)), var(--secondary, rgb(103, 123, 139)));
+  border-radius: 1rem 1rem 0 0;
+}
+
+/* 제목 */
+.pending-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-dark, #333);
+  margin: 0 0 0.5rem;
+  background: linear-gradient(135deg, var(--primary, rgb(56, 67, 86)), var(--secondary, rgb(103, 123, 139)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-card > p {
+  color: var(--secondary, rgb(103, 123, 139));
+  font-size: 1.125rem;
+  margin: 0 0 2rem;
+  font-weight: 500;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 사용자 정보 섹션 */
+.user-info {
+  background: var(--lightgrey, #f5f5f5);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color, #ddd);
+  text-align: left;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+}
+
+.user-info p {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--text-dark, #333);
+  display: block;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-light, #eee);
+  line-height: 1.5;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+}
+
+.user-info p:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.user-info strong {
+  color: var(--primary, rgb(56, 67, 86));
+  font-weight: 600;
+  display: inline-block;
+  width: 120px;
+  text-align: left;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  vertical-align: top;
+}
+
+.user-info span {
+  color: var(--secondary, rgb(103, 123, 139));
+  font-weight: 500;
+  display: inline-block;
+  text-align: left;
+  word-break: break-all;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  vertical-align: top;
+  margin-left: 10px;
+}
+
+/* 상태 배지 */
+.status-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  animation: pulse 2s infinite;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+}
+
+.status-badge.admin {
+  background: linear-gradient(135deg, var(--primary, rgb(56, 67, 86)), var(--secondary, rgb(103, 123, 139)));
+  color: white;
+}
+
+.status-badge.user {
+  background: linear-gradient(135deg, var(--accent, rgb(200, 211, 228)), var(--secondary-light, rgb(115, 130, 143)));
+  color: var(--text-dark, #333);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* 로딩 애니메이션 */
+.loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--primary, rgb(56, 67, 86));
+  border-radius: 50%;
+  animation: loadingDots 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+.loading-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes loadingDots {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* 로그아웃 버튼 */
+.logout-btn {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary, rgb(56, 67, 86)), var(--secondary, rgb(103, 123, 139)));
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+  .pending-card {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+  
+  .pending-card h2 {
+    font-size: 1.75rem;
+  }
+  
+  .user-info {
+    padding: 1rem;
+  }
+  
+  .user-info p {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .user-info strong {
+    min-width: auto;
+  }
+}
+
+/* 추가 스타일링 */
+.pending-card h2 {
+  line-height: 1.2;
+}
+
+.pending-card > p {
+  line-height: 1.4;
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
+import "./components/PendingApproval.css"; // 승인 대기 화면 스타일
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { appendRow } from 'papyrus-db'; // Google Sheets API 접근용
 import Login from './components/Login';
@@ -944,6 +945,7 @@ const App: React.FC = () => {
     return <div className="loading">로딩 중...</div>;
   }
 
+
   // 로그인하지 않은 사용자 (feature/login 방식)
   if (!user) {
     return <Login onLogin={handleLogin} />;
@@ -955,13 +957,42 @@ const App: React.FC = () => {
         <div className="pending-approval">
           <div className="pending-card">
             <h2>승인 대기 중</h2>
-            <p>관리자 승인을 기다리고 있습니다.</p>
-            <div className="user-info">
-              <p><strong>이름:</strong> {user.name}</p>
-              <p><strong>이메일:</strong> {user.email}</p>
-              <p><strong>학번/교번:</strong> {user.studentId}</p>
-              <p><strong>구분:</strong> {user.isAdmin ? '관리자 요청' : '일반 사용자'}</p>
+            <p>관리자 승인을 기다리고 있습니다<span className="loading-dots">
+              <span></span><span></span><span></span>
+            </span></p>
+            
+            <div className={`status-badge ${user.isAdmin ? 'admin' : 'user'}`}>
+              {user.isAdmin ? '관리자 요청' : '일반 사용자'}
             </div>
+            
+            <div className="user-info">
+              <p>
+                <strong>이름:</strong> 
+                <span>{user.name || '이름 없음'}</span>
+              </p>
+              <p>
+                <strong>이메일:</strong> 
+                <span>{user.email}</span>
+              </p>
+              <p>
+                <strong>학번/교번:</strong> 
+                <span>{user.studentId || '정보 없음'}</span>
+              </p>
+              <p>
+                <strong>상태:</strong> 
+                <span>승인 대기 중</span>
+              </p>
+            </div>
+            
+            <div style={{ 
+              marginBottom: '1rem', 
+              fontSize: '0.875rem', 
+              color: 'var(--secondary, rgb(103, 123, 139))',
+              lineHeight: '1.4'
+            }}>
+              💡 승인 상태는 자동으로 확인됩니다. 잠시만 기다려주세요.
+            </div>
+            
             <button onClick={handleLogout} className="logout-btn">
               로그아웃
             </button>

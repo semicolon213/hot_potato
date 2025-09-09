@@ -2145,11 +2145,13 @@ async function handleApproveUser(req, res) {
     
     const rows = response.data.values;
     let userRowIndex = -1;
+    let isAdminValue = ''; // 기존 is_admin 값 저장
     
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (row[0] === targetStudentId) {
         userRowIndex = i + 1;
+        isAdminValue = row[5] || ''; // F열(is_admin) 값 저장
         break;
       }
     }
@@ -2161,7 +2163,7 @@ async function handleApproveUser(req, res) {
       });
     }
     
-    // E열(승인 상태)을 'O'로, G열(승인 날짜)을 현재 KST 날짜로 업데이트
+    // E열(승인 상태)을 'O'로, F열(is_admin)을 기존 값 유지, G열(승인 날짜)을 현재 KST 날짜로 업데이트
     const currentKST = getKSTTime();
     const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
     await sheets.spreadsheets.values.update({
@@ -2169,11 +2171,11 @@ async function handleApproveUser(req, res) {
       range: `user!E${userRowIndex}:G${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [['O', '', currentDate]]
+        values: [['O', isAdminValue, currentDate]]
       }
     });
     
-    console.log(`사용자 승인 완료: ${targetStudentId}, 승인 날짜: ${currentDate}`);
+    console.log(`사용자 승인 완료: ${targetStudentId}, 승인 날짜: ${currentDate}, is_admin: ${isAdminValue}`);
     
     res.json({
       success: true,
@@ -2246,13 +2248,13 @@ async function handleRejectUser(req, res) {
       });
     }
     
-    // D열(Google 계정)을 비우고 E열(승인 상태)을 'R'(거부)로, G열(승인 날짜)을 비우기
+    // D열(Google 계정), E열(승인 상태), F열(is_admin), G열(승인 날짜)을 모두 비우기
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `user!D${userRowIndex}:G${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [['', 'R', '']]
+        values: [['', '', '', '']]
       }
     });
     
@@ -2752,6 +2754,7 @@ async function handleCheckRegistrationStatus(req, res) {
     });
   }
 }
+
 
 // 가입 요청 제출 핸들러 (새로 추가)
 async function handleSubmitRegistrationRequest(req, res) {

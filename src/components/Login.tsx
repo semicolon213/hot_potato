@@ -272,7 +272,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <button
                       type="button"
                       className="admin-key-toggle"
-                      onClick={() => setShowAdminKey(!showAdminKey)}
+                      onClick={() => {
+                        console.log('관리자 키 토글 클릭, 현재 상태:', showAdminKey);
+                        setShowAdminKey(!showAdminKey);
+                      }}
                   >
                     {showAdminKey ? '▼' : '▶'} 관리자 키 인증 (선택사항)
                   </button>
@@ -282,13 +285,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         <input
                             type="password"
                             value={adminKey}
-                            onChange={(e) => setAdminKey(e.target.value)}
+                            onChange={(e) => {
+                              console.log('관리자 키 입력:', e.target.value);
+                              setAdminKey(e.target.value);
+                            }}
                             placeholder="관리자 키를 입력하세요"
+                            disabled={isLoading}
+                            style={{ 
+                              pointerEvents: isLoading ? 'none' : 'auto',
+                              opacity: isLoading ? 0.6 : 1 
+                            }}
                         />
                         <button
                             type="button"
-                            onClick={handleVerifyAdminKey}
-                            disabled={isLoading || !adminKey}
+                            onClick={() => {
+                              console.log('인증 버튼 클릭, 현재 키:', adminKey);
+                              handleVerifyAdminKey();
+                            }}
+                            disabled={isLoading || !adminKey.trim()}
                             className="verify-button"
                         >
                           {isLoading ? '인증 중...' : '인증하기'}

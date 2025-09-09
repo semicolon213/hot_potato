@@ -51,6 +51,8 @@
   max-width: 450px;
   position: relative;
   margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 로그인 카드 상단 장식 */
@@ -162,6 +164,8 @@
 /* 회원가입 섹션 */
 .signup-section {
   animation: fadeInUp 0.5s ease-out;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @keyframes fadeInUp {
@@ -183,6 +187,10 @@
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
+  width: 100%;
+  box-sizing: border-box;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
 
 .user-info h2 {
@@ -190,6 +198,11 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 0.75rem;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-email {
@@ -241,7 +254,8 @@
 
 /* 관리자 키 섹션 */
 .admin-key-section {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .admin-key-toggle {
@@ -259,6 +273,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  pointer-events: auto;
 }
 
 .admin-key-toggle:hover {
@@ -279,6 +294,8 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
   animation: slideDown 0.3s ease-out;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @keyframes slideDown {
@@ -303,6 +320,14 @@
   background: var(--bg-primary);
   color: var(--text-primary);
   box-sizing: border-box;
+  cursor: text;
+}
+
+.admin-key-input input:disabled {
+  background: var(--bg-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .admin-key-input input:focus {
@@ -335,6 +360,7 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+  pointer-events: none;
 }
 
 /* 성공 메시지 */

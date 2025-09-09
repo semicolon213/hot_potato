@@ -191,9 +191,10 @@
   border-radius: 10px;
   font-weight: 500;
   z-index: 1000;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
   max-width: 400px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 }
 
 .message.success {
@@ -469,29 +470,6 @@
   box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
 }
 
-/* 메시지 */
-.message {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 15px 20px;
-  border-radius: 10px;
-  font-weight: 500;
-  z-index: 1000;
-  animation: slideIn 0.3s ease;
-}
-
-.message.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.message.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
 
 @keyframes slideIn {
   from {
@@ -501,6 +479,17 @@
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
   }
 }
 
