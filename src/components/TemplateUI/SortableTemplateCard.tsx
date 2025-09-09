@@ -27,14 +27,16 @@ export function SortableTemplateCard({ id, template, onUse, onDelete, isFixed, d
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <TemplateCard
-                template={template}
-                onUse={onUse}
-                onDelete={onDelete}
-                isFixed={isFixed}
-                defaultTags={defaultTags}
-            />
-        </div>
+        <TemplateCard
+            ref={setNodeRef}
+            style={style}
+            template={template}
+            onUse={onUse}
+            onDelete={onDelete}
+            isFixed={isFixed}
+            defaultTags={defaultTags}
+            attributes={attributes}
+            listeners={listeners}
+        />
     );
 }
