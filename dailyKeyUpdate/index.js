@@ -4,11 +4,10 @@ const { google } = require('googleapis');
 function generateExtendedMultiLayerKey() {
   const methods = [
     'Base64', 'Caesar', 'ROT13', 'BitShift', 'Substitution',
-    'Padding', 'Compression', 'MultiEncode', 'RandomInsert',
+    'Padding', 'MultiEncode', 'RandomInsert',
     'Transposition', 'Reverse', 'Atbash', 'Vigenere', 'RailFence',
-    'Columnar', 'Playfair', 'Affine', 'Hill', 'Permutation',
-    'Pattern', 'Mirror', 'Spiral', 'Zigzag',
-    'Diagonal', 'Wave', 'Snake', 'Maze', 'Labyrinth'
+    'Columnar', 'Affine', 'Permutation', 'Pattern', 'Mirror',
+    'Zigzag', 'Wave', 'Snake'
   ];
   
   const layerCount = Math.floor(Math.random() * 11) + 5;
@@ -28,7 +27,8 @@ function generateExtendedMultiLayerKey() {
   
   return {
     key: encryptedKey,
-    layers: selectedMethods
+    layers: selectedMethods,
+    originalKey: baseKey
   };
 }
 
@@ -47,8 +47,6 @@ function applyEncryption(text, method, key) {
       return substitutionCipher(text);
     case 'Padding':
       return paddingEncrypt(text);
-    case 'Compression':
-      return compressionEncrypt(text);
     case 'MultiEncode':
       return multiEncode(text);
     case 'RandomInsert':
@@ -65,32 +63,20 @@ function applyEncryption(text, method, key) {
       return railFenceCipher(text);
     case 'Columnar':
       return columnarCipher(text);
-    case 'Playfair':
-      return playfairCipher(text);
     case 'Affine':
       return affineCipher(text);
-    case 'Hill':
-      return hillCipher(text);
     case 'Permutation':
       return permutationCipher(text);
     case 'Pattern':
       return patternCipher(text);
     case 'Mirror':
       return mirrorCipher(text);
-    case 'Spiral':
-      return spiralCipher(text);
     case 'Zigzag':
       return zigzagCipher(text);
-    case 'Diagonal':
-      return diagonalCipher(text);
     case 'Wave':
       return waveCipher(text);
     case 'Snake':
       return snakeCipher(text);
-    case 'Maze':
-      return mazeCipher(text);
-    case 'Labyrinth':
-      return labyrinthCipher(text);
     default:
       return text;
   }
@@ -111,8 +97,6 @@ function applyDecryption(text, method, key) {
       return substitutionDecrypt(text);
     case 'Padding':
       return paddingDecrypt(text);
-    case 'Compression':
-      return compressionDecrypt(text);
     case 'MultiEncode':
       return multiDecode(text);
     case 'RandomInsert':
@@ -129,32 +113,20 @@ function applyDecryption(text, method, key) {
       return railFenceDecrypt(text);
     case 'Columnar':
       return columnarDecrypt(text);
-    case 'Playfair':
-      return playfairDecrypt(text);
     case 'Affine':
       return affineDecrypt(text);
-    case 'Hill':
-      return hillDecrypt(text);
     case 'Permutation':
       return permutationDecrypt(text);
     case 'Pattern':
       return patternDecrypt(text);
     case 'Mirror':
       return mirrorDecrypt(text);
-    case 'Spiral':
-      return spiralDecrypt(text);
     case 'Zigzag':
       return zigzagDecrypt(text);
-    case 'Diagonal':
-      return diagonalDecrypt(text);
     case 'Wave':
       return waveDecrypt(text);
     case 'Snake':
       return snakeDecrypt(text);
-    case 'Maze':
-      return mazeDecrypt(text);
-    case 'Labyrinth':
-      return labyrinthDecrypt(text);
     default:
       return text;
   }
@@ -233,10 +205,15 @@ function substitutionCipher(text) {
     'g': 'd', 'h': 'e', 'i': 'f', 'j': 'g', 'k': 'h', 'l': 'i',
     'm': 'j', 'n': 'k', 'o': 'l', 'p': 'm', 'q': 'n', 'r': 'o',
     's': 'p', 't': 'q', 'u': 'r', 'v': 's', 'w': 't', 'x': 'u',
-    'y': 'v', 'z': 'w'
+    'y': 'v', 'z': 'w',
+    'A': 'X', 'B': 'Y', 'C': 'Z', 'D': 'A', 'E': 'B', 'F': 'C',
+    'G': 'D', 'H': 'E', 'I': 'F', 'J': 'G', 'K': 'H', 'L': 'I',
+    'M': 'J', 'N': 'K', 'O': 'L', 'P': 'M', 'Q': 'N', 'R': 'O',
+    'S': 'P', 'T': 'Q', 'U': 'R', 'V': 'S', 'W': 'T', 'X': 'U',
+    'Y': 'V', 'Z': 'W'
   };
   
-  return text.toLowerCase().split('').map(char => {
+  return text.split('').map(char => {
     return substitution[char] || char;
   }).join('');
 }
@@ -248,10 +225,15 @@ function substitutionDecrypt(text) {
     'd': 'g', 'e': 'h', 'f': 'i', 'g': 'j', 'h': 'k', 'i': 'l',
     'j': 'm', 'k': 'n', 'l': 'o', 'm': 'p', 'n': 'q', 'o': 'r',
     'p': 's', 'q': 't', 'r': 'u', 's': 'v', 't': 'w', 'u': 'x',
-    'v': 'y', 'w': 'z'
+    'v': 'y', 'w': 'z',
+    'X': 'A', 'Y': 'B', 'Z': 'C', 'A': 'D', 'B': 'E', 'C': 'F',
+    'D': 'G', 'E': 'H', 'F': 'I', 'G': 'J', 'H': 'K', 'I': 'L',
+    'J': 'M', 'K': 'N', 'L': 'O', 'M': 'P', 'N': 'Q', 'O': 'R',
+    'P': 'S', 'Q': 'T', 'R': 'U', 'S': 'V', 'T': 'W', 'U': 'X',
+    'V': 'Y', 'W': 'Z'
   };
   
-  return text.toLowerCase().split('').map(char => {
+  return text.split('').map(char => {
     return reverseSubstitution[char] || char;
   }).join('');
 }
@@ -426,11 +408,14 @@ function polyalphabeticDecrypt(text, key) {
 function transpositionCipher(text) {
   const cols = 3;
   let result = '';
+  
+  // 각 열에 대해 해당 위치의 문자들을 수집
   for (let col = 0; col < cols; col++) {
     for (let i = col; i < text.length; i += cols) {
-      result += text.charAt(i);
+      result += text[i];
     }
   }
+  
   return result;
 }
 
@@ -438,16 +423,20 @@ function transpositionCipher(text) {
 function transpositionDecrypt(text) {
   const cols = 3;
   const rows = Math.ceil(text.length / cols);
-  let result = '';
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const index = col * rows + row;
-      if (index < text.length) {
-        result += text.charAt(index);
+  const result = Array(text.length).fill('');
+  
+  // 암호화된 텍스트를 원래 위치에 배치
+  let index = 0;
+  for (let col = 0; col < cols; col++) {
+    for (let row = 0; row < rows; row++) {
+      const originalIndex = row * cols + col;
+      if (originalIndex < text.length && index < text.length) {
+        result[originalIndex] = text[index++];
       }
     }
   }
-  return result;
+  
+  return result.join('');
 }
 
 // 하이브리드: XOR + Base64
@@ -944,9 +933,10 @@ function permutationCipher(text) {
   let result = '';
   
   for (let i = 0; i < text.length; i += 5) {
-    const block = text.slice(i, i + 5).padEnd(5, 'X');
+    const block = text.slice(i, i + 5);
+    const paddedBlock = block.padEnd(5, 'X');
     for (let j = 0; j < 5; j++) {
-      result += block[positions[j]];
+      result += paddedBlock[positions[j]];
     }
   }
   
@@ -970,7 +960,8 @@ function permutationDecrypt(text) {
     }
   }
   
-  return result;
+  // 패딩으로 추가된 X 제거
+  return result.replace(/X+$/, '');
 }
 
 // Frequency 암호화: 빈도 기반 치환
@@ -1005,9 +996,10 @@ function patternCipher(text) {
   let result = '';
   
   for (let i = 0; i < text.length; i += 6) {
-    const block = text.slice(i, i + 6).padEnd(6, 'X');
+    const block = text.slice(i, i + 6);
+    const paddedBlock = block.padEnd(6, 'X');
     for (let j = 0; j < 6; j++) {
-      result += block[pattern[j]];
+      result += paddedBlock[pattern[j]];
     }
   }
   
@@ -1031,7 +1023,8 @@ function patternDecrypt(text) {
     }
   }
   
-  return result;
+  // 패딩으로 추가된 X 제거
+  return result.replace(/X+$/, '');
 }
 
 // Mirror 암호화: 거울상 반사
@@ -2802,3 +2795,11 @@ async function handleSubmitRegistrationRequest(req, res) {
     });
   }
 }
+
+// ===== 추가 Export =====
+module.exports = {
+  ...module.exports,
+  generateExtendedMultiLayerKey,
+  applyEncryption,
+  applyDecryption
+};

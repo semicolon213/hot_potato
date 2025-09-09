@@ -314,14 +314,14 @@ const AdminPanel: React.FC = () => {
       // 이메일 메시지 구성 (RFC 2822 형식)
       const message = [
         `To: ${emailTemplate.to}`,
-        `Subject: ${emailTemplate.subjectEncoded || emailTemplate.subject}`,
+        `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(emailTemplate.subject)))}?=`,
         'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
         '',
         emailTemplate.html
       ].join('\r\n');
       
-      // Base64 URL-safe 인코딩
+      // Base64 URL-safe 인코딩 (Gmail API 형식) - UTF-8 처리
       const encodedMessage = btoa(unescape(encodeURIComponent(message)))
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
