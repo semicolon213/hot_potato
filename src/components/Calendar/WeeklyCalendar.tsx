@@ -41,7 +41,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
             const currentMonth = Number(currentDate.month) - 1;
 
             if (targetYear !== currentYear || targetMonth !== currentMonth) {
-                 if (targetYear > currentYear || (targetYear === currentYear && targetMonth > currentMonth)) {
+                if (targetYear > currentYear || (targetYear === currentYear && targetMonth > currentMonth)) {
                     dispatch.handleNextMonth();
                 } else {
                     dispatch.handlePrevMonth();
@@ -125,32 +125,34 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                 })}
             </div>
 
-            <div className="weekly-body">
-                <div className="time-column">
-                    {hours.map(hour => (
-                        <div key={hour} className="time-slot-label">{hour}</div>
-                    ))}
-                </div>
-                {weekDays.map(day => {
-                    const timedEvents = events.filter(event => event.startDate === day.date && event.startDateTime);
-                    return (
-                        <div key={day.date} className="day-column">
-                            <div className="timed-events-grid">
-                                {hours.map(hour => <div key={hour} className="time-grid-line"></div>)}
-                                {timedEvents.map(event => (
-                                    <div
-                                        key={event.id}
-                                        className="timed-event-item"
-                                        style={{ ...getEventPosition(event), backgroundColor: event.color }}
-                                        onClick={() => setSelectedEvent(event)}
-                                    >
-                                        <span className="event-title">{event.title.replace(/^\d{2}\s*/, '')}</span>
-                                    </div>
-                                ))}
+            <div className="scrollable-body">
+                <div className="weekly-body">
+                    <div className="time-column">
+                        {hours.map(hour => (
+                            <div key={hour} className="time-slot-label">{hour}</div>
+                        ))}
+                    </div>
+                    {weekDays.map(day => {
+                        const timedEvents = events.filter(event => event.startDate === day.date && event.startDateTime);
+                        return (
+                            <div key={day.date} className="day-column">
+                                <div className="timed-events-grid">
+                                    {hours.map(hour => <div key={hour} className="time-grid-line"></div>)}
+                                    {timedEvents.map(event => (
+                                        <div
+                                            key={event.id}
+                                            className="timed-event-item"
+                                            style={{ ...getEventPosition(event), backgroundColor: event.color }}
+                                            onClick={() => setSelectedEvent(event)}
+                                        >
+                                            <span className="event-title">{event.title.replace(/^\d{2}\s*/, '')}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

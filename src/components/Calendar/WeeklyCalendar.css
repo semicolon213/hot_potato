@@ -1,3 +1,4 @@
+
 .weekly-calendar-container {
     display: flex;
     flex-direction: column;
@@ -5,7 +6,26 @@
     border-radius: 8px;
     overflow: hidden;
     background-color: #fff;
+    height: 70vh; /* Adjust height as needed */
 }
+
+.scrollable-body {
+    overflow-y: scroll;
+    flex-grow: 1;
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.weekly-body {
+    display: flex;
+    min-height: 1000px; /* Ensure it's tall enough to need scrolling */
+}
+
 
 .weekly-header {
     display: flex;
@@ -92,7 +112,6 @@
 
 .weekly-body {
     display: flex;
-    height: 1000px;
 }
 
 .time-column {
@@ -130,16 +149,16 @@
 
 .timed-event-item {
     position: absolute;
-    left: 4
-    right: 4px;
+    left: 0;
+    right: 0;
     color: #000;
-    border: 1px solid #1967d2;
     border-radius: 4px;
     padding: 4px;
     font-size: 12px;
     cursor: pointer;
     z-index: 1;
     overflow: hidden;
+    opacity: 0.8;
 }
 
 .timed-event-item .event-title {
