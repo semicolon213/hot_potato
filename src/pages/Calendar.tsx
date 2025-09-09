@@ -1,7 +1,7 @@
 import React, { useState } from "react"; // Remove useEffect
 import CalendarProvider from "../components/Calendar/CalendarProvider";
 import Calendar from "../components/Calendar/Calendar";
-import useCalendarContext, { type Event } from "../hooks/useCalendarContext";
+import useCalendarContext, { type Event } from "../hooks/useCalendarContext.ts";
 import EventDetailModal from "../components/Calendar/EventDetailModal";
 import AddEventModal from "../components/Calendar/AddEventModal";
 // Remove Login and GoogleOAuthProvider imports
@@ -9,6 +9,10 @@ import "./Calendar.css";
 
 interface CalendarPageProps {
   accessToken: string | null; // Accept accessToken as prop
+  calendarEvents: Event[];
+  addCalendarEvent: (event: Omit<Event, 'id'>) => Promise<void>;
+  updateCalendarEvent: (eventId: string, event: Omit<Event, 'id'>) => Promise<void>;
+  deleteCalendarEvent: (eventId: string) => Promise<void>;
 }
 
 const CalendarContent: React.FC = () => {
@@ -70,7 +74,7 @@ const CalendarContent: React.FC = () => {
   );
 };
 
-const CalendarPage: React.FC<CalendarPageProps> = ({ accessToken }) => { // Accept accessToken as prop
+const CalendarPage: React.FC<CalendarPageProps> = ({ accessToken, calendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent }) => { // Accept accessToken as prop
   const [selectedRole, setSelectedRole] = useState<string>('admin'); // Default role
 
   return (
@@ -95,7 +99,14 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ accessToken }) => { // Acce
           학생
         </button>
       </div>
-      <CalendarProvider accessToken={accessToken} selectedRole={selectedRole}> {/* Pass selectedRole */}
+      <CalendarProvider
+        accessToken={accessToken}
+        selectedRole={selectedRole}
+        sheetEvents={calendarEvents}
+        addSheetEvent={addCalendarEvent}
+        updateSheetEvent={updateCalendarEvent}
+        deleteSheetEvent={deleteCalendarEvent}
+      > {/* Pass selectedRole */}
         <CalendarContent />
       </CalendarProvider>
     </>
