@@ -873,45 +873,46 @@ const App: React.FC = () => {
     alert("일정 삭제 기능은 아직 구현되지 않았습니다.");
   };
 
-  // 로그인 상태 확인 (from feature/login)
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    const savedToken = localStorage.getItem('googleAccessToken');
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setGoogleAccessToken(savedToken);
+  // 로그인 처리 (from feature/login)
+  const handleLogin = useCallback((userData: User) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    if (userData.accessToken) {
+      setGoogleAccessToken(userData.accessToken);
+      localStorage.setItem('googleAccessToken', userData.accessToken);
     }
-    setIsLoading(false);
   }, []);
 
+  // 앱 마운트 시 localStorage에서 사용자 정보, 테마 등 초기 상태 설정
   useEffect(() => {
-    const storedAccessToken = localStorage.getItem('googleAccessToken');
-    if (storedAccessToken) {
-      setGoogleAccessToken(storedAccessToken);
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
     }
-
+    const savedToken = localStorage.getItem('googleAccessToken');
+    if (savedToken) {
+      setGoogleAccessToken(savedToken);
+    }
+    
     const urlParams = new URLSearchParams(window.location.search);
     const page = urlParams.get("page");
     if (page) {
       setCurrentPage(page as PageType);
     }
-
     const savedTheme = localStorage.getItem("selectedTheme") || "default";
     document.body.classList.add(`theme-${savedTheme}`);
 
-    // 로그인된 사용자가 있을 때만 Google Sheets 데이터 로드
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    setIsLoading(false);
+  }, []); // 이 useEffect는 마운트 시 한 번만 실행됩니다.
+
+  // 사용자 정보나 토큰이 변경될 때 데이터 로딩 실행
+  useEffect(() => {
+    // 사용자 정보와 토큰이 모두 있어야 데이터 로딩을 시작합니다.
+    if (user && googleAccessToken) {
+      console.log("사용자 정보와 토큰 확인, 데이터 로딩을 시작합니다.");
       initAndFetch();
     }
-  }, [initAndFetch]);
-
-  // 로그인 처리 (from feature/login)
-  const handleLogin = useCallback((userData: User) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    initAndFetch();
-  }, [initAndFetch]);
+  }, [user, googleAccessToken, initAndFetch]);
 
   const fetchCalendarEvents = useCallback(async () => {
     if (!calendarSpreadsheetId) return;
