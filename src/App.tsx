@@ -939,7 +939,31 @@ const App: React.FC = () => {
           alert("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
-        // Find the board spreadsheet ID by name
+          // Find the calendar spreadsheet ID by name
+          try {
+              const response = await (window as any).gapi.client.drive.files.list({
+                  q: "name='calendar_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
+                  fields: 'files(id, name)'
+              });
+              if (response.result.files && response.result.files.length > 0) {
+                  if (response.result.files[0].id) {
+                      const fileId = response.result.files[0].id;
+                      console.log("Found 'calendar_professor' spreadsheet with ID:", fileId);
+                      setCalendarSpreadsheetId(fileId);
+                  } else {
+                      console.error("'calendar_professor' spreadsheet found but has no ID.");
+                      alert("'calendar_professor' spreadsheet found but has no ID.");
+                  }
+              } else {
+                  console.error("Could not find spreadsheet with name 'calendar_professor'");
+                  alert("Could not find spreadsheet with name 'calendar_professor'");
+              }
+          } catch (error) {
+              console.error("Error searching for calendar spreadsheet:", error);
+              alert("Error searching for calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
+          }
+
+          // Find the board spreadsheet ID by name
         try {
           const response = await (window as any).gapi.client.drive.files.list({
             q: "name='board_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
@@ -1185,6 +1209,11 @@ const App: React.FC = () => {
     }
   }, [announcementSpreadsheetId]);
 
+    useEffect(() => {
+        if (calendarSpreadsheetId) {
+            fetchCalendarEvents();
+        }
+    }, [calendarSpreadsheetId]);
   useEffect(() => {
     if (hotPotatoDBSpreadsheetId) {
       const fetchTemplateData = async () => {
