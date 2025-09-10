@@ -22,7 +22,6 @@ interface WidgetData {
   props: Record<string, any>;
 }
 
-const SPREADSHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
 const SHEET_NAME = 'user_custom';
 const RANGE = `${SHEET_NAME}!B2`;
 
@@ -175,28 +174,17 @@ const widgetOptions = [
 /**
  * 대시보드 위젯 관리를 위한 커스텀 훅입니다.
  */
-export const useWidgetManagement = () => {
+export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
-  const isDbReady = useRef(false);
-  const isLoading = useRef(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
-  // 초기 로딩 상태 설정 (Google Sheets에서 로드하지 않음)
-  useEffect(() => {
-    console.log("useWidgetManagement 훅이 실행되었습니다!");
-    console.log("위젯 데이터는 Google Sheets에서만 관리됩니다.");
-    
-    // 초기 상태 설정
-    setWidgets([]);
-    isDbReady.current = true;
-    isLoading.current = false;
-  }, []);
-
-  // Google Sheets에서 위젯 데이터를 동기화하는 함수 (사용자가 로그인한 후에만 호출)
+  // Google Sheets에서 위젯 데이터를 동기화하는 함수
   const syncWidgetsWithGoogleSheets = async () => {
+    if (!hotPotatoDBSpreadsheetId) return;
     try {
       console.log("Google Sheets와 위젯 데이터 동기화 시작");
       
@@ -214,7 +202,7 @@ export const useWidgetManagement = () => {
       // Google Sheets에서 위젯 데이터 로드
       console.log("Google Sheets에서 위젯 데이터 로드 시도...");
       const response = await gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
+        spreadsheetId: hotPotatoDBSpreadsheetId,
         range: RANGE,
         majorDimension: 'ROWS'
       });
@@ -247,15 +235,25 @@ export const useWidgetManagement = () => {
     } catch (error) {
       console.error("Google Sheets 동기화 실패:", error);
       alert("Google Sheets 동기화에 실패했습니다. 네트워크 연결을 확인하고 다시 시도해주세요.");
+    } finally {
+      setInitialLoadComplete(true); // 데이터 로드 또는 실패 후 초기 로드 완료로 설정
     }
   };
 
+  // hotPotatoDBSpreadsheetId가 설정되면 자동으로 동기화 실행
+  useEffect(() => {
+    if (hotPotatoDBSpreadsheetId) {
+      console.log("hotPotatoDBSpreadsheetId가 설정되어 자동 동기화를 시작합니다.");
+      syncWidgetsWithGoogleSheets();
+    }
+  }, [hotPotatoDBSpreadsheetId]);
+
   // 위젯 상태가 변경되면 Google Sheets에 저장합니다.
   useEffect(() => {
-    if (isLoading.current) return;
+    if (!initialLoadComplete) return; // 초기 로드가 완료되기 전에는 저장하지 않음
 
     const saveWidgetsToGoogleSheets = async () => {
-      if (!isDbReady.current) return;
+      if (!hotPotatoDBSpreadsheetId) return;
       
       // Google Sheets에 저장 (gapi가 사용 가능한 경우에만)
       try {
@@ -265,7 +263,7 @@ export const useWidgetManagement = () => {
           console.log("Google Sheets에 위젯 데이터 저장 시도:", dataToSave);
           
           await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: SPREADSHEET_ID,
+            spreadsheetId: hotPotatoDBSpreadsheetId,
             range: RANGE,
             valueInputOption: 'RAW',
             resource: {
@@ -284,7 +282,7 @@ export const useWidgetManagement = () => {
     };
 
     saveWidgetsToGoogleSheets();
-  }, [widgets]);
+  }, [widgets, hotPotatoDBSpreadsheetId, initialLoadComplete]);
 
   /**
    * 새 위젯을 대시보드에 추가하는 함수입니다.

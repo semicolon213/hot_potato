@@ -75,7 +75,7 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
       return null;
     }
   } catch (error) {
-    alert('Error searching for spreadsheet. Check console for details.');
+    console.log('Error searching for spreadsheet. Check console for details.');
     return null;
   }
 };
