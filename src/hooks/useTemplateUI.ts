@@ -50,29 +50,48 @@ export function useTemplateUI(
     }, [templates, searchTerm, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
-    const onUseTemplate = useCallback((type: string, title: string) => {
+    const onUseTemplate = useCallback(async (type: string, title: string) => {
         if (type.startsWith('http')) {
             window.open(type, '_blank');
             return;
         }
-        if (type === "empty") {
-            window.open("https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0", "_blank");
-        } else if (type === "meeting") {
-            window.open("https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku", "_blank");
-        } else if (type === "receipt") {
-            window.open("https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0", "_blank");
-        } else if (type === "confirmation") {
-            window.open("https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh", "_blank");
-        } else if (type === "supporting_document_confirmation") {
-            window.open("https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0", "_blank");
-        } else if (type === "fee_deposit_list") {
-            window.open("https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0", "_blank");
-        } else if (type === "finance" || type === "event" || type === "report") {
-            onPageChange("proceedings");
-        } else {
-            alert(`"${title}" 템플릿을 사용합니다!`);
+
+        // Default templates with specific URLs
+        const defaultTemplateUrls: { [key: string]: string } = {
+            "empty": "https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0",
+            "meeting": "https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku",
+            "receipt": "https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0",
+            "confirmation": "https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh",
+            "supporting_document_confirmation": "https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0",
+            "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
+        };
+
+        if (defaultTemplateUrls[type]) {
+            window.open(defaultTemplateUrls[type], '_blank');
+            return;
         }
-        // 실제로는 템플릿 생성 등 추가 로직을 구현할 수 있음
+
+        if (type === "finance" || type === "event" || type === "report") {
+            onPageChange("proceedings");
+            return;
+        }
+
+        // For all other templates, create a new Google Doc via API
+        try {
+            const gapi = (window as any).gapi;
+            const response = await gapi.client.docs.documents.create({
+                title: title,
+            });
+
+            console.log('Created document with title: ', response.result.title);
+            const docId = response.result.documentId;
+            const docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            window.open(docUrl, '_blank');
+
+        } catch (error) {
+            console.error('Error creating Google Doc:', error);
+            alert('Google Docs에서 문서를 생성하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
+        }
     }, [onPageChange]);
 
     // 훅에서 관리하는 상태, 함수들을 객체로 반환

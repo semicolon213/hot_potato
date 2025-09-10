@@ -144,11 +144,19 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
               clientId: GOOGLE_CLIENT_ID,
               discoveryDocs: [
                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
-                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                'https://docs.googleapis.com/$discovery/rest?version=v1'
               ],
               scope: [
+                'https://www.googleapis.com/auth/calendar.events',
+                'https://www.googleapis.com/auth/calendar.readonly',
                 'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/drive.readonly'
+                'https://www.googleapis.com/auth/gmail.send',
+                'https://www.googleapis.com/auth/gmail.compose',
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/documents',
+                'profile',
+                'email'
               ].join(' ')
             });
 
