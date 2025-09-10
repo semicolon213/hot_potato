@@ -388,7 +388,7 @@ export default function NewDocument({
                 <div className="modal-overlay" onClick={handleEditDocCancel}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>문서 수정</h2>
+                            <h2>정보 수정</h2>
                             <button className="modal-close" onClick={handleEditDocCancel}>
                                 &times;
                             </button>

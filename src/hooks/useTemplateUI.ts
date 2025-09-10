@@ -8,6 +8,7 @@ export interface Template {
     description: string;   // 템플릿 설명
     tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
     parttitle?: string;    // For filtering
+    documentId?: string;   // Google Doc ID
 }
 
 export const defaultTemplates: Template[] = [
@@ -51,10 +52,7 @@ export function useTemplateUI(
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = useCallback(async (type: string, title: string) => {
-        if (type.startsWith('http')) {
-            window.open(type, '_blank');
-            return;
-        }
+        const isDefault = defaultTemplates.some(t => t.type === type);
 
         // Default templates with specific URLs
         const defaultTemplateUrls: { [key: string]: string } = {
@@ -71,21 +69,64 @@ export function useTemplateUI(
             return;
         }
 
-        if (type === "finance" || type === "event" || type === "report") {
-            onPageChange("proceedings");
+        if (type.startsWith('http')) {
+            window.open(type, '_blank');
             return;
         }
 
-        // For all other templates, create a new Google Doc via API
+        // "내 템플릿" 로직
+        if (!isDefault) {
+            const storageKey = `template_doc_id_${title}`;
+            const documentId = localStorage.getItem(storageKey);
+
+            if (documentId) {
+                const gapi = (window as any).gapi;
+
+                try {
+                    // Check if the document still exists
+                    await gapi.client.drive.files.get({
+                        fileId: documentId,
+                        fields: 'id'
+                    });
+
+                    // If it exists, open the COPY URL
+                    const docUrl = `https://docs.google.com/document/d/${documentId}/copy`;
+                    window.open(docUrl, '_blank');
+                    return;
+
+                } catch (error: any) {
+                    if (error.result && error.result.error && error.result.error.code === 404) {
+                        console.log(`Previously used doc for template '${title}' was deleted. Creating a new one.`);
+                        localStorage.removeItem(storageKey);
+                        // Fall through to the creation logic
+                    } else {
+                        console.error('Error checking Google Doc status:', error);
+                        alert('문서 상태를 확인하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Creation logic (for first use or if the previous doc was deleted)
         try {
             const gapi = (window as any).gapi;
             const response = await gapi.client.docs.documents.create({
                 title: title,
             });
 
-            console.log('Created document with title: ', response.result.title);
             const docId = response.result.documentId;
-            const docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            console.log(`Created document '${title}' with ID: ${docId}`);
+
+            let docUrl;
+            if (!isDefault) {
+                const storageKey = `template_doc_id_${title}`;
+                localStorage.setItem(storageKey, docId);
+                // Open with /edit the FIRST time so the user can create the template
+                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            } else {
+                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            }
             window.open(docUrl, '_blank');
 
         } catch (error) {

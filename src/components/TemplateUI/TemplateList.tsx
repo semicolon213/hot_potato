@@ -17,11 +17,20 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
             {templates.map((template) => {
                 const isFixed = fixedTemplateTypes.includes(template.type);
                 const id = template.rowIndex ? template.rowIndex.toString() : template.title;
+
+                // Enhance template with documentId from localStorage if not already present
+                const storageKey = `template_doc_id_${template.title}`;
+                const storedDocId = localStorage.getItem(storageKey);
+                const templateWithDocId = {
+                    ...template,
+                    documentId: template.documentId || storedDocId || undefined
+                };
+
                 return (
                     <SortableTemplateCard
                         key={id}
                         id={id}
-                        template={template}
+                        template={templateWithDocId} // Pass the enhanced template
                         onUse={onUseTemplate}
                         onDelete={onDeleteTemplate}
                         onEdit={onEditTemplate}

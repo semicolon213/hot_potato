@@ -492,6 +492,24 @@ const App: React.FC = () => {
     }
   };
 
+  const updateTemplateDocumentId = async (rowIndex: number, documentId: string) => {
+    try {
+      await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `document_template!F${rowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [[documentId]],
+        },
+      });
+      console.log('Template documentId updated in Google Sheets successfully');
+      await fetchTemplates(); // Refresh templates to get the latest data
+    } catch (error) {
+      console.error('Error updating documentId in Google Sheet:', error);
+      alert('문서 ID 업데이트 중 오류가 발생했습니다.');
+    }
+  };
+
   const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }) => {
     try {
       const newRowData = [
@@ -591,7 +609,7 @@ const App: React.FC = () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: SHEET_ID,
-        range: 'document_template!B2:E', // Range covers B, C, D, E columns
+        range: 'document_template!B2:F', // Range covers B, C, D, E, F columns
       });
 
       const data = response.result.values;
@@ -603,6 +621,7 @@ const App: React.FC = () => {
           parttitle: row[1] || '',   // Column C -> parttitle (same as description for compatibility)
           tag: row[2] || '',         // Column D -> tag
           type: row[0] || '',        // Use title as type
+          documentId: row[4] || '',  // Column F -> documentId
         }));
 
         const filteredTemplates = allTemplates.filter(template => {
