@@ -45,7 +45,7 @@ if (typeof window !== 'undefined') {
 }
 
 // 직접 구현한 Google API 초기화 함수
-const initializeGoogleAPIOnce = async (): Promise<void> => {
+const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null): Promise<void> => {
     // 이미 초기화되었으면 바로 반환
     if (isGoogleAPIInitialized) {
         return;
@@ -279,16 +279,6 @@ export interface Post {
   contentPreview: string;
 }
 
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-  colorId: string;
-  startDateTime: string;
-  endDateTime: string;
-}
 
 // User interface from feature/login
 export interface User {
@@ -349,14 +339,14 @@ const App: React.FC = () => {
 
         setTags(tags.filter(tag => tag !== tagToDelete));
         setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
-        alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+        console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
 
     // Background sheet update
     const deleteFromSheet = async () => {
       if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
-        alert('오류: 시트 정보가 로드되지 않았습니다. 태그 삭제에 실패했습니다.');
+        console.log('오류: 시트 정보가 로드되지 않았습니다. 태그 삭제에 실패했습니다.');
         return;
       }
 
@@ -403,7 +393,7 @@ const App: React.FC = () => {
         }
       } catch (error) {
         console.error('Error deleting tag from Google Sheet (background):', error);
-        alert('백그라운드 저장 실패: 태그 삭제가 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
+        console.log('백그라운드 저장 실패: 태그 삭제가 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
       }
@@ -419,14 +409,14 @@ const App: React.FC = () => {
 
     setTags(tags.map(t => t === oldTag ? newTag : t));
     setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
-    alert(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
+    console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
 
     // Background sheet update
     const updateSheet = async () => {
       if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
-        alert('오류: 시트 정보가 로드되지 않았습니다. 태그 수정에 실패했습니다.');
+        console.log('오류: 시트 정보가 로드되지 않았습니다. 태그 수정에 실패했습니다.');
         return;
       }
 
@@ -468,7 +458,7 @@ const App: React.FC = () => {
         }
       } catch (error) {
         console.error('Error updating tag in Google Sheet (background):', error);
-        alert('백그라운드 저장 실패: 태그 수정이 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
+        console.log('백그라운드 저장 실패: 태그 수정이 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
       }
@@ -487,17 +477,17 @@ const App: React.FC = () => {
         };
         await appendRow(hotPotatoDBSpreadsheetId, 'document_template', newRow);
         setTags([...tags, newTag]);
-        alert('새로운 태그가 추가되었습니다.');
+        console.log('새로운 태그가 추가되었습니다.');
       } catch (error) {
         console.error('Error saving tag to Google Sheet:', error);
-        alert('태그 저장 중 오류가 발생했습니다.');
+        console.log('태그 저장 중 오류가 발생했습니다.');
       }
     }
   };
 
   const addTemplate = async (newDocData: { title: string; description: string; tag: string; }) => {
     if (!hotPotatoDBSpreadsheetId) {
-      alert('오류: 템플릿 시트가 로드되지 않았습니다.');
+      console.log('오류: 템플릿 시트가 로드되지 않았습니다.');
       return;
     }
     try {
@@ -538,10 +528,10 @@ const App: React.FC = () => {
       // 4. Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();
 
-      alert('문서가 성공적으로 저장되었습니다.');
+      console.log('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
       console.error('Error creating document or saving to sheet:', error);
-      alert('문서 생성 또는 저장 중 오류가 발생했습니다.');
+      console.log('문서 생성 또는 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -551,7 +541,7 @@ const App: React.FC = () => {
     }
 
     if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
-      alert('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      console.log('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -579,31 +569,14 @@ const App: React.FC = () => {
       // Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();
 
-      alert('템플릿이 성공적으로 삭제되었습니다.');
+      console.log('템플릿이 성공적으로 삭제되었습니다.');
 
     } catch (error) {
       console.error('Error deleting template from Google Sheet:', error);
-      alert('템플릿 삭제 중 오류가 발생했습니다.');
+      console.log('템플릿 삭제 중 오류가 발생했습니다.');
     }
   };
 
-  const updateTemplateDocumentId = async (rowIndex: number, documentId: string) => {
-    try {
-      await (window as any).gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId: hotPotatoDBSpreadsheetId,
-        range: `document_template!F${rowIndex}`,
-        valueInputOption: 'RAW',
-        resource: {
-          values: [[documentId]],
-        },
-      });
-      console.log('Template documentId updated in Google Sheets successfully');
-      await fetchTemplates(); // Refresh templates to get the latest data
-    } catch (error) {
-      console.error('Error updating documentId in Google Sheet:', error);
-      alert('문서 ID 업데이트 중 오류가 발생했습니다.');
-    }
-  };
 
   const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => {
     try {
@@ -644,10 +617,10 @@ const App: React.FC = () => {
       // Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();
 
-      alert('문서가 성공적으로 수정되었습니다.');
+      console.log('문서가 성공적으로 수정되었습니다.');
     } catch (error) {
       console.error('Error updating document in Google Sheet:', error);
-      alert('문서 수정 중 오류가 발생했습니다.');
+      console.log('문서 수정 중 오류가 발생했습니다.');
     }
   };
 
@@ -677,7 +650,7 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching posts from Google Sheet:', error);
-      alert('게시글을 불러오는 중 오류가 발생했습니다.');
+      console.log('게시글을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setIsBoardLoading(false);
     }
@@ -709,7 +682,7 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching announcements from Google Sheet:', error);
-      alert('공지사항을 불러오는 중 오류가 발생했습니다.');
+      console.log('공지사항을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setIsAnnouncementsLoading(false);
     }
@@ -774,7 +747,7 @@ const App: React.FC = () => {
 
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     if (!boardSpreadsheetId) {
-      alert('게시판 스프레드시트가 아직 로드되지 않았습니다.');
+      console.log('게시판 스프레드시트가 아직 로드되지 않았습니다.');
       return;
     }
     try {
@@ -796,17 +769,17 @@ const App: React.FC = () => {
 
       await appendRow(boardSpreadsheetId, boardSheetName, newPostForSheet);
       await fetchPosts(); // Refetch posts after adding a new one
-      alert('게시글이 성공적으로 저장되었습니다.');
+      console.log('게시글이 성공적으로 저장되었습니다.');
       handlePageChange('board');
     } catch (error) {
       console.error('Error saving post to Google Sheet:', error);
-      alert('게시글 저장 중 오류가 발생했습니다.');
+      console.log('게시글 저장 중 오류가 발생했습니다.');
     }
   };
 
   const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     if (!announcementSpreadsheetId) {
-      alert('공지사항 스프레드시트가 아직 로드되지 않았습니다.');
+      console.log('공지사항 스프레드시트가 아직 로드되지 않았습니다.');
       return;
     }
     try {
@@ -828,14 +801,23 @@ const App: React.FC = () => {
 
       await appendRow(announcementSpreadsheetId, announcementSheetName, newPostForSheet);
       await fetchAnnouncements(); // Refetch announcements after adding a new one
-      alert('공지사항이 성공적으로 저장되었습니다.');
+      console.log('공지사항이 성공적으로 저장되었습니다.');
       handlePageChange('announcements');
     } catch (error) {
       console.error('Error saving announcement to Google Sheet:', error);
-      alert('공지사항 저장 중 오류가 발생했습니다.');
+      console.log('공지사항 저장 중 오류가 발생했습니다.');
     }
   };
-
+// 로그인 상태 확인 (from feature/login)
+    useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        const savedToken = localStorage.getItem('googleAccessToken');
+        if (savedUser && savedToken) {
+            setUser(JSON.parse(savedUser));
+            setGoogleAccessToken(savedToken);
+        }
+        setIsLoading(false);
+    }, []);
     const fetchCalendarEvents = async () => {
         if (!calendarSpreadsheetId) return;
         setIsCalendarLoading(true);
@@ -877,7 +859,7 @@ const App: React.FC = () => {
           }
         } catch (error) {
           console.error('Error fetching calendar events from Google Sheet:', error);
-          alert('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
+          console.log('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
         } finally {
           setIsCalendarLoading(false);
         }
@@ -885,7 +867,7 @@ const App: React.FC = () => {
 
       const addCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
         if (!calendarSpreadsheetId) {
-          alert('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
+          console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
           return;
         }
         try {
@@ -910,33 +892,22 @@ const App: React.FC = () => {
 
           await appendRow(calendarSpreadsheetId, calendarSheetName, newEventForSheet);
           await fetchCalendarEvents(); // Refetch calendar events after adding a new one
-          alert('일정이 성공적으로 추가되었습니다.');
+          console.log('일정이 성공적으로 추가되었습니다.');
         } catch (error) {
           console.error('Error saving calendar event to Google Sheet:', error);
-          alert('일정 저장 중 오류가 발생했습니다.');
+          console.log('일정 저장 중 오류가 발생했습니다.');
         }
       };
 
       const updateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
         console.log("Updating event", eventId, eventData);
-        alert("일정 수정 기능은 아직 구현되지 않았습니다.");
+        console.log("일정 수정 기능은 아직 구현되지 않았습니다.");
       };
 
       const deleteCalendarEvent = async (eventId: string) => {
         console.log("Deleting event", eventId);
-        alert("일정 삭제 기능은 아직 구현되지 않았습니다.");
+        console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
       };
-
-    // 로그인 상태 확인 (from feature/login)
-    useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        const savedToken = localStorage.getItem('googleAccessToken');
-        if (savedUser && savedToken) {
-            setUser(JSON.parse(savedUser));
-            setGoogleAccessToken(savedToken);
-        }
-        setIsLoading(false);
-    }, []);
 
   useEffect(() => {
     const storedAccessToken = localStorage.getItem('googleAccessToken');
@@ -956,7 +927,7 @@ const App: React.FC = () => {
     const initAndFetch = async () => {
       try {
         console.log("새로고침 후 Google API 초기화 시작");
-        await initializeGoogleAPIOnce();
+          await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
 
         // Find the announcement spreadsheet ID by name
         try {
@@ -971,15 +942,15 @@ const App: React.FC = () => {
               setAnnouncementSpreadsheetId(fileId);
             } else {
                 console.error("'notice_professor' spreadsheet found but has no ID.");
-                alert("'notice_professor' spreadsheet found but has no ID.");
+                console.log("'notice_professor' spreadsheet found but has no ID.");
             }
           } else {
             console.error("Could not find spreadsheet with name 'notice_professor'");
-            alert("Could not find spreadsheet with name 'notice_professor'");
+            console.log("Could not find spreadsheet with name 'notice_professor'");
           }
         } catch (error) {
           console.error("Error searching for announcement spreadsheet:", error);
-          alert("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.log("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
           // Find the calendar spreadsheet ID by name
@@ -995,15 +966,15 @@ const App: React.FC = () => {
                       setCalendarSpreadsheetId(fileId);
                   } else {
                       console.error("'calendar_professor' spreadsheet found but has no ID.");
-                      alert("'calendar_professor' spreadsheet found but has no ID.");
+                      console.log("'calendar_professor' spreadsheet found but has no ID.");
                   }
               } else {
                   console.error("Could not find spreadsheet with name 'calendar_professor'");
-                  alert("Could not find spreadsheet with name 'calendar_professor'");
+                  console.log("Could not find spreadsheet with name 'calendar_professor'");
               }
           } catch (error) {
               console.error("Error searching for calendar spreadsheet:", error);
-              alert("Error searching for calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
+              console.log("Error searching for calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
           }
 
           // Find the board spreadsheet ID by name
@@ -1019,15 +990,15 @@ const App: React.FC = () => {
               setBoardSpreadsheetId(fileId);
             } else {
                 console.error("'board_professor' spreadsheet found but has no ID.");
-                alert("'board_professor' spreadsheet found but has no ID.");
+                console.log("'board_professor' spreadsheet found but has no ID.");
             }
           } else {
             console.error("Could not find spreadsheet with name 'board_professor'");
-            alert("Could not find spreadsheet with name 'board_professor'");
+            console.log("Could not find spreadsheet with name 'board_professor'");
           }
         } catch (error) {
           console.error("Error searching for board spreadsheet:", error);
-          alert("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.log("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // Find the hot_potato_DB spreadsheet ID by name
@@ -1043,15 +1014,15 @@ const App: React.FC = () => {
               setHotPotatoDBSpreadsheetId(fileId);
             } else {
                 console.error("'hot_potato_DB' spreadsheet found but has no ID.");
-                alert("'hot_potato_DB' spreadsheet found but has no ID.");
+                console.log("'hot_potato_DB' spreadsheet found but has no ID.");
             }
           } else {
             console.error("Could not find spreadsheet with name 'hot_potato_DB'");
-            alert("Could not find spreadsheet with name 'hot_potato_DB'");
+            console.log("Could not find spreadsheet with name 'hot_potato_DB'");
           }
         } catch (error) {
           console.error("Error searching for hot_potato_DB spreadsheet:", error);
-          alert("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // gapi가 초기화된 후 데이터 로드
@@ -1112,6 +1083,11 @@ const App: React.FC = () => {
   const handleLogin = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    // accessToken을 localStorage에 저장하고 상태를 업데이트합니다.
+    if (userData.accessToken) {
+      localStorage.setItem('googleAccessToken', userData.accessToken);
+      setGoogleAccessToken(userData.accessToken);
+    }
 
     // 승인된 사용자만 Google Sheets 데이터 로드
     if (userData.isApproved) {
@@ -1134,15 +1110,15 @@ const App: React.FC = () => {
               setAnnouncementSpreadsheetId(fileId);
             } else {
                 console.error("'notice_professor' spreadsheet found but has no ID.");
-                alert("'notice_professor' spreadsheet found but has no ID.");
+                console.log("'notice_professor' spreadsheet found but has no ID.");
             }
           } else {
             console.error("Could not find spreadsheet with name 'notice_professor'");
-            alert("Could not find spreadsheet with name 'notice_professor'");
+            console.log("Could not find spreadsheet with name 'notice_professor'");
           }
         } catch (error) {
           console.error("Error searching for announcement spreadsheet:", error);
-          alert("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.log("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // Find the board spreadsheet ID by name
@@ -1158,15 +1134,15 @@ const App: React.FC = () => {
               setBoardSpreadsheetId(fileId);
             } else {
                 console.error("'board_professor' spreadsheet found but has no ID.");
-                alert("'board_professor' spreadsheet found but has no ID.");
+                console.log("'board_professor' spreadsheet found but has no ID.");
             }
           } else {
             console.error("Could not find spreadsheet with name 'board_professor'");
-            alert("Could not find spreadsheet with name 'board_professor'");
+            console.log("Could not find spreadsheet with name 'board_professor'");
           }
         } catch (error) {
           console.error("Error searching for board spreadsheet:", error);
-          alert("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.log("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // Find the hot_potato_DB spreadsheet ID by name
@@ -1182,15 +1158,15 @@ const App: React.FC = () => {
               setHotPotatoDBSpreadsheetId(fileId);
             } else {
                 console.error("'hot_potato_DB' spreadsheet found but has no ID.");
-                alert("'hot_potato_DB' spreadsheet found but has no ID.");
+                console.log("'hot_potato_DB' spreadsheet found but has no ID.");
             }
           } else {
             console.error("Could not find spreadsheet with name 'hot_potato_DB'");
-            alert("Could not find spreadsheet with name 'hot_potato_DB'");
+            console.log("Could not find spreadsheet with name 'hot_potato_DB'");
           }
         } catch (error) {
           console.error("Error searching for hot_potato_DB spreadsheet:", error);
-          alert("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+          console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // gapi가 초기화된 후 데이터 로드
