@@ -143,11 +143,19 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
               clientId: GOOGLE_CLIENT_ID,
               discoveryDocs: [
                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
-                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                'https://docs.googleapis.com/$discovery/rest?version=v1'
               ],
               scope: [
+                'https://www.googleapis.com/auth/calendar.events',
+                'https://www.googleapis.com/auth/calendar.readonly',
                 'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/drive.readonly'
+                'https://www.googleapis.com/auth/gmail.send',
+                'https://www.googleapis.com/auth/gmail.compose',
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/documents',
+                'profile',
+                'email'
               ].join(' ')
             });
 
@@ -418,12 +426,22 @@ const App: React.FC = () => {
       return;
     }
     try {
+      // 1. Create a new Google Doc
+      const doc = await (window as any).gapi.client.docs.documents.create({
+        title: newDocData.title,
+      });
+
+      const documentId = doc.result.documentId;
+      console.log(`Created new Google Doc with ID: ${documentId}`);
+
+      // 2. Add a new row to the Google Sheet with the documentId
       const newRowData = [
         '', // A column - empty
         newDocData.title, // B column
         newDocData.description, // C column
         newDocData.tag, // D column
         '', // E column - empty
+        documentId, // F column - documentId
       ];
 
       await (window as any).gapi.client.sheets.spreadsheets.values.append({
@@ -438,13 +456,17 @@ const App: React.FC = () => {
 
       console.log('Template saved to Google Sheets successfully');
 
-      // Refresh templates from Google Sheets to get the latest data
+      // 3. Store the documentId in localStorage
+      const newStorageKey = `template_doc_id_${newDocData.title}`;
+      localStorage.setItem(newStorageKey, documentId);
+
+      // 4. Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();
 
       alert('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
-      console.error('Error saving document to Google Sheet:', error);
-      alert('문서 저장 중 오류가 발생했습니다.');
+      console.error('Error creating document or saving to sheet:', error);
+      alert('문서 생성 또는 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -487,6 +509,70 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error deleting template from Google Sheet:', error);
       alert('템플릿 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const updateTemplateDocumentId = async (rowIndex: number, documentId: string) => {
+    try {
+      await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: hotPotatoDBSpreadsheetId,
+        range: `document_template!F${rowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [[documentId]],
+        },
+      });
+      console.log('Template documentId updated in Google Sheets successfully');
+      await fetchTemplates(); // Refresh templates to get the latest data
+    } catch (error) {
+      console.error('Error updating documentId in Google Sheet:', error);
+      alert('문서 ID 업데이트 중 오류가 발생했습니다.');
+    }
+  };
+
+  const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => {
+    try {
+      const originalTemplate = customTemplates.find(t => t.rowIndex === rowIndex);
+      const documentId = originalTemplate ? originalTemplate.documentId : '';
+
+      const newRowData = [
+        '', // A column - empty
+        newDocData.title, // B column
+        newDocData.description, // C column
+        newDocData.tag, // D column
+        '', // E column - empty
+        documentId // F column - documentId
+      ];
+
+      await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: hotPotatoDBSpreadsheetId,
+        range: `document_template!A${rowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [newRowData],
+        },
+      });
+
+      console.log('Template updated in Google Sheets successfully');
+
+      // Migrate localStorage
+      if (oldTitle && oldTitle !== newDocData.title) {
+        const oldStorageKey = `template_doc_id_${oldTitle}`;
+        const newStorageKey = `template_doc_id_${newDocData.title}`;
+        const docIdFromStorage = localStorage.getItem(oldStorageKey);
+        if (docIdFromStorage) {
+          localStorage.removeItem(oldStorageKey);
+          localStorage.setItem(newStorageKey, docIdFromStorage);
+        }
+      }
+
+      // Refresh templates from Google Sheets to get the latest data
+      await fetchTemplates();
+
+      alert('문서가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      console.error('Error updating document in Google Sheet:', error);
+      alert('문서 수정 중 오류가 발생했습니다.');
     }
   };
 
@@ -559,7 +645,7 @@ const App: React.FC = () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: hotPotatoDBSpreadsheetId,
-        range: 'document_template!B2:E', // Range covers B, C, D, E columns
+        range: 'document_template!B2:F', // Range covers B, C, D, E columns
       });
 
       const data = response.result.values;
@@ -571,6 +657,7 @@ const App: React.FC = () => {
           parttitle: row[1] || '',   // Column C -> parttitle (same as description for compatibility)
           tag: row[2] || '',         // Column D -> tag
           type: row[0] || '',        // Use title as type
+          documentId: row[4] || '',  // Column F -> documentId
         }));
 
         const filteredTemplates = allTemplates.filter(template => {
@@ -1045,7 +1132,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
         );
       case "calendar":
         return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />;

@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from "react";
+import { copyGoogleDocument } from "../utils/googleSheetUtils";
 
 // 1. 템플릿 데이터의 타입 정의
 export interface Template {
@@ -8,6 +9,7 @@ export interface Template {
     description: string;   // 템플릿 설명
     tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
     parttitle?: string;    // For filtering
+    documentId?: string;   // Google Doc ID
 }
 
 export const defaultTemplates: Template[] = [
@@ -29,8 +31,7 @@ export function useTemplateUI(
     templates: Template[], 
     onPageChange: (pageName: string) => void,
     searchTerm: string,
-    activeTab: string,
-    filterOption: string // filterOption을 인자로 받습니다.
+    activeTab: string
 ) {
     
 
@@ -47,39 +48,87 @@ export function useTemplateUI(
                 (t) => t.title.includes(searchTerm) || t.description.includes(searchTerm)
             );
 
-        // 3) 정렬 옵션
-        if (filterOption === "이름순") {
-            result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-        }
-        // "자주 사용", "최신순" 등은 별도 정렬 로직 필요시 추가
-
         return result;
-    }, [templates, searchTerm, filterOption, activeTab]);
+    }, [templates, searchTerm, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
-    const onUseTemplate = useCallback((type: string, title: string) => {
+    const onUseTemplate = useCallback(async (type: string, title: string) => {
+        const isDefault = defaultTemplates.some(t => t.type === type);
+
+        // Default templates with specific URLs
+        const defaultTemplateUrls: { [key: string]: string } = {
+            "empty": "https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0",
+            "meeting": "https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku",
+            "receipt": "https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0",
+            "confirmation": "https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh",
+            "supporting_document_confirmation": "https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0",
+            "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
+        };
+
+        if (defaultTemplateUrls[type]) {
+            window.open(defaultTemplateUrls[type].replace('/edit', '/copy'), '_blank');
+            return;
+        }
+
         if (type.startsWith('http')) {
             window.open(type, '_blank');
             return;
         }
-        if (type === "empty") {
-            window.open("https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0", "_blank");
-        } else if (type === "meeting") {
-            window.open("https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku", "_blank");
-        } else if (type === "receipt") {
-            window.open("https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0", "_blank");
-        } else if (type === "confirmation") {
-            window.open("https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh", "_blank");
-        } else if (type === "supporting_document_confirmation") {
-            window.open("https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0", "_blank");
-        } else if (type === "fee_deposit_list") {
-            window.open("https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0", "_blank");
-        } else if (type === "finance" || type === "event" || type === "report") {
-            onPageChange("proceedings");
-        } else {
-            alert(`"${title}" 템플릿을 사용합니다!`);
+
+        // "내 템플릿" 로직
+        if (!isDefault) {
+            const storageKey = `template_doc_id_${title}`;
+            const documentId = localStorage.getItem(storageKey);
+
+            if (documentId) {
+                const newTitle = `[사본] ${title}`;
+                const copiedDocument = await copyGoogleDocument(documentId, newTitle);
+
+                if (copiedDocument) {
+                    const docboxDocuments = JSON.parse(localStorage.getItem('docbox_documents') || '[]');
+                    const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+                    const newDocument = {
+                        id: copiedDocument.id,
+                        title: newTitle,
+                        author: userInfo.name || '알 수 없음',
+                        lastModified: new Date().toLocaleDateString('ko-KR'),
+                        url: copiedDocument.webViewLink,
+                    };
+                    
+                    docboxDocuments.push(newDocument);
+                    localStorage.setItem('docbox_documents', JSON.stringify(docboxDocuments));
+                    
+                    window.open(copiedDocument.webViewLink, '_blank');
+                }
+                return;
+            }
         }
-        // 실제로는 템플릿 생성 등 추가 로직을 구현할 수 있음
+
+        // Creation logic (for first use or if the previous doc was deleted)
+        try {
+            const gapi = (window as any).gapi;
+            const response = await gapi.client.docs.documents.create({
+                title: title,
+            });
+
+            const docId = response.result.documentId;
+            console.log(`Created document '${title}' with ID: ${docId}`);
+
+            let docUrl;
+            if (!isDefault) {
+                const storageKey = `template_doc_id_${title}`;
+                localStorage.setItem(storageKey, docId);
+                // Open with /edit the FIRST time so the user can create the template
+                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            } else {
+                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            }
+            window.open(docUrl, '_blank');
+
+        } catch (error) {
+            console.error('Error creating Google Doc:', error);
+            alert('Google Docs에서 문서를 생성하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
+        }
     }, [onPageChange]);
 
     // 훅에서 관리하는 상태, 함수들을 객체로 반환
