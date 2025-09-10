@@ -69,6 +69,16 @@ export const useAuth = (onLogin: (user: User) => void) => {
 
   // Google 로그인
   const googleLogin = useGoogleLogin({
+    scope: [
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/gmail.compose',
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/documents',
+      'profile',
+      'email'
+    ].join(' '),
     onSuccess: async (tokenResponse) => {
       try {
         setLoginState(prev => ({ ...prev, isLoading: true, error: '' }));

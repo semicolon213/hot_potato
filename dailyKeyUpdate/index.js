@@ -2,12 +2,14 @@ const { google } = require('googleapis');
 
 // ===== 다중 레이어 암호화 함수들 =====
 function generateExtendedMultiLayerKey() {
+  // 가역적인 암호화 방법들만 사용
   const methods = [
     'Base64', 'Caesar', 'ROT13', 'BitShift', 'Substitution',
     'Padding', 'MultiEncode', 'RandomInsert',
     'Transposition', 'Reverse', 'Atbash', 'Vigenere', 'RailFence',
     'Columnar', 'Affine', 'Permutation', 'Pattern', 'Mirror',
     'Zigzag', 'Wave', 'Snake'
+    // 비가역적인 방법들 제외: 'Diagonal', 'Hill', 'Spiral', 'Maze', 'Labyrinth', 'Playfair', 'Frequency'
   ];
   
   const layerCount = Math.floor(Math.random() * 11) + 5;
@@ -77,6 +79,20 @@ function applyEncryption(text, method, key) {
       return waveCipher(text);
     case 'Snake':
       return snakeCipher(text);
+    case 'Diagonal':
+      return diagonalCipher(text);
+    case 'Hill':
+      return hillCipher(text);
+    case 'Spiral':
+      return spiralCipher(text);
+    case 'Maze':
+      return mazeCipher(text);
+    case 'Labyrinth':
+      return labyrinthCipher(text);
+    case 'Playfair':
+      return playfairCipher(text);
+    case 'Frequency':
+      return frequencyCipher(text);
     default:
       return text;
   }
@@ -127,6 +143,20 @@ function applyDecryption(text, method, key) {
       return waveDecrypt(text);
     case 'Snake':
       return snakeDecrypt(text);
+    case 'Diagonal':
+      return diagonalDecrypt(text);
+    case 'Hill':
+      return hillDecrypt(text);
+    case 'Spiral':
+      return spiralDecrypt(text);
+    case 'Maze':
+      return mazeDecrypt(text);
+    case 'Labyrinth':
+      return labyrinthDecrypt(text);
+    case 'Playfair':
+      return playfairDecrypt(text);
+    case 'Frequency':
+      return frequencyDecrypt(text);
     default:
       return text;
   }
@@ -1508,7 +1538,8 @@ function labyrinthDecrypt(text) {
 // ===== 테스트 함수 =====
 // 시트 데이터로 복호화 테스트
 function testDecryption() {
-  const encryptedKey = 'STIL_JIEPFVIJVSBTWUZ[_KTRW]W\\P';
+  // 실제 받은 키로 테스트
+  const encryptedKey = 'ADuG_2?1p09-)1';
   const layersUsed = 'Diagonal, BitShift, RailFence, Permutation, BitShift, Columnar, Permutation, Hill, Reverse, BitShift, Affine, Permutation, Permutation, RailFence, Wave';
   
   console.log('=== 복호화 테스트 시작 ===');
@@ -1804,10 +1835,14 @@ async function verifyAdminKey(inputKey) {
       // 저장된 키를 레이어 순서의 역순으로 복호화하여 원본 키 추출
       let decryptedKey = storedKey;
       
-      // 레이어 순서의 역순으로 복호화 적용 (baseKey 없이)
+      // 레이어 순서의 역순으로 복호화 적용
       for (let i = layers.length - 1; i >= 0; i--) {
         const layer = layers[i].trim();
+        console.log(`검증 복호화 레이어 ${i}: ${layer}`);
+        const beforeDecrypt = decryptedKey.substring(0, 20) + '...';
         decryptedKey = applyDecryption(decryptedKey, layer, '');
+        console.log(`검증 복호화 전: ${beforeDecrypt}`);
+        console.log(`검증 복호화 후: ${decryptedKey.substring(0, 20)}...`);
       }
       
       console.log('복호화된 저장된 키:', decryptedKey.substring(0, 20) + '...');
@@ -1867,10 +1902,14 @@ async function getDecryptedAdminKey() {
       const layers = layersUsed.split(',');
       console.log('레이어 목록:', layers);
       
-      // 레이어 순서의 역순으로 복호화 적용 (baseKey 없이)
+      // 레이어 순서의 역순으로 복호화 적용
       for (let i = layers.length - 1; i >= 0; i--) {
         const layer = layers[i].trim();
+        console.log(`복호화 레이어 ${i}: ${layer}`);
+        const beforeDecrypt = decryptedKey.substring(0, 20) + '...';
         decryptedKey = applyDecryption(decryptedKey, layer, '');
+        console.log(`복호화 전: ${beforeDecrypt}`);
+        console.log(`복호화 후: ${decryptedKey.substring(0, 20)}...`);
       }
       
       console.log('복호화된 키:', decryptedKey.substring(0, 20) + '...');
@@ -2768,8 +2807,12 @@ async function handleSendAdminKeyEmail(req, res) {
     const currentAdminKey = response.data.values[0][0];
     const layersUsed = response.data.values[0][3]; // D열: layers_used
     
-    console.log('관리자 키 조회 완료:', currentAdminKey.substring(0, 10) + '...');
+    console.log('=== 스프레드시트에서 조회한 데이터 ===');
+    console.log('전체 응답 데이터:', response.data.values[0]);
+    console.log('암호화된 키 (전체):', currentAdminKey);
+    console.log('암호화된 키 (처음 50자):', currentAdminKey.substring(0, 50) + '...');
     console.log('사용된 레이어:', layersUsed);
+    console.log('레이어 개수:', layersUsed ? layersUsed.split(',').length : 0);
     
     // 복호화된 키 생성
     let decryptedKey = currentAdminKey;
@@ -2778,13 +2821,26 @@ async function handleSendAdminKeyEmail(req, res) {
         const layers = layersUsed.split(',');
         console.log('레이어 목록:', layers);
         
-        // 레이어 순서의 역순으로 복호화 적용 (baseKey 없이)
+        // 레이어 순서의 역순으로 복호화 적용
+        console.log('=== 복호화 과정 시작 ===');
         for (let i = layers.length - 1; i >= 0; i--) {
           const layer = layers[i].trim();
-          console.log(`복호화 레이어 ${i}: ${layer}`);
-          decryptedKey = applyDecryption(decryptedKey, layer, '');
-          console.log(`복호화 후: ${decryptedKey.substring(0, 20)}...`);
+          console.log(`\n--- 복호화 단계 ${layers.length - i}/${layers.length} ---`);
+          console.log(`레이어: ${layer}`);
+          console.log(`복호화 전 (전체): ${decryptedKey}`);
+          console.log(`복호화 전 (처음 50자): ${decryptedKey.substring(0, 50)}...`);
+          
+          try {
+            decryptedKey = applyDecryption(decryptedKey, layer, '');
+            console.log(`복호화 후 (전체): ${decryptedKey}`);
+            console.log(`복호화 후 (처음 50자): ${decryptedKey.substring(0, 50)}...`);
+            console.log(`복호화 성공: ✅`);
+          } catch (decryptError) {
+            console.error(`복호화 실패: ❌ - ${decryptError.message}`);
+            throw decryptError;
+          }
         }
+        console.log('=== 복호화 과정 완료 ===');
         
         console.log('복호화된 키:', decryptedKey.substring(0, 20) + '...');
       } else {

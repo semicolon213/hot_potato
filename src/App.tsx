@@ -91,12 +91,14 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
 
             const gapi = (window as any).gapi;
 
-      // 더 정확한 초기화 상태 확인 (Gmail API 포함)
+      // 더 정확한 초기화 상태 확인 (Gmail API, Docs API 포함)
       const isClientInitialized = gapi.client &&
         gapi.client.sheets &&
         gapi.client.sheets.spreadsheets &&
         gapi.client.gmail &&
-        gapi.client.gmail.users;
+        gapi.client.gmail.users &&
+        gapi.client.docs &&
+        gapi.client.docs.documents;
 
             if (isClientInitialized) {
                 console.log("Google API가 이미 초기화되어 있습니다.");
@@ -143,12 +145,13 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
                     try {
                         console.log("gapi.load 완료, client.init 시작...");
 
-            await gapi.client.init({
+            console.log("Google API 초기화 설정:", {
               clientId: GOOGLE_CLIENT_ID,
               discoveryDocs: [
                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-                'https://gmail.googleapis.com/$discovery/rest?version=v1'
+                'https://gmail.googleapis.com/$discovery/rest?version=v1',
+                'https://docs.googleapis.com/$discovery/rest?version=v1'
               ],
               scope: [
                 'https://www.googleapis.com/auth/calendar.events',
@@ -162,7 +165,41 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
               ].join(' ')
             });
 
+            console.log('gapi.client.init 호출 시작...');
+            await gapi.client.init({
+              clientId: GOOGLE_CLIENT_ID,
+              discoveryDocs: [
+                'https://sheets.googleapis.com/$discovery/rest?version=v4',
+                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                'https://gmail.googleapis.com/$discovery/rest?version=v1',
+                'https://docs.googleapis.com/$discovery/rest?version=v1'
+              ],
+              scope: [
+                'https://www.googleapis.com/auth/calendar.events',
+                'https://www.googleapis.com/auth/calendar.readonly',
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/gmail.compose',
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/documents',
+                'profile',
+                'email'
+              ].join(' ')
+            });
+            console.log('gapi.client.init 호출 완료');
+
                         console.log("Google API Client Library 초기화 성공!");
+
+                        // Google Docs API 로드 상태 확인
+                        console.log("Google Docs API 상태 확인:", {
+                          'gapi.client': !!gapi.client,
+                          'gapi.client.docs': !!gapi.client.docs,
+                          'gapi.client.docs.documents': !!gapi.client.docs?.documents,
+                          'gapi.client.docs.documents.create': typeof gapi.client.docs?.documents?.create,
+                          'gapi.client.sheets': !!gapi.client.sheets,
+                          'gapi.client.gmail': !!gapi.client.gmail,
+                          'gapi.client.drive': !!gapi.client.drive,
+                          'gapi.client.drive.files': !!gapi.client.drive?.files
+                        });
 
                         // 새로고침 시 저장된 토큰 복원 시도
                         const savedToken = localStorage.getItem('googleAccessToken');
@@ -198,6 +235,12 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
                         resolve();
                     } catch (error) {
                         console.error("Google API Client Library 초기화 실패:", error);
+                        console.error("오류 상세 정보:", {
+                            message: error.message,
+                            code: error.code,
+                            status: error.status,
+                            response: error.response?.data
+                        });
                         reject(error);
                     }
                 });

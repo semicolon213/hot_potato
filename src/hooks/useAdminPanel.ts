@@ -151,39 +151,28 @@ export const useAdminPanel = () => {
             console.log('localStorage에서 토큰 발견:', storedToken.substring(0, 20) + '...');
             adminAccessToken = storedToken;
           } else {
-            // 3순위: gapi에서 직접 가져오기
-            const auth2 = window.gapi.auth2.getAuthInstance();
-            if (!auth2) {
-              throw new Error('Google Auth2가 초기화되지 않았습니다.');
+            // 3순위: gapi client에서 직접 가져오기 (Auth2 대신)
+            const gapi = (window as any).gapi;
+            if (!gapi || !gapi.client) {
+              throw new Error('Google API가 초기화되지 않았습니다.');
             }
             
-            const googleUser = auth2.currentUser.get();
-            if (!googleUser) {
-              throw new Error('Google 사용자 정보를 가져올 수 없습니다.');
+            // gapi client에서 토큰 가져오기
+            const token = gapi.client.getToken();
+            console.log('gapi.client.getToken() 결과:', token);
+            
+            if (!token || !token.access_token) {
+              console.error('토큰 상태:', {
+                token: token,
+                hasAccessToken: !!(token && token.access_token),
+                tokenType: typeof token
+              });
+              throw new Error('액세스 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
             }
             
-            let authResponse = (googleUser as any).getAuthResponse();
-            
-            // 토큰이 없거나 만료된 경우 갱신 시도
-            if (!authResponse || !authResponse.access_token) {
-              console.log('토큰이 없거나 만료됨, 갱신 시도...');
-              try {
-                await (googleUser as any).reloadAuthResponse();
-                authResponse = (googleUser as any).getAuthResponse();
-                console.log('토큰 갱신 완료');
-              } catch (reloadError) {
-                console.error('토큰 갱신 실패:', reloadError);
-                throw new Error('토큰 갱신에 실패했습니다. 다시 로그인해주세요.');
-              }
-            }
-            
-            if (!authResponse || !authResponse.access_token) {
-              throw new Error('액세스 토큰을 가져올 수 없습니다.');
-            }
-            
-            adminAccessToken = authResponse.access_token;
+            adminAccessToken = token.access_token;
             console.log('액세스 토큰 길이:', adminAccessToken.length);
-            console.log('토큰 만료 시간:', new Date(authResponse.expires_at));
+            console.log('토큰 만료 시간:', token.expires_at ? new Date(token.expires_at) : '알 수 없음');
           }
         }
       } catch (tokenError) {
