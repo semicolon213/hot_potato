@@ -5,11 +5,10 @@ import WidgetGrid from "../components/Dashboard/WidgetGrid";
 import AddWidgetModal from "../components/Dashboard/AddWidgetModal";
 
 interface DashboardProps {
-  isAuthenticated: boolean;
-  isGapiReady: boolean;
+  hotPotatoDBSpreadsheetId: string | null;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated, isGapiReady }) => {
+const Dashboard: React.FC<DashboardProps> = ({ hotPotatoDBSpreadsheetId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const {
     isModalOpen,
@@ -21,20 +20,20 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated, isGapiReady }) =
     handleDragEnter,
     handleDrop,
     widgetOptions,
-  } = useWidgetManagement(isAuthenticated, isGapiReady);
+  } = useWidgetManagement(hotPotatoDBSpreadsheetId);
 
   useEffect(() => {
     console.log("Dashboard 컴포넌트가 마운트되었습니다.");
     console.log("현재 위젯 개수:", widgets.length);
     
-    // 1초 후 로딩 상태 해제 (로컬 스토리지 사용으로 빠른 로딩)
-    const timer = setTimeout(() => {
-      console.log("로딩 타이머가 만료되었습니다. 위젯 개수:", widgets.length);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [widgets.length]);
+    // 위젯이 로드되면 로딩 상태 해제
+    if (widgets.length > 0 || !hotPotatoDBSpreadsheetId) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500); // 약간의 딜레이를 주어 자연스러운 로딩 효과
+      return () => clearTimeout(timer);
+    }
+  }, [widgets, hotPotatoDBSpreadsheetId]);
 
   return (
     <div className="main-content ml-[10px]">

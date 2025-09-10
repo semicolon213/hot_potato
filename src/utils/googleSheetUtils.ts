@@ -75,7 +75,7 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
       return null;
     }
   } catch (error) {
-    alert('Error searching for spreadsheet. Check console for details.');
+    console.log('Error searching for spreadsheet. Check console for details.');
     return null;
   }
 };
@@ -136,4 +136,24 @@ export const deleteSheetRow = async (spreadsheetId: string, sheetName: string, r
       ],
     },
   });
+};
+
+export const copyGoogleDocument = async (fileId: string, newTitle: string): Promise<{ id: string, webViewLink: string } | null> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    const response = await gapi.client.drive.files.copy({
+      fileId: fileId,
+      resource: {
+        name: newTitle,
+      },
+      fields: 'id, webViewLink',
+    });
+    return response.result;
+  } catch (error) {
+    console.error('Error copying Google Document:', error);
+    alert('Google 문서를 복사하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
+    return null;
+  }
 };

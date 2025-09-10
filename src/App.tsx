@@ -28,9 +28,6 @@ import type { Template } from "./hooks/useTemplateUI";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-// Google Sheets API 접근을 위한 설정
-const SHEET_ID = '1DJP6g5obxAkev0QpXyzit_t6qfuW4OCa63EEA4O-0no';
-
 // 중앙화된 Google API 초기화 상태 관리
 let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
@@ -48,7 +45,7 @@ if (typeof window !== 'undefined') {
 }
 
 // 직접 구현한 Google API 초기화 함수
-const initializeGoogleAPIOnce = async (): Promise<void> => {
+const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null): Promise<void> => {
   // 이미 초기화되었으면 바로 반환
   if (isGoogleAPIInitialized) {
     return;
@@ -115,13 +112,15 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
 
             // 토큰 유효성 검증 (더 빠른 방법)
             try {
-              // 간단한 API 호출로 토큰 유효성 확인
-              await gapi.client.sheets.spreadsheets.get({
-                spreadsheetId: SHEET_ID,
-                ranges: ['document_template!A1:A1'],
-                includeGridData: false // 데이터를 가져오지 않아 더 빠름
-              });
-              console.log("토큰 유효성 검증 성공");
+              if (hotPotatoDBSpreadsheetId) {
+                // 간단한 API 호출로 토큰 유효성 확인
+                await gapi.client.sheets.spreadsheets.get({
+                  spreadsheetId: hotPotatoDBSpreadsheetId,
+                  ranges: ['document_template!A1:A1'],
+                  includeGridData: false // 데이터를 가져오지 않아 더 빠름
+                });
+                console.log("토큰 유효성 검증 성공");
+              }
             } catch (tokenError) {
               console.warn("토큰 유효성 검증 실패, 토큰이 만료되었을 수 있습니다:", tokenError);
               // 토큰이 만료된 경우 localStorage에서 제거
@@ -152,9 +151,14 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
                 'https://gmail.googleapis.com/$discovery/rest?version=v1'
               ],
               scope: [
+                'https://www.googleapis.com/auth/calendar.events',
+                'https://www.googleapis.com/auth/calendar.readonly',
                 'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/drive.readonly',
-                'https://www.googleapis.com/auth/gmail.send'
+                'https://www.googleapis.com/auth/gmail.compose',
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/documents',
+                'profile',
+                'email'
               ].join(' ')
             });
 
@@ -171,13 +175,15 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
 
                 // 토큰 유효성 검증 (더 빠른 방법)
                 try {
-                  // 간단한 API 호출로 토큰 유효성 확인
-                  await gapi.client.sheets.spreadsheets.get({
-                    spreadsheetId: SHEET_ID,
-                    ranges: ['document_template!A1:A1'],
-                    includeGridData: false // 데이터를 가져오지 않아 더 빠름
-                  });
-                  console.log("토큰 유효성 검증 성공");
+                  if (hotPotatoDBSpreadsheetId) {
+                    // 간단한 API 호출로 토큰 유효성 확인
+                    await gapi.client.sheets.spreadsheets.get({
+                      spreadsheetId: hotPotatoDBSpreadsheetId,
+                      ranges: ['document_template!A1:A1'],
+                      includeGridData: false // 데이터를 가져오지 않아 더 빠름
+                    });
+                    console.log("토큰 유효성 검증 성공");
+                  }
                 } catch (tokenError) {
                   console.warn("토큰 유효성 검증 실패, 토큰이 만료되었을 수 있습니다:", tokenError);
                   // 토큰이 만료된 경우 localStorage에서 제거
@@ -255,6 +261,7 @@ const App: React.FC = () => {
   const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
+  const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
 
   // SHEET_ID는 상수로 정의됨
   const boardSheetName = '시트1';
@@ -275,7 +282,7 @@ const App: React.FC = () => {
 
     // Background sheet update
     const deleteFromSheet = async () => {
-      if (documentTemplateSheetId === null) {
+      if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
         alert('오류: 시트 정보가 로드되지 않았습니다. 태그 삭제에 실패했습니다.');
@@ -284,7 +291,7 @@ const App: React.FC = () => {
 
       try {
         const response = await (window as any).gapi.client.sheets.spreadsheets.get({
-          spreadsheetId: SHEET_ID,
+          spreadsheetId: hotPotatoDBSpreadsheetId,
           ranges: ['document_template!A:E'],
           includeGridData: true,
         });
@@ -319,7 +326,7 @@ const App: React.FC = () => {
           }));
 
           await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-            spreadsheetId: SHEET_ID,
+            spreadsheetId: hotPotatoDBSpreadsheetId,
             resource: { requests },
           });
         }
@@ -345,7 +352,7 @@ const App: React.FC = () => {
 
     // Background sheet update
     const updateSheet = async () => {
-      if (documentTemplateSheetId === null) {
+      if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
         alert('오류: 시트 정보가 로드되지 않았습니다. 태그 수정에 실패했습니다.');
@@ -354,7 +361,7 @@ const App: React.FC = () => {
 
       try {
         const response = await (window as any).gapi.client.sheets.spreadsheets.get({
-          spreadsheetId: SHEET_ID,
+          spreadsheetId: hotPotatoDBSpreadsheetId,
           ranges: ['document_template!A:E'],
           includeGridData: true,
         });
@@ -384,7 +391,7 @@ const App: React.FC = () => {
 
         if (requests.length > 0) {
           await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-            spreadsheetId: SHEET_ID,
+            spreadsheetId: hotPotatoDBSpreadsheetId,
             resource: { requests },
           });
         }
@@ -400,14 +407,14 @@ const App: React.FC = () => {
   };
 
   const addTag = async (newTag: string) => {
-    if (newTag && !tags.includes(newTag)) {
+    if (newTag && !tags.includes(newTag) && hotPotatoDBSpreadsheetId) {
       try {
         const newRow = {
           'template_title': '',
           'tamplateparttitle': '', // Typo as per user's message
           'tag_name': newTag
         };
-        await appendRow(SHEET_ID, 'document_template', newRow);
+        await appendRow(hotPotatoDBSpreadsheetId, 'document_template', newRow);
         setTags([...tags, newTag]);
         alert('새로운 태그가 추가되었습니다.');
       } catch (error) {
@@ -418,17 +425,31 @@ const App: React.FC = () => {
   };
 
   const addTemplate = async (newDocData: { title: string; description: string; tag: string; }) => {
+    if (!hotPotatoDBSpreadsheetId) {
+      alert('오류: 템플릿 시트가 로드되지 않았습니다.');
+      return;
+    }
     try {
+      // 1. Create a new Google Doc
+      const doc = await (window as any).gapi.client.docs.documents.create({
+        title: newDocData.title,
+      });
+
+      const documentId = doc.result.documentId;
+      console.log(`Created new Google Doc with ID: ${documentId}`);
+
+      // 2. Add a new row to the Google Sheet with the documentId
       const newRowData = [
         '', // A column - empty
         newDocData.title, // B column
         newDocData.description, // C column
         newDocData.tag, // D column
         '', // E column - empty
+        documentId, // F column - documentId
       ];
 
       await (window as any).gapi.client.sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: hotPotatoDBSpreadsheetId,
         range: 'document_template!A1',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
@@ -439,13 +460,17 @@ const App: React.FC = () => {
 
       console.log('Template saved to Google Sheets successfully');
 
-      // Refresh templates from Google Sheets to get the latest data
+      // 3. Store the documentId in localStorage
+      const newStorageKey = `template_doc_id_${newDocData.title}`;
+      localStorage.setItem(newStorageKey, documentId);
+
+      // 4. Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();
 
       alert('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
-      console.error('Error saving document to Google Sheet:', error);
-      alert('문서 저장 중 오류가 발생했습니다.');
+      console.error('Error creating document or saving to sheet:', error);
+      alert('문서 생성 또는 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -454,14 +479,14 @@ const App: React.FC = () => {
       return;
     }
 
-    if (documentTemplateSheetId === null) {
+    if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
       alert('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
     try {
       await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: hotPotatoDBSpreadsheetId,
         resource: {
           requests: [
             {
@@ -488,6 +513,70 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error deleting template from Google Sheet:', error);
       alert('템플릿 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const updateTemplateDocumentId = async (rowIndex: number, documentId: string) => {
+    try {
+      await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: hotPotatoDBSpreadsheetId,
+        range: `document_template!F${rowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [[documentId]],
+        },
+      });
+      console.log('Template documentId updated in Google Sheets successfully');
+      await fetchTemplates(); // Refresh templates to get the latest data
+    } catch (error) {
+      console.error('Error updating documentId in Google Sheet:', error);
+      alert('문서 ID 업데이트 중 오류가 발생했습니다.');
+    }
+  };
+
+  const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => {
+    try {
+      const originalTemplate = customTemplates.find(t => t.rowIndex === rowIndex);
+      const documentId = originalTemplate ? originalTemplate.documentId : '';
+
+      const newRowData = [
+        '', // A column - empty
+        newDocData.title, // B column
+        newDocData.description, // C column
+        newDocData.tag, // D column
+        '', // E column - empty
+        documentId // F column - documentId
+      ];
+
+      await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: hotPotatoDBSpreadsheetId,
+        range: `document_template!A${rowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [newRowData],
+        },
+      });
+
+      console.log('Template updated in Google Sheets successfully');
+
+      // Migrate localStorage
+      if (oldTitle && oldTitle !== newDocData.title) {
+        const oldStorageKey = `template_doc_id_${oldTitle}`;
+        const newStorageKey = `template_doc_id_${newDocData.title}`;
+        const docIdFromStorage = localStorage.getItem(oldStorageKey);
+        if (docIdFromStorage) {
+          localStorage.removeItem(oldStorageKey);
+          localStorage.setItem(newStorageKey, docIdFromStorage);
+        }
+      }
+
+      // Refresh templates from Google Sheets to get the latest data
+      await fetchTemplates();
+
+      alert('문서가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      console.error('Error updating document in Google Sheet:', error);
+      alert('문서 수정 중 오류가 발생했습니다.');
     }
   };
 
@@ -556,10 +645,11 @@ const App: React.FC = () => {
   };
 
   const fetchTemplates = async () => {
+    if (!hotPotatoDBSpreadsheetId) return;
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: 'document_template!B2:E', // Range covers B, C, D, E columns
+        spreadsheetId: hotPotatoDBSpreadsheetId,
+        range: 'document_template!B2:F', // Range covers B, C, D, E columns
       });
 
       const data = response.result.values;
@@ -571,6 +661,7 @@ const App: React.FC = () => {
           parttitle: row[1] || '',   // Column C -> parttitle (same as description for compatibility)
           tag: row[2] || '',         // Column D -> tag
           type: row[0] || '',        // Use title as type
+          documentId: row[4] || '',  // Column F -> documentId
         }));
 
         const filteredTemplates = allTemplates.filter(template => {
@@ -590,10 +681,11 @@ const App: React.FC = () => {
   };
 
   const fetchTags = async () => {
+    if (!hotPotatoDBSpreadsheetId) return;
     try {
       // Fetch tags ONLY from the 'tag_name' column (Column E)
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: hotPotatoDBSpreadsheetId,
         range: `document_template!E2:E`, // Corrected to Column E
       });
 
@@ -608,10 +700,6 @@ const App: React.FC = () => {
       setTags([]);
     }
   };
-
-
-
-
 
   const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     if (!boardSpreadsheetId) {
@@ -706,7 +794,7 @@ const App: React.FC = () => {
     const initAndFetch = async () => {
       try {
         console.log("새로고침 후 Google API 초기화 시작");
-        await initializeGoogleAPIOnce();
+        await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
 
         // Find the announcement spreadsheet ID by name
         try {
@@ -756,6 +844,30 @@ const App: React.FC = () => {
           alert("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
+        // Find the hot_potato_DB spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='hot_potato_DB' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'hot_potato_DB' spreadsheet with ID:", fileId);
+              setHotPotatoDBSpreadsheetId(fileId);
+            } else {
+                console.error("'hot_potato_DB' spreadsheet found but has no ID.");
+                alert("'hot_potato_DB' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'hot_potato_DB'");
+            alert("Could not find spreadsheet with name 'hot_potato_DB'");
+          }
+        } catch (error) {
+          console.error("Error searching for hot_potato_DB spreadsheet:", error);
+          alert("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
           try {
@@ -767,18 +879,6 @@ const App: React.FC = () => {
               // Set auth states to true since we know the user is signed in
               setIsGoogleAuthenticatedForAnnouncements(true);
               setIsGoogleAuthenticatedForBoard(true);
-
-              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-              const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
-              if (docSheet && docSheet.properties) {
-                setDocumentTemplateSheetId(docSheet.properties.sheetId);
-              }
-
-              // 데이터 로드
-              await Promise.all([
-                fetchTemplates(),
-                fetchTags(),
-              ]);
 
               console.log("모든 데이터 로드 완료");
             } else {
@@ -833,7 +933,7 @@ const App: React.FC = () => {
         try {
           console.log("로그인 후 Google API 초기화 시작");
           // 중앙화된 Google API 초기화 사용
-          await initializeGoogleAPIOnce();
+          await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
 
         // Find the announcement spreadsheet ID by name
         try {
@@ -883,6 +983,30 @@ const App: React.FC = () => {
           alert("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
+        // Find the hot_potato_DB spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='hot_potato_DB' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'hot_potato_DB' spreadsheet with ID:", fileId);
+              setHotPotatoDBSpreadsheetId(fileId);
+            } else {
+                console.error("'hot_potato_DB' spreadsheet found but has no ID.");
+                alert("'hot_potato_DB' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'hot_potato_DB'");
+            alert("Could not find spreadsheet with name 'hot_potato_DB'");
+          }
+        } catch (error) {
+          console.error("Error searching for hot_potato_DB spreadsheet:", error);
+          alert("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
           try {
@@ -893,18 +1017,6 @@ const App: React.FC = () => {
 
               setIsGoogleAuthenticatedForAnnouncements(true);
               setIsGoogleAuthenticatedForBoard(true);
-
-              const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-              const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
-              if (docSheet && docSheet.properties) {
-                setDocumentTemplateSheetId(docSheet.properties.sheetId);
-              }
-
-              // 데이터 로드
-              await Promise.all([
-                fetchTemplates(),
-                fetchTags(),
-              ]);
 
               console.log("로그인 후 모든 데이터 로드 완료");
             } else {
@@ -953,6 +1065,30 @@ const App: React.FC = () => {
       fetchAnnouncements();
     }
   }, [announcementSpreadsheetId]);
+
+  useEffect(() => {
+    if (hotPotatoDBSpreadsheetId) {
+      const fetchTemplateData = async () => {
+        try {
+          const gapi = (window as any).gapi;
+          if (gapi && gapi.client && gapi.client.sheets) {
+            const spreadsheet = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: hotPotatoDBSpreadsheetId });
+            const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
+            if (docSheet && docSheet.properties) {
+              setDocumentTemplateSheetId(docSheet.properties.sheetId);
+            }
+            await Promise.all([
+              fetchTemplates(),
+              fetchTags(),
+            ]);
+          }
+        } catch (error) {
+          console.error("Error during template data fetch", error);
+        }
+      };
+      fetchTemplateData();
+    }
+  }, [hotPotatoDBSpreadsheetId]);
 
   // 로그아웃 처리 (from feature/login)
   const handleLogout = () => {
@@ -1007,7 +1143,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
         );
       case "calendar":
         return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />;
@@ -1022,7 +1158,7 @@ const App: React.FC = () => {
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard isAuthenticated={!!user} isGapiReady={isGapiReady} />;
+        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'admin':
         return <Admin />;
       case 'documents':
@@ -1032,7 +1168,7 @@ const App: React.FC = () => {
       case 'settings':
         return <div>설정 페이지 (구현 예정)</div>;
       default:
-        return <Dashboard isAuthenticated={!!user} isGapiReady={isGapiReady} />;
+        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
     }
   };
 

@@ -1,39 +1,70 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Docbox.css";
 
 interface Document {
   id: string;
-  docNumber: string;
   title: string;
   author: string;
   lastModified: string;
-  dueDate: string;
-  status: string;
+  url: string;
 }
 
-const initialDocuments: Document[] = [
-];
-
 const Docbox: React.FC = () => {
-  const [documents] = useState<Document[]>(initialDocuments);
-  const [selectedStatus, setSelectedStatus] = useState<string>("전체");
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
   const [selectedSort, setSelectedSort] = useState<string>("최신순");
-  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
+  useEffect(() => {
+    const storedDocuments = JSON.parse(localStorage.getItem('docbox_documents') || '[]') as Document[];
+    setDocuments(storedDocuments);
+  }, []);
+
+  const handleResetFilters = () => {
+    setSelectedAuthor("전체");
+    setSelectedSort("최신순");
+    setStartDate("");
+    setEndDate("");
+  };
+
+  const handleRowClick = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const filteredDocuments = documents
+    .filter((doc) => {
+      const matchesAuthor = selectedAuthor === "전체" || doc.author === selectedAuthor;
+      const docDate = new Date(doc.lastModified.replace(/\./g, '-').slice(0, -1));
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      if (start && docDate < start) return false;
+      if (end && docDate > end) return false;
+      return matchesAuthor;
+    })
+    .sort((a, b) => {
+      if (selectedSort === "최신순") {
+        return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
+      } else if (selectedSort === "오래된순") {
+        return new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime();
+      } else if (selectedSort === "제목순") {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+
+  const authors = ["전체", ...new Set(documents.map(doc => doc.author))];
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedDocs(documents.map((doc) => doc.id));
+      setSelectedDocs(filteredDocuments.map((doc) => doc.id));
     } else {
       setSelectedDocs([]);
     }
   };
 
-  const handleDocCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const docId = e.target.id.replace("doc-", "");
+  const handleDocCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, docId: string) => {
     if (e.target.checked) {
       setSelectedDocs((prev) => [...prev, docId]);
     } else {
@@ -41,62 +72,34 @@ const Docbox: React.FC = () => {
     }
   };
 
-  const handleResetFilters = () => {
-    setSelectedStatus("전체");
-    setSelectedAuthor("전체");
-    setSelectedSort("최신순");
-    setSelectedCategory("전체");
-    setStartDate("");
-    setEndDate("");
+  const handleDelete = () => {
+    if (selectedDocs.length === 0) {
+      alert("삭제할 문서를 선택하세요.");
+      return;
+    }
+    const remainingDocuments = documents.filter(doc => !selectedDocs.includes(doc.id));
+    setDocuments(remainingDocuments);
+    localStorage.setItem('docbox_documents', JSON.stringify(remainingDocuments));
+    setSelectedDocs([]);
   };
 
-  const filteredDocuments = documents
-    .filter((doc) => {
-      const matchesStatus =
-        selectedStatus === "전체" || doc.status === selectedStatus;
-      const matchesAuthor =
-        selectedAuthor === "전체" || doc.author === selectedAuthor;
-      // Add date filtering logic here if needed
-      return matchesStatus && matchesAuthor;
-    })
-    .sort((a, b) => {
-      if (selectedSort === "최신순") {
-        return (
-          new Date(b.lastModified).getTime() -
-          new Date(a.lastModified).getTime()
-        );
-      } else if (selectedSort === "오래된순") {
-        return (
-          new Date(a.lastModified).getTime() -
-          new Date(b.lastModified).getTime()
-        );
-      } else if (selectedSort === "제목순") {
-        return a.title.localeCompare(b.title);
-      }
-      return 0;
-    });
+  const handleShare = () => {
+    if (selectedDocs.length !== 1) {
+      alert("공유할 문서 1개를 선택하세요.");
+      return;
+    }
+    const docToShare = documents.find(doc => doc.id === selectedDocs[0]);
+    if (docToShare) {
+      navigator.clipboard.writeText(docToShare.url)
+        .then(() => alert("문서 링크가 클립보드에 복사되었습니다."))
+        .catch(() => alert("링크 복사에 실패했습니다."));
+    }
+  };
 
   return (
     <div className="content" id="dynamicContent">
       <div className="filter-section">
         <div className="filter-row">
-          <div className="filter-group">
-            <div className="filter-label">상태</div>
-            <div className="select-container">
-              <select
-                className="filter-select"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-              >
-                <option>전체</option>
-                <option>진행중</option>
-                <option>완료</option>
-                <option>반려</option>
-                <option>임시저장</option>
-              </select>
-            </div>
-          </div>
-
           <div className="filter-group">
             <div className="filter-label">기안자</div>
             <div className="select-container">
@@ -105,11 +108,7 @@ const Docbox: React.FC = () => {
                 value={selectedAuthor}
                 onChange={(e) => setSelectedAuthor(e.target.value)}
               >
-                <option>전체</option>
-                <option>나나</option>
-                <option>이지원</option>
-                <option>박서연</option>
-                <option>김준호</option>
+                {authors.map(author => <option key={author}>{author}</option>)}
               </select>
             </div>
           </div>
@@ -125,24 +124,6 @@ const Docbox: React.FC = () => {
                 <option>최신순</option>
                 <option>오래된순</option>
                 <option>제목순</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <div className="filter-label">카테고리</div>
-            <div className="select-container">
-              <select
-                className="filter-select"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option>전체</option>
-                <option>정기 회의</option>
-                <option>부서 회의</option>
-                <option>프로젝트 회의</option>
-                <option>이사회</option>
-                <option>전체 회의</option>
               </select>
             </div>
           </div>
@@ -185,15 +166,15 @@ const Docbox: React.FC = () => {
           </span>
         </div>
         <div className="doc-actions">
-          <button className="btn-download">
+          <button className="btn-download" onClick={() => alert('다운로드 기능은 현재 지원되지 않습니다.')}>
             <span className="icon-download"></span>
             다운로드
           </button>
-          <button className="btn-print">
+          <button className="btn-print" onClick={handleShare}>
             <span className="icon-print"></span>
             공유
           </button>
-          <button className="btn-delete">
+          <button className="btn-delete" onClick={handleDelete}>
             <span className="icon-trash"></span>
             삭제
           </button>
@@ -220,18 +201,12 @@ const Docbox: React.FC = () => {
                 className="doc-checkbox"
                 id="select-all"
                 onChange={handleSelectAll}
-                checked={
-                  selectedDocs.length === documents.length &&
-                  documents.length > 0
-                }
+                checked={filteredDocuments.length > 0 && selectedDocs.length === filteredDocuments.length}
               />
             </div>
-            <div className="table-header-cell doc-number-cell">문서번호</div>
             <div className="table-header-cell title-cell">제목</div>
             <div className="table-header-cell author-cell">기안자</div>
             <div className="table-header-cell date-cell">최근 수정일</div>
-            <div className="table-header-cell date-cell">기한일</div>
-            <div className="table-header-cell status-cell">상태</div>
           </div>
 
           {filteredDocuments.map((doc) => (
@@ -241,24 +216,15 @@ const Docbox: React.FC = () => {
                   type="checkbox"
                   className="doc-checkbox"
                   id={`doc-${doc.id}`}
-                  onChange={handleDocCheckboxChange}
+                  onChange={(e) => handleDocCheckboxChange(e, doc.id)}
                   checked={selectedDocs.includes(doc.id)}
                 />
               </div>
-              <div className="table-cell doc-number-cell">{doc.docNumber}</div>
-              <div className="table-cell title-cell title-bold">
+              <div className="table-cell title-cell title-bold" onClick={() => handleRowClick(doc.url)} style={{cursor: 'pointer'}}>
                 {doc.title}
               </div>
               <div className="table-cell author-cell">{doc.author}</div>
               <div className="table-cell date-cell">{doc.lastModified}</div>
-              <div className="table-cell date-cell">{doc.dueDate}</div>
-              <div className="table-cell status-cell">
-                <div
-                  className={`status-badge ${doc.status === "완료" ? "complete" : doc.status === "반려" ? "rejected" : doc.status === "임시저장" ? "temp" : "progress"}`}
-                >
-                  <div className="status-text">{doc.status}</div>
-                </div>
-              </div>
             </div>
           ))}
         </div>
