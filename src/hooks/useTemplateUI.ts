@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from "react";
+import { copyGoogleDocument } from "../utils/googleSheetUtils";
 
 // 1. 템플릿 데이터의 타입 정의
 export interface Template {
@@ -65,7 +66,7 @@ export function useTemplateUI(
         };
 
         if (defaultTemplateUrls[type]) {
-            window.open(defaultTemplateUrls[type], '_blank');
+            window.open(defaultTemplateUrls[type].replace('/edit', '/copy'), '_blank');
             return;
         }
 
@@ -80,31 +81,26 @@ export function useTemplateUI(
             const documentId = localStorage.getItem(storageKey);
 
             if (documentId) {
-                const gapi = (window as any).gapi;
+                const newTitle = `[사본] ${title}`;
+                const copiedDocument = await copyGoogleDocument(documentId, newTitle);
 
-                try {
-                    // Check if the document still exists
-                    await gapi.client.drive.files.get({
-                        fileId: documentId,
-                        fields: 'id'
-                    });
-
-                    // If it exists, open the COPY URL
-                    const docUrl = `https://docs.google.com/document/d/${documentId}/copy`;
-                    window.open(docUrl, '_blank');
-                    return;
-
-                } catch (error: any) {
-                    if (error.result && error.result.error && error.result.error.code === 404) {
-                        console.log(`Previously used doc for template '${title}' was deleted. Creating a new one.`);
-                        localStorage.removeItem(storageKey);
-                        // Fall through to the creation logic
-                    } else {
-                        console.error('Error checking Google Doc status:', error);
-                        alert('문서 상태를 확인하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
-                        return;
-                    }
+                if (copiedDocument) {
+                    const docboxDocuments = JSON.parse(localStorage.getItem('docbox_documents') || '[]');
+                    const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+                    const newDocument = {
+                        id: copiedDocument.id,
+                        title: newTitle,
+                        author: userInfo.name || '알 수 없음',
+                        lastModified: new Date().toLocaleDateString('ko-KR'),
+                        url: copiedDocument.webViewLink,
+                    };
+                    
+                    docboxDocuments.push(newDocument);
+                    localStorage.setItem('docbox_documents', JSON.stringify(docboxDocuments));
+                    
+                    window.open(copiedDocument.webViewLink, '_blank');
                 }
+                return;
             }
         }
 
