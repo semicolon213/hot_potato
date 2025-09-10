@@ -1698,13 +1698,12 @@ async function verifyAdminKey(inputKey) {
       console.log('레이어 목록:', layers);
       
       // 저장된 키를 레이어 순서의 역순으로 복호화하여 원본 키 추출
-      const baseKey = `ADMIN_${new Date().toISOString().split('T')[0]}_${Math.random().toString(36).substring(2, 15)}`;
       let decryptedKey = storedKey;
       
-      // 레이어 순서의 역순으로 복호화 적용
+      // 레이어 순서의 역순으로 복호화 적용 (baseKey 없이)
       for (let i = layers.length - 1; i >= 0; i--) {
         const layer = layers[i].trim();
-        decryptedKey = applyDecryption(decryptedKey, layer, baseKey);
+        decryptedKey = applyDecryption(decryptedKey, layer, '');
       }
       
       console.log('복호화된 저장된 키:', decryptedKey.substring(0, 20) + '...');
@@ -1764,13 +1763,10 @@ async function getDecryptedAdminKey() {
       const layers = layersUsed.split(',');
       console.log('레이어 목록:', layers);
       
-      // 저장된 키를 레이어 순서의 역순으로 복호화하여 원본 키 추출
-      const baseKey = `ADMIN_${new Date().toISOString().split('T')[0]}_${Math.random().toString(36).substring(2, 15)}`;
-      
-      // 레이어 순서의 역순으로 복호화 적용
+      // 레이어 순서의 역순으로 복호화 적용 (baseKey 없이)
       for (let i = layers.length - 1; i >= 0; i--) {
         const layer = layers[i].trim();
-        decryptedKey = applyDecryption(decryptedKey, layer, baseKey);
+        decryptedKey = applyDecryption(decryptedKey, layer, '');
       }
       
       console.log('복호화된 키:', decryptedKey.substring(0, 20) + '...');
@@ -2646,7 +2642,7 @@ async function handleSendAdminKeyEmail(req, res) {
         const layers = layersUsed.split(',');
         console.log('레이어 목록:', layers);
         
-        // 레이어 순서의 역순으로 복호화 적용
+        // 레이어 순서의 역순으로 복호화 적용 (baseKey 없이)
         for (let i = layers.length - 1; i >= 0; i--) {
           const layer = layers[i].trim();
           console.log(`복호화 레이어 ${i}: ${layer}`);

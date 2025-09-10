@@ -75,6 +75,9 @@
 .login-logo {
   width: 60px;
   height: 60px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
   margin: 0 auto 0.75rem;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -497,13 +500,141 @@
   }
 }
 
-@media (max-width: 480px) {
+/* 가입 버튼 */
+.register-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  margin-top: 1rem;
+}
+
+.register-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.register-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 0.5rem;
+  }
+  
   .login-card {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1rem;
+    margin: 0;
+    max-width: 90vw;
   }
   
   .login-header h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
+  }
+  
+  .login-header p {
+    font-size: 0.875rem;
+  }
+  
+  .login-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .google-login-fallback-btn {
+    height: 48px;
+    font-size: 1rem;
+  }
+  
+  .user-info h2 {
+    font-size: 1.125rem;
+  }
+  
+  .user-email {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .input-group input {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .admin-key-input-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .verify-btn {
+    width: 100%;
+    padding: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1rem 0.75rem;
+    max-width: 95vw;
+  }
+  
+  .login-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .login-header p {
+    font-size: 0.8rem;
+  }
+  
+  .login-logo {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .google-login-fallback-btn {
+    height: 44px;
+    font-size: 0.9rem;
+  }
+  
+  .user-info h2 {
+    font-size: 1rem;
+  }
+  
+  .user-email {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .input-group input {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .form-group label {
+    font-size: 0.8rem;
+  }
+  
+  .checkbox-text {
+    font-size: 0.8rem;
+  }
+  
+  .register-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
   
   .google-login-button > div {
