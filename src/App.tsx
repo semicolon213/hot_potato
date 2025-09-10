@@ -420,12 +420,22 @@ const App: React.FC = () => {
 
   const addTemplate = async (newDocData: { title: string; description: string; tag: string; }) => {
     try {
+      // 1. Create a new Google Doc
+      const doc = await (window as any).gapi.client.docs.documents.create({
+        title: newDocData.title,
+      });
+
+      const documentId = doc.result.documentId;
+      console.log(`Created new Google Doc with ID: ${documentId}`);
+
+      // 2. Add a new row to the Google Sheet with the documentId
       const newRowData = [
         '', // A column - empty
         newDocData.title, // B column
         newDocData.description, // C column
         newDocData.tag, // D column
         '', // E column - empty
+        documentId, // F column - documentId
       ];
 
       await (window as any).gapi.client.sheets.spreadsheets.values.append({
@@ -440,13 +450,17 @@ const App: React.FC = () => {
 
       console.log('Template saved to Google Sheets successfully');
 
-      // Refresh templates from Google Sheets to get the latest data
+      // 3. Store the documentId in localStorage
+      const newStorageKey = `template_doc_id_${newDocData.title}`;
+      localStorage.setItem(newStorageKey, documentId);
+
+      // 4. Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();
 
       alert('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
-      console.error('Error saving document to Google Sheet:', error);
-      alert('문서 저장 중 오류가 발생했습니다.');
+      console.error('Error creating document or saving to sheet:', error);
+      alert('문서 생성 또는 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -510,14 +524,18 @@ const App: React.FC = () => {
     }
   };
 
-  const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }) => {
+  const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => {
     try {
+      const originalTemplate = customTemplates.find(t => t.rowIndex === rowIndex);
+      const documentId = originalTemplate ? originalTemplate.documentId : '';
+
       const newRowData = [
         '', // A column - empty
         newDocData.title, // B column
         newDocData.description, // C column
         newDocData.tag, // D column
         '', // E column - empty
+        documentId // F column - documentId
       ];
 
       await (window as any).gapi.client.sheets.spreadsheets.values.update({
@@ -530,6 +548,17 @@ const App: React.FC = () => {
       });
 
       console.log('Template updated in Google Sheets successfully');
+
+      // Migrate localStorage
+      if (oldTitle && oldTitle !== newDocData.title) {
+        const oldStorageKey = `template_doc_id_${oldTitle}`;
+        const newStorageKey = `template_doc_id_${newDocData.title}`;
+        const docIdFromStorage = localStorage.getItem(oldStorageKey);
+        if (docIdFromStorage) {
+          localStorage.removeItem(oldStorageKey);
+          localStorage.setItem(newStorageKey, docIdFromStorage);
+        }
+      }
 
       // Refresh templates from Google Sheets to get the latest data
       await fetchTemplates();

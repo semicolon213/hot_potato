@@ -34,7 +34,7 @@ interface TemplatePageProps {
   deleteTag: (tagToDelete: string) => void;
   updateTag: (oldTag: string, newTag: string) => void;
   addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
-  updateTemplate: (rowIndex: number, newDocData: { title: string; description: string; tag: string; }) => void;
+  updateTemplate: (rowIndex: number, newDocData: { title: string; description:string; tag: string; }, oldTitle: string) => void;
 }
 
 export default function NewDocument({ 
@@ -126,6 +126,7 @@ export default function NewDocument({
     // Edit modal state
     const [showEditDocModal, setShowEditDocModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+    const [originalTemplate, setOriginalTemplate] = useState<Template | null>(null);
 
     // 새 문서 모달 제출 처리
     const handleNewDocSubmit = () => {
@@ -173,6 +174,7 @@ export default function NewDocument({
     };
     
     const handleEditClick = (template: Template) => {
+        setOriginalTemplate(template);
         setEditingTemplate(template);
         setShowEditDocModal(true);
     };
@@ -180,10 +182,11 @@ export default function NewDocument({
     const handleEditDocCancel = () => {
         setShowEditDocModal(false);
         setEditingTemplate(null);
+        setOriginalTemplate(null);
     };
 
     const handleUpdateDocSubmit = () => {
-        if (editingTemplate) {
+        if (editingTemplate && originalTemplate) {
             if (!editingTemplate.title.trim() || !editingTemplate.description.trim() || !editingTemplate.tag.trim()) {
                 alert("모든 필드를 입력해주세요.");
                 return;
@@ -192,7 +195,7 @@ export default function NewDocument({
                 title: editingTemplate.title,
                 description: editingTemplate.description,
                 tag: editingTemplate.tag,
-            });
+            }, originalTemplate.title);
             handleEditDocCancel();
         }
     };
