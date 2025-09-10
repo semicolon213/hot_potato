@@ -3,10 +3,12 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import "./index.css"; // Global styles and theme variables
 import "./components/PendingApproval.css"; // 승인 대기 화면 스타일
+import "./components/Login.css"; // 인증 관련 스타일
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { appendRow } from 'papyrus-db'; // Google Sheets API 접근용
-import Login from './components/Login';
-import AdminPanel from './components/AdminPanel';
+import Login from './components/auth/Login';
+import PendingApproval from './components/auth/PendingApproval';
+import Admin from './pages/Admin';
 
 import MyCalendarPage from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
@@ -92,10 +94,12 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
 
       const gapi = (window as any).gapi;
 
-      // 더 정확한 초기화 상태 확인
+      // 더 정확한 초기화 상태 확인 (Gmail API 포함)
       const isClientInitialized = gapi.client &&
         gapi.client.sheets &&
-        gapi.client.sheets.spreadsheets;
+        gapi.client.sheets.spreadsheets &&
+        gapi.client.gmail &&
+        gapi.client.gmail.users;
 
       if (isClientInitialized) {
         console.log("Google API가 이미 초기화되어 있습니다.");
@@ -144,11 +148,13 @@ const initializeGoogleAPIOnce = async (): Promise<void> => {
               clientId: GOOGLE_CLIENT_ID,
               discoveryDocs: [
                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
-                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                'https://gmail.googleapis.com/$discovery/rest?version=v1'
               ],
               scope: [
                 'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/drive.readonly'
+                'https://www.googleapis.com/auth/drive.readonly',
+                'https://www.googleapis.com/auth/gmail.send'
               ].join(' ')
             });
 
@@ -806,10 +812,13 @@ const App: React.FC = () => {
       }
     }
 
-    // 로그인된 사용자가 있을 때만 Google Sheets 데이터 로드
+    // 승인된 사용자만 Google Sheets 데이터 로드
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      initAndFetch();
+      const userData = JSON.parse(savedUser);
+      if (userData.isApproved) {
+        initAndFetch();
+      }
     }
   }, []);
 
@@ -818,12 +827,13 @@ const App: React.FC = () => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
 
-    // 로그인 성공 후 Google Sheets 데이터 로드
-    const initAndFetch = async () => {
-      try {
-        console.log("로그인 후 Google API 초기화 시작");
-        // 중앙화된 Google API 초기화 사용
-        await initializeGoogleAPIOnce();
+    // 승인된 사용자만 Google Sheets 데이터 로드
+    if (userData.isApproved) {
+      const initAndFetch = async () => {
+        try {
+          console.log("로그인 후 Google API 초기화 시작");
+          // 중앙화된 Google API 초기화 사용
+          await initializeGoogleAPIOnce();
 
         // Find the announcement spreadsheet ID by name
         try {
@@ -928,7 +938,8 @@ const App: React.FC = () => {
         }, 1500);
       }
     }
-    initAndFetch();
+      initAndFetch();
+    }
   };
 
   useEffect(() => {
@@ -1013,7 +1024,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard isAuthenticated={!!user} isGapiReady={isGapiReady} />;
       case 'admin':
-        return <AdminPanel />;
+        return <Admin />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':
@@ -1035,25 +1046,9 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
-  // 승인되지 않은 사용자 (feature/login 방식)
+  // 승인되지 않은 사용자 (feature/login 방식) - Google API 초기화하지 않음
   if (!user.isApproved) {
-    return (
-        <div className="pending-approval">
-          <div className="pending-card">
-            <h2>승인 대기 중</h2>
-            <p>관리자 승인을 기다리고 있습니다.</p>
-            <div className="user-info">
-              <p><strong>이름:</strong> {user.name}</p>
-              <p><strong>이메일:</strong> {user.email}</p>
-              <p><strong>학번/교번:</strong> {user.studentId}</p>
-              <p><strong>구분:</strong> {user.isAdmin ? '관리자 요청' : '일반 사용자'}</p>
-            </div>
-            <button onClick={handleLogout} className="logout-btn">
-              로그아웃
-            </button>
-          </div>
-        </div>
-    );
+    return <PendingApproval user={user} onLogout={handleLogout} />;
   }
 
   // 승인된 사용자 - develop의 레이아웃과 디자인 유지
