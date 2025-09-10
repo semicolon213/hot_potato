@@ -180,9 +180,6 @@ function rot13(text) {
 }
 
 // ROT13 복호화: ROT13은 암호화와 복호화가 동일
-function rot13Decrypt(text) {
-  return rot13(text);
-}
 
 // 비트 시프트: ASCII 코드를 일정 값만큼 이동
 function bitShift(text, shift) {
@@ -1600,6 +1597,113 @@ async function findHpMemberSheet(auth) {
   }
 }
 
+// ===== ROT13 암호화/복호화 함수들 =====
+// 기존 rot13 함수를 사용하여 암호화/복호화
+function rot13Encrypt(text) {
+  if (!text) return text;
+  return rot13(text);
+}
+
+// ROT13 복호화 함수 (ROT13은 암호화와 복호화가 동일)
+function rot13Decrypt(text) {
+  if (!text) return text;
+  return rot13(text);
+}
+
+// 기존 데이터 마이그레이션 함수 - 평문 이메일을 ROT13으로 암호화
+async function migrateExistingEmails() {
+  try {
+    console.log('기존 이메일 데이터 마이그레이션 시작');
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    // user 시트에서 모든 사용자 조회
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z'
+    });
+    
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      console.log('마이그레이션할 데이터가 없습니다.');
+      return { success: true, migrated: 0 };
+    }
+    
+    let migratedCount = 0;
+    
+    // 헤더 행 제외하고 데이터 검색
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const userEmail = row[3]; // google_member 컬럼 (D열)
+      
+      // 이메일이 있고, 이미 암호화되지 않은 경우 (암호화된 이메일은 @ 앞에 특정 패턴이 있음)
+      if (userEmail && userEmail.trim() !== '' && !isEncryptedEmail(userEmail)) {
+        const encryptedEmail = rot13Encrypt(userEmail);
+        
+        // D열(google_member) 업데이트
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `user!D${i + 1}`,
+          valueInputOption: 'RAW',
+          resource: { 
+            values: [[encryptedEmail]]
+          }
+        });
+        
+        console.log(`마이그레이션 완료: ${userEmail} -> ${encryptedEmail}`);
+        migratedCount++;
+      }
+    }
+    
+    console.log(`마이그레이션 완료: 총 ${migratedCount}개 이메일 암호화`);
+    return { success: true, migrated: migratedCount };
+    
+  } catch (error) {
+    console.error('이메일 마이그레이션 실패:', error);
+    throw new Error('이메일 마이그레이션 중 오류가 발생했습니다.');
+  }
+}
+
+// 이메일이 이미 암호화되었는지 확인하는 함수
+function isEncryptedEmail(email) {
+  // ROT13으로 암호화된 이메일은 일반적인 이메일 패턴과 다름
+  // 예: test@example.com -> grfg@rknzcyr.pbz
+  // 간단한 체크: @ 앞뒤로 알파벳이 ROT13 패턴인지 확인
+  if (!email || !email.includes('@')) return false;
+  
+  const [localPart, domain] = email.split('@');
+  // ROT13으로 암호화된 경우, 일반적인 이메일 도메인(.com, .org 등)이 .pbz, .bet 등으로 변환됨
+  return domain.includes('.pbz') || domain.includes('.bet') || domain.includes('.net') || 
+         domain.includes('.org') || domain.includes('.gov') || domain.includes('.edu');
+}
+
+// ROT13 암호화/복호화 테스트 함수
+function testRot13Encryption() {
+  const testEmails = [
+    'test@example.com',
+    'user@gmail.com',
+    'admin@hotpotato.org',
+    'student@university.edu'
+  ];
+  
+  const results = testEmails.map(email => {
+    const encrypted = rot13Encrypt(email);
+    const decrypted = rot13Decrypt(encrypted);
+    return {
+      original: email,
+      encrypted: encrypted,
+      decrypted: decrypted,
+      isReversible: email === decrypted
+    };
+  });
+  
+  return {
+    success: true,
+    testResults: results,
+    allTestsPassed: results.every(r => r.isReversible)
+  };
+}
+
 // ===== 시간 관련 함수들 =====
 // 한국 표준시(KST) 가져오기
 function getKSTTime() {
@@ -1986,12 +2090,13 @@ async function checkUserApprovalStatus(email) {
       const row = rows[i];
       console.log(`행 ${i} 데이터:`, row);
       
-      const userEmail = row[3]; // google_member 컬럼 (D열)
+      const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
+      const userEmail = rot13Decrypt(encryptedUserEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // Approval 컬럼 (E열)
       const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
       
-      console.log(`행 ${i} - 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}`);
+      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, 복호화된 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}`);
 
       if (userEmail === email) {
         const isApproved = approvalStatus === 'O';
@@ -2053,7 +2158,8 @@ async function handleGetPendingUsers(req, res) {
       const studentId = row[0]; // A열: 학번/교번
       const active = row[1]; // B열: 활성화 상태
       const name = row[2]; // C열: 이름
-      const email = row[3]; // D열: Google 계정 이메일
+      const encryptedEmail = row[3]; // D열: Google 계정 이메일 (암호화됨)
+      const email = rot13Decrypt(encryptedEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // E열: 승인 상태
       const isAdmin = row[5]; // F열: 관리자 여부
       const approvalDate = row[6]; // G열: 승인 날짜
@@ -2306,13 +2412,14 @@ async function checkUserRegistrationStatus(email) {
       const row = rows[i];
       console.log(`행 ${i} 데이터:`, row);
       
-      const userEmail = row[3]; // google_member 컬럼 (D열)
+      const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
+      const userEmail = rot13Decrypt(encryptedUserEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // Approval 컬럼 (E열)
       const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
       const name = row[2]; // name_member 컬럼 (C열)
       
-      console.log(`행 ${i} - 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
+      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, 복호화된 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
 
       if (userEmail === email) {
         const isApproved = approvalStatus === 'O';
@@ -2399,12 +2506,14 @@ async function addUserRegistrationRequest(userData) {
     const isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
     
     // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
+    // 이메일 주소를 ROT13으로 암호화하여 저장
+    const encryptedEmail = rot13Encrypt(userData.userEmail);
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `user!D${userRowIndex}:F${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [[userData.userEmail, approvalStatus, isAdminStatus]]
+        values: [[encryptedEmail, approvalStatus, isAdminStatus]]
       }
     });
     
@@ -2417,8 +2526,8 @@ async function addUserRegistrationRequest(userData) {
 }
 
 // ===== Cloud Functions Export =====
-// 테스트 엔드포인트
-exports.testDecryption = async (req, res) => {
+// ROT13 암호화/복호화 테스트 엔드포인트
+exports.testRot13Encryption = async (req, res) => {
   setCorsHeaders(res);
   
   if (req.method === 'OPTIONS') {
@@ -2427,8 +2536,8 @@ exports.testDecryption = async (req, res) => {
   }
   
   try {
-    console.log('복호화 테스트 시작');
-    const result = testDecryption();
+    console.log('ROT13 암호화/복호화 테스트 시작');
+    const result = testRot13Encryption();
     
     res.status(200).json({
       success: true,
@@ -2436,6 +2545,33 @@ exports.testDecryption = async (req, res) => {
     });
   } catch (error) {
     console.error('테스트 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// 이메일 마이그레이션 엔드포인트
+exports.migrateEmails = async (req, res) => {
+  setCorsHeaders(res);
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  try {
+    console.log('이메일 마이그레이션 요청 시작');
+    const result = await migrateExistingEmails();
+    
+    res.status(200).json({
+      success: true,
+      message: `마이그레이션 완료: ${result.migrated}개 이메일 암호화`,
+      migrated: result.migrated
+    });
+  } catch (error) {
+    console.error('마이그레이션 실패:', error);
     res.status(500).json({
       success: false,
       error: error.message
