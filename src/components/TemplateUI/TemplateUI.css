@@ -252,6 +252,42 @@ margin-left: 0;
     border-color: var(--primary);
 }
 
+.new-template-card:hover .delete-template-button,
+.new-template-card:hover .edit-template-button {
+    opacity: 1; /* Show on hover */
+}
+
+.edit-template-button {
+    position: absolute;
+    top: 12px;
+    right: 48px; /* Position to the left of the delete button */
+    width: 28px;
+    height: 28px;
+    background-color: rgba(0, 0, 0, 0.1);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    opacity: 0; /* Hidden by default */
+    transition: all 0.2s;
+}
+
+.edit-template-button:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.edit-template-button svg {
+    width: 14px; /* Slightly smaller icon */
+    height: 14px;
+    color: #fff;
+}
+
 .delete-template-button {
     position: absolute;
     top: 12px;
@@ -270,10 +306,6 @@ margin-left: 0;
     line-height: 1;
     opacity: 0; /* Hidden by default */
     transition: all 0.2s;
-}
-
-.new-template-card:hover .delete-template-button {
-    opacity: 1; /* Show on hover */
 }
 
 .delete-template-button:hover {

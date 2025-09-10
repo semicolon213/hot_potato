@@ -484,6 +484,37 @@ const App: React.FC = () => {
     }
   };
 
+  const updateTemplate = async (rowIndex: number, newDocData: { title: string; description: string; tag: string; }) => {
+    try {
+      const newRowData = [
+        '', // A column - empty
+        newDocData.title, // B column
+        newDocData.description, // C column
+        newDocData.tag, // D column
+        '', // E column - empty
+      ];
+
+      await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `document_template!A${rowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+          values: [newRowData],
+        },
+      });
+
+      console.log('Template updated in Google Sheets successfully');
+
+      // Refresh templates from Google Sheets to get the latest data
+      await fetchTemplates();
+
+      alert('문서가 성공적으로 수정되었습니다.');
+    } catch (error) {
+      console.error('Error updating document in Google Sheet:', error);
+      alert('문서 수정 중 오류가 발생했습니다.');
+    }
+  };
+
   const fetchPosts = async () => {
     if (!boardSpreadsheetId) return;
     setIsBoardLoading(true);
@@ -993,7 +1024,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
         );
       case "calendar":
         return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />;

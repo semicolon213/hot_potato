@@ -34,6 +34,7 @@ interface TemplatePageProps {
   deleteTag: (tagToDelete: string) => void;
   updateTag: (oldTag: string, newTag: string) => void;
   addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
+  updateTemplate: (rowIndex: number, newDocData: { title: string; description: string; tag: string; }) => void;
 }
 
 export default function NewDocument({ 
@@ -44,7 +45,8 @@ export default function NewDocument({
     addTag, 
     deleteTag, 
     updateTag, 
-    addTemplate
+    addTemplate,
+    updateTemplate
 }: TemplatePageProps) {
     
     // Lifted state for global search and filter
@@ -122,6 +124,10 @@ export default function NewDocument({
         tag: ""
     });
 
+    // Edit modal state
+    const [showEditDocModal, setShowEditDocModal] = useState(false);
+    const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+
     const resetFilters = () => {
         setSearchTerm("");
         setActiveTab("전체");
@@ -162,6 +168,40 @@ export default function NewDocument({
             ...prev,
             [field]: value
         }));
+    };
+
+    const handleEditInputChange = (field: string, value: string) => {
+        if (editingTemplate) {
+            setEditingTemplate({
+                ...editingTemplate,
+                [field]: value,
+            });
+        }
+    };
+    
+    const handleEditClick = (template: Template) => {
+        setEditingTemplate(template);
+        setShowEditDocModal(true);
+    };
+
+    const handleEditDocCancel = () => {
+        setShowEditDocModal(false);
+        setEditingTemplate(null);
+    };
+
+    const handleUpdateDocSubmit = () => {
+        if (editingTemplate) {
+            if (!editingTemplate.title.trim() || !editingTemplate.description.trim() || !editingTemplate.tag.trim()) {
+                alert("모든 필드를 입력해주세요.");
+                return;
+            }
+            updateTemplate(editingTemplate.rowIndex!, {
+                title: editingTemplate.title,
+                description: editingTemplate.description,
+                tag: editingTemplate.tag,
+            });
+            handleEditDocCancel();
+        }
     };
 
     // --- Filtering Logic ---
@@ -236,6 +276,7 @@ export default function NewDocument({
                                             template={template}
                                             onUse={onUseTemplate}
                                             onDelete={() => {}} // No delete for default templates
+                                            onEdit={() => {}} // No edit for default templates
                                             isFixed={true}
                                             defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                         />
@@ -280,6 +321,7 @@ export default function NewDocument({
                                         templates={filteredCustomTemplates}
                                         onUseTemplate={onUseTemplate}
                                         onDeleteTemplate={deleteTemplate}
+                                        onEditTemplate={handleEditClick} // Pass the handler here
                                         defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                     />
                                 </SortableContext>
@@ -345,6 +387,64 @@ export default function NewDocument({
                             </button>
                             <button className="modal-button confirm" onClick={handleNewDocSubmit}>
                                 확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Document Modal */}
+            {showEditDocModal && editingTemplate && (
+                <div className="modal-overlay" onClick={handleEditDocCancel}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>문서 수정</h2>
+                            <button className="modal-close" onClick={handleEditDocCancel}>
+                                &times;
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label htmlFor="edit-doc-title">제목</label>
+                                <input
+                                    id="edit-doc-title"
+                                    type="text"
+                                    className="modal-input"
+                                    value={editingTemplate.title}
+                                    onChange={(e) => handleEditInputChange("title", e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="edit-doc-description">상세정보</label>
+                                <textarea
+                                    id="edit-doc-description"
+                                    className="modal-textarea"
+                                    value={editingTemplate.description}
+                                    onChange={(e) => handleEditInputChange("description", e.target.value)}
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="edit-doc-tag">태그</label>
+                                <select
+                                    id="edit-doc-tag"
+                                    className="modal-input"
+                                    value={editingTemplate.tag}
+                                    onChange={(e) => handleEditInputChange("tag", e.target.value)}
+                                >
+                                    {orderedTags.map(tag => (
+                                        <option key={tag} value={tag}>{tag}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="modal-button cancel" onClick={handleEditDocCancel}>
+                                취소
+                            </button>
+                            <button className="modal-button confirm" onClick={handleUpdateDocSubmit}>
+                                저장
                             </button>
                         </div>
                     </div>
