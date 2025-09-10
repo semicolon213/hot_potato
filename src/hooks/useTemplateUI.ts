@@ -29,8 +29,7 @@ export function useTemplateUI(
     templates: Template[], 
     onPageChange: (pageName: string) => void,
     searchTerm: string,
-    activeTab: string,
-    filterOption: string // filterOption을 인자로 받습니다.
+    activeTab: string
 ) {
     
 
@@ -47,14 +46,8 @@ export function useTemplateUI(
                 (t) => t.title.includes(searchTerm) || t.description.includes(searchTerm)
             );
 
-        // 3) 정렬 옵션
-        if (filterOption === "이름순") {
-            result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-        }
-        // "자주 사용", "최신순" 등은 별도 정렬 로직 필요시 추가
-
         return result;
-    }, [templates, searchTerm, filterOption, activeTab]);
+    }, [templates, searchTerm, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = useCallback((type: string, title: string) => {

@@ -52,7 +52,6 @@ export default function NewDocument({
     // Lifted state for global search and filter
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("전체");
-    const [filterOption, setFilterOption] = useState("자주 사용");
 
     const [defaultTemplateItems, setDefaultTemplateItems] = useState(defaultTemplates);
     const [customTemplateItems, setCustomTemplateItems] = useState(customTemplates);
@@ -127,12 +126,6 @@ export default function NewDocument({
     // Edit modal state
     const [showEditDocModal, setShowEditDocModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-
-    const resetFilters = () => {
-        setSearchTerm("");
-        setActiveTab("전체");
-        setFilterOption("자주 사용");
-    };
 
     // 새 문서 모달 제출 처리
     const handleNewDocSubmit = () => {
@@ -221,7 +214,7 @@ export default function NewDocument({
     const { 
         filteredTemplates: filteredCustomTemplates, 
         onUseTemplate 
-    } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab, filterOption);
+    } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
     const orderedTags = useMemo(() => {
@@ -238,9 +231,6 @@ export default function NewDocument({
             <SearchBar
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
-                filterOption={filterOption}
-                setFilterOption={setFilterOption}
-                reset={resetFilters}
             />
             <CategoryTabs 
                 activeTab={activeTab} 
