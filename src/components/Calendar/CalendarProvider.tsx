@@ -1,10 +1,14 @@
-  import React, { useState, useMemo, useEffect, type ReactNode } from "react";
+import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
 
 interface CalendarProviderProps {
   children: ReactNode;
   accessToken: string | null;
   selectedRole: string;
+  sheetEvents: Event[];
+  addSheetEvent: (event: Omit<Event, 'id'>) => Promise<void>;
+  updateSheetEvent: (eventId: string, event: Omit<Event, 'id'>) => Promise<void>;
+  deleteSheetEvent: (eventId: string) => Promise<void>;
 }
 
 const ROLE_PREFIX_MAP: { [key: string]: string[] } = {
@@ -13,7 +17,15 @@ const ROLE_PREFIX_MAP: { [key: string]: string[] } = {
   'student': ['03'],
 };
 
-const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessToken, selectedRole }) => {
+const CalendarProvider: React.FC<CalendarProviderProps> = ({ 
+  children, 
+  accessToken, 
+  selectedRole, 
+  sheetEvents, 
+  addSheetEvent, 
+  updateSheetEvent, 
+  deleteSheetEvent 
+}) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
@@ -143,7 +155,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
       return [];
     }
 
-    return googleEvents
+    const combinedEvents = [...googleEvents, ...sheetEvents];
+
+    return combinedEvents
       .map(event => ({
         ...event,
         color: (eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB'),
@@ -157,7 +171,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
         }
         return false;
       });
-  }, [googleEvents, selectedRole, eventColors, calendarColor]);
+  }, [googleEvents, sheetEvents, selectedRole, eventColors, calendarColor]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -229,7 +243,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
   };
 
   const addEvent = (event: Omit<Event, 'id'>) => {
-    addGoogleEvent(event);
+    addSheetEvent(event);
   };
 
   const updateGoogleEvent = async (eventId: string, event: Omit<Event, 'id'>) => {
@@ -274,7 +288,11 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
   };
 
   const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
-    updateGoogleEvent(eventId, event);
+    if (eventId.startsWith('cal-')) {
+      updateSheetEvent(eventId, event);
+    } else {
+      updateGoogleEvent(eventId, event);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -309,7 +327,11 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({ children, accessTok
   };
 
   const deleteEvent = (id: string) => {
-    deleteGoogleEvent(id);
+    if (id.startsWith('cal-')) {
+      deleteSheetEvent(id);
+    } else {
+      deleteGoogleEvent(id);
+    }
     setSelectedEvent(null);
   };
 

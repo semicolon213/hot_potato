@@ -34,62 +34,62 @@ let googleAPIInitPromise: Promise<void> | null = null;
 
 // gapi 초기화 상태 리셋 함수 (새로고침 시 호출)
 const resetGoogleAPIState = () => {
-  console.log("Google API 상태 리셋");
-  isGoogleAPIInitialized = false;
-  googleAPIInitPromise = null;
+    console.log("Google API 상태 리셋");
+    isGoogleAPIInitialized = false;
+    googleAPIInitPromise = null;
 };
 
 // 페이지 로드 시 상태 리셋
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', resetGoogleAPIState);
+    window.addEventListener('beforeunload', resetGoogleAPIState);
 }
 
 // 직접 구현한 Google API 초기화 함수
-const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null): Promise<void> => {
-  // 이미 초기화되었으면 바로 반환
-  if (isGoogleAPIInitialized) {
-    return;
-  }
+const initializeGoogleAPIOnce = async (): Promise<void> => {
+    // 이미 초기화되었으면 바로 반환
+    if (isGoogleAPIInitialized) {
+        return;
+    }
 
-  // 이미 초기화 중이면 기존 Promise 반환
-  if (googleAPIInitPromise) {
-    return googleAPIInitPromise;
-  }
+    // 이미 초기화 중이면 기존 Promise 반환
+    if (googleAPIInitPromise) {
+        return googleAPIInitPromise;
+    }
 
-  // 새로운 초기화 Promise 생성
-  googleAPIInitPromise = (async () => {
-    try {
-      console.log("Google API 초기화 시작 (직접 구현)");
+    // 새로운 초기화 Promise 생성
+    googleAPIInitPromise = (async () => {
+        try {
+            console.log("Google API 초기화 시작 (직접 구현)");
 
-      // gapi 스크립트가 로드될 때까지 대기 (더 빠른 체크)
-      const waitForGapi = (): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          let attempts = 0;
-          const maxAttempts = 30; // 3초로 더 단축
+            // gapi 스크립트가 로드될 때까지 대기 (더 빠른 체크)
+            const waitForGapi = (): Promise<void> => {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 30; // 3초로 더 단축
 
-          const checkGapi = () => {
-            attempts++;
+                    const checkGapi = () => {
+                        attempts++;
 
-            // gapiLoaded 플래그와 gapi 객체 모두 확인
-            if (typeof window !== 'undefined' &&
-                ((window as any).gapiLoaded || (window as any).gapi)) {
-              console.log("gapi 스크립트 로드 완료");
-              resolve();
-            } else if (attempts >= maxAttempts) {
-              reject(new Error("gapi 스크립트 로드 타임아웃"));
-            } else {
-              // 더 빠른 체크 간격 (100ms)
-              setTimeout(checkGapi, 100);
-            }
-          };
+                        // gapiLoaded 플래그와 gapi 객체 모두 확인
+                        if (typeof window !== 'undefined' &&
+                            ((window as any).gapiLoaded || (window as any).gapi)) {
+                            console.log("gapi 스크립트 로드 완료");
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            reject(new Error("gapi 스크립트 로드 타임아웃"));
+                        } else {
+                            // 더 빠른 체크 간격 (100ms)
+                            setTimeout(checkGapi, 100);
+                        }
+                    };
 
-          checkGapi();
-        });
-      };
+                    checkGapi();
+                });
+            };
 
-      await waitForGapi();
+            await waitForGapi();
 
-      const gapi = (window as any).gapi;
+            const gapi = (window as any).gapi;
 
       // 더 정확한 초기화 상태 확인 (Gmail API 포함)
       const isClientInitialized = gapi.client &&
@@ -98,17 +98,17 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
         gapi.client.gmail &&
         gapi.client.gmail.users;
 
-      if (isClientInitialized) {
-        console.log("Google API가 이미 초기화되어 있습니다.");
+            if (isClientInitialized) {
+                console.log("Google API가 이미 초기화되어 있습니다.");
 
-        // 새로고침 시 저장된 토큰 복원 시도
-        const savedToken = localStorage.getItem('googleAccessToken');
-        if (savedToken) {
-          console.log("저장된 토큰을 gapi client에 복원 시도");
-          try {
-            // gapi client에 토큰 설정
-            gapi.client.setToken({ access_token: savedToken });
-            console.log("토큰 복원 성공");
+                // 새로고침 시 저장된 토큰 복원 시도
+                const savedToken = localStorage.getItem('googleAccessToken');
+                if (savedToken) {
+                    console.log("저장된 토큰을 gapi client에 복원 시도");
+                    try {
+                        // gapi client에 토큰 설정
+                        gapi.client.setToken({ access_token: savedToken });
+                        console.log("토큰 복원 성공");
 
             // 토큰 유효성 검증 (더 빠른 방법)
             try {
@@ -131,17 +131,17 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
           }
         }
 
-        isGoogleAPIInitialized = true;
-        return;
-      }
+                isGoogleAPIInitialized = true;
+                return;
+            }
 
-      console.log("Google API Client Library 초기화 중...");
+            console.log("Google API Client Library 초기화 중...");
 
-      // Google API Client Library 초기화
-      await new Promise<void>((resolve, reject) => {
-        gapi.load('client:auth2', async () => {
-          try {
-            console.log("gapi.load 완료, client.init 시작...");
+            // Google API Client Library 초기화
+            await new Promise<void>((resolve, reject) => {
+                gapi.load('client:auth2', async () => {
+                    try {
+                        console.log("gapi.load 완료, client.init 시작...");
 
             await gapi.client.init({
               clientId: GOOGLE_CLIENT_ID,
@@ -162,16 +162,16 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
               ].join(' ')
             });
 
-            console.log("Google API Client Library 초기화 성공!");
+                        console.log("Google API Client Library 초기화 성공!");
 
-            // 새로고침 시 저장된 토큰 복원 시도
-            const savedToken = localStorage.getItem('googleAccessToken');
-            if (savedToken) {
-              console.log("저장된 토큰을 gapi client에 복원 시도");
-              try {
-                // gapi client에 토큰 설정
-                gapi.client.setToken({ access_token: savedToken });
-                console.log("토큰 복원 성공");
+                        // 새로고침 시 저장된 토큰 복원 시도
+                        const savedToken = localStorage.getItem('googleAccessToken');
+                        if (savedToken) {
+                            console.log("저장된 토큰을 gapi client에 복원 시도");
+                            try {
+                                // gpi client에 토큰 설정
+                                gapi.client.setToken({ access_token: savedToken });
+                                console.log("토큰 복원 성공");
 
                 // 토큰 유효성 검증 (더 빠른 방법)
                 try {
@@ -194,25 +194,36 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
               }
             }
 
-            isGoogleAPIInitialized = true;
-            resolve();
-          } catch (error) {
-            console.error("Google API Client Library 초기화 실패:", error);
-            reject(error);
-          }
-        });
-      });
+                        isGoogleAPIInitialized = true;
+                        resolve();
+                    } catch (error) {
+                        console.error("Google API Client Library 초기화 실패:", error);
+                        reject(error);
+                    }
+                });
+            });
 
-    } catch (error) {
-      console.error("Google API 초기화 실패:", error);
-      isGoogleAPIInitialized = false;
-      googleAPIInitPromise = null;
-      throw error;
-    }
-  })();
+        } catch (error) {
+            console.error("Google API 초기화 실패:", error);
+            isGoogleAPIInitialized = false;
+            googleAPIInitPromise = null;
+            throw error;
+        }
+    })();
 
-  return googleAPIInitPromise;
+    return googleAPIInitPromise;
 };
+
+export interface Event {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  colorId: string;
+  startDateTime: string;
+  endDateTime: string;
+}
 
 // Post interface shared between Board and App
 export interface Post {
@@ -225,14 +236,25 @@ export interface Post {
   contentPreview: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  colorId: string;
+  startDateTime: string;
+  endDateTime: string;
+}
+
 // User interface from feature/login
-interface User {
-  email: string;
-  name: string;
-  studentId: string;
-  isAdmin: boolean;
-  isApproved: boolean;
-  accessToken?: string; // accessToken을 포함하도록 수정
+export interface User {
+    email: string;
+    name: string;
+    studentId: string;
+    isAdmin: boolean;
+    isApproved: boolean;
+    accessToken?: string; // accessToken을 포함하도록 수정
 }
 
 type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings';
@@ -243,16 +265,16 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGapiReady, setIsGapiReady] = useState(false);
 
-  // Original app state (from develop)
-  const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
-  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+    // Original app state (from develop)
+    const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
+    const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+    const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
+    const [tags, setTags] = useState<string[]>([]);
 
-  // State for Board
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
-  const [isBoardLoading, setIsBoardLoading] = useState(false);
+    // State for Board
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
+    const [isBoardLoading, setIsBoardLoading] = useState(false);
 
   // State for Announcements
   const [announcements, setAnnouncements] = useState<Post[]>([]);
@@ -262,23 +284,29 @@ const App: React.FC = () => {
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
   const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
+    const [calendarSpreadsheetId, setCalendarSpreadsheetId] = useState<string | null>(null);
+
+    // State for Calendar
+    const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
+    const [isCalendarLoading, setIsCalendarLoading] = useState(false);
 
   // SHEET_ID는 상수로 정의됨
   const boardSheetName = '시트1';
   const announcementSheetName = '시트1';
+    const calendarSheetName = '시트1';
 
   const deleteTag = (tagToDelete: string) => {
     if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
       return;
     }
 
-    // Optimistic UI update
-    const oldTemplates = customTemplates;
-    const oldTags = tags;
+        // Optimistic UI update
+        const oldTemplates = customTemplates;
+        const oldTags = tags;
 
-    setTags(tags.filter(tag => tag !== tagToDelete));
-    setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
-    alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+        setTags(tags.filter(tag => tag !== tagToDelete));
+        setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
+        alert(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
 
     // Background sheet update
     const deleteFromSheet = async () => {
@@ -765,16 +793,107 @@ const App: React.FC = () => {
     }
   };
 
-  // 로그인 상태 확인 (from feature/login)
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    const savedToken = localStorage.getItem('googleAccessToken');
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setGoogleAccessToken(savedToken);
-    }
-    setIsLoading(false);
-  }, []);
+    const fetchCalendarEvents = async () => {
+        if (!calendarSpreadsheetId) return;
+        setIsCalendarLoading(true);
+        try {
+          const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: calendarSpreadsheetId,
+            range: `${calendarSheetName}!A:H`,
+          });
+
+          const data = response.result.values;
+          if (data && data.length > 1) {
+            const parsedEvents: Event[] = data.slice(1).map((row: string[]) => {
+              const startDate = row[2] || '';
+              let endDate = row[3] || '';
+              const startDateTime = row[6] || '';
+
+              // If it's an all-day event and start/end are the same, make endDate exclusive
+              if (startDate && startDate === endDate && !startDateTime) {
+                const date = new Date(endDate);
+                date.setDate(date.getDate() + 1);
+                endDate = date.toISOString().split('T')[0];
+              }
+
+              return {
+                id: row[0] || '',
+                title: row[1] || '',
+                startDate: startDate,
+                endDate: endDate,
+                description: row[4] || '',
+                colorId: row[5] || '',
+                startDateTime: startDateTime,
+                endDateTime: row[7] || '',
+              };
+            });
+            setCalendarEvents(parsedEvents);
+            console.log('Loaded calendar events:', parsedEvents);
+          } else {
+            setCalendarEvents([]);
+          }
+        } catch (error) {
+          console.error('Error fetching calendar events from Google Sheet:', error);
+          alert('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
+        } finally {
+          setIsCalendarLoading(false);
+        }
+      };
+
+      const addCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
+        if (!calendarSpreadsheetId) {
+          alert('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
+          return;
+        }
+        try {
+          const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: calendarSpreadsheetId,
+            range: `${calendarSheetName}!A:A`,
+          });
+
+          const lastRow = response.result.values ? response.result.values.length : 0;
+          const newEventId = `cal-${lastRow + 1}`;
+
+          const newEventForSheet = {
+            'id_calendar': newEventId,
+            'title_calendar': eventData.title,
+            'startDate_calendar': eventData.startDate,
+            'endDate_calendar': eventData.endDate,
+            'description_calendar': eventData.description,
+            'colorId_calendar': eventData.colorId,
+            'startDateTime_calendar': eventData.startDateTime,
+            'endDateTime_calendar': eventData.endDateTime,
+          };
+
+          await appendRow(calendarSpreadsheetId, calendarSheetName, newEventForSheet);
+          await fetchCalendarEvents(); // Refetch calendar events after adding a new one
+          alert('일정이 성공적으로 추가되었습니다.');
+        } catch (error) {
+          console.error('Error saving calendar event to Google Sheet:', error);
+          alert('일정 저장 중 오류가 발생했습니다.');
+        }
+      };
+
+      const updateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
+        console.log("Updating event", eventId, eventData);
+        alert("일정 수정 기능은 아직 구현되지 않았습니다.");
+      };
+
+      const deleteCalendarEvent = async (eventId: string) => {
+        console.log("Deleting event", eventId);
+        alert("일정 삭제 기능은 아직 구현되지 않았습니다.");
+      };
+
+    // 로그인 상태 확인 (from feature/login)
+    useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        const savedToken = localStorage.getItem('googleAccessToken');
+        if (savedUser && savedToken) {
+            setUser(JSON.parse(savedUser));
+            setGoogleAccessToken(savedToken);
+        }
+        setIsLoading(false);
+    }, []);
 
   useEffect(() => {
     const storedAccessToken = localStorage.getItem('googleAccessToken');
@@ -794,7 +913,7 @@ const App: React.FC = () => {
     const initAndFetch = async () => {
       try {
         console.log("새로고침 후 Google API 초기화 시작");
-        await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
+        await initializeGoogleAPIOnce();
 
         // Find the announcement spreadsheet ID by name
         try {
@@ -1146,7 +1265,14 @@ const App: React.FC = () => {
             <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
         );
       case "calendar":
-        return <MyCalendarPage data-oid="uz.ewbm" accessToken={googleAccessToken} />;
+          return <MyCalendarPage
+              data-oid="uz.ewbm"
+              accessToken={googleAccessToken}
+              calendarEvents={calendarEvents}
+              addCalendarEvent={addCalendarEvent}
+              updateCalendarEvent={updateCalendarEvent}
+              deleteCalendarEvent={deleteCalendarEvent}
+              />;
       case "preferences":
         return (
             <Preferences onPageChange={handlePageChange} data-oid="1db782u" />
