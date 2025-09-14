@@ -1,178 +1,256 @@
-import React, { useState } from "react";
-import "./NewDocument.css";
+import { useState, useMemo } from "react";
+import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/useTemplateUI";
+import type { Template } from "../hooks/useTemplateUI";
+import "../components/TemplateUI/TemplateUI.css";
 
-interface NewDocumentProps {
+// UI Components
+import {
+    SearchBar,
+    CategoryTabs,
+    TemplateList,
+    TemplateCard
+} from "../components/TemplateUI";
+
+interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
+  customTemplates: Template[];
+  deleteTemplate: (rowIndex: number) => void;
+  tags: string[];
+  addTag: (newTag: string) => void;
+  deleteTag: (tagToDelete: string) => void;
+  updateTag: (oldTag: string, newTag: string) => void;
+  addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
 }
 
-const NewDocument: React.FC<NewDocumentProps> = ({ onPageChange }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterOption, setFilterOption] = useState("자주 사용");
-  const [activeTab, setActiveTab] = useState("전체");
+export default function NewDocument({ 
+    onPageChange, 
+    customTemplates, 
+    deleteTemplate, 
+    tags, 
+    addTag, 
+    deleteTag, 
+    updateTag, 
+    addTemplate
+}: TemplatePageProps) {
+    
+    // Lifted state for global search and filter
+    const [searchTerm, setSearchTerm] = useState("");
+    const [activeTab, setActiveTab] = useState("전체");
+    const [filterOption, setFilterOption] = useState("자주 사용");
 
-  const templates = [
-    {
-      type: "meeting",
-      title: "회의록",
-      description: "팀 회의 내용을 체계적으로 기록하는 양식입니다.",
-      tag: "회의",
-    },
-    {
-      type: "finance",
-      title: "학회비 명단",
-      description: "회비 납부 현황을 관리하는 템플릿입니다.",
-      tag: "재정",
-    },
-    {
-      type: "event",
-      title: "행사 확인서",
-      description: "각종 행사의 계획 및 결과를 문서화합니다.",
-      tag: "행사",
-    },
-    {
-      type: "report",
-      title: "지출 보고서",
-      description: "프로젝트 및 활동 지출 내역을 정리합니다.",
-      tag: "보고서",
-    },
-    {
-      type: "empty",
-      title: "빈 문서",
-      description: "처음부터 새로운 문서를 작성합니다.",
-      tag: "빈 문서",
-    },
-    {
-      type: "report",
-      title: "프로젝트 계획서",
-      description: "프로젝트 목표와 일정을 체계적으로 정리합니다.",
-      tag: "보고서",
-    },
-  ];
+    // + 새 문서 모달 상태 추가 (3개 필드)
+    const [showNewDocModal, setShowNewDocModal] = useState(false);
+    const [newDocData, setNewDocData] = useState({
+        title: "",
+        description: "",
+        tag: ""
+    });
 
-  const filteredTemplates = templates.filter((template) => {
-    const matchesSearch =
-      template.title.includes(searchTerm) ||
-      template.description.includes(searchTerm);
-    const matchesTab = activeTab === "전체" || template.tag === activeTab;
-    return matchesSearch && matchesTab;
-  });
+    const resetFilters = () => {
+        setSearchTerm("");
+        setActiveTab("전체");
+        setFilterOption("자주 사용");
+    };
 
-  return (
-    <div className="new-template-selection new-combined-style">
-      <div className="new-search-bar-container">
-        <div className="new-search-input-wrapper">
-          <div className="new-search-icon-circle">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
-          <input
-            type="text"
-            className="new-search-input"
-            placeholder="템플릿 검색..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+    // 새 문서 모달 제출 처리
+    const handleNewDocSubmit = () => {
+        if (!newDocData.title.trim() || !newDocData.description.trim() || !newDocData.tag.trim()) {
+            alert("모든 필드를 입력해주세요.");
+            return;
+        }
 
-        <div className="new-filter-buttons">
-          <div className="new-filter-dropdown">
-            <select
-              className="new-filter-select"
-              value={filterOption}
-              onChange={(e) => setFilterOption(e.target.value)}
-            >
-              <option>자주 사용</option>
-              <option>최신순</option>
-              <option>이름순</option>
-            </select>
-          </div>
-          <button
-            className="new-reset-button"
-            onClick={() => {
-              setSearchTerm("");
-              setFilterOption("자주 사용");
-              setActiveTab("전체");
-            }}
-          >
-            초기화
-          </button>
-        </div>
-      </div>
+        addTemplate(newDocData);
 
-      <div className="new-tabs-container">
-        <div
-          className={`new-tab ${activeTab === "전체" ? "new-active" : ""}`}
-          onClick={() => setActiveTab("전체")}
-        >
-          전체
-        </div>
-        <div
-          className={`new-tab ${activeTab === "회의" ? "new-active" : ""}`}
-          onClick={() => setActiveTab("회의")}
-        >
-          회의
-        </div>
-        <div
-          className={`new-tab ${activeTab === "재정" ? "new-active" : ""}`}
-          onClick={() => setActiveTab("재정")}
-        >
-          재정
-        </div>
-        <div
-          className={`new-tab ${activeTab === "행사" ? "new-active" : ""}`}
-          onClick={() => setActiveTab("행사")}
-        >
-          행사
-        </div>
-        <div
-          className={`new-tab ${activeTab === "보고서" ? "new-active" : ""}`}
-          onClick={() => setActiveTab("보고서")}
-        >
-          보고서
-        </div>
-      </div>
+        // 모달 닫기 및 상태 초기화
+        setShowNewDocModal(false);
+        setNewDocData({
+            title: "",
+            description: "",
+            tag: ""
+        });
+    };
 
-      <div className="new-templates-container">
-        {filteredTemplates.map((template, index) => (
-          <div className="new-template-card" key={index}>
-            <div className="new-card-content">
-              <div className={`new-card-tag new-${template.type}`}>
-                {template.tag}
-              </div>
-              <h3 className="new-card-title">{template.title}</h3>
-              <p className="new-card-description">{template.description}</p>
+    // 모달 취소 처리
+    const handleNewDocCancel = () => {
+        setShowNewDocModal(false);
+        setNewDocData({
+            title: "",
+            description: "",
+            tag: ""
+        });
+    };
+
+    // 입력값 변경 처리
+    const handleInputChange = (field: string, value: string) => {
+        setNewDocData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    // --- Filtering Logic ---
+
+    // 1. Filter Default Templates
+    const filteredDefaultTemplates = defaultTemplates.filter(template => {
+        if (activeTab !== "전체" && template.tag !== activeTab) {
+            return false;
+        }
+        if (searchTerm && !template.title.toLowerCase().includes(searchTerm.toLowerCase()) && !template.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return false;
+        }
+        return true;
+    });
+
+    // 2. Get filtered Custom Templates from the hook
+    const { 
+        filteredTemplates: filteredCustomTemplates, 
+        onUseTemplate 
+    } = useTemplateUI(customTemplates, onPageChange, searchTerm, activeTab, filterOption);
+
+    // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
+    const orderedTags = useMemo(() => {
+        // Create a unique array of default tags, preserving their first-seen order.
+        const uniqueDefaultTags = [...new Set(defaultTemplateTags)];
+        const defaultTagSet = new Set(uniqueDefaultTags);
+        const customTags = tags.filter(tag => !defaultTagSet.has(tag));
+        return [...uniqueDefaultTags, ...customTags];
+    }, [tags, defaultTemplateTags]);
+
+    return (
+        <div>
+            {/* Top Level Controls */}
+            <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                filterOption={filterOption}
+                setFilterOption={setFilterOption}
+                reset={resetFilters}
+            />
+            <CategoryTabs 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab} 
+                tags={orderedTags} 
+                managedTags={tags}
+                defaultTags={defaultTemplateTags}
+                addTag={addTag} 
+                deleteTag={deleteTag} 
+                updateTag={updateTag} 
+            />
+
+            {/* Side-by-Side Layout */}
+            <div className="new-document-layout">
+                {/* Left Sidebar: Default Templates */}
+                <div className="layout-sidebar">
+                    <div className="template-section">
+                        <h2 className="section-title">기본 템플릿</h2>
+                        <div className="new-templates-container" style={{ paddingLeft: '20px' }}>
+                            {filteredDefaultTemplates.map(template => (
+                                <TemplateCard
+                                    key={template.type}
+                                    template={template}
+                                    onUse={onUseTemplate}
+                                    onDelete={() => {}} // No delete for default templates
+                                    isFixed={true}
+                                    defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Main Area: Custom Templates */}
+                <div className="layout-main">
+                    <div className="template-section">
+                        <h2 className="section-title" style={{ position: 'relative', marginLeft: '-20px', width: 'calc(100% - 20px)' }}>
+                            내 템플릿
+                            <span
+                                className="new-tab add-tag-button"
+                                onClick={() => setShowNewDocModal(true)}
+                                style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: 0,
+                                    fontWeight: 'normal',
+                                    fontSize: '14px',
+                                    color: '#007bff'
+                                }}
+                            >
+                                + 새 템플릿
+                            </span>
+                        </h2>
+                        <div style={{ marginLeft: '-20px', paddingRight: '40px' }}>
+                            <TemplateList
+                                templates={filteredCustomTemplates}
+                                onUseTemplate={onUseTemplate}
+                                onDeleteTemplate={deleteTemplate}
+                                defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="new-card-footer">
-              <button
-                className="new-use-button"
-                onClick={() => {
-                  if (template.type === "empty") {
-                    onPageChange("empty_document");
-                  } else {
-                    alert(`'${template.title}' 템플릿 사용`);
-                  }
-                }}
-              >
-                사용하기
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+            {/* 새 문서 모달 - 3개 필드 */}
+            {showNewDocModal && (
+                <div className="modal-overlay" onClick={handleNewDocCancel}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>새 문서 만들기</h2>
+                            <button className="modal-close" onClick={handleNewDocCancel}>
+                                &times;
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label htmlFor="doc-title">제목</label>
+                                <input
+                                    id="doc-title"
+                                    type="text"
+                                    className="modal-input"
+                                    placeholder="문서 제목을 입력하세요 (예: 회의록)"
+                                    value={newDocData.title}
+                                    onChange={(e) => handleInputChange("title", e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
 
-export default NewDocument;
+                            <div className="form-group">
+                                <label htmlFor="doc-description">상세정보</label>
+                                <textarea
+                                    id="doc-description"
+                                    className="modal-textarea"
+                                    placeholder="문서에 대한 상세 설명을 입력하세요 (예: 회의 내용을 기록하는 템플릿)"
+                                    value={newDocData.description}
+                                    onChange={(e) => handleInputChange("description", e.target.value)}
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="doc-tag">태그</label>
+                                <select
+                                    id="doc-tag"
+                                    className="modal-input"
+                                    value={newDocData.tag}
+                                    onChange={(e) => handleInputChange("tag", e.target.value)}
+                                >
+                                    <option value="" disabled>태그를 선택하세요</option>
+                                    {orderedTags.map(tag => (
+                                        <option key={tag} value={tag}>{tag}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="modal-button cancel" onClick={handleNewDocCancel}>
+                                취소
+                            </button>
+                            <button className="modal-button confirm" onClick={handleNewDocSubmit}>
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

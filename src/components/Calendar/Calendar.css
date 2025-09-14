@@ -1,0 +1,231 @@
+.calendar-header-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.year-display {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.month-navigation {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.month-display {
+  font-size: 20px;
+  color: var(--text-medium);
+}
+
+.arrow-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-dark);
+  padding: 0 8px;
+}
+
+.arrow-button:hover {
+  color: var(--primary);
+}
+
+.calendar-body-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: white;
+  padding: 0 0;
+  border-radius: var(--border-radius-lg);
+}
+
+.day-wrapper {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(60px, 1fr));
+  grid-row-gap: 10px;
+}
+
+.calendar-item {
+  display: flex;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.calendar-item.sunday {
+  color: var(--error);
+}
+
+.day {
+  border: 1px solid var(--border-color);
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  cursor: pointer;
+  position: relative;
+}
+
+.day-number {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  padding: 4px;
+}
+
+.day.selected {
+  background-color: var(--accent); /* 연한 파란색으로 변경 */
+  color: var(--text-dark); /* 기본 텍스트 색상 */
+}
+
+.day.not-current-month {
+  color: var(--text-light);
+  background-color: var(--lightgrey);
+}
+
+.day.sunday .day-number {
+  color: var(--error);
+}
+
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  overflow-y: auto; /* 이벤트가 많을 경우 스크롤 */
+  flex-grow: 1; /* 남은 공간을 모두 차지하도록 설정 */
+  padding-bottom: 5px;
+}
+
+.event-item {
+  font-size: 12px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 2px;
+  padding: 2px 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+  margin-right: 5px;
+  background-color: var(--secondary-light); /* 기본 배경색 추가 */
+  color: var(--text-dark); /* 기본 글자색 추가 */
+}
+
+.more-button {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 5px;
+    margin-left: 5px;
+}
+
+.event-item.continuation-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: 0;
+}
+
+.event-item.continuation-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-right: 0;
+}
+
+.event-item.selected {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.calendar-header-top {
+  display: flex;
+  justify-content: space-between; /* This will push year to the left and the new container to the right */
+  width: 100%;
+  align-items: center;
+}
+
+.header-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Adjust as needed */
+}
+
+.view-switcher {
+  display: flex;
+  gap: 10px;
+}
+
+.view-switcher button {
+  padding: 5px 15px;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.view-switcher button.active {
+  background-color: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.week-navigation {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.week-navigation-buttons {
+  display: flex;
+  gap: 5px;
+  padding: 5px 0;
+}
+
+.week-navigation button {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  background-color: #fff;
+  white-space: nowrap;
+}
+
+.week-navigation button.active {
+  background-color: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.semester-start-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.semester-start-date label {
+  font-size: 14px;
+}
+
+.semester-start-date input[type="date"] {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius-sm);
+}
+

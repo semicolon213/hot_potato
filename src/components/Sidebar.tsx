@@ -1,19 +1,25 @@
 import React, { useState } from "react";
 import "./Sidebar.css";
-import potatoLogo from "../assets/image/potato2.png";
-import {
-  fileIcon,
-  listIcon,
-  calendarIcon,
-  usersIcon,
-  settingsIcon,
-} from "../assets/Icons";
+import { 
+  BiHomeAlt2, 
+  BiMessageSquareDetail, 
+  BiFileBlank, 
+  BiCalendar, 
+  BiUser, 
+  BiCog, 
+  BiShield,
+  BiChevronDown
+} from "react-icons/bi";
 
 interface SidebarProps {
   onPageChange: (pageName: string) => void;
+  user?: {
+    isAdmin: boolean;
+  };
+  currentPage?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const handleMenuClick = (pageName: string, hasSubmenu: boolean = false) => {
@@ -30,45 +36,39 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
       <div className="sidebar-header">
         <a
           href="#"
-          onClick={() => onPageChange("ddd")}
+          onClick={() => onPageChange("dashboard")}
           style={{ textDecoration: "none" }}
         >
           <div className="logo-container">
-            <div className="logo-box">
-              <img
-                src={potatoLogo}
-                className="logo-image"
-                alt="Hot Potato Logo"
-              />
-            </div>
-            <div className="logo-title">Hot Potato</div>
+            <img src="/logo.png" alt="HP ERP Logo" className="logo-image" />
           </div>
         </a>
       </div>
 
       <div className="menu-section">
-        <div className="menu-section-title">메인 메뉴</div>
         <div className="menu-container">
           <div
-            className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""}`}
+            className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""} ${currentPage === 'board' ? 'active' : ''}`}
             onClick={() => handleMenuClick("board", true)}
           >
-            <img src={listIcon} alt="List Icon" className="icon" />
-
+            <BiMessageSquareDetail className="menu-icon" />
             <div className="menu-text">게시판</div>
+            <BiChevronDown className={`submenu-arrow ${activeMenu === "board" ? "rotated" : ""}`} />
             {activeMenu === "board" && (
               <div className="submenu">
                 <div
                   className="submenu-item"
-                  onClick={() => onPageChange("notice")}
+                  onClick={() => onPageChange("board")}
                 >
-                  공지사항
+                  <span className="submenu-bullet">•</span>
+                  자유 게시판
                 </div>
                 <div
                   className="submenu-item"
-                  onClick={() => onPageChange("freeboard")}
+                  onClick={() => onPageChange("announcements")}
                 >
-                  자유 게시판
+                  <span className="submenu-bullet">•</span>
+                  공지사항
                 </div>
               </div>
             )}
@@ -78,27 +78,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
             className={`menu-item menu-item-with-submenu ${activeMenu === "document" ? "active" : ""}`}
             onClick={() => handleMenuClick("document", true)}
           >
-            <img src={fileIcon} alt="File Icon" className="icon" />
-
+            <BiFileBlank className="menu-icon" />
             <div className="menu-text">문서</div>
+            <BiChevronDown className={`submenu-arrow ${activeMenu === "document" ? "rotated" : ""}`} />
             {activeMenu === "document" && (
               <div className="submenu">
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("document_management")}
                 >
+                  <span className="submenu-bullet">•</span>
                   문서관리
                 </div>
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("docbox")}
                 >
+                  <span className="submenu-bullet">•</span>
                   문서함
                 </div>
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("new_document")}
                 >
+                  <span className="submenu-bullet">•</span>
                   새 문서
                 </div>
               </div>
@@ -109,21 +112,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
             className={`menu-item menu-item-with-submenu ${activeMenu === "schedule" ? "active" : ""}`}
             onClick={() => handleMenuClick("schedule", true)}
           >
-            <img src={calendarIcon} alt="Calendar Icon" className="icon" />
-
+            <BiCalendar className="menu-icon" />
             <div className="menu-text">일정</div>
+            <BiChevronDown className={`submenu-arrow ${activeMenu === "schedule" ? "rotated" : ""}`} />
             {activeMenu === "schedule" && (
               <div className="submenu">
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("calendar")}
                 >
+                  <span className="submenu-bullet">•</span>
                   학사 일정
                 </div>
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("timetable")}
                 >
+                  <span className="submenu-bullet">•</span>
                   개인 시간표
                 </div>
               </div>
@@ -134,21 +139,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
             className={`menu-item menu-item-with-submenu ${activeMenu === "personnel" ? "active" : ""}`}
             onClick={() => handleMenuClick("personnel", true)}
           >
-            <img src={usersIcon} alt="Users Icon" className="icon" />
-
+            <BiUser className="menu-icon" />
             <div className="menu-text">학생 및 교직원</div>
+            <BiChevronDown className={`submenu-arrow ${activeMenu === "personnel" ? "rotated" : ""}`} />
             {activeMenu === "personnel" && (
               <div className="submenu">
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("students")}
                 >
+                  <span className="submenu-bullet">•</span>
                   학생
                 </div>
                 <div
                   className="submenu-item"
                   onClick={() => onPageChange("staff")}
                 >
+                  <span className="submenu-bullet">•</span>
                   교직원
                 </div>
               </div>
@@ -157,15 +164,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange }) => {
         </div>
       </div>
 
+      {/* 관리자 메뉴 */}
+      {user?.isAdmin && (
+        <div className="menu-section">
+          <div className="menu-container">
+            <div
+              className={`menu-item ${currentPage === 'admin' ? 'active' : ''}`}
+              onClick={() => handleMenuClick("admin")}
+            >
+              <BiShield className="menu-icon" />
+              <div className="menu-text">관리자 패널</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="menu-section">
-        <div className="menu-section-title">설정</div>
         <div className="menu-container">
           <div
             className="menu-item"
             onClick={() => handleMenuClick("preferences")}
           >
-            <img src={settingsIcon} alt="Settings Icon" className="icon" />
-
+            <BiCog className="menu-icon" />
             <div className="menu-text">환경설정</div>
           </div>
         </div>

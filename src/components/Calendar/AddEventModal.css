@@ -1,0 +1,101 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: var(--border-radius-md);
+  min-width: 400px;
+  max-width: 600px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-content label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modal-content input,
+.modal-content textarea {
+  padding: 8px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid #ccc;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.submit-button, .cancel-button, .time-add-button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.time-add-button {
+    background-color: var(--text-light);
+    color: white;
+}
+
+.time-add-button:hover {
+    background-color: var(--text-medium);
+}
+
+.submit-button {
+    background-color: var(--primary);
+    color: white;
+}
+
+.submit-button:hover {
+    background-color: var(--primary-dark);
+}
+
+.cancel-button {
+    background-color: var(--lightgrey);
+    color: var(--text-dark);
+}
+
+.cancel-button:hover {
+    background-color: var(--border-light);
+}
+
+.color-palette {
+    display: flex;
+    gap: 10px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.color-swatch.selected {
+    border-color: var(--primary);
+}

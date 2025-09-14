@@ -1,0 +1,147 @@
+.weekly-calendar-container {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.weekly-header {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.time-column-header {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.day-header {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    border-left: 1px solid #e0e0e0;
+}
+
+.day-name {
+    font-size: 12px;
+    color: #5f6368;
+}
+
+.day-number {
+    font-size: 16px;
+    font-weight: 500;
+    display: block;
+}
+
+.weekly-all-day-section {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.all-day-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #5f6368;
+}
+
+.all-day-column {
+    flex: 1;
+    border-left: 1px solid #e0e0e0;
+    min-height: 30px;
+    padding-top: 4px;
+}
+
+.all-day-event-item {
+    color: #000;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-sm);
+    font-size: 12px;
+    margin: 0 4px 2px 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.all-day-event-item.continuation-left {
+    margin-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+}
+
+.all-day-event-item.continuation-right {
+    margin-right: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.all-day-event-item .event-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.weekly-body {
+    display: flex;
+    height: 1000px;
+}
+
+.time-column {
+    width: 60px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.time-slot-label {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: #5f6368;
+    position: relative;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.day-column {
+    flex: 1;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+}
+
+.timed-events-grid {
+    position: relative;
+    flex-grow: 1;
+}
+
+.time-grid-line {
+    height: 41.66px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.timed-event-item {
+    position: absolute;
+    left: 4
+    right: 4px;
+    color: #000;
+    border: 1px solid #1967d2;
+    border-radius: var(--border-radius-sm);
+    padding: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.timed-event-item .event-title {
+    font-weight: 500;
+}

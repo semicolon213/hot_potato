@@ -1,0 +1,29 @@
+/* ===== 하단 통계 카드 영역 ===== */
+.stats-container {
+  display: flex;
+  gap: 15px;
+  margin-top: 69px;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 20px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.stat-count {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.stat-title {
+  font-size: 14px;
+  font-weight: 500;
+}

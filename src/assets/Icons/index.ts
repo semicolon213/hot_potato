@@ -9,9 +9,9 @@ import settingsIcon from './settings.svg';
 import starIcon from './star.svg';
 import userIcon from './user.svg';
 import usersIcon from './users.svg';
-import calendarIcon from './달력.svg';
-import fileIcon from './문서.svg';
-import rightBlackIcon from './오른쪽 black.svg';
+import calendarIcon from './calender.svg';
+import fileIcon from './file.svg';
+import rightBlackIcon from './right_black.svg';
 
 export {
   bellIcon,
