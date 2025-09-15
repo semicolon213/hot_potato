@@ -1,5 +1,12 @@
 import { useMemo, useCallback } from "react";
-import { copyGoogleDocument } from "../utils/googleSheetUtils";
+import {
+    copyGoogleDocument,
+    getSheetIdByName,
+    checkSheetExists,
+    createNewSheet,
+    getSheetData,
+    appendSheetData
+} from "../utils/googleSheetUtils";
 
 // 1. 템플릿 데이터의 타입 정의
 export interface Template {
@@ -53,6 +60,9 @@ export function useTemplateUI(
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = useCallback(async (type: string, title: string) => {
+        const SPREADSHEET_NAME = 'hot_potato_DB';
+        const DOC_SHEET_NAME = 'documents';
+
         const isDefault = defaultTemplates.some(t => t.type === type);
 
         // Default templates with specific URLs
@@ -85,18 +95,40 @@ export function useTemplateUI(
                 const copiedDocument = await copyGoogleDocument(documentId, newTitle);
 
                 if (copiedDocument) {
-                    const docboxDocuments = JSON.parse(localStorage.getItem('docbox_documents') || '[]');
-                    const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
-                    const newDocument = {
-                        id: copiedDocument.id,
-                        title: newTitle,
-                        author: userInfo.name || '알 수 없음',
-                        lastModified: new Date().toLocaleDateString('ko-KR'),
-                        url: copiedDocument.webViewLink,
-                    };
+                    const spreadsheetId = await getSheetIdByName(SPREADSHEET_NAME);
+                    if (!spreadsheetId) return;
+
+                    const sheetExists = await checkSheetExists(spreadsheetId, DOC_SHEET_NAME);
+                    if (!sheetExists) {
+                        await createNewSheet(spreadsheetId, DOC_SHEET_NAME);
+                        const header = [['document_id', 'document_number', 'title', 'author', 'created_at', 'last_modified', 'approval_date', 'status', 'url']];
+                        await appendSheetData(spreadsheetId, DOC_SHEET_NAME, header);
+                    }
                     
-                    docboxDocuments.push(newDocument);
-                    localStorage.setItem('docbox_documents', JSON.stringify(docboxDocuments));
+                    const today = new Date();
+                    const datePrefix = today.getFullYear().toString() + 
+                                     ('0' + (today.getMonth() + 1)).slice(-2) + 
+                                     ('0' + today.getDate()).slice(-2);
+
+                    const docData = await getSheetData(spreadsheetId, DOC_SHEET_NAME, 'B:B');
+                    const todayDocs = docData ? docData.filter(row => row[0] && row[0].startsWith(datePrefix)) : [];
+                    const newSeq = ('000' + (todayDocs.length + 1)).slice(-3);
+                    const newDocNumber = `${datePrefix}-${newSeq}`;
+
+                    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+                    const newRow = [
+                        copiedDocument.id,
+                        newDocNumber,
+                        newTitle,
+                        userInfo.name || '알 수 없음',
+                        today.toISOString(),
+                        new Date().toLocaleDateString('ko-KR'),
+                        '',
+                        '진행중',
+                        copiedDocument.webViewLink,
+                    ];
+
+                    await appendSheetData(spreadsheetId, DOC_SHEET_NAME, [newRow]);
                     
                     window.open(copiedDocument.webViewLink, '_blank');
                 }
