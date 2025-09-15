@@ -1,47 +1,24 @@
 import React, { useState, useEffect } from 'react';
-// papyrus-db는 appendRow만 사용, 초기화는 직접 구현
 import './NewBoardPost.css';
-import type { Post } from '../../App'; // Import Post interface from App.tsx
+import type { Post, User } from '../../App'; // Import Post and User interfaces from App.tsx
 
 interface NewBoardPostProps {
   onPageChange: (pageName: string) => void;
   onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => void;
+  user: User | null;
+  isAuthenticated: boolean;
 }
 
-const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost }) => {
+const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, user, isAuthenticated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [author, setAuthor] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Get user's name from Google Auth
-    const checkAuth = async () => {
-        try {
-            // Google API가 이미 초기화되어 있는지 확인
-            const gapi = (window as any).gapi;
-            if (gapi && gapi.auth2) {
-                const authInstance = gapi.auth2.getAuthInstance();
-                if (authInstance.isSignedIn.get()) {
-                    const profile = authInstance.currentUser.get().getBasicProfile();
-                    setAuthor(profile.getName());
-                    setIsAuthenticated(true);
-                } else {
-                    // If not signed in, redirect to board to authenticate
-                    alert('Google 인증이 필요합니다.');
-                    onPageChange('board');
-                }
-            } else {
-                alert('Google API가 초기화되지 않았습니다. 먼저 로그인해주세요.');
-                onPageChange('board');
-            }
-        } catch (error) {
-            alert('Google 인증 확인에 실패했습니다.');
-            onPageChange('board');
-        }
-    };
-    checkAuth();
-  }, [onPageChange]);
+    if (!isAuthenticated) {
+      alert('Google 인증이 필요합니다.');
+      onPageChange('board');
+    }
+  }, [isAuthenticated, onPageChange]);
 
   const handleSavePost = () => {
     if (!title.trim() || !content.trim()) {
@@ -52,7 +29,7 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost }) 
     onAddPost({
       title,
       contentPreview: content,
-      author,
+      author: user?.name || 'Unknown',
     });
   };
 
@@ -76,7 +53,7 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost }) 
           className="title-input"
         />
         <div className="author-info">
-            <span>작성자: {author || '인증 확인 중...'}</span>
+            <span>작성자: {user?.name || '인증 확인 중...'}</span>
         </div>
         <textarea
           placeholder="내용을 입력하세요"

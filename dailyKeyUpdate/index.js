@@ -2,12 +2,14 @@ const { google } = require('googleapis');
 
 // ===== 다중 레이어 암호화 함수들 =====
 function generateExtendedMultiLayerKey() {
+  // 가역적인 암호화 방법들만 사용
   const methods = [
-    'Base64', 'XOR', 'Caesar', 'ROT13', 'BitShift', 'Substitution',
-    'Padding', 'HashBased', 'Compression', 'MultiEncode', 'RandomInsert',
-    'ChainCipher', 'BlockCipher', 'StreamCipher', 'Polyalphabetic',
-    'Transposition', 'Hybrid', 'AdvancedXOR', 'MultiHash', 'DynamicCipher',
-    'StealthCipher', 'QuantumSafe', 'BiometricBased', 'NeuralNetwork', 'ChaosTheory'
+    'Base64', 'Caesar', 'ROT13', 'BitShift', 'Substitution',
+    'Padding', 'MultiEncode', 'RandomInsert',
+    'Transposition', 'Reverse', 'Atbash', 'Vigenere', 'RailFence',
+    'Columnar', 'Affine', 'Permutation', 'Pattern', 'Mirror',
+    'Zigzag', 'Wave', 'Snake'
+    // 비가역적인 방법들 제외: 'Diagonal', 'Hill', 'Spiral', 'Maze', 'Labyrinth', 'Playfair', 'Frequency'
   ];
   
   const layerCount = Math.floor(Math.random() * 11) + 5;
@@ -22,13 +24,13 @@ function generateExtendedMultiLayerKey() {
   
   let encryptedKey = baseKey;
   for (const method of selectedMethods) {
-    encryptedKey = applyEncryption(encryptedKey, method, baseKey);
+    encryptedKey = applyEncryption(encryptedKey, method, '');
   }
   
   return {
     key: encryptedKey,
     layers: selectedMethods,
-    baseKey: baseKey
+    originalKey: baseKey
   };
 }
 
@@ -37,8 +39,6 @@ function applyEncryption(text, method, key) {
   switch (method) {
     case 'Base64':
       return Buffer.from(text).toString('base64');
-    case 'XOR':
-      return xorEncrypt(text, key);
     case 'Caesar':
       return caesarCipher(text, 13);
     case 'ROT13':
@@ -49,48 +49,120 @@ function applyEncryption(text, method, key) {
       return substitutionCipher(text);
     case 'Padding':
       return paddingEncrypt(text);
-    case 'HashBased':
-      return hashBasedEncrypt(text, key);
-    case 'Compression':
-      return compressionEncrypt(text);
     case 'MultiEncode':
       return multiEncode(text);
     case 'RandomInsert':
       return randomInsert(text);
-    case 'ChainCipher':
-      return chainCipher(text, key);
-    case 'BlockCipher':
-      return blockCipher(text, key);
-    case 'StreamCipher':
-      return streamCipher(text, key);
-    case 'Polyalphabetic':
-      return polyalphabeticCipher(text, key);
     case 'Transposition':
       return transpositionCipher(text);
-    case 'Hybrid':
-      return hybridEncrypt(text, key);
-    case 'AdvancedXOR':
-      return advancedXOR(text, key);
-    case 'MultiHash':
-      return multiHash(text, key);
-    case 'DynamicCipher':
-      return dynamicCipher(text, key);
-    case 'StealthCipher':
-      return stealthCipher(text, key);
-    case 'QuantumSafe':
-      return quantumSafeEncrypt(text, key);
-    case 'BiometricBased':
-      return biometricBasedEncrypt(text, key);
-    case 'NeuralNetwork':
-      return neuralNetworkEncrypt(text, key);
-    case 'ChaosTheory':
-      return chaosTheoryEncrypt(text, key);
+    case 'Reverse':
+      return reverseCipher(text);
+    case 'Atbash':
+      return atbashCipher(text);
+    case 'Vigenere':
+      return vigenereCipher(text);
+    case 'RailFence':
+      return railFenceCipher(text);
+    case 'Columnar':
+      return columnarCipher(text);
+    case 'Affine':
+      return affineCipher(text);
+    case 'Permutation':
+      return permutationCipher(text);
+    case 'Pattern':
+      return patternCipher(text);
+    case 'Mirror':
+      return mirrorCipher(text);
+    case 'Zigzag':
+      return zigzagCipher(text);
+    case 'Wave':
+      return waveCipher(text);
+    case 'Snake':
+      return snakeCipher(text);
+    case 'Diagonal':
+      return diagonalCipher(text);
+    case 'Hill':
+      return hillCipher(text);
+    case 'Spiral':
+      return spiralCipher(text);
+    case 'Maze':
+      return mazeCipher(text);
+    case 'Labyrinth':
+      return labyrinthCipher(text);
+    case 'Playfair':
+      return playfairCipher(text);
+    case 'Frequency':
+      return frequencyCipher(text);
     default:
       return text;
   }
 }
 
-// ===== 개별 암호화 함수들 =====
+// 텍스트에 특정 복호화 방법 적용
+function applyDecryption(text, method, key) {
+  switch (method) {
+    case 'Base64':
+      return Buffer.from(text, 'base64').toString();
+    case 'Caesar':
+      return caesarDecrypt(text, 13);
+    case 'ROT13':
+      return rot13Decrypt(text);
+    case 'BitShift':
+      return bitShiftDecrypt(text, 7);
+    case 'Substitution':
+      return substitutionDecrypt(text);
+    case 'Padding':
+      return paddingDecrypt(text);
+    case 'MultiEncode':
+      return multiDecode(text);
+    case 'RandomInsert':
+      return randomInsertDecrypt(text);
+    case 'Transposition':
+      return transpositionDecrypt(text);
+    case 'Reverse':
+      return reverseDecrypt(text);
+    case 'Atbash':
+      return atbashDecrypt(text);
+    case 'Vigenere':
+      return vigenereDecrypt(text);
+    case 'RailFence':
+      return railFenceDecrypt(text);
+    case 'Columnar':
+      return columnarDecrypt(text);
+    case 'Affine':
+      return affineDecrypt(text);
+    case 'Permutation':
+      return permutationDecrypt(text);
+    case 'Pattern':
+      return patternDecrypt(text);
+    case 'Mirror':
+      return mirrorDecrypt(text);
+    case 'Zigzag':
+      return zigzagDecrypt(text);
+    case 'Wave':
+      return waveDecrypt(text);
+    case 'Snake':
+      return snakeDecrypt(text);
+    case 'Diagonal':
+      return diagonalDecrypt(text);
+    case 'Hill':
+      return hillDecrypt(text);
+    case 'Spiral':
+      return spiralDecrypt(text);
+    case 'Maze':
+      return mazeDecrypt(text);
+    case 'Labyrinth':
+      return labyrinthDecrypt(text);
+    case 'Playfair':
+      return playfairDecrypt(text);
+    case 'Frequency':
+      return frequencyDecrypt(text);
+    default:
+      return text;
+  }
+}
+
+// ===== 개별 암호화/복호화 함수들 =====
 // XOR 암호화: 키와 텍스트를 XOR 연산
 function xorEncrypt(text, key) {
   let result = '';
@@ -99,6 +171,11 @@ function xorEncrypt(text, key) {
     result += String.fromCharCode(charCode);
   }
   return result;
+}
+
+// XOR 복호화: XOR은 암호화와 복호화가 동일
+function xorDecrypt(text, key) {
+  return xorEncrypt(text, key);
 }
 
 // 시저 암호: 알파벳을 일정 거리만큼 이동
@@ -114,6 +191,11 @@ function caesarCipher(text, shift) {
   }).join('');
 }
 
+// 시저 복호화: 반대 방향으로 이동
+function caesarDecrypt(text, shift) {
+  return caesarCipher(text, 26 - shift);
+}
+
 // ROT13: 13자리씩 이동 (암호화=복호화)
 function rot13(text) {
   return text.split('').map(char => {
@@ -127,10 +209,19 @@ function rot13(text) {
   }).join('');
 }
 
+// ROT13 복호화: ROT13은 암호화와 복호화가 동일
+
 // 비트 시프트: ASCII 코드를 일정 값만큼 이동
 function bitShift(text, shift) {
   return text.split('').map(char => {
     return String.fromCharCode(char.charCodeAt(0) + shift);
+  }).join('');
+}
+
+// 비트 시프트 복호화: 반대 방향으로 이동
+function bitShiftDecrypt(text, shift) {
+  return text.split('').map(char => {
+    return String.fromCharCode(char.charCodeAt(0) - shift);
   }).join('');
 }
 
@@ -141,11 +232,36 @@ function substitutionCipher(text) {
     'g': 'd', 'h': 'e', 'i': 'f', 'j': 'g', 'k': 'h', 'l': 'i',
     'm': 'j', 'n': 'k', 'o': 'l', 'p': 'm', 'q': 'n', 'r': 'o',
     's': 'p', 't': 'q', 'u': 'r', 'v': 's', 'w': 't', 'x': 'u',
-    'y': 'v', 'z': 'w'
+    'y': 'v', 'z': 'w',
+    'A': 'X', 'B': 'Y', 'C': 'Z', 'D': 'A', 'E': 'B', 'F': 'C',
+    'G': 'D', 'H': 'E', 'I': 'F', 'J': 'G', 'K': 'H', 'L': 'I',
+    'M': 'J', 'N': 'K', 'O': 'L', 'P': 'M', 'Q': 'N', 'R': 'O',
+    'S': 'P', 'T': 'Q', 'U': 'R', 'V': 'S', 'W': 'T', 'X': 'U',
+    'Y': 'V', 'Z': 'W'
   };
   
-  return text.toLowerCase().split('').map(char => {
+  return text.split('').map(char => {
     return substitution[char] || char;
+  }).join('');
+}
+
+// 치환 복호화: 역 치환 테이블 사용
+function substitutionDecrypt(text) {
+  const reverseSubstitution = {
+    'x': 'a', 'y': 'b', 'z': 'c', 'a': 'd', 'b': 'e', 'c': 'f',
+    'd': 'g', 'e': 'h', 'f': 'i', 'g': 'j', 'h': 'k', 'i': 'l',
+    'j': 'm', 'k': 'n', 'l': 'o', 'm': 'p', 'n': 'q', 'o': 'r',
+    'p': 's', 'q': 't', 'r': 'u', 's': 'v', 't': 'w', 'u': 'x',
+    'v': 'y', 'w': 'z',
+    'X': 'A', 'Y': 'B', 'Z': 'C', 'A': 'D', 'B': 'E', 'C': 'F',
+    'D': 'G', 'E': 'H', 'F': 'I', 'G': 'J', 'H': 'K', 'I': 'L',
+    'J': 'M', 'K': 'N', 'L': 'O', 'M': 'P', 'N': 'Q', 'O': 'R',
+    'P': 'S', 'Q': 'T', 'R': 'U', 'S': 'V', 'T': 'W', 'U': 'X',
+    'V': 'Y', 'W': 'Z'
+  };
+  
+  return text.split('').map(char => {
+    return reverseSubstitution[char] || char;
   }).join('');
 }
 
@@ -153,6 +269,12 @@ function substitutionCipher(text) {
 function paddingEncrypt(text) {
   const padding = 'PAD_' + Math.random().toString(36).substring(2, 8);
   return padding + text + padding;
+}
+
+// 패딩 복호화: PAD_로 시작하고 끝나는 부분 제거
+function paddingDecrypt(text) {
+  const padMatch = text.match(/^PAD_[a-z0-9]+(.+)PAD_[a-z0-9]+$/);
+  return padMatch ? padMatch[1] : text;
 }
 
 // 해시 기반: 텍스트 해시값을 앞에 추가
@@ -164,6 +286,12 @@ function hashBasedEncrypt(text, key) {
   return hash.toString(16) + text;
 }
 
+// 해시 기반 복호화: 해시 부분 제거
+function hashBasedDecrypt(text, key) {
+  // 16진수 해시 부분을 제거 (8자리 16진수)
+  return text.substring(8);
+}
+
 // 압축: ASCII 코드를 16진수로 변환
 function compressionEncrypt(text) {
   return text.split('').map(char => {
@@ -171,9 +299,25 @@ function compressionEncrypt(text) {
   }).join('');
 }
 
+// 압축 복호화: 16진수를 ASCII로 변환
+function compressionDecrypt(text) {
+  let result = '';
+  for (let i = 0; i < text.length; i += 2) {
+    const hex = text.substr(i, 2);
+    result += String.fromCharCode(parseInt(hex, 16));
+  }
+  return result;
+}
+
 // 다중 인코딩: Base64 + 16진수 인코딩
 function multiEncode(text) {
   return Buffer.from(text).toString('base64') + '_' + Buffer.from(text).toString('hex');
+}
+
+// 다중 인코딩 복호화: Base64 부분만 사용
+function multiDecode(text) {
+  const parts = text.split('_');
+  return Buffer.from(parts[0], 'base64').toString();
 }
 
 // 랜덤 삽입: 앞뒤에 짧은 랜덤 문자열 추가
@@ -182,11 +326,25 @@ function randomInsert(text) {
   return randomChars + text + randomChars;
 }
 
+// 랜덤 삽입 복호화: 앞뒤 4자리 제거
+function randomInsertDecrypt(text) {
+  return text.substring(4, text.length - 4);
+}
+
 // 체인 암호: XOR을 3번 연속 적용
 function chainCipher(text, key) {
   let result = text;
   for (let i = 0; i < 3; i++) {
     result = xorEncrypt(result, key + i);
+  }
+  return result;
+}
+
+// 체인 복호화: 역순으로 XOR 적용
+function chainDecrypt(text, key) {
+  let result = text;
+  for (let i = 2; i >= 0; i--) {
+    result = xorDecrypt(result, key + i);
   }
   return result;
 }
@@ -202,6 +360,17 @@ function blockCipher(text, key) {
   return result;
 }
 
+// 블록 복호화: 4글자씩 블록으로 나누어 XOR 복호화
+function blockDecrypt(text, key) {
+  const blockSize = 4;
+  let result = '';
+  for (let i = 0; i < text.length; i += blockSize) {
+    const block = text.substr(i, blockSize);
+    result += xorDecrypt(block, key);
+  }
+  return result;
+}
+
 // 스트림 암호: 각 문자를 키와 더해서 암호화
 function streamCipher(text, key) {
   let result = '';
@@ -209,6 +378,17 @@ function streamCipher(text, key) {
     const keyChar = key.charCodeAt(i % key.length);
     const textChar = text.charCodeAt(i);
     result += String.fromCharCode((textChar + keyChar) % 256);
+  }
+  return result;
+}
+
+// 스트림 복호화: 각 문자에서 키를 빼서 복호화
+function streamDecrypt(text, key) {
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const keyChar = key.charCodeAt(i % key.length);
+    const textChar = text.charCodeAt(i);
+    result += String.fromCharCode((textChar - keyChar + 256) % 256);
   }
   return result;
 }
@@ -232,22 +412,70 @@ function polyalphabeticCipher(text, key) {
   return result;
 }
 
+// 다중 알파벳 복호화: 반대 방향으로 시프트
+function polyalphabeticDecrypt(text, key) {
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const keyChar = key.charCodeAt(i % key.length);
+    const keyShift = keyChar % 26;
+    const char = text.charAt(i);
+    if (char.match(/[a-zA-Z]/)) {
+      const code = char.charCodeAt(0);
+      const isUpperCase = code >= 65 && code <= 90;
+      const base = isUpperCase ? 65 : 97;
+      result += String.fromCharCode(((code - base - keyShift + 26) % 26) + base);
+    } else {
+      result += char;
+    }
+  }
+  return result;
+}
+
 // 전치 암호: 3열로 나누어 세로로 읽기
 function transpositionCipher(text) {
   const cols = 3;
   let result = '';
+  
+  // 각 열에 대해 해당 위치의 문자들을 수집
   for (let col = 0; col < cols; col++) {
     for (let i = col; i < text.length; i += cols) {
-      result += text.charAt(i);
+      result += text[i];
     }
   }
+  
   return result;
+}
+
+// 전치 복호화: 3열로 나누어 가로로 읽기
+function transpositionDecrypt(text) {
+  const cols = 3;
+  const rows = Math.ceil(text.length / cols);
+  const result = Array(text.length).fill('');
+  
+  // 암호화된 텍스트를 원래 위치에 배치
+  let index = 0;
+  for (let col = 0; col < cols; col++) {
+    for (let row = 0; row < rows; row++) {
+      const originalIndex = row * cols + col;
+      if (originalIndex < text.length && index < text.length) {
+        result[originalIndex] = text[index++];
+      }
+    }
+  }
+  
+  return result.join('');
 }
 
 // 하이브리드: XOR + Base64
 function hybridEncrypt(text, key) {
   const xorResult = xorEncrypt(text, key);
   return Buffer.from(xorResult).toString('base64');
+}
+
+// 하이브리드 복호화: Base64 디코딩 + XOR
+function hybridDecrypt(text, key) {
+  const base64Result = Buffer.from(text, 'base64').toString();
+  return xorDecrypt(base64Result, key);
 }
 
 // 고급 XOR: XOR 연산 사용
@@ -262,6 +490,11 @@ function advancedXOR(text, key) {
   return result;
 }
 
+// 고급 XOR 복호화: XOR은 암호화와 복호화가 동일
+function advancedXORDecrypt(text, key) {
+  return advancedXOR(text, key);
+}
+
 // 다중 해시: 해시값에 키 길이 XOR
 function multiHash(text, key) {
   let hash = 0;
@@ -271,10 +504,21 @@ function multiHash(text, key) {
   return (hash ^ key.length).toString(16) + text;
 }
 
+// 다중 해시 복호화: 해시 부분 제거
+function multiHashDecrypt(text, key) {
+  return text.substring(8);
+}
+
 // 동적 암호: 키에 텍스트 길이 추가
 function dynamicCipher(text, key) {
   const dynamicKey = key + text.length;
   return xorEncrypt(text, dynamicKey);
+}
+
+// 동적 복호화: 키에 텍스트 길이 추가하여 복호화
+function dynamicDecrypt(text, key) {
+  const dynamicKey = key + text.length;
+  return xorDecrypt(text, dynamicKey);
 }
 
 // 스텔스: 'STEALTH_' 문자열로 감싸기
@@ -283,10 +527,25 @@ function stealthCipher(text, key) {
   return stealth + xorEncrypt(text, key) + stealth;
 }
 
+// 스텔스 복호화: STEALTH_ 부분 제거 후 XOR 복호화
+function stealthDecrypt(text, key) {
+  const stealthMatch = text.match(/^STEALTH_[a-z0-9]+(.+)STEALTH_[a-z0-9]+$/);
+  if (stealthMatch) {
+    return xorDecrypt(stealthMatch[1], key);
+  }
+  return text;
+}
+
 // 양자 안전: 'QUANTUM_' + 타임스탬프
 function quantumSafeEncrypt(text, key) {
   const quantum = 'QUANTUM_' + Date.now().toString(36);
   return quantum + text + quantum;
+}
+
+// 양자 안전 복호화: QUANTUM_ 부분 제거
+function quantumSafeDecrypt(text, key) {
+  const quantumMatch = text.match(/^QUANTUM_[a-z0-9]+(.+)QUANTUM_[a-z0-9]+$/);
+  return quantumMatch ? quantumMatch[1] : text;
 }
 
 // 생체 기반: 'BIO_' + 키 길이
@@ -295,10 +554,22 @@ function biometricBasedEncrypt(text, key) {
   return biometric + text + biometric;
 }
 
+// 생체 기반 복호화: BIO_ 부분 제거
+function biometricBasedDecrypt(text, key) {
+  const bioMatch = text.match(/^BIO_[a-z0-9]+(.+)BIO_[a-z0-9]+$/);
+  return bioMatch ? bioMatch[1] : text;
+}
+
 // 신경망: 'NEURAL_' + 랜덤 문자열
 function neuralNetworkEncrypt(text, key) {
   const neural = 'NEURAL_' + Math.random().toString(36).substring(2, 5);
   return neural + text + neural;
+}
+
+// 신경망 복호화: NEURAL_ 부분 제거
+function neuralNetworkDecrypt(text, key) {
+  const neuralMatch = text.match(/^NEURAL_[a-z0-9]+(.+)NEURAL_[a-z0-9]+$/);
+  return neuralMatch ? neuralMatch[1] : text;
 }
 
 // 카오스 이론: 'CHAOS_' + 밀리초
@@ -307,22 +578,1030 @@ function chaosTheoryEncrypt(text, key) {
   return chaos + text + chaos;
 }
 
+// 카오스 이론 복호화: CHAOS_ 부분 제거
+function chaosTheoryDecrypt(text, key) {
+  const chaosMatch = text.match(/^CHAOS_[a-z0-9]+(.+)CHAOS_[a-z0-9]+$/);
+  return chaosMatch ? chaosMatch[1] : text;
+}
+
+// ===== 새로운 암호화 함수들 =====
+// Reverse 암호화: 문자열 뒤집기
+function reverseCipher(text) {
+  return text.split('').reverse().join('');
+}
+
+// Reverse 복호화: 문자열 뒤집기
+function reverseDecrypt(text) {
+  return text.split('').reverse().join('');
+}
+
+// Atbash 암호화: 알파벳을 뒤집어서 치환
+function atbashCipher(text) {
+  return text.split('').map(char => {
+    if (char >= 'A' && char <= 'Z') {
+      return String.fromCharCode(90 - (char.charCodeAt(0) - 65));
+    } else if (char >= 'a' && char <= 'z') {
+      return String.fromCharCode(122 - (char.charCodeAt(0) - 97));
+    }
+    return char;
+  }).join('');
+}
+
+// Atbash 복호화: Atbash와 동일
+function atbashDecrypt(text) {
+  return atbashCipher(text);
+}
+
+// Vigenere 암호화: 키워드 기반 시저 암호
+function vigenereCipher(text) {
+  const key = 'HOTPOTATO';
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const keyChar = key[i % key.length];
+    if (char >= 'A' && char <= 'Z') {
+      const shift = keyChar.charCodeAt(0) - 65;
+      result += String.fromCharCode(((char.charCodeAt(0) - 65 + shift) % 26) + 65);
+    } else if (char >= 'a' && char <= 'z') {
+      const shift = keyChar.charCodeAt(0) - 65;
+      result += String.fromCharCode(((char.charCodeAt(0) - 97 + shift) % 26) + 97);
+    } else {
+      result += char;
+    }
+  }
+  return result;
+}
+
+// Vigenere 복호화: Vigenere의 역과정
+function vigenereDecrypt(text) {
+  const key = 'HOTPOTATO';
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const keyChar = key[i % key.length];
+    if (char >= 'A' && char <= 'Z') {
+      const shift = keyChar.charCodeAt(0) - 65;
+      result += String.fromCharCode(((char.charCodeAt(0) - 65 - shift + 26) % 26) + 65);
+    } else if (char >= 'a' && char <= 'z') {
+      const shift = keyChar.charCodeAt(0) - 65;
+      result += String.fromCharCode(((char.charCodeAt(0) - 97 - shift + 26) % 26) + 97);
+    } else {
+      result += char;
+    }
+  }
+  return result;
+}
+
+// Rail Fence 암호화: 지그재그 패턴으로 배열
+function railFenceCipher(text) {
+  const rails = 3;
+  const fence = Array(rails).fill().map(() => []);
+  let rail = 0;
+  let direction = 1;
+  
+  for (let i = 0; i < text.length; i++) {
+    fence[rail].push(text[i]);
+    rail += direction;
+    if (rail === rails - 1 || rail === 0) {
+      direction = -direction;
+    }
+  }
+  
+  return fence.flat().join('');
+}
+
+// Rail Fence 복호화: 지그재그 패턴 복원
+function railFenceDecrypt(text) {
+  const rails = 3;
+  const fence = Array(rails).fill().map(() => []);
+  let rail = 0;
+  let direction = 1;
+  
+  // 각 레일에 몇 개의 문자가 들어가는지 계산
+  const railLengths = Array(rails).fill(0);
+  for (let i = 0; i < text.length; i++) {
+    railLengths[rail]++;
+    rail += direction;
+    if (rail === rails - 1 || rail === 0) {
+      direction = -direction;
+    }
+  }
+  
+  // 각 레일에 문자 할당
+  let textIndex = 0;
+  for (let i = 0; i < rails; i++) {
+    fence[i] = text.slice(textIndex, textIndex + railLengths[i]).split('');
+    textIndex += railLengths[i];
+  }
+  
+  // 원래 순서로 복원
+  let result = '';
+  rail = 0;
+  direction = 1;
+  const railIndices = Array(rails).fill(0);
+  
+  for (let i = 0; i < text.length; i++) {
+    result += fence[rail][railIndices[rail]];
+    railIndices[rail]++;
+    rail += direction;
+    if (rail === rails - 1 || rail === 0) {
+      direction = -direction;
+    }
+  }
+  
+  return result;
+}
+
+// Columnar 암호화: 열 단위로 재배열
+function columnarCipher(text) {
+  const cols = 4;
+  const rows = Math.ceil(text.length / cols);
+  const matrix = Array(rows).fill().map(() => Array(cols).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  for (let j = 0; j < cols; j++) {
+    for (let i = 0; i < rows; i++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// Columnar 복호화: 열 단위 재배열 복원
+function columnarDecrypt(text) {
+  const cols = 4;
+  const rows = Math.ceil(text.length / cols);
+  const matrix = Array(rows).fill().map(() => Array(cols).fill(''));
+  
+  let index = 0;
+  for (let j = 0; j < cols; j++) {
+    for (let i = 0; i < rows; i++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// Playfair 암호화: 5x5 그리드 기반
+function playfairCipher(text) {
+  const key = 'HOTPOTATO';
+  const grid = createPlayfairGrid(key);
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 2) {
+    const pair = text.slice(i, i + 2);
+    if (pair.length === 1) pair += 'X';
+    
+    const pos1 = findPosition(grid, pair[0]);
+    const pos2 = findPosition(grid, pair[1]);
+    
+    if (pos1.row === pos2.row) {
+      result += grid[pos1.row][(pos1.col + 1) % 5];
+      result += grid[pos2.row][(pos2.col + 1) % 5];
+    } else if (pos1.col === pos2.col) {
+      result += grid[(pos1.row + 1) % 5][pos1.col];
+      result += grid[(pos2.row + 1) % 5][pos2.col];
+    } else {
+      result += grid[pos1.row][pos2.col];
+      result += grid[pos2.row][pos1.col];
+    }
+  }
+  
+  return result;
+}
+
+// Playfair 복호화: Playfair의 역과정
+function playfairDecrypt(text) {
+  const key = 'HOTPOTATO';
+  const grid = createPlayfairGrid(key);
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 2) {
+    const pair = text.slice(i, i + 2);
+    if (pair.length === 1) pair += 'X';
+    
+    const pos1 = findPosition(grid, pair[0]);
+    const pos2 = findPosition(grid, pair[1]);
+    
+    if (pos1.row === pos2.row) {
+      result += grid[pos1.row][(pos1.col - 1 + 5) % 5];
+      result += grid[pos2.row][(pos2.col - 1 + 5) % 5];
+    } else if (pos1.col === pos2.col) {
+      result += grid[(pos1.row - 1 + 5) % 5][pos1.col];
+      result += grid[(pos2.row - 1 + 5) % 5][pos2.col];
+    } else {
+      result += grid[pos1.row][pos2.col];
+      result += grid[pos2.row][pos1.col];
+    }
+  }
+  
+  return result;
+}
+
+// Playfair 그리드 생성
+function createPlayfairGrid(key) {
+  const grid = Array(5).fill().map(() => Array(5).fill(''));
+  const used = new Set();
+  let keyIndex = 0;
+  let charIndex = 0;
+  
+  // 키 채우기
+  for (let i = 0; i < key.length; i++) {
+    const char = key[i].toUpperCase();
+    if (char === 'J') continue; // J는 I로 처리
+    if (!used.has(char)) {
+      grid[Math.floor(keyIndex / 5)][keyIndex % 5] = char;
+      used.add(char);
+      keyIndex++;
+    }
+  }
+  
+  // 나머지 알파벳 채우기
+  for (let i = 0; i < 26; i++) {
+    const char = String.fromCharCode(65 + i);
+    if (char === 'J') continue;
+    if (!used.has(char)) {
+      grid[Math.floor(keyIndex / 5)][keyIndex % 5] = char;
+      used.add(char);
+      keyIndex++;
+    }
+  }
+  
+  return grid;
+}
+
+// Playfair 위치 찾기
+function findPosition(grid, char) {
+  const upperChar = char.toUpperCase();
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      if (grid[i][j] === upperChar) {
+        return { row: i, col: j };
+      }
+    }
+  }
+  return { row: 0, col: 0 };
+}
+
+// Affine 암호화: ax + b (mod 26)
+function affineCipher(text) {
+  const a = 5; // 5와 26은 서로소
+  const b = 8;
+  
+  return text.split('').map(char => {
+    if (char >= 'A' && char <= 'Z') {
+      const x = char.charCodeAt(0) - 65;
+      const y = (a * x + b) % 26;
+      return String.fromCharCode(y + 65);
+    } else if (char >= 'a' && char <= 'z') {
+      const x = char.charCodeAt(0) - 97;
+      const y = (a * x + b) % 26;
+      return String.fromCharCode(y + 97);
+    }
+    return char;
+  }).join('');
+}
+
+// Affine 복호화: a^(-1)(y - b) (mod 26)
+function affineDecrypt(text) {
+  const a = 5;
+  const b = 8;
+  const aInv = 21; // 5 * 21 = 105 ≡ 1 (mod 26)
+  
+  return text.split('').map(char => {
+    if (char >= 'A' && char <= 'Z') {
+      const y = char.charCodeAt(0) - 65;
+      const x = (aInv * (y - b + 26)) % 26;
+      return String.fromCharCode(x + 65);
+    } else if (char >= 'a' && char <= 'z') {
+      const y = char.charCodeAt(0) - 97;
+      const x = (aInv * (y - b + 26)) % 26;
+      return String.fromCharCode(x + 97);
+    }
+    return char;
+  }).join('');
+}
+
+// Hill 암호화: 2x2 행렬 기반
+function hillCipher(text) {
+  const matrix = [[2, 3], [1, 4]];
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 2) {
+    const pair = text.slice(i, i + 2);
+    if (pair.length === 1) pair += 'X';
+    
+    const x1 = pair[0].toUpperCase().charCodeAt(0) - 65;
+    const x2 = pair[1].toUpperCase().charCodeAt(0) - 65;
+    
+    const y1 = (matrix[0][0] * x1 + matrix[0][1] * x2) % 26;
+    const y2 = (matrix[1][0] * x1 + matrix[1][1] * x2) % 26;
+    
+    result += String.fromCharCode(y1 + 65);
+    result += String.fromCharCode(y2 + 65);
+  }
+  
+  return result;
+}
+
+// Hill 복호화: Hill의 역과정
+function hillDecrypt(text) {
+  const matrix = [[2, 3], [1, 4]];
+  const det = (matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0] + 26) % 26;
+  const detInv = 15; // 15 * 7 = 105 ≡ 1 (mod 26)
+  
+  const invMatrix = [
+    [(matrix[1][1] * detInv) % 26, (-matrix[0][1] * detInv + 26) % 26],
+    [(-matrix[1][0] * detInv + 26) % 26, (matrix[0][0] * detInv) % 26]
+  ];
+  
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 2) {
+    const pair = text.slice(i, i + 2);
+    if (pair.length === 1) pair += 'X';
+    
+    const y1 = pair[0].toUpperCase().charCodeAt(0) - 65;
+    const y2 = pair[1].toUpperCase().charCodeAt(0) - 65;
+    
+    const x1 = (invMatrix[0][0] * y1 + invMatrix[0][1] * y2) % 26;
+    const x2 = (invMatrix[1][0] * y1 + invMatrix[1][1] * y2) % 26;
+    
+    result += String.fromCharCode(x1 + 65);
+    result += String.fromCharCode(x2 + 65);
+  }
+  
+  return result;
+}
+
+// Permutation 암호화: 문자 순서 변경
+function permutationCipher(text) {
+  const positions = [2, 0, 3, 1, 4]; // 고정된 순열
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 5) {
+    const block = text.slice(i, i + 5);
+    const paddedBlock = block.padEnd(5, 'X');
+    for (let j = 0; j < 5; j++) {
+      result += paddedBlock[positions[j]];
+    }
+  }
+  
+  return result;
+}
+
+// Permutation 복호화: 순열 복원
+function permutationDecrypt(text) {
+  const positions = [2, 0, 3, 1, 4];
+  const invPositions = Array(5);
+  for (let i = 0; i < 5; i++) {
+    invPositions[positions[i]] = i;
+  }
+  
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 5) {
+    const block = text.slice(i, i + 5);
+    for (let j = 0; j < 5; j++) {
+      result += block[invPositions[j]];
+    }
+  }
+  
+  // 패딩으로 추가된 X 제거
+  return result.replace(/X+$/, '');
+}
+
+// Frequency 암호화: 빈도 기반 치환
+function frequencyCipher(text) {
+  const freq = {};
+  for (let char of text) {
+    freq[char] = (freq[char] || 0) + 1;
+  }
+  
+  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+  const mapping = {};
+  const reverseMapping = {};
+  
+  for (let i = 0; i < sorted.length; i++) {
+    mapping[sorted[i][0]] = String.fromCharCode(65 + i);
+    reverseMapping[String.fromCharCode(65 + i)] = sorted[i][0];
+  }
+  
+  return text.split('').map(char => mapping[char] || char).join('');
+}
+
+// Frequency 복호화: 빈도 기반 치환 복원
+function frequencyDecrypt(text) {
+  // Frequency 암호화는 비가역적이므로 원본 그대로 반환
+  // 실제로는 빈도 분석이 필요하지만 단순화
+  return text;
+}
+
+// Pattern 암호화: 패턴 기반 재배열
+function patternCipher(text) {
+  const pattern = [0, 2, 4, 1, 3, 5]; // 6자리 패턴
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 6) {
+    const block = text.slice(i, i + 6);
+    const paddedBlock = block.padEnd(6, 'X');
+    for (let j = 0; j < 6; j++) {
+      result += paddedBlock[pattern[j]];
+    }
+  }
+  
+  return result;
+}
+
+// Pattern 복호화: 패턴 복원
+function patternDecrypt(text) {
+  const pattern = [0, 2, 4, 1, 3, 5];
+  const invPattern = Array(6);
+  for (let i = 0; i < 6; i++) {
+    invPattern[pattern[i]] = i;
+  }
+  
+  let result = '';
+  
+  for (let i = 0; i < text.length; i += 6) {
+    const block = text.slice(i, i + 6);
+    for (let j = 0; j < 6; j++) {
+      result += block[invPattern[j]];
+    }
+  }
+  
+  // 패딩으로 추가된 X 제거
+  return result.replace(/X+$/, '');
+}
+
+// Mirror 암호화: 거울상 반사
+function mirrorCipher(text) {
+  return text.split('').map(char => {
+    if (char >= 'A' && char <= 'Z') {
+      return String.fromCharCode(90 - (char.charCodeAt(0) - 65));
+    } else if (char >= 'a' && char <= 'z') {
+      return String.fromCharCode(122 - (char.charCodeAt(0) - 97));
+    }
+    return char;
+  }).join('');
+}
+
+// Mirror 복호화: Mirror와 동일
+function mirrorDecrypt(text) {
+  return mirrorCipher(text);
+}
+
+// Spiral 암호화: 나선형 배열
+function spiralCipher(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  let top = 0, bottom = size - 1, left = 0, right = size - 1;
+  
+  while (top <= bottom && left <= right) {
+    for (let i = left; i <= right; i++) {
+      result += matrix[top][i];
+    }
+    top++;
+    
+    for (let i = top; i <= bottom; i++) {
+      result += matrix[i][right];
+    }
+    right--;
+    
+    if (top <= bottom) {
+      for (let i = right; i >= left; i--) {
+        result += matrix[bottom][i];
+      }
+      bottom--;
+    }
+    
+    if (left <= right) {
+      for (let i = bottom; i >= top; i--) {
+        result += matrix[i][left];
+      }
+      left++;
+    }
+  }
+  
+  return result;
+}
+
+// Spiral 복호화: 나선형 배열 복원
+function spiralDecrypt(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  let top = 0, bottom = size - 1, left = 0, right = size - 1;
+  
+  while (top <= bottom && left <= right && index < text.length) {
+    for (let i = left; i <= right && index < text.length; i++) {
+      matrix[top][i] = text[index++];
+    }
+    top++;
+    
+    for (let i = top; i <= bottom && index < text.length; i++) {
+      matrix[i][right] = text[index++];
+    }
+    right--;
+    
+    if (top <= bottom) {
+      for (let i = right; i >= left && index < text.length; i--) {
+        matrix[bottom][i] = text[index++];
+      }
+      bottom--;
+    }
+    
+    if (left <= right) {
+      for (let i = bottom; i >= top && index < text.length; i--) {
+        matrix[i][left] = text[index++];
+      }
+      left++;
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// Zigzag 암호화: 지그재그 패턴
+function zigzagCipher(text) {
+  const rows = 3;
+  const zigzag = Array(rows).fill().map(() => []);
+  let row = 0;
+  let direction = 1;
+  
+  for (let i = 0; i < text.length; i++) {
+    zigzag[row].push(text[i]);
+    row += direction;
+    if (row === rows - 1 || row === 0) {
+      direction = -direction;
+    }
+  }
+  
+  return zigzag.flat().join('');
+}
+
+// Zigzag 복호화: 지그재그 패턴 복원
+function zigzagDecrypt(text) {
+  const rows = 3;
+  const zigzag = Array(rows).fill().map(() => []);
+  let row = 0;
+  let direction = 1;
+  
+  // 각 행에 몇 개의 문자가 들어가는지 계산
+  const rowLengths = Array(rows).fill(0);
+  for (let i = 0; i < text.length; i++) {
+    rowLengths[row]++;
+    row += direction;
+    if (row === rows - 1 || row === 0) {
+      direction = -direction;
+    }
+  }
+  
+  // 각 행에 문자 할당
+  let textIndex = 0;
+  for (let i = 0; i < rows; i++) {
+    zigzag[i] = text.slice(textIndex, textIndex + rowLengths[i]).split('');
+    textIndex += rowLengths[i];
+  }
+  
+  // 원래 순서로 복원
+  let result = '';
+  row = 0;
+  direction = 1;
+  const rowIndices = Array(rows).fill(0);
+  
+  for (let i = 0; i < text.length; i++) {
+    result += zigzag[row][rowIndices[row]];
+    rowIndices[row]++;
+    row += direction;
+    if (row === rows - 1 || row === 0) {
+      direction = -direction;
+    }
+  }
+  
+  return result;
+}
+
+// Diagonal 암호화: 대각선 패턴
+function diagonalCipher(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  for (let d = 0; d < size + size - 1; d++) {
+    for (let i = 0; i < size; i++) {
+      const j = d - i;
+      if (j >= 0 && j < size) {
+        result += matrix[i][j];
+      }
+    }
+  }
+  
+  return result;
+}
+
+// Diagonal 복호화: 대각선 패턴 복원
+function diagonalDecrypt(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let d = 0; d < size + size - 1; d++) {
+    for (let i = 0; i < size; i++) {
+      const j = d - i;
+      if (j >= 0 && j < size && index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// Wave 암호화: 파도 패턴
+function waveCipher(text) {
+  const amplitude = 3;
+  const wave = Array(amplitude * 2 + 1).fill().map(() => []);
+  
+  for (let i = 0; i < text.length; i++) {
+    const position = Math.floor(i / 4) % (amplitude * 2);
+    wave[position].push(text[i]);
+  }
+  
+  return wave.flat().join('');
+}
+
+// Wave 복호화: 파도 패턴 복원
+function waveDecrypt(text) {
+  const amplitude = 3;
+  const wave = Array(amplitude * 2 + 1).fill().map(() => []);
+  
+  // 각 위치에 몇 개의 문자가 들어가는지 계산
+  const positionCounts = Array(amplitude * 2 + 1).fill(0);
+  for (let i = 0; i < text.length; i++) {
+    const position = Math.floor(i / 4) % (amplitude * 2);
+    positionCounts[position]++;
+  }
+  
+  // 각 위치에 문자 할당
+  let textIndex = 0;
+  for (let i = 0; i < amplitude * 2 + 1; i++) {
+    wave[i] = text.slice(textIndex, textIndex + positionCounts[i]).split('');
+    textIndex += positionCounts[i];
+  }
+  
+  // 원래 순서로 복원
+  let result = '';
+  const positionIndices = Array(amplitude * 2 + 1).fill(0);
+  for (let i = 0; i < text.length; i++) {
+    const position = Math.floor(i / 4) % (amplitude * 2);
+    result += wave[position][positionIndices[position]];
+    positionIndices[position]++;
+  }
+  
+  return result;
+}
+
+// Snake 암호화: 뱀 패턴
+function snakeCipher(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < size; i++) {
+    if (i % 2 === 0) {
+      for (let j = 0; j < size; j++) {
+        result += matrix[i][j];
+      }
+    } else {
+      for (let j = size - 1; j >= 0; j--) {
+        result += matrix[i][j];
+      }
+    }
+  }
+  
+  return result;
+}
+
+// Snake 복호화: 뱀 패턴 복원
+function snakeDecrypt(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < size; i++) {
+    if (i % 2 === 0) {
+      for (let j = 0; j < size; j++) {
+        if (index < text.length) {
+          matrix[i][j] = text[index++];
+        }
+      }
+    } else {
+      for (let j = size - 1; j >= 0; j--) {
+        if (index < text.length) {
+          matrix[i][j] = text[index++];
+        }
+      }
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// Maze 암호화: 미로 패턴
+function mazeCipher(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  let visited = Array(size).fill().map(() => Array(size).fill(false));
+  let i = 0, j = 0;
+  let direction = 0; // 0: right, 1: down, 2: left, 3: up
+  const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+  
+  while (result.length < text.length) {
+    if (!visited[i][j]) {
+      result += matrix[i][j];
+      visited[i][j] = true;
+    }
+    
+    const nextI = i + directions[direction][0];
+    const nextJ = j + directions[direction][1];
+    
+    if (nextI >= 0 && nextI < size && nextJ >= 0 && nextJ < size && !visited[nextI][nextJ]) {
+      i = nextI;
+      j = nextJ;
+    } else {
+      direction = (direction + 1) % 4;
+    }
+  }
+  
+  return result;
+}
+
+// Maze 복호화: 미로 패턴 복원
+function mazeDecrypt(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  let visited = Array(size).fill().map(() => Array(size).fill(false));
+  let i = 0, j = 0;
+  let direction = 0;
+  const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+  
+  while (index < text.length) {
+    if (!visited[i][j]) {
+      matrix[i][j] = text[index++];
+      visited[i][j] = true;
+    }
+    
+    const nextI = i + directions[direction][0];
+    const nextJ = j + directions[direction][1];
+    
+    if (nextI >= 0 && nextI < size && nextJ >= 0 && nextJ < size && !visited[nextI][nextJ]) {
+      i = nextI;
+      j = nextJ;
+    } else {
+      direction = (direction + 1) % 4;
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// Labyrinth 암호화: 미로 패턴 (다른 방식)
+function labyrinthCipher(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      if (index < text.length) {
+        matrix[i][j] = text[index++];
+      }
+    }
+  }
+  
+  let result = '';
+  let i = 0, j = 0;
+  let direction = 0; // 0: right, 1: down, 2: left, 3: up
+  const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+  const visited = Array(size).fill().map(() => Array(size).fill(false));
+  
+  while (result.length < text.length) {
+    if (!visited[i][j]) {
+      result += matrix[i][j];
+      visited[i][j] = true;
+    }
+    
+    const nextI = i + directions[direction][0];
+    const nextJ = j + directions[direction][1];
+    
+    if (nextI >= 0 && nextI < size && nextJ >= 0 && nextJ < size && !visited[nextI][nextJ]) {
+      i = nextI;
+      j = nextJ;
+    } else {
+      direction = (direction + 1) % 4;
+    }
+  }
+  
+  return result;
+}
+
+// Labyrinth 복호화: 미로 패턴 복원
+function labyrinthDecrypt(text) {
+  const size = Math.ceil(Math.sqrt(text.length));
+  const matrix = Array(size).fill().map(() => Array(size).fill(''));
+  
+  let index = 0;
+  let i = 0, j = 0;
+  let direction = 0;
+  const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+  const visited = Array(size).fill().map(() => Array(size).fill(false));
+  
+  while (index < text.length) {
+    if (!visited[i][j]) {
+      matrix[i][j] = text[index++];
+      visited[i][j] = true;
+    }
+    
+    const nextI = i + directions[direction][0];
+    const nextJ = j + directions[direction][1];
+    
+    if (nextI >= 0 && nextI < size && nextJ >= 0 && nextJ < size && !visited[nextI][nextJ]) {
+      i = nextI;
+      j = nextJ;
+    } else {
+      direction = (direction + 1) % 4;
+    }
+  }
+  
+  let result = '';
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      result += matrix[i][j];
+    }
+  }
+  
+  return result;
+}
+
+// ===== 테스트 함수 =====
+// 시트 데이터로 복호화 테스트
+function testDecryption() {
+  // 실제 받은 키로 테스트
+  const encryptedKey = 'ADuG_2?1p09-)1';
+  const layersUsed = 'Diagonal, BitShift, RailFence, Permutation, BitShift, Columnar, Permutation, Hill, Reverse, BitShift, Affine, Permutation, Permutation, RailFence, Wave';
+  
+  console.log('=== 복호화 테스트 시작 ===');
+  console.log('암호화된 키:', encryptedKey);
+  console.log('사용된 레이어:', layersUsed);
+  
+  let decryptedKey = encryptedKey;
+  const layers = layersUsed.split(',');
+  console.log('레이어 목록:', layers);
+  
+  // 레이어 순서의 역순으로 복호화 적용
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const layer = layers[i].trim();
+    console.log(`복호화 레이어 ${i}: ${layer}`);
+    console.log(`복호화 전: ${decryptedKey.substring(0, 20)}...`);
+    
+    try {
+      decryptedKey = applyDecryption(decryptedKey, layer, '');
+      console.log(`복호화 후: ${decryptedKey.substring(0, 20)}...`);
+    } catch (error) {
+      console.error(`레이어 ${layer} 복호화 실패:`, error);
+      break;
+    }
+  }
+  
+  console.log('최종 복호화된 키:', decryptedKey);
+  console.log('=== 복호화 테스트 완료 ===');
+  
+  return decryptedKey;
+}
+
 // ===== Google API 관련 함수들 =====
 // Google API 인증 클라이언트 가져오기
 async function getAuthClient() {
   try {
+    console.log('Google API 인증 클라이언트 생성 시작...');
+    console.log('서비스 계정 파일 경로:', 'admin-key-service.json');
+    console.log('요청된 스코프:', [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.readonly'
+    ]);
+    
     const auth = new google.auth.GoogleAuth({
       keyFile: 'admin-key-service.json',
       scopes: [
         'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/drive.readonly',
-        'https://www.googleapis.com/auth/gmail.send'
+        'https://www.googleapis.com/auth/drive.readonly'
       ]
     });
-    return await auth.getClient();
+    
+    const client = await auth.getClient();
+    console.log('Google API 인증 클라이언트 생성 성공');
+    return client;
   } catch (error) {
-    console.error('인증 클라이언트 생성 실패:', error);
-    throw new Error('Google API 인증 실패');
+    console.error('인증 클라이언트 생성 실패:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      response: error.response?.data,
+      stack: error.stack
+    });
+    throw new Error('Google API 인증 실패: ' + error.message);
   }
 }
 
@@ -347,6 +1626,113 @@ async function findHpMemberSheet(auth) {
     console.error('스프레드시트 찾기 실패:', error);
     throw new Error('hp_member 스프레드시트를 찾을 수 없습니다');
   }
+}
+
+// ===== ROT13 암호화/복호화 함수들 =====
+// 기존 rot13 함수를 사용하여 암호화/복호화
+function rot13Encrypt(text) {
+  if (!text) return text;
+  return rot13(text);
+}
+
+// ROT13 복호화 함수 (ROT13은 암호화와 복호화가 동일)
+function rot13Decrypt(text) {
+  if (!text) return text;
+  return rot13(text);
+}
+
+// 기존 데이터 마이그레이션 함수 - 평문 이메일을 ROT13으로 암호화
+async function migrateExistingEmails() {
+  try {
+    console.log('기존 이메일 데이터 마이그레이션 시작');
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    // user 시트에서 모든 사용자 조회
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: 'user!A:Z'
+    });
+    
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      console.log('마이그레이션할 데이터가 없습니다.');
+      return { success: true, migrated: 0 };
+    }
+    
+    let migratedCount = 0;
+    
+    // 헤더 행 제외하고 데이터 검색
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const userEmail = row[3]; // google_member 컬럼 (D열)
+      
+      // 이메일이 있고, 이미 암호화되지 않은 경우 (암호화된 이메일은 @ 앞에 특정 패턴이 있음)
+      if (userEmail && userEmail.trim() !== '' && !isEncryptedEmail(userEmail)) {
+        const encryptedEmail = rot13Encrypt(userEmail);
+        
+        // D열(google_member) 업데이트
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `user!D${i + 1}`,
+          valueInputOption: 'RAW',
+          resource: { 
+            values: [[encryptedEmail]]
+          }
+        });
+        
+        console.log(`마이그레이션 완료: ${userEmail} -> ${encryptedEmail}`);
+        migratedCount++;
+      }
+    }
+    
+    console.log(`마이그레이션 완료: 총 ${migratedCount}개 이메일 암호화`);
+    return { success: true, migrated: migratedCount };
+    
+  } catch (error) {
+    console.error('이메일 마이그레이션 실패:', error);
+    throw new Error('이메일 마이그레이션 중 오류가 발생했습니다.');
+  }
+}
+
+// 이메일이 이미 암호화되었는지 확인하는 함수
+function isEncryptedEmail(email) {
+  // ROT13으로 암호화된 이메일은 일반적인 이메일 패턴과 다름
+  // 예: test@example.com -> grfg@rknzcyr.pbz
+  // 간단한 체크: @ 앞뒤로 알파벳이 ROT13 패턴인지 확인
+  if (!email || !email.includes('@')) return false;
+  
+  const [localPart, domain] = email.split('@');
+  // ROT13으로 암호화된 경우, 일반적인 이메일 도메인(.com, .org 등)이 .pbz, .bet 등으로 변환됨
+  return domain.includes('.pbz') || domain.includes('.bet') || domain.includes('.net') || 
+         domain.includes('.org') || domain.includes('.gov') || domain.includes('.edu');
+}
+
+// ROT13 암호화/복호화 테스트 함수
+function testRot13Encryption() {
+  const testEmails = [
+    'test@example.com',
+    'user@gmail.com',
+    'admin@hotpotato.org',
+    'student@university.edu'
+  ];
+  
+  const results = testEmails.map(email => {
+    const encrypted = rot13Encrypt(email);
+    const decrypted = rot13Decrypt(encrypted);
+    return {
+      original: email,
+      encrypted: encrypted,
+      decrypted: decrypted,
+      isReversible: email === decrypted
+    };
+  });
+  
+  return {
+    success: true,
+    testResults: results,
+    allTestsPassed: results.every(r => r.isReversible)
+  };
 }
 
 // ===== 시간 관련 함수들 =====
@@ -385,8 +1771,7 @@ async function updateSpreadsheetKey(auth, newKey, layers) {
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
     const now = getKSTTime();
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const expiryKST = getKSTTime();
+    const expiryKST = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24시간 후 KST
     
     // admin_keys 시트의 현재 구조 확인
     const currentData = await sheets.spreadsheets.values.get({
@@ -396,10 +1781,10 @@ async function updateSpreadsheetKey(auth, newKey, layers) {
     
     console.log('현재 admin_keys 시트 데이터:', currentData.data.values);
     
-    // 시트 구조에 맞게 업데이트
+    // 시트 구조에 맞게 업데이트 (KST 시간을 문자열로 저장)
     const updateData = [
       ['unified_admin_key', 'key_expiry', 'last_updated', 'layers_used'],
-      [newKey, expiryKST.toISOString(), now, layers.join(',')]
+      [newKey, formatKSTTime(expiryKST), formatKSTTime(now), layers.join(',')]
     ];
     
     await sheets.spreadsheets.values.update({
@@ -410,8 +1795,8 @@ async function updateSpreadsheetKey(auth, newKey, layers) {
     });
     
     console.log('Spreadsheet key update complete');
-    console.log(`업데이트 시간: ${now}`);
-    console.log(`만료 시간: ${expiryKST}`);
+    console.log(`업데이트 시간: ${formatKSTTime(now)}`);
+    console.log(`만료 시간: ${formatKSTTime(expiryKST)}`);
     console.log(`사용된 레이어: ${layers.join(', ')}`);
   } catch (error) {
     console.error('Error updating spreadsheet key:', error);
@@ -426,10 +1811,10 @@ async function verifyAdminKey(inputKey) {
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
-    // hp_member의 admin_keys 시트에서 현재 키 가져오기
+    // hp_member의 admin_keys 시트에서 현재 키와 레이어 정보 가져오기
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'admin_keys!A2:A2'
+      range: 'admin_keys!A2:D2'
     });
     
     if (!response.data.values || response.data.values.length === 0) {
@@ -437,15 +1822,51 @@ async function verifyAdminKey(inputKey) {
     }
     
     const storedKey = response.data.values[0][0];
+    const layersUsed = response.data.values[0][3]; // D열: layers_used
     
-    // 키 일치 여부 확인
+    console.log('저장된 키:', storedKey.substring(0, 20) + '...');
+    console.log('사용된 레이어:', layersUsed);
+    
+    // 레이어 정보가 있는 경우 복호화 검증 수행
+    if (layersUsed) {
+      const layers = layersUsed.split(',');
+      console.log('레이어 목록:', layers);
+      
+      // 저장된 키를 레이어 순서의 역순으로 복호화하여 원본 키 추출
+      let decryptedKey = storedKey;
+      
+      // 레이어 순서의 역순으로 복호화 적용
+      for (let i = layers.length - 1; i >= 0; i--) {
+        const layer = layers[i].trim();
+        console.log(`검증 복호화 레이어 ${i}: ${layer}`);
+        const beforeDecrypt = decryptedKey.substring(0, 20) + '...';
+        decryptedKey = applyDecryption(decryptedKey, layer, '');
+        console.log(`검증 복호화 전: ${beforeDecrypt}`);
+        console.log(`검증 복호화 후: ${decryptedKey.substring(0, 20)}...`);
+      }
+      
+      console.log('복호화된 저장된 키:', decryptedKey.substring(0, 20) + '...');
+      console.log('입력값과 비교:', decryptedKey === inputKey);
+      
+      const isValid = decryptedKey === inputKey;
+      
+      console.log(`관리자 키 검증 (복호화 방식): ${isValid ? '성공' : '실패'}`);
+      return {
+        isValid,
+        message: isValid ? '관리자 키가 일치합니다' : '관리자 키가 일치하지 않습니다',
+        verificationMethod: 'decryption'
+      };
+    } else {
+      // 레이어 정보가 없는 경우 단순 문자열 비교
     const isValid = inputKey === storedKey;
     
-    console.log(`관리자 키 검증: ${isValid ? '성공' : '실패'}`);
+      console.log(`관리자 키 검증 (단순 비교): ${isValid ? '성공' : '실패'}`);
     return {
       isValid,
-      message: isValid ? '관리자 키가 일치합니다' : '관리자 키가 일치하지 않습니다'
+        message: isValid ? '관리자 키가 일치합니다' : '관리자 키가 일치하지 않습니다',
+        verificationMethod: 'simple'
     };
+    }
     
   } catch (error) {
     console.error('관리자 키 검증 실패:', error);
@@ -453,59 +1874,229 @@ async function verifyAdminKey(inputKey) {
   }
 }
 
-// ===== 관리자 계정으로 이메일 전송 함수 =====
-async function sendAdminKeyEmailWithUserToken(userEmail, adminKey, adminAccessToken) {
+// ===== 관리자 키 조회 함수 (이메일 전송은 프론트엔드에서 처리) =====
+async function getDecryptedAdminKey() {
   try {
-    // 관리자의 액세스 토큰으로 Gmail API 사용
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({
-      access_token: adminAccessToken
+    console.log('관리자 키 조회 시작...');
+    const auth = await getAuthClient();
+    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'admin_keys!A2:D2'
     });
     
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    if (!response.data.values || response.data.values.length === 0) {
+      throw new Error('저장된 관리자 키를 찾을 수 없습니다');
+    }
     
-    // 이메일 내용 구성
-    const emailContent = `
-      안녕하세요!
-      
-      관리자 회원가입을 위한 관리자 키입니다.
-      
-      관리자 키: ${adminKey}
-      
-      이 키를 사용하여 관리자로 회원가입할 수 있습니다.
-      키는 매일 자정에 자동으로 갱신됩니다.
-      
-      감사합니다.
-    `;
+    const currentAdminKey = response.data.values[0][0];
+    const layersUsed = response.data.values[0][3];
     
-    // Base64 인코딩된 이메일 생성
-    const email = [
-      'Content-Type: text/plain; charset=utf-8',
-      'MIME-Version: 1.0',
-      `To: ${userEmail}`,
-      'From: me',  // 관리자 계정에서 전송
-      'Subject: 관리자 회원가입 키',
-      '',
-      emailContent
-    ].join('\r\n');
+    console.log('관리자 키 조회 완료:', currentAdminKey.substring(0, 10) + '...');
+    console.log('사용된 레이어:', layersUsed);
     
-    const encodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
-    
-    // 이메일 전송
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: encodedEmail
+    // 복호화된 키 생성
+    let decryptedKey = currentAdminKey;
+    if (layersUsed) {
+      const layers = layersUsed.split(',');
+      console.log('레이어 목록:', layers);
+      
+      // 레이어 순서의 역순으로 복호화 적용
+      for (let i = layers.length - 1; i >= 0; i--) {
+        const layer = layers[i].trim();
+        console.log(`복호화 레이어 ${i}: ${layer}`);
+        const beforeDecrypt = decryptedKey.substring(0, 20) + '...';
+        decryptedKey = applyDecryption(decryptedKey, layer, '');
+        console.log(`복호화 전: ${beforeDecrypt}`);
+        console.log(`복호화 후: ${decryptedKey.substring(0, 20)}...`);
       }
-    });
+      
+      console.log('복호화된 키:', decryptedKey.substring(0, 20) + '...');
+    }
     
-    console.log(`관리자 키 이메일 전송 완료: ${userEmail}`);
-    return { success: true, message: '이메일 전송이 완료되었습니다' };
+    return {
+      success: true,
+      adminKey: decryptedKey,
+      encryptedKey: currentAdminKey,
+      layersUsed: layersUsed
+    };
     
   } catch (error) {
-    console.error('이메일 전송 실패:', error);
-    throw new Error('이메일 전송 중 오류가 발생했습니다');
+    console.error('관리자 키 조회 실패:', error);
+    throw error;
   }
+}
+
+// ===== 프론트엔드용 이메일 템플릿 생성 함수 =====
+function generateEmailTemplate(userEmail, adminKey) {
+  const emailContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .key-container { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .admin-key { 
+            font-family: monospace; 
+            font-size: 14px; 
+            word-break: break-all; 
+            background-color: #fff; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 3px; 
+            user-select: all;
+            cursor: text;
+        }
+        .copy-btn { 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            margin-top: 10px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+        }
+        .copy-btn:hover { 
+            background-color: #0056b3; 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,123,255,0.4);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+        }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Hot Potato 관리자 회원가입 키</h2>
+        </div>
+        
+        <p>안녕하세요!</p>
+        
+        <p>Hot Potato 관리자 회원가입을 위한 관리자 키입니다.</p>
+        
+        <div class="key-container">
+            <strong>관리자 키:</strong>
+            <div class="admin-key" id="adminKey">${adminKey}</div>
+            <button class="copy-btn" onclick="copyToClipboard()">복사하기</button>
+        </div>
+        
+        <p>이 키를 사용하여 관리자로 회원가입할 수 있습니다.</p>
+        <p>키는 매일 자정에 자동으로 갱신됩니다.</p>
+        
+        <div class="footer">
+            <p>감사합니다.<br>Hot Potato 팀</p>
+        </div>
+    </div>
+    
+    <script>
+        function copyToClipboard() {
+            const keyElement = document.getElementById('adminKey');
+            const text = keyElement.textContent;
+            
+            // 다양한 복사 방법 시도
+            if (navigator.clipboard && window.isSecureContext) {
+                // 최신 브라우저의 Clipboard API 사용
+                navigator.clipboard.writeText(text).then(function() {
+                    showCopySuccess();
+                }).catch(function(err) {
+                    console.error('Clipboard API 복사 실패:', err);
+                    fallbackCopy(text);
+                });
+            } else {
+                // 구형 브라우저를 위한 fallback
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            // 텍스트 영역을 생성하여 복사
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess();
+                } else {
+                    showCopyError();
+                }
+            } catch (err) {
+                console.error('execCommand 복사 실패:', err);
+                showCopyError();
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        function showCopySuccess() {
+            const btn = document.querySelector('.copy-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '복사됨!';
+            btn.style.backgroundColor = '#28a745';
+            
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.style.backgroundColor = '#007bff';
+            }, 2000);
+        }
+        
+        function showCopyError() {
+            const btn = document.querySelector('.copy-btn');
+            const originalText = btn.textContent;
+            btn.textContent = '복사 실패';
+            btn.style.backgroundColor = '#dc3545';
+            
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.style.backgroundColor = '#007bff';
+            }, 2000);
+            
+            // 사용자에게 수동 복사 안내
+            const keyElement = document.getElementById('adminKey');
+            keyElement.style.backgroundColor = '#fff3cd';
+            keyElement.style.border = '2px solid #ffc107';
+            keyElement.style.cursor = 'text';
+            keyElement.setAttribute('contenteditable', 'true');
+            keyElement.focus();
+            
+            // 텍스트 선택
+            if (window.getSelection) {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(keyElement);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    </script>
+</body>
+</html>
+  `;
+  
+  return {
+    html: emailContent.trim(),
+    subject: 'Hot Potato 관리자 회원가입 키',
+    subjectEncoded: '=?UTF-8?B?' + Buffer.from('Hot Potato 관리자 회원가입 키').toString('base64') + '?=',
+    to: userEmail,
+    adminKey: adminKey
+  };
 }
 
 // ===== 승인 상태 확인 함수 =====
@@ -538,12 +2129,13 @@ async function checkUserApprovalStatus(email) {
       const row = rows[i];
       console.log(`행 ${i} 데이터:`, row);
       
-      const userEmail = row[3]; // google_member 컬럼 (D열)
+      const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
+      const userEmail = rot13Decrypt(encryptedUserEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // Approval 컬럼 (E열)
       const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
       
-      console.log(`행 ${i} - 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}`);
+      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, 복호화된 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}`);
 
       if (userEmail === email) {
         const isApproved = approvalStatus === 'O';
@@ -576,14 +2168,14 @@ async function checkUserApprovalStatus(email) {
 
 // ===== 관리자 패널 관련 함수들 =====
 
-// 승인 대기 중인 사용자 목록 가져오기
+// 모든 사용자 목록 가져오기 (승인 대기 + 승인된 사용자)
 async function handleGetPendingUsers(req, res) {
   try {
     console.log('handleGetPendingUsers 호출됨');
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
     
-    // user 시트에서 승인 대기 중인 사용자 조회
+    // user 시트에서 모든 사용자 조회
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId,
       range: 'user!A:Z'
@@ -597,7 +2189,7 @@ async function handleGetPendingUsers(req, res) {
       });
     }
     
-    const pendingUsers = [];
+    const allUsers = [];
     
     // 헤더 행 제외하고 데이터 검색
     for (let i = 1; i < rows.length; i++) {
@@ -605,33 +2197,48 @@ async function handleGetPendingUsers(req, res) {
       const studentId = row[0]; // A열: 학번/교번
       const active = row[1]; // B열: 활성화 상태
       const name = row[2]; // C열: 이름
-      const email = row[3]; // D열: Google 계정 이메일
+      const encryptedEmail = row[3]; // D열: Google 계정 이메일 (암호화됨)
+      const email = rot13Decrypt(encryptedEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // E열: 승인 상태
       const isAdmin = row[5]; // F열: 관리자 여부
+      const approvalDate = row[6]; // G열: 승인 날짜
       
-      // 승인 대기 중이고 Google 계정이 연결된 사용자만 포함
-      if (approvalStatus === 'X' && email && email.trim() !== '') {
-        pendingUsers.push({
+      // Google 계정이 연결된 사용자만 포함 (승인 대기 + 승인된 사용자)
+      if (email && email.trim() !== '' && (approvalStatus === 'X' || approvalStatus === 'O')) {
+        // 승인된 사용자는 승인일, 승인 대기 사용자는 요청일 표시
+        const currentKST = getKSTTime();
+        const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
+        const displayDate = approvalStatus === 'O' && approvalDate ? approvalDate : currentDate;
+        
+        allUsers.push({
           id: studentId,
           email: email,
           studentId: studentId,
           name: name,
           isAdmin: isAdmin === 'O',
-          isApproved: false,
-          requestDate: new Date().toISOString().split('T')[0] // 임시로 오늘 날짜
+          isApproved: approvalStatus === 'O',
+          requestDate: displayDate,
+          approvalDate: approvalDate || null
         });
       }
     }
     
-    console.log(`승인 대기 중인 사용자 ${pendingUsers.length}명 발견`);
+    console.log(`총 사용자 ${allUsers.length}명 발견 (승인 대기 + 승인된 사용자)`);
+    console.log('사용자 목록:', allUsers.map(user => ({
+      name: user.name,
+      email: user.email,
+      isApproved: user.isApproved,
+      requestDate: user.requestDate,
+      approvalDate: user.approvalDate
+    })));
     
     res.json({
       success: true,
-      users: pendingUsers
+      users: allUsers
     });
     
   } catch (error) {
-    console.error('승인 대기 사용자 목록 조회 실패:', error);
+    console.error('사용자 목록 조회 실패:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -642,14 +2249,31 @@ async function handleGetPendingUsers(req, res) {
 // 사용자 승인
 async function handleApproveUser(req, res) {
   try {
-    const { studentId } = req.body;
+    console.log('=== 승인 요청 시작 ===');
+    console.log('전체 요청 body:', JSON.stringify(req.body, null, 2));
     
-    if (!studentId) {
+    const { studentId, id, action } = req.body;
+    const targetStudentId = studentId || id; // id 또는 studentId 둘 다 지원
+    
+    console.log('파싱된 데이터:', { 
+      studentId, 
+      id, 
+      action, 
+      targetStudentId,
+      hasStudentId: !!studentId,
+      hasId: !!id,
+      hasAction: !!action
+    });
+    
+    if (!targetStudentId) {
+      console.log('❌ 학번이 없음 - 오류 반환');
       return res.status(400).json({
         success: false,
         error: '학번이 필요합니다.'
       });
     }
+    
+    console.log('✅ 학번 확인됨:', targetStudentId);
     
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
@@ -662,11 +2286,13 @@ async function handleApproveUser(req, res) {
     
     const rows = response.data.values;
     let userRowIndex = -1;
+    let isAdminValue = ''; // 기존 is_admin 값 저장
     
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (row[0] === studentId) {
+      if (row[0] === targetStudentId) {
         userRowIndex = i + 1;
+        isAdminValue = row[5] || ''; // F열(is_admin) 값 저장
         break;
       }
     }
@@ -678,21 +2304,24 @@ async function handleApproveUser(req, res) {
       });
     }
     
-    // E열(승인 상태)을 'O'로 업데이트
+    // E열(승인 상태)을 'O'로, F열(is_admin)을 기존 값 유지, G열(승인 날짜)을 현재 KST 날짜로 업데이트
+    const currentKST = getKSTTime();
+    const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `user!E${userRowIndex}`,
+      range: `user!E${userRowIndex}:G${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [['O']]
+        values: [['O', isAdminValue, currentDate]]
       }
     });
     
-    console.log(`사용자 승인 완료: ${studentId}`);
+    console.log(`사용자 승인 완료: ${targetStudentId}, 승인 날짜: ${currentDate}, is_admin: ${isAdminValue}`);
     
     res.json({
       success: true,
-      message: '사용자가 승인되었습니다.'
+      message: '사용자가 승인되었습니다.',
+      approvalDate: currentDate
     });
     
   } catch (error) {
@@ -707,14 +2336,31 @@ async function handleApproveUser(req, res) {
 // 사용자 거부
 async function handleRejectUser(req, res) {
   try {
-    const { studentId } = req.body;
+    console.log('=== 거부 요청 시작 ===');
+    console.log('전체 요청 body:', JSON.stringify(req.body, null, 2));
     
-    if (!studentId) {
+    const { studentId, id, action } = req.body;
+    const targetStudentId = studentId || id; // id 또는 studentId 둘 다 지원
+    
+    console.log('파싱된 데이터:', { 
+      studentId, 
+      id, 
+      action, 
+      targetStudentId,
+      hasStudentId: !!studentId,
+      hasId: !!id,
+      hasAction: !!action
+    });
+    
+    if (!targetStudentId) {
+      console.log('❌ 학번이 없음 - 오류 반환');
       return res.status(400).json({
         success: false,
         error: '학번이 필요합니다.'
       });
     }
+    
+    console.log('✅ 학번 확인됨:', targetStudentId);
     
     const auth = await getAuthClient();
     const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
@@ -730,7 +2376,7 @@ async function handleRejectUser(req, res) {
     
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (row[0] === studentId) {
+      if (row[0] === targetStudentId) {
         userRowIndex = i + 1;
         break;
       }
@@ -743,17 +2389,17 @@ async function handleRejectUser(req, res) {
       });
     }
     
-    // D열(Google 계정)을 비우고 E열(승인 상태)을 'R'(거부)로 업데이트
+    // D열(Google 계정), E열(승인 상태), F열(is_admin), G열(승인 날짜)을 모두 비우기
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `user!D${userRowIndex}:E${userRowIndex}`,
+      range: `user!D${userRowIndex}:G${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [['', 'R']]
+        values: [['', '', '', '']]
       }
     });
     
-    console.log(`사용자 거부 완료: ${studentId}`);
+    console.log(`사용자 거부 완료: ${targetStudentId}`);
     
     res.json({
       success: true,
@@ -805,13 +2451,14 @@ async function checkUserRegistrationStatus(email) {
       const row = rows[i];
       console.log(`행 ${i} 데이터:`, row);
       
-      const userEmail = row[3]; // google_member 컬럼 (D열)
+      const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
+      const userEmail = rot13Decrypt(encryptedUserEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // Approval 컬럼 (E열)
       const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
       const name = row[2]; // name_member 컬럼 (C열)
       
-      console.log(`행 ${i} - 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
+      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, 복호화된 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
 
       if (userEmail === email) {
         const isApproved = approvalStatus === 'O';
@@ -898,12 +2545,14 @@ async function addUserRegistrationRequest(userData) {
     const isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
     
     // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
+    // 이메일 주소를 ROT13으로 암호화하여 저장
+    const encryptedEmail = rot13Encrypt(userData.userEmail);
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `user!D${userRowIndex}:F${userRowIndex}`,
       valueInputOption: 'RAW',
       resource: { 
-        values: [[userData.userEmail, approvalStatus, isAdminStatus]]
+        values: [[encryptedEmail, approvalStatus, isAdminStatus]]
       }
     });
     
@@ -916,6 +2565,59 @@ async function addUserRegistrationRequest(userData) {
 }
 
 // ===== Cloud Functions Export =====
+// ROT13 암호화/복호화 테스트 엔드포인트
+exports.testRot13Encryption = async (req, res) => {
+  setCorsHeaders(res);
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  try {
+    console.log('ROT13 암호화/복호화 테스트 시작');
+    const result = testRot13Encryption();
+    
+    res.status(200).json({
+      success: true,
+      result: result
+    });
+  } catch (error) {
+    console.error('테스트 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// 이메일 마이그레이션 엔드포인트
+exports.migrateEmails = async (req, res) => {
+  setCorsHeaders(res);
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  try {
+    console.log('이메일 마이그레이션 요청 시작');
+    const result = await migrateExistingEmails();
+    
+    res.status(200).json({
+      success: true,
+      message: `마이그레이션 완료: ${result.migrated}개 이메일 암호화`,
+      migrated: result.migrated
+    });
+  } catch (error) {
+    console.error('마이그레이션 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 // 메인 라우터 함수 (모든 요청을 처리)
 exports.dailyKeyUpdate = async (req, res) => {
   // CORS 헤더 설정
@@ -933,23 +2635,23 @@ exports.dailyKeyUpdate = async (req, res) => {
     console.log(`요청 경로: ${path}`);
     console.log(`요청 body:`, req.body);
     
-    // 경로별 라우팅
-    if (path.includes('/verifyAdminKey') || (req.body && req.body.adminKey)) {
-      return await handleVerifyAdminKey(req, res);
-    } else if (path.includes('/sendAdminKeyEmail') || (req.body && req.body.userEmail && req.body.adminAccessToken)) {
-      return await handleSendAdminKeyEmail(req, res);
-    } else if (path.includes('/submitRegistrationRequest') || (req.body && req.body.studentId)) {
-      return await handleSubmitRegistrationRequest(req, res);
-    } else if (path.includes('/checkApprovalStatus') || (req.body && req.body.email && req.body.studentId !== undefined)) {
-      return await handleCheckApprovalStatus(req, res);
-    } else if (path.includes('/checkRegistrationStatus') || (req.body && req.body.email && !req.body.studentId)) {
-      return await handleCheckRegistrationStatus(req, res);
-    } else if (path.includes('/getPendingUsers') || (req.body && req.body.action === 'getPendingUsers')) {
+    // 경로별 라우팅 (action 기반 라우팅을 먼저 처리)
+    if (path.includes('/getPendingUsers') || (req.body && req.body.action === 'getPendingUsers')) {
       return await handleGetPendingUsers(req, res);
     } else if (path.includes('/approveUser') || (req.body && req.body.action === 'approveUser')) {
       return await handleApproveUser(req, res);
     } else if (path.includes('/rejectUser') || (req.body && req.body.action === 'rejectUser')) {
       return await handleRejectUser(req, res);
+    } else if (path.includes('/verifyAdminKey') || (req.body && req.body.adminKey)) {
+      return await handleVerifyAdminKey(req, res);
+    } else if (path.includes('/sendAdminKeyEmail') || (req.body && req.body.userEmail && req.body.adminAccessToken)) {
+      return await handleSendAdminKeyEmail(req, res);
+    } else if (path.includes('/submitRegistrationRequest') || (req.body && req.body.studentId && !req.body.action)) {
+      return await handleSubmitRegistrationRequest(req, res);
+    } else if (path.includes('/checkApprovalStatus') || (req.body && req.body.email && req.body.studentId !== undefined)) {
+      return await handleCheckApprovalStatus(req, res);
+    } else if (path.includes('/checkRegistrationStatus') || (req.body && req.body.email && !req.body.studentId)) {
+      return await handleCheckRegistrationStatus(req, res);
     } else {
       // 기본: 관리자 키 자동 갱신
       return await handleDailyKeyUpdate(req, res);
@@ -1023,12 +2725,26 @@ async function handleVerifyAdminKey(req, res) {
   }
 }
 
-// 관리자 키 이메일 전송 핸들러
+// 관리자 키 이메일 전송 핸들러 (복호화된 키 반환)
 async function handleSendAdminKeyEmail(req, res) {
   try {
+    console.log('=== handleSendAdminKeyEmail 호출됨 ===');
+    console.log('요청 메서드:', req.method);
+    console.log('요청 URL:', req.url);
+    console.log('요청 헤더:', req.headers);
+    console.log('요청 본문:', req.body);
+    
     const { userEmail, adminAccessToken } = req.body;
     
+    console.log('파싱된 데이터:', { 
+      userEmail, 
+      hasToken: !!adminAccessToken,
+      tokenLength: adminAccessToken?.length,
+      tokenPreview: adminAccessToken ? adminAccessToken.substring(0, 20) + '...' : 'undefined'
+    });
+    
     if (!userEmail) {
+      console.log('❌ 이메일 누락');
       return res.status(400).json({
         success: false,
         error: '사용자 이메일을 입력해주세요'
@@ -1036,11 +2752,14 @@ async function handleSendAdminKeyEmail(req, res) {
     }
     
     if (!adminAccessToken) {
+      console.log('❌ 액세스 토큰 누락');
       return res.status(400).json({
         success: false,
         error: '관리자 인증이 필요합니다'
       });
     }
+    
+    console.log('✅ 모든 필수 데이터 확인 완료');
     
     // 이메일 형식 검증
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1051,32 +2770,111 @@ async function handleSendAdminKeyEmail(req, res) {
       });
     }
     
-    // hp_member의 admin_keys 시트에서 현재 저장된 관리자 키 가져오기
-    const auth = await getAuthClient();
-    const { spreadsheetId, sheets } = await findHpMemberSheet(auth);
+    // hp_member의 admin_keys 시트에서 현재 저장된 관리자 키와 레이어 정보 가져오기
+    console.log('관리자 키 조회 시작...');
+    let auth, spreadsheetId, sheets;
     
-    const response = await sheets.spreadsheets.values.get({
+    try {
+      auth = await getAuthClient();
+      console.log('Google API 인증 성공');
+      
+      const result = await findHpMemberSheet(auth);
+      spreadsheetId = result.spreadsheetId;
+      sheets = result.sheets;
+      console.log('hp_member 시트 찾기 성공, spreadsheetId:', spreadsheetId);
+    } catch (authError) {
+      console.error('Google API 인증 또는 시트 찾기 실패:', authError);
+      throw new Error('Google Sheets 접근에 실패했습니다: ' + authError.message);
+    }
+    
+    let response;
+    try {
+      response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'admin_keys!A2:A2'
+        range: 'admin_keys!A2:E2'
     });
+    console.log('관리자 키 조회 응답:', response.data);
+    } catch (sheetError) {
+      console.error('Google Sheets 데이터 조회 실패:', sheetError);
+      throw new Error('관리자 키 데이터를 가져오는데 실패했습니다: ' + sheetError.message);
+    }
     
     if (!response.data.values || response.data.values.length === 0) {
+      console.log('관리자 키를 찾을 수 없음');
       throw new Error('저장된 관리자 키를 찾을 수 없습니다');
     }
     
     const currentAdminKey = response.data.values[0][0];
+    const layersUsed = response.data.values[0][3]; // D열: layers_used
     
-    // 관리자 계정으로 이메일 전송
-    await sendAdminKeyEmailWithUserToken(userEmail, currentAdminKey, adminAccessToken);
+    console.log('=== 스프레드시트에서 조회한 데이터 ===');
+    console.log('전체 응답 데이터:', response.data.values[0]);
+    console.log('암호화된 키 (전체):', currentAdminKey);
+    console.log('암호화된 키 (처음 50자):', currentAdminKey.substring(0, 50) + '...');
+    console.log('사용된 레이어:', layersUsed);
+    console.log('레이어 개수:', layersUsed ? layersUsed.split(',').length : 0);
     
+    // 복호화된 키 생성
+    let decryptedKey = currentAdminKey;
+    try {
+      if (layersUsed) {
+        const layers = layersUsed.split(',');
+        console.log('레이어 목록:', layers);
+        
+        // 레이어 순서의 역순으로 복호화 적용
+        console.log('=== 복호화 과정 시작 ===');
+        for (let i = layers.length - 1; i >= 0; i--) {
+          const layer = layers[i].trim();
+          console.log(`\n--- 복호화 단계 ${layers.length - i}/${layers.length} ---`);
+          console.log(`레이어: ${layer}`);
+          console.log(`복호화 전 (전체): ${decryptedKey}`);
+          console.log(`복호화 전 (처음 50자): ${decryptedKey.substring(0, 50)}...`);
+          
+          try {
+            decryptedKey = applyDecryption(decryptedKey, layer, '');
+            console.log(`복호화 후 (전체): ${decryptedKey}`);
+            console.log(`복호화 후 (처음 50자): ${decryptedKey.substring(0, 50)}...`);
+            console.log(`복호화 성공: ✅`);
+          } catch (decryptError) {
+            console.error(`복호화 실패: ❌ - ${decryptError.message}`);
+            throw decryptError;
+          }
+        }
+        console.log('=== 복호화 과정 완료 ===');
+        
+        console.log('복호화된 키:', decryptedKey.substring(0, 20) + '...');
+      } else {
+        console.log('레이어 정보가 없어 원본 키 사용');
+        decryptedKey = currentAdminKey;
+      }
+    } catch (decryptError) {
+      console.error('키 복호화 실패:', decryptError);
+      throw new Error('관리자 키 복호화에 실패했습니다: ' + decryptError.message);
+    }
+    
+    // 이메일 템플릿 생성
+    let emailTemplate;
+    try {
+      emailTemplate = generateEmailTemplate(userEmail, decryptedKey);
+      console.log('이메일 템플릿 생성 완료');
+    } catch (templateError) {
+      console.error('이메일 템플릿 생성 실패:', templateError);
+      throw new Error('이메일 템플릿 생성에 실패했습니다: ' + templateError.message);
+    }
+    
+    // 복호화된 키와 이메일 템플릿을 프론트엔드로 반환 (이메일 전송은 프론트엔드에서 처리)
     res.json({
       success: true,
-      message: '관리자 키가 이메일로 전송되었습니다',
-      userEmail
+      message: '관리자 키를 성공적으로 조회했습니다',
+      userEmail,
+      adminKey: decryptedKey,
+      encryptedKey: currentAdminKey,
+      layersUsed: layersUsed,
+      emailTemplate: emailTemplate
     });
     
   } catch (error) {
-    console.error('이메일 전송 실패:', error);
+    console.error('관리자 키 조회 실패:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -1145,6 +2943,7 @@ async function handleCheckRegistrationStatus(req, res) {
   }
 }
 
+
 // 가입 요청 제출 핸들러 (새로 추가)
 async function handleSubmitRegistrationRequest(req, res) {
   try {
@@ -1187,3 +2986,11 @@ async function handleSubmitRegistrationRequest(req, res) {
     });
   }
 }
+
+// ===== 추가 Export =====
+module.exports = {
+  ...module.exports,
+  generateExtendedMultiLayerKey,
+  applyEncryption,
+  applyDecryption
+};

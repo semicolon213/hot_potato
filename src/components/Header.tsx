@@ -263,7 +263,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
           </div>
 
           {displayUser ? (
-              <div className="user-section">
+              <>
                 <div
                     className="user-profile"
                     onClick={() => onPageChange("mypage")}
@@ -273,19 +273,19 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                     <img
                         src={(displayUser as any).picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayUser.name)}&background=random`}
                         alt="User profile"
-                        className="user-avatar"
+                        style={{ borderRadius: '50%', width: '28px', height: '28px' }}
                       />
                     </div>
                     <div className="user-name" data-oid="xz4ud-l">
                       {displayUser.name}
                   </div>
                 </div>
-                <button onClick={handleLogout} className="logout-button">
+                <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
                   로그아웃
                 </button>
-              </div>
+              </>
           ) : (
-              <button onClick={() => onPageChange("login")} className="login-button">Google 로그인</button>
+              <button onClick={() => onPageChange("login")}>Google 로그인</button>
           )}
         </div>
         

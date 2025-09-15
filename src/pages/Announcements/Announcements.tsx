@@ -1,21 +1,47 @@
 import React, { useState } from 'react';
 import './Announcements.css';
 import type { Post } from '../../App'; // Import Post interface from App.tsx
+import { deleteSheetRow } from '../../utils/googleSheetUtils';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
   posts: Post[];
-  onAuth: () => void;
   isAuthenticated: boolean;
+  announcementSpreadsheetId: string | null;
+  isLoading: boolean;
   "data-oid": string;
 }
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, onAuth, isAuthenticated }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, isAuthenticated, announcementSpreadsheetId, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeletePost = (id: string) => {
-    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까? (기능 구현 필요)')) {
-      console.log(`Deleting post ${id}`);
+  const handleDeletePost = async (id: string) => {
+    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      if (!announcementSpreadsheetId) {
+        alert('오류: 스프레드시트 ID를 찾을 수 없습니다.');
+        return;
+      }
+      if (isDeleting) return;
+
+      setIsDeleting(true);
+      try {
+        const postIndex = posts.findIndex(p => p.id === id);
+        if (postIndex === -1) {
+          throw new Error('삭제할 게시물을 찾지 못했습니다.');
+        }
+
+        const rowIndexToDelete = (posts.length - 1) - postIndex + 1;
+
+        await deleteSheetRow(announcementSpreadsheetId, '시트1', rowIndexToDelete);
+        alert('공지사항이 삭제되었습니다.');
+        window.location.reload();
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('공지사항 삭제 중 오류가 발생했습니다.');
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -39,20 +65,26 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
             />
             <span className="search-icon">🔍</span>
           </div>
-          {!isAuthenticated ? (
-            <button className="auth-button" onClick={onAuth}>Google 인증</button>
-          ) : (
-            <button className="new-post-button" onClick={() => onPageChange('new-announcement-post')}>새 공지 작성</button>
+          {isAuthenticated && (
+            <button 
+              className="new-post-button" 
+              onClick={() => onPageChange('new-announcement-post')}
+              disabled={!announcementSpreadsheetId}
+            >
+              {announcementSpreadsheetId ? '새 공지 작성' : '불러오는 중...'}
+            </button>
           )}
         </div>
       </div>
       <div className="post-list">
-        {filteredPosts.length > 0 ? (
+        {isLoading ? (
+          <p className="loading-message">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</p>
+        ) : filteredPosts.length > 0 ? (
           filteredPosts.map(post => (
             <div key={post.id} className="post-card">
               <div className="card-header">
                 <h3>{post.title}</h3>
-                <button className="delete-button" onClick={() => handleDeletePost(post.id)}>x</button>
+                <button className="delete-button" onClick={() => handleDeletePost(post.id)} disabled={isDeleting}>x</button>
               </div>
               <div className="post-meta">
                 <span className="author">{post.author}</span>
@@ -63,7 +95,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
             </div>
           ))
         ) : (
-          <p className="no-results">{isAuthenticated ? '공지사항이 없습니다.' : 'Google 인증 후 공지사항을 볼 수 있습니다.'}</p>
+          <p className="no-results">{isAuthenticated ? '공지사항이 없습니다.' : '데이터를 불러오는 중입니다. 잠시만 기다려주세요...'}</p>
         )}
       </div>
     </div>
