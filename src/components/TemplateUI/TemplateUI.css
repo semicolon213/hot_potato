@@ -224,11 +224,34 @@ margin-left: 0;
 
 .new-card-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end; /* Align items to the right */
     align-items: center;
     padding: 14px 20px;
     background-color: #f8f9fa;
     border-top: 1px solid #e9ecef;
+}
+
+.favorite-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-right: 10px; /* Add some space between buttons */
+}
+
+.favorite-button img {
+    width: 20px;
+    height: 20px;
+    filter: grayscale(100%);
+    transition: filter 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.favorite-button.favorited img {
+    filter: none; /* Show original color (yellow) */
+}
+
+.favorite-button:hover img {
+    transform: scale(1.1);
 }
 
 .new-usage-count {

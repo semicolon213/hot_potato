@@ -11,9 +11,11 @@ interface Props {
     onEdit?: (template: Template) => void; // Make optional
     isFixed: boolean;
     defaultTags: string[];
+    onToggleFavorite?: (template: Template) => void;
+    isFavorite?: boolean;
 }
 
-export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, isFixed, defaultTags }: Props) {
+export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, isFixed, defaultTags, onToggleFavorite, isFavorite }: Props) {
     const {
         attributes,
         listeners,
@@ -39,6 +41,8 @@ export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, is
             defaultTags={defaultTags}
             attributes={attributes}
             listeners={listeners}
+            onToggleFavorite={onToggleFavorite}
+            isFavorite={isFavorite}
         />
     );
 }

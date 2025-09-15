@@ -10,6 +10,7 @@ export interface Template {
     tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
     parttitle?: string;    // For filtering
     documentId?: string;   // Google Doc ID
+    favorites_tag?: string; // 즐겨찾기 태그
 }
 
 export const defaultTemplates: Template[] = [

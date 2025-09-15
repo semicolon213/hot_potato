@@ -1,6 +1,7 @@
 import React from "react";
 import type { Template } from "../../hooks/useTemplateUI";
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import StarIcon from '../../assets/Icons/star.svg';
 
 interface Props {
     template: Template;
@@ -12,6 +13,8 @@ interface Props {
     style?: React.CSSProperties;
     attributes?: DraggableAttributes;
     listeners?: DraggableSyntheticListeners;
+    onToggleFavorite?: (template: Template) => void; // 즐겨찾기 토글 함수
+    isFavorite?: boolean; // 즐겨찾기 상태
 }
 
 const tagToClassMap: { [key: string]: string } = {
@@ -34,7 +37,7 @@ function getCustomTagColorClass(tagName: string): string {
 }
 
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
-    ({ template, onUse, onDelete, onEdit, isFixed, defaultTags, style, attributes, listeners }, ref) => {
+    ({ template, onUse, onDelete, onEdit, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite }, ref) => {
         const isDefaultTag = defaultTags.includes(template.tag);
         const tagClassName = isDefaultTag
             ? tagToClassMap[template.tag] || 'default'
@@ -87,6 +90,15 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                     <p className="new-card-description">{template.parttitle || template.description}</p>
                 </div>
                 <div className="new-card-footer">
+                    {onToggleFavorite && (
+                        <button
+                            className={`favorite-button ${isFavorite ? 'favorited' : ''}`}
+                            onClick={() => onToggleFavorite(template)}
+                            title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                        >
+                            <img src={StarIcon} alt="즐겨찾기" />
+                        </button>
+                    )}
                     <button
                         className="new-use-button"
                         onClick={() => onUse(template.type, template.title)}

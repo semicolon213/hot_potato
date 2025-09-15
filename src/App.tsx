@@ -1,3 +1,4 @@
+import { updateSheetCell } from "./utils/googleSheetUtils";
 import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -624,6 +625,28 @@ const App: React.FC = () => {
     }
   };
 
+  const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: string | undefined) => {
+    if (!hotPotatoDBSpreadsheetId) {
+        console.error("Spreadsheet ID is not available.");
+        return;
+    }
+    try {
+        // G열은 7번째 열이므로, columnIndex는 6입니다.
+        await updateSheetCell(
+            hotPotatoDBSpreadsheetId,
+            'document_template',
+            rowIndex,
+            6, // Column G
+            favoriteStatus || '' // 새로운 값 또는 빈 문자열로 셀을 비웁니다.
+        );
+        console.log(`Template favorite status updated in Google Sheets for row ${rowIndex}.`);
+        await fetchTemplates(); // 시트와 UI를 동기화하기 위해 템플릿을 다시 불러옵니다.
+    } catch (error) {
+        console.error('Error updating template favorite status in Google Sheet:', error);
+        // 여기서 UI 롤백 로직을 추가할 수 있습니다.
+    }
+  };
+
   const fetchPosts = async () => {
     if (!boardSpreadsheetId) return;
     setIsBoardLoading(true);
@@ -693,7 +716,7 @@ const App: React.FC = () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: hotPotatoDBSpreadsheetId,
-        range: 'document_template!B2:F', // Range covers B, C, D, E columns
+        range: 'document_template!B2:G', // Range covers B to G columns
       });
 
       const data = response.result.values;
@@ -706,6 +729,7 @@ const App: React.FC = () => {
           tag: row[2] || '',         // Column D -> tag
           type: row[0] || '',        // Use title as type
           documentId: row[4] || '',  // Column F -> documentId
+          favorites_tag: row[5] || '', // Column G -> favorites_tag
         }));
 
         const filteredTemplates = allTemplates.filter(template => {
@@ -1310,7 +1334,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" />;
       case "new_document":
         return (
-            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} updateTemplateFavorite={updateTemplateFavorite} data-oid="ou.h__l" />
         );
       case "calendar":
           return <MyCalendarPage

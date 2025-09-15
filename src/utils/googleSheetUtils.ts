@@ -80,6 +80,22 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
   }
 };
 
+export const updateSheetCell = async (spreadsheetId: string, sheetName: string, rowIndex: number, columnIndex: number, value: string): Promise<void> => {
+    await initializeGoogleAPIOnce();
+    const gapi = (window as any).gapi;
+
+    const range = `${sheetName}!${String.fromCharCode(65 + columnIndex)}${rowIndex}`;
+
+    await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: [[value]]
+        }
+    });
+};
+
 // This function is not used in this file, but it was in App.tsx
 // Keeping it here for now, but it might be removed later if not needed.
 export const resetGoogleAPIState = () => {
