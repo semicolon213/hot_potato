@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
@@ -17,11 +17,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         daysInMonth,
         selectedDate,
         events,
-        setSelectedEvent,
         semesterStartDate,
         setSemesterStartDate,
         addEvent,
-        triggerRefresh, // 새로고침 함수 가져오기
         selectedEvent,
     } = useCalendarContext();
 
@@ -41,6 +39,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         semesterStartDate.toISOString().split('T')[0]
     );
 
+    useEffect(() => {
+        const semesterStartEvent = events.find(event => event.title === '개강일');
+        if (semesterStartEvent) {
+            setTempStartDate(semesterStartEvent.startDate.split('T')[0]);
+            setSemesterStartDate(new Date(semesterStartEvent.startDate));
+        }
+    }, [events, setSemesterStartDate]);
+
     // input에서 날짜 변경 → 임시 저장
     const handleDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTempStartDate(e.target.value);
@@ -56,7 +62,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                 startDate: tempStartDate,
                 endDate: tempStartDate, // Provider가 종료일을 자동으로 하루 뒤로 조정해줍니다.
             });
-            triggerRefresh(); // 확정 버튼 클릭 시 캘린더 새로고침 실행
             setViewMode('weekly'); // 주간 뷰로 전환
         }
     };
@@ -114,7 +119,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                                 value={tempStartDate}
                                 onChange={handleDateInput}
                             />
-                            <button onClick={handleConfirmStartDate}>확정</button>
+                            <button onClick={handleConfirmStartDate}>변경</button>
                         </div>
                     </div>
                 </div>
@@ -131,8 +136,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                         <div className='week-navigation-buttons'>
                             {Array.from({ length: 15 }, (_, i) => i + 1).map(weekNum => (
                                 <button key={weekNum} onClick={() => {
-                                setSelectedWeek(weekNum);
-                            }} className={selectedWeek === weekNum ? 'active' : ''}>
+                                    setSelectedWeek(weekNum);
+                                }} className={selectedWeek === weekNum ? 'active' : ''}>
                                     {weekNum}주차
                                 </button>
                             ))}
@@ -190,11 +195,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                                                 itemClasses += ' selected';
                                             }
 
-                                            const showTitle = isFirstDayOfEvent || date.dayIndexOfWeek === 0;
 
                                             return (
                                                 <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                    {event.title.replace(/^\d{2}\s*/, '')}
+                                                    {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
                                                 </li>
                                             );
                                         })}

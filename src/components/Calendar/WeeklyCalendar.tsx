@@ -115,7 +115,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                                 return (
                                     <div key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={() => setSelectedEvent(event)}>
                                         {isFirstDayOfEventInWeek && (
-                                            <span className="event-title">{event.title.replace(/^\d{2}\s*/, '')}</span>
+                                            <span className="event-title">{event.title}</span>
                                         )}
                                     </div>
                                 );
@@ -145,7 +145,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                                             style={{ ...getEventPosition(event), backgroundColor: event.color }}
                                             onClick={() => setSelectedEvent(event)}
                                         >
-                                            <span className="event-title">{event.title.replace(/^\d{2}\s*/, '')}</span>
+                                            <span className="event-title">{event.title}</span>
                                         </div>
                                     ))}
                                 </div>

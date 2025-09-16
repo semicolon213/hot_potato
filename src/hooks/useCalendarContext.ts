@@ -16,6 +16,7 @@ export interface Event {
     description?: string;
     color?: string;
     colorId?: string;
+    isHoliday?: boolean;
 }
 
 interface CalendarContextType {

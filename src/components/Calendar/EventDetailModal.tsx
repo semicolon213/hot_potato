@@ -52,7 +52,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         <div className="event-detail-overlay" onClick={onClose}>
             <div className="event-detail-container" style={{ top: position.top, left: position.left }} onClick={(e) => e.stopPropagation()}>
                 <div className="event-detail-header">
-                    <h2>{event.title.replace(/^(\d{2}w*)/, '')}</h2>
+                    <h2>{event.title}</h2>
                     <div className="header-actions">
                         <img src={editIcon} alt="Edit" onClick={() => onEdit(event)} className="header-icon" />
                         <img src={trashIcon} alt="Delete" onClick={handleDelete} className="header-icon" />

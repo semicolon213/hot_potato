@@ -317,8 +317,8 @@ const App: React.FC = () => {
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
   const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
-    const [calendarSpreadsheetId, setCalendarSpreadsheetId] = useState<string | null>(null);
-
+  const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
+  const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
     // State for Calendar
     const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
     const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -819,60 +819,74 @@ const App: React.FC = () => {
         setIsLoading(false);
     }, []);
     const fetchCalendarEvents = async () => {
-        if (!calendarSpreadsheetId) return;
+        const spreadsheetIds = [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId].filter(Boolean) as string[];
+        if (spreadsheetIds.length === 0) {
+            setCalendarEvents([]);
+            return;
+        }
+
         setIsCalendarLoading(true);
         try {
-          const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: calendarSpreadsheetId,
-            range: `${calendarSheetName}!A:H`,
-          });
+            const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
+                const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: spreadsheetId,
+                    range: `${calendarSheetName}!A:H`,
+                });
 
-          const data = response.result.values;
-          if (data && data.length > 1) {
-            const parsedEvents: Event[] = data.slice(1).map((row: string[]) => {
-              const startDate = row[2] || '';
-              let endDate = row[3] || '';
-              const startDateTime = row[6] || '';
+                const data = response.result.values;
+                if (data && data.length > 1) {
+                    return data.slice(1).map((row: string[]) => {
+                        const startDate = row[2] || '';
+                        let endDate = row[3] || '';
+                        const startDateTime = row[6] || '';
 
-              // If it's an all-day event and start/end are the same, make endDate exclusive
-              if (startDate && startDate === endDate && !startDateTime) {
-                const date = new Date(endDate);
-                date.setDate(date.getDate() + 1);
-                endDate = date.toISOString().split('T')[0];
-              }
+                        if (startDate && startDate === endDate && !startDateTime) {
+                            const date = new Date(endDate);
+                            date.setDate(date.getDate() + 1);
+                            endDate = date.toISOString().split('T')[0];
+                        }
 
-              return {
-                id: row[0] || '',
-                title: row[1] || '',
-                startDate: startDate,
-                endDate: endDate,
-                description: row[4] || '',
-                colorId: row[5] || '',
-                startDateTime: startDateTime,
-                endDateTime: row[7] || '',
-              };
+                        return {
+                            id: `${spreadsheetId}-${row[0] || ''}`,
+                            title: row[1] || '',
+                            startDate: startDate,
+                            endDate: endDate,
+                            description: row[4] || '',
+                            colorId: row[5] || '',
+                            startDateTime: startDateTime,
+                            endDateTime: row[7] || '',
+                        };
+                    });
+                }
+                return [];
             });
-            setCalendarEvents(parsedEvents);
-            console.log('Loaded calendar events:', parsedEvents);
-          } else {
-            setCalendarEvents([]);
-          }
-        } catch (error) {
-          console.error('Error fetching calendar events from Google Sheet:', error);
-          console.log('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
-        } finally {
-          setIsCalendarLoading(false);
-        }
-      };
 
-      const addCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
-        if (!calendarSpreadsheetId) {
-          console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
-          return;
+            const results = await Promise.all(allEventsPromises);
+            const allEvents = results.flat();
+
+            const uniqueEvents = allEvents.filter((event, index, self) =>
+                index === self.findIndex((e) => e.id === event.id)
+            );
+
+            setCalendarEvents(uniqueEvents);
+            console.log('Loaded calendar events:', uniqueEvents);
+        } catch (error) {
+            console.error('Error fetching calendar events from Google Sheet:', error);
+            console.log('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setIsCalendarLoading(false);
+        }
+    };
+
+    const addCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
+        const targetSpreadsheetId = calendarStudentSpreadsheetId || calendarProfessorSpreadsheetId;
+        if (!targetSpreadsheetId) {
+            console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
+            return;
         }
         try {
           const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: calendarSpreadsheetId,
+              spreadsheetId: targetSpreadsheetId,
             range: `${calendarSheetName}!A:A`,
           });
 
@@ -890,7 +904,7 @@ const App: React.FC = () => {
             'endDateTime_calendar': eventData.endDateTime,
           };
 
-          await appendRow(calendarSpreadsheetId, calendarSheetName, newEventForSheet);
+          await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);
           await fetchCalendarEvents(); // Refetch calendar events after adding a new one
           console.log('일정이 성공적으로 추가되었습니다.');
         } catch (error) {
@@ -963,7 +977,7 @@ const App: React.FC = () => {
                   if (response.result.files[0].id) {
                       const fileId = response.result.files[0].id;
                       console.log("Found 'calendar_professor' spreadsheet with ID:", fileId);
-                      setCalendarSpreadsheetId(fileId);
+                      setCalendarProfessorSpreadsheetId(fileId);
                   } else {
                       console.error("'calendar_professor' spreadsheet found but has no ID.");
                       console.log("'calendar_professor' spreadsheet found but has no ID.");
@@ -976,6 +990,31 @@ const App: React.FC = () => {
               console.error("Error searching for calendar spreadsheet:", error);
               console.log("Error searching for calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
           }
+
+          // Find the student calendar spreadsheet ID by name
+          try {
+              const response = await (window as any).gapi.client.drive.files.list({
+                  q: "name='calendar_student' and mimeType='application/vnd.google-apps.spreadsheet'",
+                  fields: 'files(id, name)'
+              });
+              if (response.result.files && response.result.files.length > 0) {
+                  if (response.result.files[0].id) {
+                      const fileId = response.result.files[0].id;
+                      console.log("Found 'calendar_student' spreadsheet with ID:", fileId);
+                      setCalendarStudentSpreadsheetId(fileId);
+                  } else {
+                      console.error("'calendar_student' spreadsheet found but has no ID.");
+                      console.log("'calendar_student' spreadsheet found but has no ID.");
+                  }
+              } else {
+                  console.error("Could not find spreadsheet with name 'calendar_student'");
+                  console.log("Could not find spreadsheet with name 'calendar_student'");
+              }
+          } catch (error) {
+              console.error("Error searching for student calendar spreadsheet:", error);
+              console.log("Error searching for student calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
+          }
+
 
           // Find the board spreadsheet ID by name
         try {
@@ -1229,10 +1268,8 @@ const App: React.FC = () => {
   }, [announcementSpreadsheetId]);
 
     useEffect(() => {
-        if (calendarSpreadsheetId) {
-            fetchCalendarEvents();
-        }
-    }, [calendarSpreadsheetId]);
+        fetchCalendarEvents();
+    }, [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
   useEffect(() => {
     if (hotPotatoDBSpreadsheetId) {
       const fetchTemplateData = async () => {
