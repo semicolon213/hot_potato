@@ -23,6 +23,28 @@
 --main-font: system-ui;
 }
 
+html {
+  overflow-y: scroll; /* 항상 스크롤바 공간 확보 */
+}
+
+/* 스크롤바 스타일링으로 일정한 너비 유지 */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 body, html, * {
 font-family: var(--main-font), 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif !important;
 }
@@ -62,8 +84,9 @@ font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regu
 
 /* === 미니멀리즘 레이아웃 === */
 .app-container {
-display: flex;
-flex-direction: row;
+display: grid;
+grid-template-columns: 180px 1fr;
+grid-template-rows: 1fr;
 height: 100vh;
 width: 100vw;
 margin: 0;
@@ -625,11 +648,20 @@ filter: brightness(1.1);
 }
 
 .main-panel {
-display: flex;
-flex-direction: column;
-flex: 1;
-margin: 0 0 0 180px;
+display: grid;
+grid-template-rows: auto 1fr;
+grid-column: 2;
 background: #ffffff;
 height: 100vh;
 overflow: hidden;
+}
+
+.content {
+grid-row: 2;
+overflow-y: auto;
+overflow-x: hidden;
+padding: 0;
+margin: 0;
+width: 100%;
+box-sizing: border-box;
 }

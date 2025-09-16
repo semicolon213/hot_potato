@@ -9,6 +9,7 @@ import { appendRow } from 'papyrus-db'; // Google Sheets API 접근용
 import Login from './components/auth/Login';
 import PendingApproval from './components/auth/PendingApproval';
 import Admin from './pages/Admin';
+import Students from './pages/Students';
 
 import MyCalendarPage from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
@@ -290,7 +291,7 @@ export interface User {
     accessToken?: string; // accessToken을 포함하도록 수정
 }
 
-type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings';
+type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings' | 'students' | 'staff';
 
 const App: React.FC = () => {
   // User authentication state (from feature/login)
@@ -317,6 +318,7 @@ const App: React.FC = () => {
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
   const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
+  const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
   const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
   const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
     // State for Calendar
@@ -1064,6 +1066,30 @@ const App: React.FC = () => {
           console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
+        // Find the student spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='student' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'student' spreadsheet with ID:", fileId);
+              setStudentSpreadsheetId(fileId);
+            } else {
+              console.error("'student' spreadsheet found but has no ID.");
+              console.log("'student' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'student'");
+            console.log("Could not find spreadsheet with name 'student'");
+          }
+        } catch (error) {
+          console.error("Error searching for student spreadsheet:", error);
+          console.log("Error searching for student spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
           try {
@@ -1206,6 +1232,30 @@ const App: React.FC = () => {
         } catch (error) {
           console.error("Error searching for hot_potato_DB spreadsheet:", error);
           console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
+        // Find the student spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='student' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'student' spreadsheet with ID:", fileId);
+              setStudentSpreadsheetId(fileId);
+            } else {
+              console.error("'student' spreadsheet found but has no ID.");
+              console.log("'student' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'student'");
+            console.log("Could not find spreadsheet with name 'student'");
+          }
+        } catch (error) {
+          console.error("Error searching for student spreadsheet:", error);
+          console.log("Error searching for student spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // gapi가 초기화된 후 데이터 로드
@@ -1372,6 +1422,10 @@ const App: React.FC = () => {
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'admin':
         return <Admin />;
+      case 'students':
+        return <Students onPageChange={handlePageChange} studentSpreadsheetId={studentSpreadsheetId} />;
+      case 'staff':
+        return <div>교직원 관리 페이지 (구현 예정)</div>;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':

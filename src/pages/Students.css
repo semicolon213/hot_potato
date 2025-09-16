@@ -1,0 +1,715 @@
+.students-container {
+  padding: 15px;
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.students-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px 20px;
+  background-color: var(--primary);
+  border-radius: var(--border-radius-lg);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-left h1 {
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.header-stats {
+  display: flex;
+  gap: 15px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-number {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.95);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-button {
+  padding: 8px 16px;
+  border: 2px solid var(--border-color);
+  background-color: white;
+  color: var(--text-dark);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+  background-color: var(--background-light);
+  border-color: var(--primary);
+}
+
+.tab-button.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.students-list {
+  margin-top: 20px;
+}
+
+.council-section {
+  margin-top: 20px;
+}
+
+.council-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-lg);
+}
+
+.council-header h2 {
+  color: var(--text-dark);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.year-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.year-selector label {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.year-select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: white;
+  color: var(--text-dark);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.year-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.council-table {
+  margin-top: 20px;
+}
+
+.no-year-selected {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-medium);
+  font-size: 16px;
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-lg);
+  border: 2px dashed var(--border-color);
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 18px;
+  color: var(--text-medium);
+}
+
+.error {
+  color: #e74c3c;
+  background-color: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--border-radius-lg);
+}
+
+.council-item {
+  margin-bottom: 4px;
+  padding: 2px 0;
+  font-size: 14px;
+}
+
+.council-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 학생회 배지 스타일 */
+.council-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.council-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.council-badge:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.badge-year {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-right: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.badge-position {
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 학생회 직책별 색상 구분 */
+.council-badge:nth-child(1) {
+  background-color: var(--primary);
+}
+
+.council-badge:nth-child(2) {
+  background-color: var(--secondary);
+}
+
+.council-badge:nth-child(3) {
+  background-color: var(--info);
+}
+
+.council-badge:nth-child(4) {
+  background-color: var(--success);
+}
+
+.council-badge:nth-child(5) {
+  background-color: var(--warning);
+}
+
+.council-badge:nth-child(n+6) {
+  background-color: var(--light);
+  color: var(--text-dark);
+}
+
+/* 단일 학생회 배지 (학생회 탭용) */
+.council-badge-single {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--primary);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 25px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.council-badge-single:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 검색 및 필터 영역 */
+.search-filter-section {
+  background: white;
+  padding: 15px;
+  border-radius: var(--border-radius-lg);
+  margin-bottom: 15px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.search-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-input-group {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 15px;
+  font-size: 16px;
+  color: var(--text-medium);
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 35px;
+  border: 2px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 14px;
+  background-color: var(--background-light);
+  color: var(--text-dark);
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--text-medium);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  background-color: #e9ecef;
+  color: var(--text-dark);
+}
+
+.filter-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.filter-toggle-btn {
+  padding: 12px 20px;
+  background-color: var(--secondary);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-toggle-btn:hover {
+  background-color: var(--secondary-dark);
+  transform: translateY(-1px);
+}
+
+.filter-toggle-btn.active {
+  background-color: var(--primary);
+}
+
+.clear-filters-btn {
+  padding: 12px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-filters-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
+.filters-panel {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 25px;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-select {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background-color: white;
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  transform: translateY(-1px);
+}
+
+.filter-select:hover {
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+/* 액션 버튼들 */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.action-left {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.export-btn, .template-btn, .import-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.export-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.export-btn:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.template-btn {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.template-btn:hover {
+  background-color: #e0a800;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.import-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.import-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.btn-icon {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.btn-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.action-right {
+  display: flex;
+  align-items: center;
+}
+
+.result-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.result-text {
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.highlight {
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(102, 126, 234, 0.2);
+}
+
+.total-text {
+  color: var(--text-medium);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* 학생 목록 테이블 */
+.students-table-container {
+  background-color: white;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  background-color: var(--table-header-bg);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table-header-cell {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  padding: 15px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.table-header-cell:hover {
+  background-color: #f8f9fa;
+}
+
+.sort-indicator {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.table-row {
+  display: flex;
+  border-bottom: 1px solid var(--border-lighter);
+  padding: 12px 0;
+  transition: background-color 0.2s;
+}
+
+.table-row:hover {
+  background-color: #f9f9f9;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  font-size: 14px;
+  color: var(--text-medium);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  word-break: break-word;
+}
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-medium);
+  font-size: 16px;
+  background-color: #f8f9fa;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .students-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+    padding: 20px;
+  }
+
+  .header-stats {
+    justify-content: center;
+  }
+
+  .tab-buttons {
+    justify-content: center;
+  }
+
+  .council-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .year-selector {
+    justify-content: center;
+  }
+
+  .search-controls {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .filter-controls {
+    justify-content: center;
+  }
+
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .action-left {
+    justify-content: center;
+  }
+
+  .action-right {
+    align-items: center;
+  }
+
+  .result-info {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .students-container {
+    padding: 8px;
+  }
+
+  .students-header {
+    padding: 12px;
+  }
+
+  .header-left h1 {
+    font-size: 20px;
+  }
+
+  .stat-item {
+    padding: 4px 8px;
+  }
+
+  .stat-number {
+    font-size: 16px;
+  }
+
+  .search-filter-section {
+    padding: 12px;
+  }
+
+  .action-buttons {
+    padding: 10px;
+  }
+
+  .export-btn, .template-btn, .import-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

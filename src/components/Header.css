@@ -9,6 +9,7 @@
   background: #fefefe;
   border-bottom: 1px solid var(--border-light);
   margin: 0;
+  grid-row: 1;
 }
 
 
