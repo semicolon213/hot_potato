@@ -83,55 +83,67 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         const timeMin = firstDayOfMonth.toISOString();
         const timeMax = lastDayOfMonth.toISOString();
 
-        const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&fields=items(id,summary,start,end,description,colorId)`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-        );
+        const primaryCalendarUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&fields=items(id,summary,start,end,description,colorId)`;
+        const holidayCalendarUrl = `https://www.googleapis.com/calendar/v3/calendars/ko.south_korea%23holiday%40group.v.calendar.google.com/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&fields=items(id,summary,start,end,description,colorId)`;
 
-        if (!response.ok) {
-          throw new Error(`Error fetching Google Calendar events: ${response.statusText}`);
+        const headers = {
+          Authorization: `Bearer ${accessToken}`,
+        };
+
+        const [primaryResponse, holidayResponse] = await Promise.all([
+          fetch(primaryCalendarUrl, { headers }),
+          fetch(holidayCalendarUrl, { headers }),
+        ]);
+
+        if (!primaryResponse.ok) {
+          throw new Error(`Error fetching Google Calendar events: ${primaryResponse.statusText}`);
+        }
+        if (!holidayResponse.ok) {
+            console.warn(`Could not fetch holiday calendar: ${holidayResponse.statusText}`);
         }
 
-        const data = await response.json();
-        const transformedEvents: Event[] = data.items
-            .filter((item: any) => item.start && item.end)
-            .map((item: any) => {
-              try {
-                const startStr = item.start.date || item.start.dateTime;
-                const endStr = item.end.date || item.end.dateTime;
+        const primaryData = await primaryResponse.json();
+        const holidayData = holidayResponse.ok ? await holidayResponse.json() : { items: [] };
 
-                if (!startStr || !endStr) {
-                  return null;
-                }
+        const transformEvent = (item: any, isHoliday: boolean = false): Event | null => {
+          try {
+            const startStr = item.start.date || item.start.dateTime;
+            const endStr = item.end.date || item.end.dateTime;
 
-                let endDate = endStr.split('T')[0];
-                if (item.start.date && item.start.date === item.end.date) {
-                  const date = new Date(endDate);
-                  date.setDate(date.getDate() + 1);
-                  endDate = date.toISOString().split('T')[0];
-                }
+            if (!startStr || !endStr) {
+              return null;
+            }
 
-                return {
-                  id: item.id,
-                  title: item.summary || 'No Title',
-                  startDate: startStr.split('T')[0],
-                  endDate: endDate,
-                  startDateTime: item.start.dateTime,
-                  endDateTime: item.end.dateTime,
-                  description: item.description || '',
-                  colorId: item.colorId,
-                };
-              } catch (e) {
-                console.error("Failed to transform event item:", item, e);
-                return null;
-              }
-            })
-            .filter(Boolean) as Event[];
+            let endDate = endStr.split('T')[0];
+            if (item.start.date && item.start.date === item.end.date) {
+              const date = new Date(endDate);
+              date.setDate(date.getDate() + 1);
+              endDate = date.toISOString().split('T')[0];
+            }
+
+            return {
+              id: item.id,
+              title: item.summary || 'No Title',
+              startDate: startStr.split('T')[0],
+              endDate: endDate,
+              startDateTime: item.start.dateTime,
+              endDateTime: item.end.dateTime,
+              description: item.description || '',
+              colorId: item.colorId,
+              isHoliday: isHoliday,
+            };
+          } catch (e) {
+            console.error("Failed to transform event item:", item, e);
+            return null;
+          }
+        };
+
+        const primaryEvents = (primaryData.items || []).map((item: any) => transformEvent(item, false));
+        const holidayEvents = (holidayData.items || []).map((item: any) => transformEvent(item, true));
+
+        const transformedEvents: Event[] = [...primaryEvents, ...holidayEvents].filter(Boolean) as Event[];
         setGoogleEvents(transformedEvents);
+
       } catch (error) {
         console.error("Failed to fetch Google Calendar events:", error);
         setGoogleEvents([]);
@@ -147,7 +159,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     return combinedEvents
       .map(event => ({
         ...event,
-        color: (eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB'),
+        color: event.isHoliday ? '#F08080' : ((eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB')),
       }));
   }, [googleEvents, sheetEvents, eventColors, calendarColor]);
 

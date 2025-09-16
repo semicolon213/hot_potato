@@ -40,7 +40,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
     );
 
     useEffect(() => {
-        const semesterStartEvent = events.find(event => event.title === '03개강일');
+        const semesterStartEvent = events.find(event => event.title === '개강일');
         if (semesterStartEvent) {
             setTempStartDate(semesterStartEvent.startDate.split('T')[0]);
             setSemesterStartDate(new Date(semesterStartEvent.startDate));
