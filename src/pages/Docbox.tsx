@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Docbox.css";
-import { getSheetIdByName, getSheetData } from "../utils/googleSheetUtils";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/googleSheetUtils";
 
 interface Document {
   id: string;
@@ -22,37 +22,95 @@ const Docbox: React.FC = () => {
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchDocuments = async () => {
-        const SPREADSHEET_NAME = 'hot_potato_DB';
-        const DOC_SHEET_NAME = 'documents';
+    const SPREADSHEET_NAME = 'hot_potato_DB';
+    const DOC_SHEET_NAME = 'documents';
 
-        const spreadsheetId = await getSheetIdByName(SPREADSHEET_NAME);
-        if (!spreadsheetId) return;
+    const fetchAndSyncDocuments = async () => {
+      console.log("Fetching and syncing documents...");
+      const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
+      if (!sheetId) return;
 
-        const data = await getSheetData(spreadsheetId, DOC_SHEET_NAME, 'A:I');
-        if (data && data.length > 1) {
-            const header = data[0];
-            const docs = data.slice(1).map(row => {
-                const doc: any = {};
-                header.forEach((key, index) => {
-                    doc[key] = row[index];
-                });
-                return {
-                    id: doc.document_id,
-                    title: doc.title,
-                    author: doc.author,
-                    lastModified: doc.last_modified,
-                    url: doc.url,
-                    documentNumber: doc.document_number,
-                    approvalDate: doc.approval_date,
-                    status: doc.status,
-                } as Document;
-            });
-            setDocuments(docs);
-        }
+      const data = await getSheetData(sheetId, DOC_SHEET_NAME, 'A:I');
+      if (!data || data.length <= 1) {
+        setDocuments([]);
+        return;
+      }
+
+      const header = data[0];
+      const initialDocs: Document[] = data.slice(1).map(row => {
+        const doc: any = {};
+        header.forEach((key, index) => {
+          doc[key] = row[index];
+        });
+        return {
+          id: doc.document_id,
+          title: doc.title,
+          author: doc.author,
+          lastModified: doc.last_modified,
+          url: doc.url,
+          documentNumber: doc.document_number,
+          approvalDate: doc.approval_date,
+          status: doc.status,
+        };
+      }).filter(doc => doc.id); // Ensure documents have an ID
+
+      const gapi = (window as any).gapi;
+      if (!gapi?.client?.drive || initialDocs.length === 0) {
+        setDocuments(initialDocs);
+        return;
+      }
+
+      const batch = gapi.client.newBatch();
+      initialDocs.forEach(doc => {
+        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name' }), { id: doc.id });
+      });
+
+      try {
+        const batchResponse = await batch;
+        const driveResults = batchResponse.result;
+        const syncedDocs = [...initialDocs];
+
+        Object.keys(driveResults).forEach(docId => {
+          const response = driveResults[docId];
+          if (!response || !response.result) {
+            console.warn(`No result for docId ${docId} in batch response.`);
+            return;
+          }
+          
+          const latestTitle = response.result.name;
+          const docIndex = syncedDocs.findIndex(d => d.id === docId);
+
+          if (docIndex !== -1 && latestTitle && latestTitle !== syncedDocs[docIndex].title) {
+            console.log(`Syncing title for ${docId}: "${syncedDocs[docIndex].title}" -> "${latestTitle}"`);
+            syncedDocs[docIndex].title = latestTitle;
+            updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
+          }
+        });
+
+        setDocuments(syncedDocs);
+
+      } catch (error) {
+        console.error("Error during title sync on load:", error);
+        setDocuments(initialDocs);
+      }
     };
 
-    fetchDocuments();
+    // Initial fetch
+    fetchAndSyncDocuments();
+
+    // Set up event listener for tab visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAndSyncDocuments();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleResetFilters = () => {

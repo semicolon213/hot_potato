@@ -62,6 +62,12 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
 };
 
 export const getSheetIdByName = async (name: string): Promise<string | null> => {
+  const cachedId = localStorage.getItem(`spreadsheet_id_${name}`);
+  if (cachedId) {
+    console.log(`Found cached spreadsheet ID for "${name}"`);
+    return cachedId;
+  }
+
   try {
     const response = await (window as any).gapi.client.drive.files.list({
       q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
@@ -69,7 +75,9 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
     });
     const files = response.result.files;
     if (files && files.length > 0) {
-      return files[0].id;
+      const fileId = files[0].id;
+      localStorage.setItem(`spreadsheet_id_${name}`, fileId);
+      return fileId;
     } else {
       alert(`Spreadsheet with name "${name}" not found.`);
       return null;
@@ -214,6 +222,46 @@ export const getSheetData = async (spreadsheetId: string, sheetName: string, ran
   } catch (error) {
     console.error('Error getting sheet data:', error);
     return null;
+  }
+};
+
+export const updateTitleInSheetByDocId = async (
+  spreadsheetId: string,
+  sheetName: string,
+  docId: string,
+  newTitle: string
+): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    const data = await getSheetData(spreadsheetId, sheetName, 'A:C'); // Assuming id is in A, title in C
+    if (!data || data.length === 0) return;
+
+    const header = data[0];
+    const docIdColIndex = header.indexOf('document_id');
+    const titleColIndex = header.indexOf('title');
+
+    if (docIdColIndex === -1 || titleColIndex === -1) {
+      console.error('Required columns (document_id, title) not found.');
+      return;
+    }
+
+    const rowIndex = data.findIndex(row => row[docIdColIndex] === docId);
+
+    if (rowIndex !== -1) {
+      const range = `${sheetName}!${String.fromCharCode(65 + titleColIndex)}${rowIndex + 1}`;
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: [[newTitle]],
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Error updating title in sheet:', error);
   }
 };
 
