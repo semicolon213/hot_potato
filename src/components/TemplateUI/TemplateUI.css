@@ -252,14 +252,23 @@ margin-left: 0;
     border-color: var(--primary);
 }
 
-.delete-template-button {
+.card-icon-group {
     position: absolute;
     top: 12px;
     right: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 5; /* Ensure it's above other content */
+}
+
+/* Action buttons on template cards */
+.card-action-button,
+.delete-template-button {
+    position: relative;
     width: 28px;
     height: 28px;
-    background-color: rgba(0, 0, 0, 0.1);
-    color: white;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333333; /* Dark color for all icons */
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -267,24 +276,45 @@ margin-left: 0;
     align-items: center;
     justify-content: center;
     font-size: 18px;
-    line-height: 1;
-    opacity: 0; /* Hidden by default */
     transition: all 0.2s;
+    opacity: 1; /* Always visible */
 }
 
-.new-template-card:hover .delete-template-button {
-    opacity: 1; /* Show on hover */
-}
-
+.card-action-button:hover,
 .delete-template-button:hover {
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.1);
     transform: scale(1.1);
 }
 
-.delete-template-button svg {
-    width: 16px;
-    height: 16px;
-    color: #fff;
+/* Dropdown Menu for template options */
+.options-menu-container {
+    position: relative;
+}
+
+.options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10;
+    overflow: hidden;
+    width: 120px;
+    padding: 5px 0;
+    border: 1px solid var(--border-light);
+}
+
+.options-menu-item {
+    padding: 8px 15px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.options-menu-item:hover {
+    background-color: #f1f3f5;
 }
 
 .add-tag-button {

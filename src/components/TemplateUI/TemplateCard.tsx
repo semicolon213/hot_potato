@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Template } from "../../hooks/useTemplateUI";
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import { BiTrash, BiDotsVerticalRounded } from "react-icons/bi";
 
 interface Props {
     template: Template;
@@ -35,6 +36,9 @@ function getCustomTagColorClass(tagName: string): string {
 
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
     ({ template, onUse, onDelete, onEdit, isFixed, defaultTags, style, attributes, listeners }, ref) => {
+        const [isMenuOpen, setIsMenuOpen] = useState(false);
+        const menuRef = useRef<HTMLDivElement>(null);
+
         const isDefaultTag = defaultTags.includes(template.tag);
         const tagClassName = isDefaultTag
             ? tagToClassMap[template.tag] || 'default'
@@ -50,34 +54,49 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
             if (onEdit) {
                 onEdit(template);
             }
+            setIsMenuOpen(false); // Close menu after action
         };
+
+        const handleEditForm = () => {
+            if (template.documentId) {
+                window.open(`https://docs.google.com/document/d/${template.documentId}/edit`, '_blank');
+            }
+            setIsMenuOpen(false); // Close menu after action
+        };
+
+        useEffect(() => {
+            const handleClickOutside = (event: MouseEvent) => {
+                if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                    setIsMenuOpen(false);
+                }
+            };
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }, [menuRef]);
 
         return (
             <div ref={ref} style={style} className="new-template-card">
                 {!isFixed && template.rowIndex && (
                     <div className="card-icon-group">
-                        {/* 정보 수정 버튼 (T 아이콘) */}
-                        <button onClick={handleEdit} title="정보 수정">
-                            <span style={{color: '#fff', fontSize: '14px', fontWeight: 'bold'}}>T</span>
-                        </button>
-                        {/* 양식 수정 버튼 (연필 아이콘) */}
-                        {template.documentId && (
-                            <button 
-                                onClick={() => window.open(`https://docs.google.com/document/d/${template.documentId}/edit`, '_blank')}
-                                title="양식 수정"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                                    <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                                </svg>
+                        <div className="options-menu-container" ref={menuRef}>
+                            <button onClick={() => setIsMenuOpen(!isMenuOpen)} title="더보기" className="card-action-button">
+                                <BiDotsVerticalRounded />
                             </button>
-                        )}
+                            {isMenuOpen && (
+                                <div className="options-menu">
+                                    <div className="options-menu-item" onClick={handleEdit}>정보 수정</div>
+                                    {template.documentId && (
+                                        <div className="options-menu-item" onClick={handleEditForm}>양식 수정</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
                         {/* 삭제 버튼 (휴지통 아이콘) */}
-                        <button onClick={handleDelete} title="삭제">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                            </svg>
+                        <button onClick={handleDelete} title="삭제" className="delete-template-button">
+                            <BiTrash />
                         </button>
                     </div>
                 )}

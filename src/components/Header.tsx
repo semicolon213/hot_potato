@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import "./Header.css";
 import {
   searchIcon,
-  bellIcon,
   fileIcon,
   usersIcon,
   calendarIcon,
-  messageIcon as chatIcon,
 } from "../assets/Icons";
+import { BiSolidChat, BiSolidBell } from "react-icons/bi";
 
 import { useAuthStore } from "../hooks/useAuthStore";
 
@@ -141,12 +140,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
               onClick={handleChatButtonClick}
               data-oid=".jf5:th"
           >
-            <img
-                src={chatIcon}
-                alt="Chat Icon"
-                className="icon"
-                data-oid="pco6m-n"
-            />
+            <BiSolidChat className="icon" />
 
             <div className="chat-notification-dot" data-oid="czkq0wr"></div>
           </div>
@@ -156,12 +150,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
               onClick={handleNotificationClick}
               data-oid="gglwxgo"
           >
-            <img
-                src={bellIcon}
-                alt="Bell Icon"
-                className="icon"
-                data-oid="6hxi9s."
-            />
+            <BiSolidBell className="icon" />
 
             <div className="notification-dot" data-oid="99.ajod"></div>
 
@@ -280,7 +269,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                       {displayUser.name}
                   </div>
                 </div>
-                <button onClick={handleLogout} className="new-doc-button-text" style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>
+                <button onClick={handleLogout} className="logout-button">
                   로그아웃
                 </button>
               </>
