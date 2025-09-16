@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Docbox.css";
+import { getSheetIdByName, getSheetData } from "../utils/googleSheetUtils";
 
 interface Document {
   id: string;
@@ -7,6 +8,9 @@ interface Document {
   author: string;
   lastModified: string;
   url: string;
+  documentNumber: string;
+  approvalDate: string;
+  status: string;
 }
 
 const Docbox: React.FC = () => {
@@ -18,8 +22,37 @@ const Docbox: React.FC = () => {
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   useEffect(() => {
-    const storedDocuments = JSON.parse(localStorage.getItem('docbox_documents') || '[]') as Document[];
-    setDocuments(storedDocuments);
+    const fetchDocuments = async () => {
+        const SPREADSHEET_NAME = 'hot_potato_DB';
+        const DOC_SHEET_NAME = 'documents';
+
+        const spreadsheetId = await getSheetIdByName(SPREADSHEET_NAME);
+        if (!spreadsheetId) return;
+
+        const data = await getSheetData(spreadsheetId, DOC_SHEET_NAME, 'A:I');
+        if (data && data.length > 1) {
+            const header = data[0];
+            const docs = data.slice(1).map(row => {
+                const doc: any = {};
+                header.forEach((key, index) => {
+                    doc[key] = row[index];
+                });
+                return {
+                    id: doc.document_id,
+                    title: doc.title,
+                    author: doc.author,
+                    lastModified: doc.last_modified,
+                    url: doc.url,
+                    documentNumber: doc.document_number,
+                    approvalDate: doc.approval_date,
+                    status: doc.status,
+                } as Document;
+            });
+            setDocuments(docs);
+        }
+    };
+
+    fetchDocuments();
   }, []);
 
   const handleResetFilters = () => {
@@ -73,14 +106,7 @@ const Docbox: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (selectedDocs.length === 0) {
-      alert("삭제할 문서를 선택하세요.");
-      return;
-    }
-    const remainingDocuments = documents.filter(doc => !selectedDocs.includes(doc.id));
-    setDocuments(remainingDocuments);
-    localStorage.setItem('docbox_documents', JSON.stringify(remainingDocuments));
-    setSelectedDocs([]);
+    alert("삭제 기능은 현재 구현되지 않았습니다.");
   };
 
   const handleShare = () => {
@@ -166,10 +192,6 @@ const Docbox: React.FC = () => {
           </span>
         </div>
         <div className="doc-actions">
-          <button className="btn-download" onClick={() => alert('다운로드 기능은 현재 지원되지 않습니다.')}>
-            <span className="icon-download"></span>
-            다운로드
-          </button>
           <button className="btn-print" onClick={handleShare}>
             <span className="icon-print"></span>
             공유
@@ -204,9 +226,12 @@ const Docbox: React.FC = () => {
                 checked={filteredDocuments.length > 0 && selectedDocs.length === filteredDocuments.length}
               />
             </div>
+            <div className="table-header-cell doc-number-cell">문서번호</div>
             <div className="table-header-cell title-cell">제목</div>
             <div className="table-header-cell author-cell">기안자</div>
             <div className="table-header-cell date-cell">최근 수정일</div>
+            <div className="table-header-cell approval-date-cell">결재일</div>
+            <div className="table-header-cell status-cell">상태</div>
           </div>
 
           {filteredDocuments.map((doc) => (
@@ -220,11 +245,18 @@ const Docbox: React.FC = () => {
                   checked={selectedDocs.includes(doc.id)}
                 />
               </div>
+              <div className="table-cell doc-number-cell">{doc.documentNumber}</div>
               <div className="table-cell title-cell title-bold" onClick={() => handleRowClick(doc.url)} style={{cursor: 'pointer'}}>
                 {doc.title}
               </div>
               <div className="table-cell author-cell">{doc.author}</div>
               <div className="table-cell date-cell">{doc.lastModified}</div>
+              <div className="table-cell approval-date-cell">{doc.approvalDate}</div>
+              <div className="table-cell status-cell">
+                <div className={`status-badge ${doc.status?.toLowerCase()}`}>
+                  <div className="status-text">{doc.status}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>

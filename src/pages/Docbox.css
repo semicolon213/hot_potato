@@ -253,7 +253,7 @@
 
 /* 테이블 셀 너비 설정 */
 .doc-number-cell {
-  width: 15%;
+  width: 10%;
   padding: 0 16px;
   padding-left: 30px;
   font-size: 13px;
@@ -276,8 +276,13 @@
   padding: 0 8px;
 }
 
+.approval-date-cell {
+    width: 15%;
+    padding: 0 8px;
+}
+
 .status-cell {
-  width: 15%;
+  width: 10%;
   padding: 0 8px;
   display: flex;
   align-items: center;
