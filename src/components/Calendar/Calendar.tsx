@@ -198,7 +198,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
                                             return (
                                                 <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                    {event.title.replace(/^\d{2}\s*/, '')}
+                                                    {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
                                                 </li>
                                             );
                                         })}

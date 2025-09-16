@@ -4,27 +4,19 @@ import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
 interface CalendarProviderProps {
   children: ReactNode;
   accessToken: string | null;
-  selectedRole: string;
   sheetEvents: Event[];
   addSheetEvent: (event: Omit<Event, 'id'>) => Promise<void>;
   updateSheetEvent: (eventId: string, event: Omit<Event, 'id'>) => Promise<void>;
   deleteSheetEvent: (eventId: string) => Promise<void>;
 }
 
-const ROLE_PREFIX_MAP: { [key: string]: string[] } = {
-  'admin': ['01', '02', '03'],
-  'professor': ['02', '03'],
-  'student': ['03'],
-};
-
-const CalendarProvider: React.FC<CalendarProviderProps> = ({ 
-  children, 
-  accessToken, 
-  selectedRole, 
-  sheetEvents, 
-  addSheetEvent, 
-  updateSheetEvent, 
-  deleteSheetEvent 
+const CalendarProvider: React.FC<CalendarProviderProps> = ({
+  children,
+  accessToken,
+  sheetEvents,
+  addSheetEvent,
+  updateSheetEvent,
+  deleteSheetEvent
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -150,28 +142,14 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate, refreshKey]);
 
   const events = useMemo(() => {
-    const allowedPrefixes = ROLE_PREFIX_MAP[selectedRole] || [];
-    if (allowedPrefixes.length === 0) {
-      return [];
-    }
-
     const combinedEvents = [...googleEvents, ...sheetEvents];
 
     return combinedEvents
       .map(event => ({
         ...event,
         color: (eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB'),
-      }))
-      .filter(event => {
-        const title = event.title || '';
-        const prefixMatch = title.match(/^(\d{2})/);
-
-        if (prefixMatch && prefixMatch[1]) {
-          return allowedPrefixes.includes(prefixMatch[1]);
-        }
-        return false;
-      });
-  }, [googleEvents, sheetEvents, selectedRole, eventColors, calendarColor]);
+      }));
+  }, [googleEvents, sheetEvents, eventColors, calendarColor]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
