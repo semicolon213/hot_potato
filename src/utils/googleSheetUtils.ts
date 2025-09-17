@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+const sheetDataCache = new Map<string, any[][]>();
 let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
 
@@ -88,15 +89,11 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
   }
 };
 
-// This function is not used in this file, but it was in App.tsx
-// Keeping it here for now, but it might be removed later if not needed.
 export const resetGoogleAPIState = () => {
   isGoogleAPIInitialized = false;
   googleAPIInitPromise = null;
 };
 
-// This useEffect is not used in this file, but it was in App.tsx
-// Keeping it here for now, but it might be removed later if not needed.
 export const useResetGoogleAPIStateOnUnload = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -144,6 +141,7 @@ export const deleteSheetRow = async (spreadsheetId: string, sheetName: string, r
       ],
     },
   });
+  sheetDataCache.clear();
 };
 
 export const checkSheetExists = async (spreadsheetId: string, sheetName: string): Promise<boolean> => {
@@ -204,12 +202,19 @@ export const appendSheetData = async (spreadsheetId: string, sheetName: string, 
         values: values,
       },
     });
+    sheetDataCache.clear();
   } catch (error) {
     console.error('Error appending sheet data:', error);
   }
 };
 
 export const getSheetData = async (spreadsheetId: string, sheetName: string, range: string): Promise<any[][] | null> => {
+  const cacheKey = `${spreadsheetId}-${sheetName}-${range}`;
+  if (sheetDataCache.has(cacheKey)) {
+    console.log("Returning cached sheet data for key:", cacheKey);
+    return sheetDataCache.get(cacheKey)!;
+  }
+
   await initializeGoogleAPIOnce();
   const gapi = (window as any).gapi;
 
@@ -218,7 +223,11 @@ export const getSheetData = async (spreadsheetId: string, sheetName: string, ran
       spreadsheetId: spreadsheetId,
       range: `${sheetName}!${range}`,
     });
-    return response.result.values;
+    const values = response.result.values;
+    if (values) {
+      sheetDataCache.set(cacheKey, values);
+    }
+    return values;
   } catch (error) {
     console.error('Error getting sheet data:', error);
     return null;
@@ -259,6 +268,7 @@ export const updateTitleInSheetByDocId = async (
           values: [[newTitle]],
         },
       });
+      sheetDataCache.clear();
     }
   } catch (error) {
     console.error('Error updating title in sheet:', error);
