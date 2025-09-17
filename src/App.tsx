@@ -94,156 +94,62 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
 
             const gapi = (window as any).gapi;
 
-      // 더 정확한 초기화 상태 확인 (Gmail API, Docs API 포함)
-      const isClientInitialized = gapi.client &&
-        gapi.client.sheets &&
-        gapi.client.sheets.spreadsheets &&
-        gapi.client.gmail &&
-        gapi.client.gmail.users &&
-        gapi.client.docs &&
-        gapi.client.docs.documents;
+            // 더 정확한 초기화 상태 확인 (Gmail API, Docs API 포함)
+            const isClientInitialized = gapi.client &&
+                gapi.client.sheets &&
+                gapi.client.sheets.spreadsheets &&
+                gapi.client.gmail &&
+                gapi.client.gmail.users &&
+                gapi.client.docs &&
+                gapi.client.docs.documents;
 
             if (isClientInitialized) {
                 console.log("Google API가 이미 초기화되어 있습니다.");
-
-                // 새로고침 시 저장된 토큰 복원 시도
-                const savedToken = localStorage.getItem('googleAccessToken');
-                if (savedToken) {
-                    console.log("저장된 토큰을 gapi client에 복원 시도");
-                    try {
-                        // gapi client에 토큰 설정
-                        gapi.client.setToken({ access_token: savedToken });
-                        console.log("토큰 복원 성공");
-
-            // 토큰 유효성 검증 (더 빠른 방법)
-            try {
-              if (hotPotatoDBSpreadsheetId) {
-                // 간단한 API 호출로 토큰 유효성 확인
-                await gapi.client.sheets.spreadsheets.get({
-                  spreadsheetId: hotPotatoDBSpreadsheetId,
-                  ranges: ['document_template!A1:A1'],
-                  includeGridData: false // 데이터를 가져오지 않아 더 빠름
-                });
-                console.log("토큰 유효성 검증 성공");
-              }
-            } catch (tokenError) {
-              console.warn("토큰 유효성 검증 실패, 토큰이 만료되었을 수 있습니다:", tokenError);
-              // 토큰이 만료된 경우 localStorage에서 제거
-              localStorage.removeItem('googleAccessToken');
-            }
-          } catch (error) {
-            console.error("토큰 복원 실패:", error);
-          }
-        }
-
                 isGoogleAPIInitialized = true;
                 return;
             }
 
             console.log("Google API Client Library 초기화 중...");
 
-            // Google API Client Library 초기화
+            // Google API Client Library 초기화 (Modern Way)
             await new Promise<void>((resolve, reject) => {
-                gapi.load('client:auth2', async () => {
+                gapi.load('client', async () => {
                     try {
-                        console.log("gapi.load 완료, client.init 시작...");
+                        console.log("gapi.load('client') 완료, Discovery Docs 로드 시작...");
 
-            console.log("Google API 초기화 설정:", {
-              clientId: GOOGLE_CLIENT_ID,
-              discoveryDocs: [
-                'https://sheets.googleapis.com/$discovery/rest?version=v4',
-                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-                'https://gmail.googleapis.com/$discovery/rest?version=v1',
-                'https://docs.googleapis.com/$discovery/rest?version=v1'
-              ],
-              scope: [
-                'https://www.googleapis.com/auth/calendar.events',
-                'https://www.googleapis.com/auth/calendar.readonly',
-                'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/gmail.compose',
-                'https://www.googleapis.com/auth/drive',
-                'https://www.googleapis.com/auth/documents',
-                'profile',
-                'email'
-              ].join(' ')
-            });
+                        await gapi.client.load('https://sheets.googleapis.com/$discovery/rest?version=v4');
+                        await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+                        await gapi.client.load('https://gmail.googleapis.com/$discovery/rest?version=v1');
+                        await gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1');
 
-            console.log('gapi.client.init 호출 시작...');
-            await gapi.client.init({
-              clientId: GOOGLE_CLIENT_ID,
-              discoveryDocs: [
-                'https://sheets.googleapis.com/$discovery/rest?version=v4',
-                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-                'https://gmail.googleapis.com/$discovery/rest?version=v1',
-                'https://docs.googleapis.com/$discovery/rest?version=v1'
-              ],
-              scope: [
-                'https://www.googleapis.com/auth/calendar.events',
-                'https://www.googleapis.com/auth/calendar.readonly',
-                'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/gmail.compose',
-                'https://www.googleapis.com/auth/drive',
-                'https://www.googleapis.com/auth/documents',
-                'profile',
-                'email'
-              ].join(' ')
-            });
-            console.log('gapi.client.init 호출 완료');
+                        console.log("Discovery Docs 로드 완료");
 
-                        console.log("Google API Client Library 초기화 성공!");
-
-                        // Google Docs API 로드 상태 확인
-                        console.log("Google Docs API 상태 확인:", {
-                          'gapi.client': !!gapi.client,
-                          'gapi.client.docs': !!gapi.client.docs,
-                          'gapi.client.docs.documents': !!gapi.client.docs?.documents,
-                          'gapi.client.docs.documents.create': typeof gapi.client.docs?.documents?.create,
-                          'gapi.client.sheets': !!gapi.client.sheets,
-                          'gapi.client.gmail': !!gapi.client.gmail,
-                          'gapi.client.drive': !!gapi.client.drive,
-                          'gapi.client.drive.files': !!gapi.client.drive?.files
-                        });
-
-                        // 새로고침 시 저장된 토큰 복원 시도
                         const savedToken = localStorage.getItem('googleAccessToken');
                         if (savedToken) {
-                            console.log("저장된 토큰을 gapi client에 복원 시도");
-                            try {
-                                // gpi client에 토큰 설정
-                                gapi.client.setToken({ access_token: savedToken });
-                                console.log("토큰 복원 성공");
+                            gapi.client.setToken({ access_token: savedToken });
+                            console.log("저장된 토큰 복원 성공");
 
-                // 토큰 유효성 검증 (더 빠른 방법)
-                try {
-                  if (hotPotatoDBSpreadsheetId) {
-                    // 간단한 API 호출로 토큰 유효성 확인
-                    await gapi.client.sheets.spreadsheets.get({
-                      spreadsheetId: hotPotatoDBSpreadsheetId,
-                      ranges: ['document_template!A1:A1'],
-                      includeGridData: false // 데이터를 가져오지 않아 더 빠름
-                    });
-                    console.log("토큰 유효성 검증 성공");
-                  }
-                } catch (tokenError) {
-                  console.warn("토큰 유효성 검증 실패, 토큰이 만료되었을 수 있습니다:", tokenError);
-                  // 토큰이 만료된 경우 localStorage에서 제거
-                  localStorage.removeItem('googleAccessToken');
-                }
-              } catch (error) {
-                console.error("토큰 복원 실패:", error);
-              }
-            }
+                            try {
+                                if (hotPotatoDBSpreadsheetId) {
+                                    await gapi.client.sheets.spreadsheets.get({
+                                        spreadsheetId: hotPotatoDBSpreadsheetId,
+                                        ranges: ['document_template!A1:A1'],
+                                        includeGridData: false
+                                    });
+                                    console.log("토큰 유효성 검증 성공");
+                                }
+                            } catch (tokenError) {
+                                console.warn("토큰 유효성 검증 실패:", tokenError);
+                                localStorage.removeItem('googleAccessToken');
+                            }
+                        } else {
+                            console.log("저장된 토큰 없음");
+                        }
 
                         isGoogleAPIInitialized = true;
                         resolve();
                     } catch (error) {
                         console.error("Google API Client Library 초기화 실패:", error);
-                        console.error("오류 상세 정보:", {
-                            message: error.message,
-                            code: error.code,
-                            status: error.status,
-                            response: error.response?.data
-                        });
                         reject(error);
                     }
                 });
@@ -855,7 +761,11 @@ const App: React.FC = () => {
         setIsCalendarLoading(true);
         try {
             const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
-                const data = await getSheetData(spreadsheetId, calendarSheetName, 'A:H');
+                const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: spreadsheetId,
+                    range: `${calendarSheetName}!A:H`,
+                });
+                const data = response.result.values;
 
                 if (data && data.length > 1) {
                     return data.slice(1).map((row: string[]) => {
@@ -966,150 +876,45 @@ const App: React.FC = () => {
         console.log("새로고침 후 Google API 초기화 시작");
           await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
 
-        // Find the announcement spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='notice_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'notice_professor' spreadsheet with ID:", fileId);
-              setAnnouncementSpreadsheetId(fileId);
-            } else {
-                console.error("'notice_professor' spreadsheet found but has no ID.");
-                console.log("'notice_professor' spreadsheet found but has no ID.");
+        const fileNames = [
+            'notice_professor',
+            'calendar_professor',
+            'calendar_student',
+            'board_professor',
+            'hot_potato_DB',
+            'student'
+        ];
+
+        const setters: { [key: string]: (id: string | null) => void } = {
+            'notice_professor': setAnnouncementSpreadsheetId,
+            'calendar_professor': setCalendarProfessorSpreadsheetId,
+            'calendar_student': setCalendarStudentSpreadsheetId,
+            'board_professor': setBoardSpreadsheetId,
+            'hot_potato_DB': setHotPotatoDBSpreadsheetId,
+            'student': setStudentSpreadsheetId
+        };
+
+        await Promise.all(fileNames.map(async (name) => {
+            try {
+                const response = await (window as any).gapi.client.drive.files.list({
+                    q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
+                    fields: 'files(id, name)'
+                });
+                if (response.result.files && response.result.files.length > 0) {
+                    if (response.result.files[0].id) {
+                        const fileId = response.result.files[0].id;
+                        console.log(`Found '${name}' spreadsheet with ID:`, fileId);
+                        setters[name](fileId);
+                    } else {
+                        console.error(`'${name}' spreadsheet found but has no ID.`);
+                    }
+                } else {
+                    console.error(`Could not find spreadsheet with name '${name}'`);
+                }
+            } catch (error) {
+                console.error(`Error searching for ${name} spreadsheet:`, error);
             }
-          } else {
-            console.error("Could not find spreadsheet with name 'notice_professor'");
-            console.log("Could not find spreadsheet with name 'notice_professor'");
-          }
-        } catch (error) {
-          console.error("Error searching for announcement spreadsheet:", error);
-          console.log("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
-
-          // Find the calendar spreadsheet ID by name
-          try {
-              const response = await (window as any).gapi.client.drive.files.list({
-                  q: "name='calendar_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
-                  fields: 'files(id, name)'
-              });
-              if (response.result.files && response.result.files.length > 0) {
-                  if (response.result.files[0].id) {
-                      const fileId = response.result.files[0].id;
-                      console.log("Found 'calendar_professor' spreadsheet with ID:", fileId);
-                      setCalendarProfessorSpreadsheetId(fileId);
-                  } else {
-                      console.error("'calendar_professor' spreadsheet found but has no ID.");
-                      console.log("'calendar_professor' spreadsheet found but has no ID.");
-                  }
-              } else {
-                  console.error("Could not find spreadsheet with name 'calendar_professor'");
-                  console.log("Could not find spreadsheet with name 'calendar_professor'");
-              }
-          } catch (error) {
-              console.error("Error searching for calendar spreadsheet:", error);
-              console.log("Error searching for calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
-          }
-
-          // Find the student calendar spreadsheet ID by name
-          try {
-              const response = await (window as any).gapi.client.drive.files.list({
-                  q: "name='calendar_student' and mimeType='application/vnd.google-apps.spreadsheet'",
-                  fields: 'files(id, name)'
-              });
-              if (response.result.files && response.result.files.length > 0) {
-                  if (response.result.files[0].id) {
-                      const fileId = response.result.files[0].id;
-                      console.log("Found 'calendar_student' spreadsheet with ID:", fileId);
-                      setCalendarStudentSpreadsheetId(fileId);
-                  } else {
-                      console.error("'calendar_student' spreadsheet found but has no ID.");
-                      console.log("'calendar_student' spreadsheet found but has no ID.");
-                  }
-              } else {
-                  console.error("Could not find spreadsheet with name 'calendar_student'");
-                  console.log("Could not find spreadsheet with name 'calendar_student'");
-              }
-          } catch (error) {
-              console.error("Error searching for student calendar spreadsheet:", error);
-              console.log("Error searching for student calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
-          }
-
-
-          // Find the board spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='board_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'board_professor' spreadsheet with ID:", fileId);
-              setBoardSpreadsheetId(fileId);
-            } else {
-                console.error("'board_professor' spreadsheet found but has no ID.");
-                console.log("'board_professor' spreadsheet found but has no ID.");
-            }
-          } else {
-            console.error("Could not find spreadsheet with name 'board_professor'");
-            console.log("Could not find spreadsheet with name 'board_professor'");
-          }
-        } catch (error) {
-          console.error("Error searching for board spreadsheet:", error);
-          console.log("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
-
-        // Find the hot_potato_DB spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='hot_potato_DB' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'hot_potato_DB' spreadsheet with ID:", fileId);
-              setHotPotatoDBSpreadsheetId(fileId);
-            } else {
-                console.error("'hot_potato_DB' spreadsheet found but has no ID.");
-                console.log("'hot_potato_DB' spreadsheet found but has no ID.");
-            }
-          } else {
-            console.error("Could not find spreadsheet with name 'hot_potato_DB'");
-            console.log("Could not find spreadsheet with name 'hot_potato_DB'");
-          }
-        } catch (error) {
-          console.error("Error searching for hot_potato_DB spreadsheet:", error);
-          console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
-
-        // Find the student spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='student' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'student' spreadsheet with ID:", fileId);
-              setStudentSpreadsheetId(fileId);
-            } else {
-              console.error("'student' spreadsheet found but has no ID.");
-              console.log("'student' spreadsheet found but has no ID.");
-            }
-          } else {
-            console.error("Could not find spreadsheet with name 'student'");
-            console.log("Could not find spreadsheet with name 'student'");
-          }
-        } catch (error) {
-          console.error("Error searching for student spreadsheet:", error);
-          console.log("Error searching for student spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
+        }));
 
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
@@ -1183,101 +988,45 @@ const App: React.FC = () => {
           // 중앙화된 Google API 초기화 사용
           await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
 
-        // Find the announcement spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='notice_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'notice_professor' spreadsheet with ID:", fileId);
-              setAnnouncementSpreadsheetId(fileId);
-            } else {
-                console.error("'notice_professor' spreadsheet found but has no ID.");
-                console.log("'notice_professor' spreadsheet found but has no ID.");
-            }
-          } else {
-            console.error("Could not find spreadsheet with name 'notice_professor'");
-            console.log("Could not find spreadsheet with name 'notice_professor'");
-          }
-        } catch (error) {
-          console.error("Error searching for announcement spreadsheet:", error);
-          console.log("Error searching for announcement spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
+        const fileNames = [
+            'notice_professor',
+            'calendar_professor',
+            'calendar_student',
+            'board_professor',
+            'hot_potato_DB',
+            'student'
+        ];
 
-        // Find the board spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='board_professor' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'board_professor' spreadsheet with ID:", fileId);
-              setBoardSpreadsheetId(fileId);
-            } else {
-                console.error("'board_professor' spreadsheet found but has no ID.");
-                console.log("'board_professor' spreadsheet found but has no ID.");
-            }
-          } else {
-            console.error("Could not find spreadsheet with name 'board_professor'");
-            console.log("Could not find spreadsheet with name 'board_professor'");
-          }
-        } catch (error) {
-          console.error("Error searching for board spreadsheet:", error);
-          console.log("Error searching for board spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
+        const setters: { [key: string]: (id: string | null) => void } = {
+            'notice_professor': setAnnouncementSpreadsheetId,
+            'calendar_professor': setCalendarProfessorSpreadsheetId,
+            'calendar_student': setCalendarStudentSpreadsheetId,
+            'board_professor': setBoardSpreadsheetId,
+            'hot_potato_DB': setHotPotatoDBSpreadsheetId,
+            'student': setStudentSpreadsheetId
+        };
 
-        // Find the hot_potato_DB spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='hot_potato_DB' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'hot_potato_DB' spreadsheet with ID:", fileId);
-              setHotPotatoDBSpreadsheetId(fileId);
-            } else {
-                console.error("'hot_potato_DB' spreadsheet found but has no ID.");
-                console.log("'hot_potato_DB' spreadsheet found but has no ID.");
+        await Promise.all(fileNames.map(async (name) => {
+            try {
+                const response = await (window as any).gapi.client.drive.files.list({
+                    q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
+                    fields: 'files(id, name)'
+                });
+                if (response.result.files && response.result.files.length > 0) {
+                    if (response.result.files[0].id) {
+                        const fileId = response.result.files[0].id;
+                        console.log(`Found '${name}' spreadsheet with ID:`, fileId);
+                        setters[name](fileId);
+                    } else {
+                        console.error(`'${name}' spreadsheet found but has no ID.`);
+                    }
+                } else {
+                    console.error(`Could not find spreadsheet with name '${name}'`);
+                }
+            } catch (error) {
+                console.error(`Error searching for ${name} spreadsheet:`, error);
             }
-          } else {
-            console.error("Could not find spreadsheet with name 'hot_potato_DB'");
-            console.log("Could not find spreadsheet with name 'hot_potato_DB'");
-          }
-        } catch (error) {
-          console.error("Error searching for hot_potato_DB spreadsheet:", error);
-          console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
-
-        // Find the student spreadsheet ID by name
-        try {
-          const response = await (window as any).gapi.client.drive.files.list({
-            q: "name='student' and mimeType='application/vnd.google-apps.spreadsheet'",
-            fields: 'files(id, name)'
-          });
-          if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files[0].id) {
-              const fileId = response.result.files[0].id;
-              console.log("Found 'student' spreadsheet with ID:", fileId);
-              setStudentSpreadsheetId(fileId);
-            } else {
-              console.error("'student' spreadsheet found but has no ID.");
-              console.log("'student' spreadsheet found but has no ID.");
-            }
-          } else {
-            console.error("Could not find spreadsheet with name 'student'");
-            console.log("Could not find spreadsheet with name 'student'");
-          }
-        } catch (error) {
-          console.error("Error searching for student spreadsheet:", error);
-          console.log("Error searching for student spreadsheet. Please make sure you have granted Google Drive permissions.");
-        }
+        }));
 
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
@@ -1339,7 +1088,20 @@ const App: React.FC = () => {
   }, [announcementSpreadsheetId]);
 
     useEffect(() => {
-        fetchCalendarEvents();
+        const spreadsheetIds = [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId].filter(Boolean);
+        if (spreadsheetIds.length > 0) {
+            const fetchInitialCalendarData = async () => {
+                try {
+                    const gapi = (window as any).gapi;
+                    if (gapi && gapi.client && gapi.client.sheets) {
+                        await fetchCalendarEvents();
+                    }
+                } catch (error) {
+                    console.error("Error during initial calendar data fetch", error);
+                }
+            };
+            fetchInitialCalendarData();
+        }
     }, [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
   useEffect(() => {
     if (hotPotatoDBSpreadsheetId) {
