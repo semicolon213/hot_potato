@@ -25,7 +25,7 @@
 .table-header-cell {
   font-size: 15px;
   font-weight: 500;
-  color: #232323;
+  color: var(--text-dark);
   padding: 0 16px;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .table-row:hover {
-  background-color: #f9f9f9;
+  background-color: var(--lightgrey);
 }
 
 .table-row:last-child {
@@ -84,7 +84,7 @@
   min-width: 50px;
   padding: 5px 3px;
   border-radius: var(--border-radius-lg);
-  background-color: #5a6578;
+  background-color: var(--secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,19 +100,19 @@
 }
 
 .status-badge.progress, .status-badge.진행중 {
-  background-color: #5a6578;
+  background-color: var(--secondary);
 }
 
 .status-badge.complete, .status-badge.완료 {
-  background-color: #4CAF50;
+  background-color: var(--success);
 }
 
 .status-badge.rejected, .status-badge.반려 {
-  background-color: #F44336;
+  background-color: var(--error);
 }
 
 .status-badge.temp, .status-badge.임시저장 {
-  background-color: #9E9E9E;
+  background-color: var(--gray-border);
 }
 
 /* 섹션 헤더 스타일 - 테이블 상단 제목 영역 */

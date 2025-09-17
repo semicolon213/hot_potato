@@ -23,7 +23,9 @@ function createWindow() {
       webSecurity: false, // Google OAuth를 위해 임시로 비활성화
       allowRunningInsecureContent: true
     },
-    icon: path.join(__dirname, '../public/vite.svg'), // 앱 아이콘
+    icon: (process.platform === 'win32'
+      ? path.join(__dirname, '../public/logo.ico')
+      : path.join(__dirname, '../public/logo.png')), // 플랫폼별 아이콘
     titleBarStyle: 'default',
     show: false // 윈도우가 준비될 때까지 숨김
   });
@@ -72,6 +74,10 @@ function createWindow() {
 
 // 앱이 준비되면 윈도우 생성
 app.whenReady().then(() => {
+  // Windows: App User Model ID 설정 (작업표시줄/알림용)
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.hotpotato.erp');
+  }
   createWindow();
 
   // macOS에서 독 아이콘 클릭 시 윈도우 재생성

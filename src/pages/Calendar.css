@@ -8,7 +8,7 @@
   gap: 10px;
   margin-top: 20px;
   padding: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
 }
 
@@ -16,22 +16,22 @@
 .event-textarea {
   padding: 10px;
   border-radius: var(--border-radius-sm);
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   font-size: 16px;
 }
 
 .event-button {
   padding: 10px 15px;
   border: none;
-  background-color: #007bff;
-  color: white;
+  background-color: var(--primary);
+  color: #ffffff;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   font-size: 16px;
 }
 
 .event-button:hover {
-  background-color: #0056b3;
+  background-color: var(--primary-dark);
 }
 
 .calendar-header-container {
@@ -43,7 +43,7 @@
 .add-event-button {
     background: none;
     border: none;
-    color: #007bff;
+    color: var(--primary);
     cursor: pointer;
     font-size: 14px;
     padding: 10px 15px;

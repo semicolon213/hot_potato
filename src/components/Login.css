@@ -89,6 +89,7 @@
   height: 240px;
   object-fit: contain;
   border-radius: var(--border-radius-md);
+  margin-left: 12px; /* 로고를 오른쪽으로 약간 이동 */
 }
 
 .login-header h1 {
@@ -123,25 +124,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin: 1rem auto;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-primary);
-  color: var(--text-dark);
-  font-weight: 500;
-  cursor: pointer;
-  transition: box-shadow .2s ease, transform .05s ease, background-color .2s ease;
+  margin: 1rem auto 0;
+  padding: 0;             /* 캡슐 이중효과 제거 */
+  border: none;           /* 외곽선 제거 */
+  background: transparent;/* 배경 제거 */
+  box-shadow: none;       /* 그림자 제거 */
   width: 100%;
-  max-width: 300px;
+  max-width: 400px;       /* 버튼과 동일 폭 */
 }
 
 /* Google Identity Services 버튼 스타일링 */
-.google-login-button:hover { box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.08); }
-.google-login-button:active { transform: translateY(1px); }
-.google-login-button:focus { outline: 3px solid rgba(66, 133, 244, .3); outline-offset: 2px; }
+.google-login-button:hover { box-shadow: none; }
+.google-login-button:active { transform: none; }
+.google-login-button:focus { outline: none; }
 
 .g-logo {
   width: 18px;
@@ -157,12 +152,12 @@
   width: 100%;
   max-width: 400px;
   height: 56px;
-  background: var(--primary);
-  color: white;
-  border: none;
+  background: var(--background);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-size: 1.125rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -174,7 +169,7 @@
 }
 
 .google-login-fallback-btn:hover {
-  background: var(--primary-dark);
+  background: var(--border-light);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }

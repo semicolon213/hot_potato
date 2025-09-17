@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
 // 타입 정의
@@ -17,6 +17,9 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const [logoSrc, setLogoSrc] = useState<string>("/logo.png");
+  const [logoClickCount, setLogoClickCount] = useState<number>(0);
+
   const {
     loginState,
     formData,
@@ -27,21 +30,35 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     clearError
   } = useAuth(onLogin);
 
+  const handleLogoClick = () => {
+    const next = logoClickCount + 1;
+    if (next >= 10 && logoSrc !== "/logo-eat.png") {
+      setLogoSrc("/logo-eat.png");
+    }
+    setLogoClickCount(next);
+  };
+
   return (
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <img src="/src/assets/image/potato.png" alt="Hot Potato Logo" className="login-logo" />
+          <img
+            src={logoSrc}
+            alt="Hot Potato Logo"
+            className="login-logo"
+            onClick={handleLogoClick}
+            onError={() => setLogoSrc("/logo.png")}
+            title=""
+          />
           <h1>Hot Potato</h1>
           <p>구글 계정으로 로그인하세요</p>
         </div>
 
         {!loginState.isLoggedIn ? (
           <div className="login-section">
-            <h2>로그인</h2>
             <div className="google-login-button">
               <button
-                onClick={googleLogin}
+                onClick={() => googleLogin()}
                 disabled={loginState.isLoading}
                 className="google-login-fallback-btn"
               >

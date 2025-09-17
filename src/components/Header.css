@@ -6,7 +6,7 @@
   gap: 24px;
   justify-content: start;
   padding: 0 32px;
-  background: #fefefe;
+  background: var(--white);
   border-bottom: 1px solid var(--border-light);
   margin: 0;
 }
@@ -34,20 +34,25 @@
   outline: none;
   font-size: 14px;
   background: transparent;
-  color: #000000;
+  color: var(--text-dark);
   font-weight: 400;
 }
 
 .search-input::placeholder {
-  color: #666666;
+  color: var(--text-light);
   font-weight: 400;
 }
 
 /* 검색 아이콘 색상 수정 */
-.search-container i {
-  color: #000000;
+.search-icon {
+  color: var(--text-light);
   margin-right: 8px;
-  font-size: 16px;
+  font-size: 18px;
+  transition: color 0.2s ease;
+}
+
+.search-container:hover .search-icon {
+  color: var(--text-dark);
 }
 
 .header-actions {
@@ -75,15 +80,16 @@
 }
 
 /* 헤더 아이콘 색상 수정 */
-.chat-button i,
-.bell-button i {
-  color: #000000;
+.header-icon {
+  color: var(--text-dark);
   font-size: 18px;
+  transition: all 0.2s ease;
 }
 
-.chat-button:hover i,
-.bell-button:hover i {
+.chat-button:hover .header-icon,
+.bell-button:hover .header-icon {
   color: var(--primary);
+  transform: scale(1.1);
 }
 
 .chat-notification-dot {
@@ -132,91 +138,111 @@
   gap: 12px;
 }
 
-/* 미니멀리즘 사용자 프로필 */
-.user-profile {
-  display: flex;
-  align-items: center;
-  border-radius: var(--border-radius-sm);
-  padding: 6px 10px;
-  background-color: transparent;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.user-profile:hover {
-  background-color: var(--lightgrey);
-  border-color: var(--border-light);
-}
-
-.avatar-container {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+/* 미니멀리즘 사용자 프로필 & 로그아웃 버튼 (완전 동일 스타일) */
+.user-profile, .logout-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--primary);
+  border-radius: var(--border-radius-md);
+  padding: 6px 12px;
+  background-color: var(--white);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+  gap: 8px;
   margin-right: 8px;
-  overflow: hidden;
+  height: 36px;
+  min-width: fit-content;
+  box-sizing: border-box;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dark);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.user-profile:hover, .logout-button:hover {
+  background-color: var(--lightgrey);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .user-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.user-profile:hover .user-avatar {
+  border-color: var(--primary);
+  background: var(--primary-dark);
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
-  color: #000000;
-  white-space: nowrap;
-}
-
-/* 로그아웃 버튼 */
-.logout-button {
-  background: none;
-  border: 1px solid var(--border-color);
   color: var(--text-dark);
-  padding: 6px 12px;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease;
   white-space: nowrap;
+  display: inline-block;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
 }
 
-.logout-button:hover {
-  background-color: var(--lightgrey);
-  border-color: var(--primary);
-  color: var(--primary);
+/* 로그아웃 버튼 기본 버튼 스타일 중립화 */
+.logout-button { -webkit-appearance: none; appearance: none; }
+
+.logout-icon {
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
 /* 로그인 버튼 */
 .login-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
   background: var(--primary);
   border: 1px solid var(--primary);
+  border-radius: var(--border-radius-md);
   color: white;
-  padding: 8px 16px;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s ease;
+  height: 36px;
 }
 
 .login-button:hover {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
+
+.login-icon {
+  font-size: 14px;
+}
+
+
 
 /* 메인 컨텐츠 내부 영역 */
 .content {
   flex: 1;
-  background-color: white;
+  background-color: var(--white);
   padding: 10px;
   overflow-y: auto;
   margin: 0;
@@ -281,12 +307,22 @@
 
 .chat-minimize, .chat-close {
   cursor: pointer;
-  font-size: 18px;
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.chat-close:hover {
+  background-color: var(--lightgrey);
+}
+
+.close-icon {
+  font-size: 16px;
+  color: var(--text-dark);
 }
 
 .chat-body {
@@ -433,6 +469,11 @@
   flex-shrink: 0;
 }
 
+.notification-icon-svg {
+  font-size: 16px;
+  color: var(--text-dark);
+}
+
 .notification-content {
   flex: 1;
 }
@@ -508,7 +549,7 @@
 
 /* 모달 컨텐츠 크기 조정 */
 .modal-content {
-  background: white;
+  background: var(--white);
   border-radius: var(--border-radius-md);
   width: 500px; /* 기존 400px에서 500px로 확장 */
   max-width: 90%;
@@ -537,7 +578,7 @@
 .modal-textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   font-size: 14px;
   box-sizing: border-box;
@@ -548,14 +589,14 @@
 
 .modal-textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary);
 }
 
 /* 입력 필드 스타일 개선 */
 .modal-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   font-size: 14px;
   box-sizing: border-box;
@@ -564,13 +605,13 @@
 
 .modal-input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary);
 }
 
 /* 플레이스홀더 스타일 */
 .modal-input::placeholder,
 .modal-textarea::placeholder {
-  color: #999;
+  color: var(--text-light);
   opacity: 1;
 }
 

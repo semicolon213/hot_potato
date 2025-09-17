@@ -5,8 +5,8 @@
   left: 0;
   bottom: 0;
   width: 180px;
-  background: #fefefe;
-  color: #000000;
+  background: var(--white);
+  color: var(--text-dark);
   padding: 0;
   overflow-y: auto;
   z-index: 1000;
@@ -19,12 +19,12 @@
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--border-light);
-  background: #fefefe;
+  background: var(--white);
 }
 
 .sidebar-header a {
   text-decoration: none;
-  color: #000000;
+  color: var(--text-dark);
   display: block;
   width: 100%;
   font-weight: 600;
@@ -71,7 +71,7 @@
 /* 메뉴 섹션 제목 스타일 */
 .menu-section-title {
   font-size: 11px;
-  color: #000000;
+  color: var(--text-medium);
   margin-bottom: 16px;
   padding: 0;
   font-weight: 500;
@@ -112,14 +112,14 @@
 }
 
 .menu-icon {
-  color: #000000;
+  color: var(--text-dark);
   font-size: 18px;
   flex-shrink: 0;
   transition: color 0.2s ease;
 }
 
 .menu-text {
-  color: #000000;
+  color: var(--text-dark);
   font-size: 14px;
   line-height: 20px;
   font-weight: 400;
@@ -127,7 +127,7 @@
 }
 
 .submenu-arrow {
-  color: #000000;
+  color: var(--text-dark);
   font-size: 16px;
   flex-shrink: 0;
   transition: all 0.2s ease;
@@ -144,7 +144,7 @@
   left: 0;
   top: 100%;
   width: 100%;
-  background-color: #ffffff;
+  background-color: var(--white);
   border-radius: var(--border-radius-sm);
   padding: 0;
   display: none;
@@ -156,7 +156,7 @@
 
 .submenu-item {
   padding: 12px 16px;
-  color: #000000;
+  color: var(--text-dark);
   font-size: 14px;
   transition: background-color 0.2s;
   display: flex;
@@ -188,7 +188,7 @@
 
 .menu-item:hover .submenu {
   display: block;
-  background-color: #ffffff;
+  background-color: var(--white);
 }
 
 .menu-item-with-submenu:hover::before {
