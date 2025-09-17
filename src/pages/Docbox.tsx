@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Docbox.css";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/googleSheetUtils";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds } from "../utils/googleSheetUtils";
 
 interface Document {
   id: string;
@@ -11,6 +11,7 @@ interface Document {
   documentNumber: string;
   approvalDate: string;
   status: string;
+  originalIndex: number;
 }
 
 const Docbox: React.FC = () => {
@@ -20,6 +21,8 @@ const Docbox: React.FC = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     const SPREADSHEET_NAME = 'hot_potato_DB';
@@ -37,10 +40,10 @@ const Docbox: React.FC = () => {
       }
 
       const header = data[0];
-      const initialDocs: Document[] = data.slice(1).map(row => {
+      const initialDocs: Document[] = data.slice(1).map((row, index) => {
         const doc: any = {};
-        header.forEach((key, index) => {
-          doc[key] = row[index];
+        header.forEach((key, hIndex) => {
+          doc[key] = row[hIndex];
         });
         return {
           id: doc.document_id,
@@ -51,6 +54,7 @@ const Docbox: React.FC = () => {
           documentNumber: doc.document_number,
           approvalDate: doc.approval_date,
           status: doc.status,
+          originalIndex: index,
         };
       }).filter(doc => doc.id); // Ensure documents have an ID
 
@@ -118,6 +122,7 @@ const Docbox: React.FC = () => {
     setSelectedSort("최신순");
     setStartDate("");
     setEndDate("");
+    setCurrentPage(1);
   };
 
   const handleRowClick = (url: string) => {
@@ -135,10 +140,17 @@ const Docbox: React.FC = () => {
       return matchesAuthor;
     })
     .sort((a, b) => {
+      const dateA = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));
+      const dateB = new Date(b.lastModified.replace(/\./g, '-').slice(0, -1));
+
       if (selectedSort === "최신순") {
-        return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
+        const dateDiff = dateB.getTime() - dateA.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return b.originalIndex - a.originalIndex; // newest index first
       } else if (selectedSort === "오래된순") {
-        return new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime();
+        const dateDiff = dateA.getTime() - dateB.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return a.originalIndex - b.originalIndex; // oldest index first
       } else if (selectedSort === "제목순") {
         return a.title.localeCompare(b.title);
       }
@@ -149,7 +161,7 @@ const Docbox: React.FC = () => {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedDocs(filteredDocuments.map((doc) => doc.id));
+      setSelectedDocs(paginatedDocuments.map((doc) => doc.id));
     } else {
       setSelectedDocs([]);
     }
@@ -163,8 +175,34 @@ const Docbox: React.FC = () => {
     }
   };
 
-  const handleDelete = () => {
-    alert("삭제 기능은 현재 구현되지 않았습니다.");
+  const handleDelete = async () => {
+    if (selectedDocs.length === 0) {
+      alert("삭제할 문서를 선택하세요.");
+      return;
+    }
+
+    if (window.confirm(`선택된 ${selectedDocs.length}개의 문서를 정말 삭제하시겠습니까?`)) {
+      try {
+        const SPREADSHEET_NAME = 'hot_potato_DB';
+        const DOC_SHEET_NAME = 'documents';
+        const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
+        if (!sheetId) {
+          alert("스프레드시트를 찾을 수 없습니다.");
+          return;
+        }
+
+        await deleteRowsByDocIds(sheetId, DOC_SHEET_NAME, selectedDocs);
+
+        setDocuments(prevDocs => prevDocs.filter(doc => !selectedDocs.includes(doc.id)));
+        setSelectedDocs([]);
+
+        alert("선택한 문서가 삭제되었습니다.");
+
+      } catch (error) {
+        console.error("문서 삭제 중 오류 발생:", error);
+        alert("문서 삭제 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
+      }
+    }
   };
 
   const handleShare = () => {
@@ -179,6 +217,38 @@ const Docbox: React.FC = () => {
         .catch(() => alert("링크 복사에 실패했습니다."));
     }
   };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
+  const paginatedDocuments = filteredDocuments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  const startIndex = (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = Math.min(currentPage * itemsPerPage, filteredDocuments.length);
 
   return (
     <div className="content" id="dynamicContent">
@@ -281,7 +351,7 @@ const Docbox: React.FC = () => {
                 className="doc-checkbox"
                 id="select-all"
                 onChange={handleSelectAll}
-                checked={filteredDocuments.length > 0 && selectedDocs.length === filteredDocuments.length}
+                checked={filteredDocuments.length > 0 && selectedDocs.length === paginatedDocuments.length && paginatedDocuments.length > 0}
               />
             </div>
             <div className="table-header-cell doc-number-cell">문서번호</div>
@@ -292,7 +362,7 @@ const Docbox: React.FC = () => {
             <div className="table-header-cell status-cell">상태</div>
           </div>
 
-          {filteredDocuments.map((doc) => (
+          {paginatedDocuments.map((doc) => (
             <div className="table-row" key={doc.id}>
               <div className="table-cell checkbox-cell">
                 <input
@@ -323,23 +393,29 @@ const Docbox: React.FC = () => {
       <div className="pagination">
         <div className="per-page">
           페이지당 항목:
-          <select className="per-page-select">
+          <select className="per-page-select" value={itemsPerPage} onChange={handleItemsPerPageChange}>
             <option>10</option>
             <option>20</option>
           </select>
         </div>
 
         <div className="pagination-controls">
-          <button className="pagination-btn prev-btn">&lt;</button>
-          <button className="pagination-btn page-btn active">1</button>
-          <button className="pagination-btn page-btn">2</button>
-          <button className="pagination-btn page-btn">3</button>
-          <button className="pagination-btn next-btn">&gt;</button>
+          <button className="pagination-btn prev-btn" onClick={handlePrevPage} disabled={currentPage === 1}>&lt;</button>
+          {pageNumbers.map(number => (
+            <button 
+              key={number} 
+              className={`pagination-btn page-btn ${currentPage === number ? 'active' : ''}`}
+              onClick={() => handlePageChange(number)}
+            >
+              {number}
+            </button>
+          ))}
+          <button className="pagination-btn next-btn" onClick={handleNextPage} disabled={currentPage === totalPages}>&gt;</button>
         </div>
 
         <div className="pagination-info">
-          총 {filteredDocuments.length}개 중 1-
-          {Math.min(10, filteredDocuments.length)}
+          총 {filteredDocuments.length}개 중 {filteredDocuments.length > 0 ? startIndex : 0}-
+          {endIndex}
         </div>
       </div>
     </div>

@@ -14,9 +14,9 @@ export const useDocumentTable = () => {
   const documentColumns = [
     { key: 'docNumber' as const, header: '문서번호', width: '15%', cellClassName: 'doc-number-cell' },
     { key: 'title' as const, header: '제목', width: '25%', cellClassName: 'title-cell' },
-    { key: 'author' as const, header: '작성자', width: '15%', cellClassName: 'author-cell' },
+    { key: 'author' as const, header: '기안자', width: '15%', cellClassName: 'author-cell' },
     { key: 'lastModified' as const, header: '최근 수정일', width: '15%', cellClassName: 'date-cell' },
-    { key: 'dueDate' as const, header: '기한일', width: '15%', cellClassName: 'date-cell' },
+    { key: 'dueDate' as const, header: '결재일', width: '15%', cellClassName: 'date-cell' },
     {
       key: 'status' as const,
       header: '상태',
