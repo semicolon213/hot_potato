@@ -15,7 +15,11 @@ interface Document {
   originalIndex: number;
 }
 
-const Docbox: React.FC = () => {
+interface DocboxProps {
+  searchTerm: string;
+}
+
+const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
   const [selectedSort, setSelectedSort] = useState<string>("최신순");
@@ -133,13 +137,14 @@ const Docbox: React.FC = () => {
 
   const filteredDocuments = documents
     .filter((doc) => {
+      const matchesSearch = searchTerm === '' || doc.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesAuthor = selectedAuthor === "전체" || doc.author === selectedAuthor;
       const docDate = new Date(doc.lastModified.replace(/\./g, '-').slice(0, -1));
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
       if (start && docDate < start) return false;
       if (end && docDate > end) return false;
-      return matchesAuthor;
+      return matchesSearch && matchesAuthor;
     })
     .sort((a, b) => {
       const dateA = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));

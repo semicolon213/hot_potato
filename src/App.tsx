@@ -318,6 +318,7 @@ const App: React.FC = () => {
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
   const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
     const [calendarSpreadsheetId, setCalendarSpreadsheetId] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
     // State for Calendar
     const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
@@ -1276,6 +1277,16 @@ const App: React.FC = () => {
     setCurrentPage(pageName as PageType);
   };
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleSearchSubmit = () => {
+    if (currentPage !== 'docbox') {
+      handlePageChange('docbox');
+    }
+  };
+
   // 현재 페이지에 따른 컴포넌트 렌더링 (develop의 모든 페이지 유지)
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -1307,7 +1318,7 @@ const App: React.FC = () => {
             />
         );
       case "docbox":
-        return <Docbox data-oid="t94yibd" />;
+        return <Docbox data-oid="t94yibd" searchTerm={searchTerm} />;
       case "new_document":
         return (
             <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
@@ -1367,7 +1378,7 @@ const App: React.FC = () => {
         <div className="app-container" data-oid="g1w-gjq">
           <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
           <div className="main-panel" data-oid="n9gxxwr">
-            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} />
+            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} searchTerm={searchTerm} onSearchChange={handleSearch} onSearchSubmit={handleSearchSubmit} />
             <div className="content" id="dynamicContent" data-oid="nn2e18p">
               {renderCurrentPage()}
             </div>
