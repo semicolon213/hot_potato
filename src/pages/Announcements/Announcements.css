@@ -9,29 +9,44 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  border-bottom: 2px solid #eee;
+  border-bottom: 2px solid var(--border-light);
   padding-bottom: 15px;
 }
 
 .announcements-title {
   font-size: 2.5em;
-  color: #333;
+  color: var(--text-dark);
   font-weight: 700;
 }
 
 .new-post-button {
-  background-color: #007bff;
+  background-color: var(--primary);
   color: white;
   padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--border-radius-sm);
   font-size: 1em;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .new-post-button:hover {
-  background-color: #0056b3;
+  background-color: var(--primary-dark);
+}
+
+.auth-button {
+  background-color: var(--primary);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.auth-button:hover {
+  background-color: var(--primary-dark);
 }
 
 .announcements-grid {
@@ -41,9 +56,9 @@
 }
 
 .announcement-card {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease-in-out;
@@ -56,21 +71,21 @@
 
 .announcement-card h3 {
   font-size: 1.5em;
-  color: #333;
+  color: var(--text-dark);
   margin-bottom: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 10px;
 }
 
 .announcement-meta {
   font-size: 0.9em;
-  color: #777;
+  color: var(--text-light);
   margin-bottom: 15px;
 }
 
 .announcement-card p {
   font-size: 1em;
-  color: #555;
+  color: var(--text-medium);
   line-height: 1.6;
 }
 
@@ -78,7 +93,7 @@
   position: absolute;
   top: 5px;
   right: 5px;
-  background-color: #dc3545;
+  background-color: var(--error);
   color: white;
   border: none;
   border-radius: 50%; /* Make it round */
@@ -94,7 +109,7 @@
 }
 
 .delete-button:hover {
-  background-color: #c82333;
+  background-color: var(--error);
 }
 
 /* Modal Styles */
@@ -112,9 +127,9 @@
 }
 
 .modal-content {
-  background-color: #fff;
+  background-color: var(--white);
   padding: 30px;
-  border-radius: 10px;
+  border-radius: var(--border-radius-md);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 500px;
@@ -125,7 +140,7 @@
 
 .modal-content h2 {
   font-size: 1.8em;
-  color: #333;
+  color: var(--text-dark);
   margin-bottom: 15px;
   text-align: center;
 }
@@ -135,8 +150,8 @@
   width: calc(100% - 20px);
   padding: 12px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
   font-size: 1em;
 }
 
@@ -155,26 +170,26 @@
 .modal-actions button {
   padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--border-radius-sm);
   font-size: 1em;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .modal-actions button:first-child {
-  background-color: #28a745;
+  background-color: var(--success);
   color: white;
 }
 
 .modal-actions button:first-child:hover {
-  background-color: #218838;
+  background-color: var(--success-hover);
 }
 
 .modal-actions button:last-child {
-  background-color: #6c757d;
+  background-color: var(--text-light);
   color: white;
 }
 
 .modal-actions button:last-child:hover {
-  background-color: #5a6268;
+  background-color: var(--text-medium);
 }

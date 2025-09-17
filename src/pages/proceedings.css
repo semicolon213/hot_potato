@@ -22,7 +22,7 @@
   max-width: 320px;
   background-color: #f8f9fa;
   padding: 20px;
-  border-radius: 12px;
+  border-radius: var(--border-radius-lg);
   border: 1px solid #e9ecef;
 }
 
@@ -31,7 +31,7 @@
   max-width: 900px;
   margin: 0 auto;
   border: 1px solid #e0e0e0;
-  border-radius: 12px;
+  border-radius: var(--border-radius-lg);
   background-color: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -58,7 +58,7 @@
   background-color: var(--primary);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -74,7 +74,7 @@
   background-color: #28a745; /* 초록색 계열 */
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: background-color 0.2s;
   margin-left: 10px; /* 저장 버튼과의 간격 */
@@ -100,7 +100,7 @@
   border-collapse: collapse;
   border-style: hidden;
   box-shadow: 0 0 0 1px #e0e0e0;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   overflow: hidden;
 }
 
@@ -123,7 +123,7 @@
   width: 100%;
   padding: 8px 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   font-size: 14px;
   box-sizing: border-box;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -197,7 +197,7 @@
   width: 100%;
   padding: 8px 10px;
   border: 1px solid #ced4da;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   font-size: 14px;
   margin-top: 8px;
 }
@@ -225,7 +225,7 @@
   bottom: 0;
   background-color: #ccc;
   transition: .4s;
-  border-radius: 24px;
+  border-radius: var(--border-radius-lg);
 }
 
 .toggle-switch label:before {

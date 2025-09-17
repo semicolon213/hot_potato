@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface User {
+  id: string;
   email: string;
   name: string;
-  studentId: string;
-  isAdmin: boolean;
+  picture?: string;
+  studentId?: string;
+  teacherId?: string;
+  role: 'student' | 'teacher' | 'admin';
   isApproved: boolean;
-  accessToken?: string;
   googleAccessToken?: string;
 }
 
@@ -20,6 +22,9 @@ interface AuthState {
   // Actions
   setUser: (user: User) => void;
   setGoogleToken: (token: string) => void;
+  setStudentId: (studentId: string) => void;
+  setTeacherId: (teacherId: string) => void;
+  approveUser: () => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -41,6 +46,18 @@ export const useAuthStore = create<AuthState>()(
 
       setGoogleToken: (token: string) => set((state) => ({
         user: state.user ? { ...state.user, googleAccessToken: token } : null
+      })),
+
+      setStudentId: (studentId: string) => set((state) => ({
+        user: state.user ? { ...state.user, studentId, role: 'student' } : null
+      })),
+
+      setTeacherId: (teacherId: string) => set((state) => ({
+        user: state.user ? { ...state.user, teacherId, role: 'teacher' } : null
+      })),
+
+      approveUser: () => set((state) => ({
+        user: state.user ? { ...state.user, isApproved: true } : null
       })),
 
       logout: () => set({ 

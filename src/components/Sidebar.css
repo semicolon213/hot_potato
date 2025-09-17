@@ -1,73 +1,52 @@
-/* ===== 사이드바 영역 스타일 ===== */
+/* ===== 미니멀리즘 사이드바 ===== */
 .sidebar {
   position: fixed;
   top: 0;
-  left: 10px;
+  left: 0;
   bottom: 0;
-  width: 190px;
-  background-color: var(--primary);
-  color: white;
-  padding: 10px 8px;
+  width: 180px;
+  background: #fefefe;
+  color: #000000;
+  padding: 0;
   overflow-y: auto;
-  border-radius: var(--border-radius-lg);
-  margin: 10px 0;
   z-index: 1000;
+  border-right: 1px solid var(--border-light);
 }
 
 .sidebar-header {
-  padding: 10px 10px 15px 10px;
+  height: 60px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  border-bottom: 1px solid var(--border-light);
+  background: #fefefe;
 }
 
 .sidebar-header a {
   text-decoration: none;
-  color: inherit;
+  color: #000000;
   display: block;
   width: 100%;
+  font-weight: 600;
+  font-size: 18px;
 }
 
 /* 로고 스타일링 */
 .logo-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  text-align: center;
-  padding-bottom: 20px;
-  position: relative;
-}
-
-.logo-container::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%; 
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.1); 
-  margin-top: 15px;
-}
-
-.logo-box {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 10px;
-  margin-top: 18px;
+  height: 100%;
 }
 
 .logo-image {
-  width: 150%;
-  height: 150%;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
+  border-radius: var(--border-radius-sm);
 }
+
 
 .logo-title {
   color: white;
@@ -85,41 +64,78 @@
 
 /* 메뉴 섹션 스타일 */
 .menu-section {
-  margin-bottom: 110px;
+  margin-bottom: 0;
+  padding: 0 16px;
 }
 
 /* 메뉴 섹션 제목 스타일 */
 .menu-section-title {
-  font-size: 12px;
-  color: var(--accent);
-  margin-bottom: 12px;
-  padding-left: 10px;
-  opacity: 0.8;
+  font-size: 11px;
+  color: #000000;
+  margin-bottom: 16px;
+  padding: 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 8px 10px;
+  padding: 12px 0;
   cursor: pointer;
-  transition: background-color 0.2s;
-  background-color: var(--menu-bg);
+  transition: all 0.2s ease;
+  background-color: transparent;
   border-radius: var(--border-radius-sm);
-  height: 38px;
+  height: auto;
   position: relative;
-  margin-bottom: 7px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border-light);
+  gap: 12px;
 }
 
 .menu-item:hover,
 .menu-item.active:hover,
 .menu-item.menu-item-with-submenu.active:hover {
-  background-color: var(--secondary);
+  background-color: var(--accent);
+}
+
+.menu-item:hover .menu-icon,
+.menu-item:hover .menu-text,
+.menu-item:hover .submenu-arrow {
+  color: var(--primary);
+}
+
+/* 마지막 메뉴 항목의 하단 테두리 제거 */
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  color: #000000;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
 }
 
 .menu-text {
-  color: white;
-  font-size: 11px;
-  line-height: 18px;
+  color: #000000;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  flex: 1;
+}
+
+.submenu-arrow {
+  color: #000000;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.submenu-arrow.rotated {
+  transform: rotate(180deg);
 }
 
 /* 하위 메뉴 스타일 */
@@ -128,31 +144,51 @@
   left: 0;
   top: 100%;
   width: 100%;
-  background-color: var(--menu-bg);
+  background-color: #ffffff;
   border-radius: var(--border-radius-sm);
-  padding: 5px 0;
+  padding: 0;
   display: none;
   z-index: 200;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  margin-top: 5px;
+  box-shadow: none;
+  border: 1px solid var(--border-light);
+  margin-top: 0;
 }
 
 .submenu-item {
-  padding: 8px 15px;
-  color: white;
-  font-size: 11px;
+  padding: 12px 16px;
+  color: #000000;
+  font-size: 14px;
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
+  border-bottom: 1px solid var(--border-light);
+  gap: 8px;
+}
+
+.submenu-bullet {
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: bold;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
 }
 
 .submenu-item:hover {
-  background-color: var(--secondary-light);
+  background-color: var(--accent);
+}
+
+.submenu-item:hover .submenu-bullet {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.submenu-item:last-child {
+  border-bottom: none;
 }
 
 .menu-item:hover .submenu {
   display: block;
-  background-color: var(--secondary-light);
+  background-color: #ffffff;
 }
 
 .menu-item-with-submenu:hover::before {

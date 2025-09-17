@@ -25,31 +25,28 @@
   margin-bottom: 20px;
 }
 
-/* 색상 팔레트 */
+/* 색상 팔레트 - 새로운 모던 테마 */
 :root {
-  --primary: rgb(56, 67, 86);           
-  --secondary: rgb(103, 123, 139);      
-  --secondary-light: rgb(115, 130, 143); 
-  --accent: rgb(200, 211, 228);         
-  --background: #F5EFEB;                
-  --white: #FFFFFF;
-  --lightgrey: #f5f5f5;
-  --border-color: #ddd;
-  --border-light: #eee;
-  --border-lighter: #f0f0f0;
-  --text-dark: #333;
-  --text-medium: #666;
-  --text-light: #999;
-  --menu-bg: rgb(72, 83, 101);
-  --success: #34c759;
-  --gray-light: #f5f5f5;
-  --gray-border: #e0e0e0;
-  --table-header-bg: rgb(243, 245, 248);
+  --primary: #0ea5e9;                    /* 하늘색 (sky-500) */
+  --secondary: #38bdf8;                  /* 연한 하늘색 (sky-400) */
+  --secondary-light: #7dd3fc;            /* 더 연한 하늘색 (sky-300) */
+  --accent: #e0f2fe;                     /* 매우 연한 하늘색 (sky-50) */
+  --background: #ffffff;                 /* 순백색 배경 */
+  --white: #ffffff;
+  --lightgrey: #f8fafc;                  /* 연한 회색 (slate-50) */
+  --border-color: #e2e8f0;               /* 연한 회색 테두리 (slate-200) */
+  --border-light: #f1f5f9;               /* 더 연한 회색 (slate-100) */
+  --border-lighter: #f8fafc;             /* 가장 연한 회색 (slate-50) */
+  --text-dark: #1e293b;                  /* 진한 회색 (slate-800) */
+  --text-medium: #64748b;                /* 중간 회색 (slate-500) */
+  --text-light: #94a3b8;                 /* 연한 회색 (slate-400) */
+  --menu-bg: #0ea5e9;                    /* 하늘색 메뉴 배경 */
+  /* --success 변수는 전역 테마에서 관리됩니다 */
+  --gray-light: #f8fafc;
+  --gray-border: #e2e8f0;
+  --table-header-bg: #f8fafc;            /* 연한 회색 테이블 헤더 */
   --card-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  --card-shadow-hover: 0 4px 8px rgba(0,0,0,0.1);
-  --border-radius-lg: 20px;
-  --border-radius-md: 10px;
-  --border-radius-sm: 8px;
+  --card-shadow-hover: 0 10px 25px rgba(14, 165, 233, 0.15);
 }
 
 /* 카드 공통 스타일 */
@@ -65,7 +62,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: #fff;
+  background-color: var(--white);
   height: auto;
 }
 
@@ -167,7 +164,6 @@
   font-weight: bold;
   color: var(--text-dark);
   margin-left: 30px;
-  margin-top: 2px;
 }
 
 .view-all-button {
@@ -225,7 +221,7 @@
 .table-header-cell {
   font-size: 15px;
   font-weight: 500;
-  color: #232323;
+  color: var(--text-dark);
 }
 
 /* 테이블 헤더에 체크박스 셀 추가 */
@@ -236,13 +232,13 @@
 .table-row {
   display: flex;
   border-bottom: 1px solid var(--border-lighter);
-  padding: 18px 0;
+  padding: 9px 0; /* 세로 길이를 줄이기 위해 padding 값 수정 */
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .table-row:hover {
-  background-color: #f9f9f9;
+  background-color: var(--lightgrey);
 }
 
 .table-row:last-child {
@@ -256,7 +252,7 @@
 
 /* 테이블 셀 너비 설정 */
 .doc-number-cell {
-  width: 15%;
+  width: 10%;
   padding: 0 16px;
   padding-left: 30px;
   font-size: 13px;
@@ -279,8 +275,13 @@
   padding: 0 8px;
 }
 
+.approval-date-cell {
+    width: 15%;
+    padding: 0 8px;
+}
+
 .status-cell {
-  width: 15%;
+  width: 10%;
   padding: 0 8px;
   display: flex;
   align-items: center;
@@ -295,8 +296,8 @@
 .status-badge {
   min-width: 50px;
   padding: 5px 3px;
-  border-radius: 30px;
-  background-color: #5a6578;
+  border-radius: var(--border-radius-lg);
+  background-color: var(--text-medium);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,19 +313,19 @@
 }
 
 .status-badge.progress, .status-badge.진행중 {
-  background-color: #5a6578;
+  background-color: var(--text-medium);
 }
 
 .status-badge.complete, .status-badge.완료 {
-  background-color: #4CAF50;
+  background-color: var(--success);
 }
 
 .status-badge.rejected, .status-badge.반려 {
-  background-color: #F44336;
+  background-color: var(--error);
 }
 
 .status-badge.temp, .status-badge.임시저장 {
-  background-color: #9E9E9E;
+  background-color: var(--text-light);
 }
 
 /* ===== 하단 통계 카드 영역 ===== */
@@ -359,7 +360,7 @@
 
 /* 필터링 영역 스타일 */
 .filter-section {
-  background-color: #fff;
+  background-color: var(--white);
   border-radius: var(--border-radius-lg);
   padding: 20px;
   margin-bottom: 20px;
@@ -584,3 +585,9 @@
   color: var(--text-medium);
 }
 
+.no-line {
+  border-bottom: none !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}

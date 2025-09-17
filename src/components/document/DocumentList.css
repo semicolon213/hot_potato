@@ -33,7 +33,7 @@
 .table-row {
   display: flex;
   border-bottom: 1px solid var(--border-lighter);
-  padding: 18px 0;
+  padding: 9px 0; /* 세로 길이를 줄이기 위해 padding 값 수정 */
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -83,12 +83,13 @@
 .status-badge {
   min-width: 50px;
   padding: 5px 3px;
-  border-radius: 30px;
+  border-radius: var(--border-radius-lg);
   background-color: #5a6578;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  transform: translate(-8px, 10px);
 }
 
 .status-text {
@@ -128,6 +129,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 100%; /* 컨테이너 높이를 100%로 설정하여 내부 아이템 중앙 정렬 */
 }
 
 .section-title {
@@ -135,7 +137,6 @@
   font-weight: bold;
   color: var(--text-dark);
   margin-left: 30px;
-  margin-top: 2px;
 }
 
 .view-all-button {

@@ -26,7 +26,6 @@ const Preferences: React.FC<PreferencesProps> = ({ onPageChange }) => {
       "theme-default",
       "theme-purple",
       "theme-green",
-      "theme-brown",
       "theme-gray",
     );
     if (theme !== "default") {
@@ -73,59 +72,93 @@ const Preferences: React.FC<PreferencesProps> = ({ onPageChange }) => {
 
         {/* 폰트 설정 섹션 */}
         <div className="settings-section">
-          <div className="settings-section-title">폰트 설정</div>
-          <p className="settings-section-description">
-            원하는 폰트를 선택하세요
-          </p>
+          <div className="settings-section-header">
+            <div className="settings-section-icon">🔤</div>
+            <div>
+              <div className="settings-section-title">폰트 설정</div>
+              <p className="settings-section-description">
+                원하는 폰트를 선택하세요
+              </p>
+            </div>
+          </div>
           <div className="font-options">
-            <label style={{ marginRight: "20px" }}>
+            <div className="font-option">
               <input
                 type="radio"
                 name="font"
                 value="system-ui"
+                id="font-system"
                 checked={selectedFont === "system-ui"}
                 onChange={() => handleFontSelect("system-ui")}
               />
-              기본 폰트
-            </label>
-            <label style={{ marginRight: "20px" }}>
+              <label htmlFor="font-system" className="font-label">
+                <span className="font-name">기본 폰트</span>
+                <span className="font-preview" style={{ fontFamily: "system-ui" }}>
+                  Aa 가나다
+                </span>
+              </label>
+            </div>
+            <div className="font-option">
               <input
                 type="radio"
                 name="font"
                 value="GmarketSansMedium"
+                id="font-gmarket"
                 checked={selectedFont === "GmarketSansMedium"}
                 onChange={() => handleFontSelect("GmarketSansMedium")}
               />
-              GmarketSansMedium
-            </label>
-            <label style={{ marginRight: "20px" }}>
+              <label htmlFor="font-gmarket" className="font-label">
+                <span className="font-name">Gmarket Sans</span>
+                <span className="font-preview" style={{ fontFamily: "GmarketSansMedium" }}>
+                  Aa 가나다
+                </span>
+              </label>
+            </div>
+            <div className="font-option">
               <input
                 type="radio"
                 name="font"
                 value="LanaPixel"
+                id="font-lana"
                 checked={selectedFont === "LanaPixel"}
                 onChange={() => handleFontSelect("LanaPixel")}
               />
-              LanaPixel
-            </label>
-            <label style={{ marginRight: "20px" }}>
+              <label htmlFor="font-lana" className="font-label">
+                <span className="font-name">Lana Pixel</span>
+                <span className="font-preview" style={{ fontFamily: "LanaPixel" }}>
+                  Aa 가나다
+                </span>
+              </label>
+            </div>
+            <div className="font-option">
               <input
                 type="radio"
                 name="font"
                 value="SUITE-Regular"
+                id="font-suite"
                 checked={selectedFont === "SUITE-Regular"}
                 onChange={() => handleFontSelect("SUITE-Regular")}
               />
-              SUITE-Regular
-            </label>
+              <label htmlFor="font-suite" className="font-label">
+                <span className="font-name">SUITE</span>
+                <span className="font-preview" style={{ fontFamily: "SUITE-Regular" }}>
+                  Aa 가나다
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
         <div className="settings-section">
-          <div className="settings-section-title">테마 설정</div>
-          <p className="settings-section-description">
-            원하는 테마를 선택하여 인터페이스 색상을 변경하세요
-          </p>
+          <div className="settings-section-header">
+            <div className="settings-section-icon">🎨</div>
+            <div>
+              <div className="settings-section-title">테마 설정</div>
+              <p className="settings-section-description">
+                원하는 테마를 선택하여 인터페이스 색상을 변경하세요
+              </p>
+            </div>
+          </div>
 
           <div className="theme-options">
             <div
@@ -136,18 +169,25 @@ const Preferences: React.FC<PreferencesProps> = ({ onPageChange }) => {
               <div className="theme-preview">
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(56, 67, 86)" }}
+                  style={{ backgroundColor: "#1976d2" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(103, 123, 139)" }}
+                  style={{ backgroundColor: "#4caf50" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(200, 211, 228)" }}
+                  style={{ backgroundColor: "#ffc107" }}
+                ></div>
+                <div
+                  className="preview-color"
+                  style={{ backgroundColor: "#ff3d00" }}
                 ></div>
               </div>
-              <div className="theme-name">기본 테마</div>
+              <div className="theme-info">
+                <div className="theme-name" style={{ fontFamily: selectedFont }}>구글 테마</div>
+                <div className="theme-description" style={{ fontFamily: selectedFont }}>Google Material Design</div>
+              </div>
               <div className="theme-selected">
                 <div className="checkmark"></div>
               </div>
@@ -161,18 +201,25 @@ const Preferences: React.FC<PreferencesProps> = ({ onPageChange }) => {
               <div className="theme-preview">
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(77, 76, 125)" }}
+                  style={{ backgroundColor: "#8b5cf6" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(130, 115, 151)" }}
+                  style={{ backgroundColor: "#a78bfa" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(233, 213, 218)" }}
+                  style={{ backgroundColor: "#f3e8ff" }}
+                ></div>
+                <div
+                  className="preview-color"
+                  style={{ backgroundColor: "#dc2626" }}
                 ></div>
               </div>
-              <div className="theme-name">보라색 테마</div>
+              <div className="theme-info">
+                <div className="theme-name" style={{ fontFamily: selectedFont }}>보라색 테마</div>
+                <div className="theme-description" style={{ fontFamily: selectedFont }}>Purple & Violet</div>
+              </div>
               <div className="theme-selected">
                 <div className="checkmark"></div>
               </div>
@@ -186,43 +233,25 @@ const Preferences: React.FC<PreferencesProps> = ({ onPageChange }) => {
               <div className="theme-preview">
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(98, 110, 86)" }}
+                  style={{ backgroundColor: "#10b981" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(161, 179, 149)" }}
+                  style={{ backgroundColor: "#34d399" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "rgb(242, 243, 236)" }}
+                  style={{ backgroundColor: "#ecfdf5" }}
+                ></div>
+                <div
+                  className="preview-color"
+                  style={{ backgroundColor: "#dc2626" }}
                 ></div>
               </div>
-              <div className="theme-name">초록색 테마</div>
-              <div className="theme-selected">
-                <div className="checkmark"></div>
+              <div className="theme-info">
+                <div className="theme-name" style={{ fontFamily: selectedFont }}>초록색 테마</div>
+                <div className="theme-description" style={{ fontFamily: selectedFont }}>Emerald & Green</div>
               </div>
-            </div>
-
-            <div
-              className={`theme-option ${selectedTheme === "brown" ? "active" : ""}`}
-              data-theme="brown"
-              onClick={() => handleThemeSelect("brown")}
-            >
-              <div className="theme-preview">
-                <div
-                  className="preview-color"
-                  style={{ backgroundColor: "rgb(73, 54, 40)" }}
-                ></div>
-                <div
-                  className="preview-color"
-                  style={{ backgroundColor: "rgb(171, 136, 109)" }}
-                ></div>
-                <div
-                  className="preview-color"
-                  style={{ backgroundColor: "#d7ccc8" }}
-                ></div>
-              </div>
-              <div className="theme-name">갈색 테마</div>
               <div className="theme-selected">
                 <div className="checkmark"></div>
               </div>
@@ -236,18 +265,25 @@ const Preferences: React.FC<PreferencesProps> = ({ onPageChange }) => {
               <div className="theme-preview">
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "#444444" }}
+                  style={{ backgroundColor: "#64748b" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "#777777" }}
+                  style={{ backgroundColor: "#94a3b8" }}
                 ></div>
                 <div
                   className="preview-color"
-                  style={{ backgroundColor: "#cccccc" }}
+                  style={{ backgroundColor: "#f8fafc" }}
+                ></div>
+                <div
+                  className="preview-color"
+                  style={{ backgroundColor: "#dc2626" }}
                 ></div>
               </div>
-              <div className="theme-name">회색 테마</div>
+              <div className="theme-info">
+                <div className="theme-name" style={{ fontFamily: selectedFont }}>회색 테마</div>
+                <div className="theme-description" style={{ fontFamily: selectedFont }}>Slate & Gray</div>
+              </div>
               <div className="theme-selected">
                 <div className="checkmark"></div>
               </div>

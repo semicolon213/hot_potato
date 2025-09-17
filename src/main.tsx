@@ -8,7 +8,10 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "651515712118-8293tiue
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={clientId}>
+    <GoogleOAuthProvider 
+      clientId={clientId}
+      redirectUri={window.location.origin}
+    >
       <App />
     </GoogleOAuthProvider>
   </React.StrictMode>

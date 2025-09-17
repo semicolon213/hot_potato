@@ -16,7 +16,7 @@
 .modal-content {
     background-color: white;
     padding: 30px;
-    border-radius: 12px;
+    border-radius: var(--border-radius-lg);
     width: 85%;
     max-width: 800px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -38,7 +38,7 @@
 }
 
 .modal-header h2 {
-    color: #2c3e50;
+    color: var(--text-dark);
     font-size: 24px;
     font-weight: 800;
 }
@@ -48,7 +48,7 @@
     border: none;
     font-size: 24px;
     cursor: pointer;
-    color: #7f8c8d;
+    color: var(--text-light);
     transition: all 0.3s;
     width: 40px;
     height: 40px;
@@ -59,8 +59,8 @@
 }
 
 .close-modal:hover {
-    color: #e74c3c;
-    background-color: #f8f9fa;
+    color: var(--error);
+    background-color: var(--lightgrey);
 }
 
 .widget-options {
@@ -70,38 +70,38 @@
 }
 
 .widget-option {
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border-color);
     padding: 20px 15px;
-    border-radius: 10px;
+    border-radius: var(--border-radius-md);
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
-    background-color: white;
+    background-color: var(--white);
 }
 
 .widget-option.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: #f8f9fa;
+    background-color: var(--lightgrey);
 }
 
 .widget-option.disabled:hover {
     transform: none;
     box-shadow: none;
-    border-color: #e9ecef;
+    border-color: var(--border-color);
 }
 
 .widget-option:hover {
-    border-color: #3498db;
-    background-color: #f8fafc;
+    border-color: var(--primary);
+    background-color: var(--lightgrey);
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.15);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
 }
 
 .widget-option i {
     font-size: 36px;
     margin-bottom: 15px;
-    color: #3498db;
+    color: var(--primary);
     display: inline-block;
     transition: all 0.3s;
 }
@@ -111,14 +111,14 @@
 }
 
 .widget-option h3 {
-    color: #2c3e50;
+    color: var(--text-dark);
     font-size: 16px;
     font-weight: 700;
     margin-bottom: 8px;
 }
 
 .widget-option p {
-    color: #7f8c8d;
+    color: var(--text-light);
     font-size: 13px;
     line-height: 1.4;
 }

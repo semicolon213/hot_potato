@@ -27,7 +27,7 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title }: 
           style={{ backgroundColor: "var(--primary)" }}
         >
           <div className="section-title-container">
-            <div className="section-title" style={{ color: "white" }}>
+            <div className="section-title no-line" style={{ color: "white", margin: "10px 0 0 20px" }}>
               {title}
             </div>
           </div>
