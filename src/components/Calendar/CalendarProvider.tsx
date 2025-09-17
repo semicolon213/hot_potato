@@ -198,27 +198,31 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     }
 
     try {
-      const response = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/primary/events`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+                  const requestBody: any = {
               summary: event.title,
               description: event.description,
-              start: {
-                date: event.startDate,
-              },
-              end: {
-                date: event.endDate,
-              },
               colorId: event.colorId,
-            }),
-          }
-      );
+            };
+
+            if (event.startDateTime && event.endDateTime) {
+              requestBody.start = { dateTime: event.startDateTime, timeZone: 'Asia/Seoul' };
+              requestBody.end = { dateTime: event.endDateTime, timeZone: 'Asia/Seoul' };
+            } else {
+              requestBody.start = { date: event.startDate };
+              requestBody.end = { date: event.endDate };
+            }
+
+            const response = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                }
+            );
 
       if (!response.ok) {
         throw new Error(`Error creating Google Calendar event: ${response.statusText}`);
@@ -233,7 +237,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   };
 
   const addEvent = (event: Omit<Event, 'id'>) => {
-    addSheetEvent(event);
+    addGoogleEvent(event);
   };
 
   const updateGoogleEvent = async (eventId: string, event: Omit<Event, 'id'>) => {
