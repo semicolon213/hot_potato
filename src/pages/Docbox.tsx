@@ -268,7 +268,7 @@ const Docbox: React.FC = () => {
             style={{ backgroundColor: "var(--primary)" }}
           >
             <div className="section-title-container">
-              <div className="section-title no-line" style={{ color: "white" }}>
+              <div className="section-title no-line" style={{ color: "white", margin: "10px 0 0 20px" }}>
                 문서함
               </div>
             </div>
