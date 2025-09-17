@@ -19,6 +19,9 @@ export interface Event {
     isHoliday?: boolean;
 }
 
+export type DateRange = { start: Date | null; end: Date | null };
+export type CustomPeriod = { id: string; name: string; period: DateRange };
+
 interface CalendarContextType {
     currentDate: DateInfo;
     daysInMonth: (DateInfo & { date: string; dayIndexOfWeek: number })[];
@@ -39,6 +42,14 @@ interface CalendarContextType {
     setSelectedEvent: (event: Event | null) => void;
     semesterStartDate: Date;
     setSemesterStartDate: (date: Date) => void;
+    makeupPeriod: DateRange;
+    setMakeupPeriod: (period: DateRange) => void;
+    finalExamsPeriod: DateRange;
+    setFinalExamsPeriod: (period: DateRange) => void;
+    gradeEntryPeriod: DateRange;
+    setGradeEntryPeriod: (period: DateRange) => void;
+    customPeriods: CustomPeriod[];
+    setCustomPeriods: (periods: CustomPeriod[]) => void;
     eventColors: any;
 }
 

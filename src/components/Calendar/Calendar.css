@@ -229,3 +229,93 @@
   border-radius: var(--border-radius-sm);
 }
 
+.semester-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.semester-picker-modal {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    min-width: 600px;
+}
+
+.date-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.date-selector-row label {
+    font-size: 1em;
+    font-weight: bold;
+    white-space: nowrap;
+    min-width: 180px; /* Align labels */
+    text-align: left;
+}
+
+.semester-picker-modal input[type="date"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.75em;
+}
+
+.semester-picker-modal button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: white;
+    cursor: pointer;
+    font-size: 0.75em;
+}
+
+.add-period-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.add-period-form input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.75em;
+}
+
+.add-period-form button {
+    margin-top: 0;
+}
+
+.delete-period-btn {
+    background-color: transparent;
+    color: var(--error);
+    border: 1px solid var(--error);
+    margin-left: 10px;
+}
+
+.delete-period-btn:hover {
+    background-color: var(--error);
+    color: white;
+}

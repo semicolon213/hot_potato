@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { IoSettingsSharp } from "react-icons/io5";
 import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
@@ -19,6 +20,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         events,
         semesterStartDate,
         setSemesterStartDate,
+        makeupPeriod,
+        setMakeupPeriod,
+        finalExamsPeriod,
+        setFinalExamsPeriod,
+        gradeEntryPeriod,
+        setGradeEntryPeriod,
+        customPeriods,
+        setCustomPeriods,
         selectedEvent,
     } = useCalendarContext();
 
@@ -30,6 +39,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         events: Event[];
         position: { top: number; left: number };
     }>({ isOpen: false, events: [], position: { top: 0, left: 0 } });
+
+    const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
+    const [newPeriodName, setNewPeriodName] = useState("");
 
     const moreButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -72,6 +84,40 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         onSelectEvent(event, { top: rect.top, left: rect.left });
     };
 
+    const formatDateForInput = (date: Date | null) => {
+        if (!date) return '';
+        return date.toISOString().split('T')[0];
+    };
+
+    const handleAddCustomPeriod = () => {
+        if (!newPeriodName.trim()) {
+            alert('추가할 항목의 이름을 입력해주세요.');
+            return;
+        }
+        const newPeriod = {
+            id: `custom-${Date.now()}`,
+            name: newPeriodName,
+            period: { start: null, end: null },
+        };
+        setCustomPeriods([...customPeriods, newPeriod]);
+        setNewPeriodName("");
+    };
+
+    const handleCustomPeriodChange = (id: string, part: 'start' | 'end', value: string) => {
+        const updatedPeriods = customPeriods.map(p => {
+            if (p.id === id) {
+                return { ...p, period: { ...p.period, [part]: new Date(value) } };
+            }
+            return p;
+        });
+        setCustomPeriods(updatedPeriods);
+    };
+
+    const handleDeleteCustomPeriod = (id: string) => {
+            const updatedPeriods = customPeriods.filter(p => p.id !== id);
+            setCustomPeriods(updatedPeriods);
+    };
+
     return (
         <>
             <div className="calendar-header-container">
@@ -79,6 +125,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                     <div className="year-display">{currentDate.year}</div>
                     <div className="header-right-controls">
                         <div className="view-switcher">
+                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '8px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '2px' }} />
                             <button onClick={() => setViewMode('monthly')}
                                     className={viewMode === 'monthly' ? 'active' : ''}>월간
                             </button>
@@ -194,6 +241,99 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                         setMoreEventsModal({ ...moreEventsModal, isOpen: false });
                     }}
                 />
+            )}
+            {isSemesterPickerOpen && (
+                <div className="semester-picker-overlay" onClick={() => setIsSemesterPickerOpen(false)}>
+                    <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>
+                        {/* 개강일 */}
+                        <div className="date-selector-row">
+                            <label htmlFor="semester-start-date">개강일</label>
+                            <input
+                                id="semester-start-date"
+                                type="date"
+                                value={formatDateForInput(semesterStartDate)}
+                                onChange={(e) => setSemesterStartDate(new Date(e.target.value))}
+                            />
+                        </div>
+                        {/* 보강기간 */}
+                        <div className="date-selector-row">
+                            <label>보강기간</label>
+                            <input
+                                type="date"
+                                value={formatDateForInput(makeupPeriod.start)}
+                                onChange={(e) => setMakeupPeriod({ ...makeupPeriod, start: new Date(e.target.value) })}
+                            />
+                            <span>~</span>
+                            <input
+                                type="date"
+                                value={formatDateForInput(makeupPeriod.end)}
+                                onChange={(e) => setMakeupPeriod({ ...makeupPeriod, end: new Date(e.target.value) })}
+                            />
+                        </div>
+                        {/* 기말고사 */}
+                        <div className="date-selector-row">
+                            <label>기말고사</label>
+                            <input
+                                type="date"
+                                value={formatDateForInput(finalExamsPeriod.start)}
+                                onChange={(e) => setFinalExamsPeriod({ ...finalExamsPeriod, start: new Date(e.target.value) })}
+                            />
+                            <span>~</span>
+                            <input
+                                type="date"
+                                value={formatDateForInput(finalExamsPeriod.end)}
+                                onChange={(e) => setFinalExamsPeriod({ ...finalExamsPeriod, end: new Date(e.target.value) })}
+                            />
+                        </div>
+                        {/* 성적입력 및 강의평가 */}
+                        <div className="date-selector-row">
+                            <label>성적입력 및 강의평가</label>
+                            <input
+                                type="date"
+                                value={formatDateForInput(gradeEntryPeriod.start)}
+                                onChange={(e) => setGradeEntryPeriod({ ...gradeEntryPeriod, start: new Date(e.target.value) })}
+                            />
+                            <span>~</span>
+                            <input
+                                type="date"
+                                value={formatDateForInput(gradeEntryPeriod.end)}
+                                onChange={(e) => setGradeEntryPeriod({ ...gradeEntryPeriod, end: new Date(e.target.value) })}
+                            />
+                        </div>
+
+                        {/* Custom Periods */}
+                        {customPeriods.map(p => (
+                            <div key={p.id} className="date-selector-row">
+                                <label>{p.name}</label>
+                                <input
+                                    type="date"
+                                    value={formatDateForInput(p.period.start)}
+                                    onChange={(e) => handleCustomPeriodChange(p.id, 'start', e.target.value)}
+                                />
+                                <span>~</span>
+                                <input
+                                    type="date"
+                                    value={formatDateForInput(p.period.end)}
+                                    onChange={(e) => handleCustomPeriodChange(p.id, 'end', e.target.value)}
+                                />
+                                <button onClick={() => handleDeleteCustomPeriod(p.id)} className="delete-period-btn">삭제</button>
+                            </div>
+                        ))}
+
+                        {/* Add New Period Form */}
+                        <div className="add-period-form">
+                            <input
+                                type="text"
+                                placeholder="항목 이름"
+                                value={newPeriodName}
+                                onChange={(e) => setNewPeriodName(e.target.value)}
+                            />
+                            <button onClick={handleAddCustomPeriod}>추가</button>
+                        </div>
+
+                        <button onClick={() => setIsSemesterPickerOpen(false)}>닫기</button>
+                    </div>
+                </div>
             )}
         </>
     );

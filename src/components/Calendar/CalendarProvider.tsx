@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, type ReactNode } from "react";
-import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
+import { CalendarContext, type Event, type DateRange, type CustomPeriod } from "../../hooks/useCalendarContext.ts";
 
 interface CalendarProviderProps {
   children: ReactNode;
@@ -23,6 +23,10 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [semesterStartDate, setSemesterStartDate] = useState(new Date());
+  const [makeupPeriod, setMakeupPeriod] = useState<DateRange>({ start: null, end: null });
+  const [finalExamsPeriod, setFinalExamsPeriod] = useState<DateRange>({ start: null, end: null });
+  const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
+  const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
@@ -399,6 +403,14 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setSelectedEvent,
     semesterStartDate,
     setSemesterStartDate,
+    makeupPeriod,
+    setMakeupPeriod,
+    finalExamsPeriod,
+    setFinalExamsPeriod,
+    gradeEntryPeriod,
+    setGradeEntryPeriod,
+    customPeriods,
+    setCustomPeriods,
     triggerRefresh,
     eventColors,
   };
