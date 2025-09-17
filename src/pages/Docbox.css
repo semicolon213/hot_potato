@@ -222,6 +222,7 @@
   font-size: 15px;
   font-weight: 500;
   color: var(--text-dark);
+  padding: 0 16px;
 }
 
 /* 테이블 헤더에 체크박스 셀 추가 */
