@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import InfoCard from "../components/document/InfoCard";
+import InfoCard, { type Item as InfoCardItem } from "../components/document/InfoCard";
 import DocumentList from "../components/document/DocumentList";
 import StatCard from "../components/document/StatCard";
 import { useDocumentTable, type Document } from "../hooks/useDocumentTable";
 import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/googleSheetUtils";
+import { getRecentDocuments, addRecentDocument } from "../utils/localStorageUtils";
+import { formatRelativeTime } from "../utils/timeUtils";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
 }
 
-// Docbox.tsx와 호환되는 문서 인터페이스
 interface FetchedDocument {
   id: string;
   title: string;
@@ -25,6 +26,18 @@ interface FetchedDocument {
 const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange }) => {
   const { documentColumns } = useDocumentTable();
   const [documents, setDocuments] = useState<FetchedDocument[]>([]);
+  const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
+
+  const handleDocClick = (doc: { url?: string }) => {
+    if (doc.url) {
+      // Find the full document from the main list to add to recents
+      const fullDoc = documents.find(d => d.url === doc.url);
+      if (fullDoc) {
+        addRecentDocument(fullDoc);
+      }
+      window.open(doc.url, '_blank');
+    }
+  };
 
   useEffect(() => {
     const SPREADSHEET_NAME = 'hot_potato_DB';
@@ -98,10 +111,23 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
       }
     };
 
+    const loadRecentDocuments = () => {
+      const recents = getRecentDocuments();
+      const formattedRecents = recents.map(doc => ({
+        name: doc.title,
+        time: formatRelativeTime(doc.lastAccessed),
+        url: doc.url,
+      }));
+      setRecentDocuments(formattedRecents);
+    };
+
     fetchAndSyncDocuments();
+    loadRecentDocuments();
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         fetchAndSyncDocuments();
+        loadRecentDocuments();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -109,12 +135,6 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
-
-  const recentDocumentsForCards = [
-    { name: "2024년 예산 계획안", time: "1일전" },
-    { name: "3월 회의록", time: "2시간 전" },
-    { name: "인사 발령 안내", time: "어제" },
-  ];
 
   const frequentlyUsedForms = [
     { name: "보고서" },
@@ -143,7 +163,6 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
     },
   ];
 
-  // 데이터를 DocumentList가 기대하는 형태로 변환하고 정렬 후 4개만 선택
   const processedDocuments = documents
     .sort((a, b) => {
       const dateA = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));
@@ -158,8 +177,9 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
       title: doc.title,
       author: doc.author,
       lastModified: doc.lastModified,
-      dueDate: doc.approvalDate, // 기한일을 결재일로 매핑
+      dueDate: doc.approvalDate,
       status: doc.status,
+      url: doc.url,
     }));
 
   return (
@@ -170,7 +190,8 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
           subtitle="최근에 열람한 문서를 확인하세요"
           icon="icon-file"
           backgroundColor="var(--accent)"
-          items={recentDocumentsForCards}
+          items={recentDocuments}
+          onItemClick={handleDocClick}
         />
         <InfoCard
           title="자주 찾는 양식"
@@ -186,6 +207,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
         columns={documentColumns}
         data={processedDocuments}
         onPageChange={onPageChange}
+        onRowClick={handleDocClick}
       />
 
       <div className="stats-container">

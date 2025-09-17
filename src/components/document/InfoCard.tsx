@@ -1,9 +1,10 @@
 import React from "react";
 import "./InfoCard.css";
 
-interface Item {
+export interface Item {
   name: string;
   time?: string;
+  url?: string;
 }
 
 interface InfoCardProps {
@@ -12,6 +13,7 @@ interface InfoCardProps {
   icon: string;
   backgroundColor: string;
   items: Item[];
+  onItemClick?: (item: Item) => void;
 }
 
 const InfoCard: React.FC<InfoCardProps> = ({
@@ -20,6 +22,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
   icon,
   backgroundColor,
   items,
+  onItemClick,
 }) => {
   return (
     <div className="card document-card">
@@ -35,7 +38,12 @@ const InfoCard: React.FC<InfoCardProps> = ({
 
       <div className="items-list">
         {items.map((item, index) => (
-          <div className="list-item" key={index}>
+          <div 
+            className="list-item" 
+            key={index}
+            onClick={() => onItemClick && item.url && onItemClick(item)}
+            style={{ cursor: onItemClick && item.url ? 'pointer' : 'default' }}
+          >
             <div className="item-info">
               <div className="item-name">{item.name}</div>
               {item.time && <div className="item-time">{item.time}</div>}

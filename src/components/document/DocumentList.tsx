@@ -16,9 +16,10 @@ interface DocumentListProps<T extends object> {
   data: T[];
   onPageChange: (pageName: string) => void;
   title: string;
+  onRowClick?: (row: T) => void;
 }
 
-const DocumentList = <T extends object>({ columns, data, onPageChange, title }: DocumentListProps<T>) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick }: DocumentListProps<T>) => {
   return (
     <div className="document-container">
       <div className="table-container">
@@ -51,7 +52,12 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title }: 
         </div>
 
         {data.map((row, index) => (
-          <div className="table-row" key={index}>
+          <div 
+            className="table-row"
+            key={index}
+            onClick={() => onRowClick && onRowClick(row)}
+            style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+          >
             {columns.map((col) => (
               <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
                 {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}

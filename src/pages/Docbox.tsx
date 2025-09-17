@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Docbox.css";
 import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds } from "../utils/googleSheetUtils";
+import { addRecentDocument } from "../utils/localStorageUtils";
 
 interface Document {
   id: string;
@@ -125,8 +126,9 @@ const Docbox: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleRowClick = (url: string) => {
-    window.open(url, '_blank');
+  const handleRowClick = (doc: Document) => {
+    addRecentDocument(doc);
+    window.open(doc.url, '_blank');
   };
 
   const filteredDocuments = documents
@@ -374,7 +376,7 @@ const Docbox: React.FC = () => {
                 />
               </div>
               <div className="table-cell doc-number-cell">{doc.documentNumber}</div>
-              <div className="table-cell title-cell title-bold" onClick={() => handleRowClick(doc.url)} style={{cursor: 'pointer'}}>
+              <div className="table-cell title-cell title-bold" onClick={() => handleRowClick(doc)} style={{cursor: 'pointer'}}>
                 {doc.title}
               </div>
               <div className="table-cell author-cell">{doc.author}</div>
