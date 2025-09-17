@@ -71,12 +71,20 @@ export const checkUserRegistrationStatus = async (email: string): Promise<LoginR
 
 // 사용자 등록 요청 API
 export const registerUser = async (registrationData: RegistrationRequest): Promise<RegistrationResponse> => {
-  const response = await fetch(`${API_BASE_URL}/registerUser`, {
+  // 서버가 기대하는 필드명으로 변환
+  const serverData = {
+    userEmail: registrationData.email,
+    userName: registrationData.name,
+    studentId: registrationData.studentId,
+    isAdminVerified: registrationData.isAdmin
+  };
+
+  const response = await fetch(`${API_BASE_URL}/submitRegistrationRequest`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(registrationData)
+    body: JSON.stringify(serverData)
   });
 
   const result = await response.json();
