@@ -48,45 +48,33 @@
     color: #5f6368;
 }
 
+.all-day-events-canvas {
+    position: relative;
+    display: flex;
+    flex: 1;
+}
+
 .all-day-column {
     flex: 1;
     border-left: 1px solid #e0e0e0;
-    min-height: 30px;
-    padding-top: 4px;
 }
 
 .all-day-event-item {
+    position: absolute;
     color: #000;
     padding: 2px 8px;
     border-radius: var(--border-radius-sm);
     font-size: 12px;
-    margin: 0 4px 2px 4px;
+    margin: 2px 0;
     cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     height: 20px;
-    display: flex;
-    align-items: center;
-}
-
-.all-day-event-item.continuation-left {
-    margin-left: 0;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    border-left: none;
-}
-
-.all-day-event-item.continuation-right {
-    margin-right: 0;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    box-sizing: border-box;
+    z-index: 1;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 .all-day-event-item .event-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     font-weight: 500;
 }
 
@@ -130,7 +118,7 @@
 
 .timed-event-item {
     position: absolute;
-    left: 4
+    left: 4px;
     right: 4px;
     color: #000;
     border: 1px solid #1967d2;

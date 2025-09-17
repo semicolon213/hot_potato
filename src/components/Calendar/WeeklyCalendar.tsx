@@ -1,10 +1,75 @@
 import React, { useEffect, useMemo } from 'react';
-import useCalendarContext from '../../hooks/useCalendarContext';
+import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
 import './WeeklyCalendar.css';
 
 interface WeeklyCalendarProps {
     selectedWeek: number;
 }
+
+// Helper function to calculate event layout
+const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[]) => {
+    if (weekDays.length === 0) return { layout: [], canvasHeight: 0 };
+
+    const weekStart = new Date(weekDays[0].date);
+    const weekEnd = new Date(weekDays[6].date);
+
+    const allDayEvents = events.filter(e => {
+        if (e.startDateTime) return false; // Not an all-day event
+        const eventStart = new Date(e.startDate);
+        const eventEnd = new Date(e.endDate);
+        // Check if event overlaps with the current week
+        return eventStart < new Date(weekEnd.getTime() + 24 * 60 * 60 * 1000) && eventEnd > weekStart;
+    });
+
+    const layout: { event: Event; left: number; width: number; top: number; }[] = [];
+    const occupiedRows: (Event | null)[][] = [];
+
+    allDayEvents.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+    allDayEvents.forEach(event => {
+        const eventStart = new Date(event.startDate);
+        const eventEnd = new Date(event.endDate);
+
+        const startIndex = Math.max(0, Math.floor((eventStart.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)));
+        const endIndex = Math.min(6, Math.floor((new Date(eventEnd.getTime() - 1).getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)));
+        
+        const span = endIndex - startIndex + 1;
+
+        let rowIndex = 0;
+        while (true) {
+            if (!occupiedRows[rowIndex]) {
+                occupiedRows[rowIndex] = new Array(7).fill(null);
+            }
+            let isRowAvailable = true;
+            for (let i = startIndex; i <= endIndex; i++) {
+                if (occupiedRows[rowIndex][i]) {
+                    isRowAvailable = false;
+                    break;
+                }
+            }
+            if (isRowAvailable) {
+                for (let i = startIndex; i <= endIndex; i++) {
+                    occupiedRows[rowIndex][i] = event;
+                }
+                break;
+            }
+            rowIndex++;
+        }
+
+        layout.push({
+            event,
+            left: (startIndex / 7) * 100,
+            width: (span / 7) * 100,
+            top: rowIndex * 24, // 24px per row (20px height + 4px margin)
+        });
+    });
+
+    const maxRows = occupiedRows.length;
+    const canvasHeight = Math.max(maxRows * 24, 30); // Min height of 30px
+
+    return { layout, canvasHeight };
+};
+
 
 const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
     const { events, setSelectedEvent, dispatch, currentDate, semesterStartDate } = useCalendarContext();
@@ -30,6 +95,8 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
         }
         return days;
     }, [selectedWeek, semesterStartDate]);
+
+    const { layout: allDayLayout, canvasHeight } = useMemo(() => calculateAllDayEventLayout(events, weekDays), [events, weekDays]);
 
     useEffect(() => {
         if (weekDays.length > 0) {
@@ -82,47 +149,28 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
 
             <div className="weekly-all-day-section">
                 <div className="time-column-header all-day-label">종일</div>
-                {weekDays.map((day, dayIndex) => {
-                    const allDayEventsOnThisDay = events.filter(e => {
-                        if (e.startDateTime) return false;
-                        const currentDate = new Date(day.date);
-                        const eventStart = new Date(e.startDate);
-                        const eventEnd = new Date(e.endDate);
-                        return currentDate >= eventStart && currentDate < eventEnd;
-                    });
-
-                    return (
-                        <div key={day.date} className="all-day-column">
-                            {allDayEventsOnThisDay.map(event => {
-                                const eventStartDate = new Date(event.startDate);
-                                const eventEndDate = new Date(event.endDate);
-                                const currentDate = new Date(day.date);
-                                const weekStartDate = new Date(weekDays[0].date);
-                                const weekEndDate = new Date(weekDays[6].date);
-
-                                const isFirstDayOfEventInWeek = eventStartDate.getTime() === currentDate.getTime() || (dayIndex === 0 && eventStartDate < weekStartDate);
-                                const actualEventEndDate = new Date(eventEndDate.getTime() - 24 * 60 * 60 * 1000);
-                                const isLastDayOfEventInWeek = actualEventEndDate.getTime() === currentDate.getTime() || (dayIndex === 6 && actualEventEndDate > weekEndDate);
-
-                                let itemClasses = 'all-day-event-item';
-                                if (!isFirstDayOfEventInWeek) {
-                                    itemClasses += ' continuation-left';
-                                }
-                                if (!isLastDayOfEventInWeek) {
-                                    itemClasses += ' continuation-right';
-                                }
-
-                                return (
-                                    <div key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={() => setSelectedEvent(event)}>
-                                        {isFirstDayOfEventInWeek && (
-                                            <span className="event-title">{event.title}</span>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                <div className="all-day-events-canvas" style={{ height: `${canvasHeight}px` }}>
+                    {/* Background columns */}
+                    {weekDays.map((day) => (
+                        <div key={day.date} className="all-day-column"></div>
+                    ))}
+                    {/* Absolutely positioned events */}
+                    {allDayLayout.map(({ event, left, width, top }) => (
+                        <div
+                            key={event.id}
+                            className="all-day-event-item"
+                            style={{
+                                left: `${left}%`,
+                                width: `calc(${width}% - 2px)`,
+                                top: `${top}px`,
+                                backgroundColor: event.color,
+                            }}
+                            onClick={() => setSelectedEvent(event)}
+                        >
+                            <span className="event-title">{event.title}</span>
                         </div>
-                    );
-                })}
+                    ))}
+                </div>
             </div>
 
             <div className="scrollable-body">

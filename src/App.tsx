@@ -25,6 +25,7 @@ import NewBoardPost from "./pages/Board/NewBoardPost";
 import AnnouncementsPage from "./pages/Announcements/Announcements";
 import NewAnnouncementPost from "./pages/Announcements/NewAnnouncementPost";
 import Proceedings from "./pages/proceedings";
+import { getSheetData } from "./utils/googleSheetUtils";
 
 import type { Template } from "./hooks/useTemplateUI";
 
@@ -854,12 +855,8 @@ const App: React.FC = () => {
         setIsCalendarLoading(true);
         try {
             const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
-                const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: spreadsheetId,
-                    range: `${calendarSheetName}!A:H`,
-                });
+                const data = await getSheetData(spreadsheetId, calendarSheetName, 'A:H');
 
-                const data = response.result.values;
                 if (data && data.length > 1) {
                     return data.slice(1).map((row: string[]) => {
                         const startDate = row[2] || '';
@@ -888,7 +885,7 @@ const App: React.FC = () => {
             });
 
             const results = await Promise.all(allEventsPromises);
-            const allEvents = results.flat();
+            const allEvents = results.flat().filter(Boolean);
 
             const uniqueEvents = allEvents.filter((event, index, self) =>
                 index === self.findIndex((e) => e.id === event.id)

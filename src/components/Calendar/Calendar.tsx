@@ -19,7 +19,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         events,
         semesterStartDate,
         setSemesterStartDate,
-        addEvent,
         selectedEvent,
     } = useCalendarContext();
 
@@ -34,37 +33,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
     const moreButtonRef = useRef<HTMLButtonElement>(null);
 
-    // input에서만 관리할 임시 날짜 상태
-    const [tempStartDate, setTempStartDate] = useState(
-        semesterStartDate.toISOString().split('T')[0]
-    );
-
     useEffect(() => {
         const semesterStartEvent = events.find(event => event.title === '개강일');
         if (semesterStartEvent) {
-            setTempStartDate(semesterStartEvent.startDate.split('T')[0]);
             setSemesterStartDate(new Date(semesterStartEvent.startDate));
         }
     }, [events, setSemesterStartDate]);
 
-    // input에서 날짜 변경 → 임시 저장
-    const handleDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTempStartDate(e.target.value);
-    };
-
-    // 버튼 눌렀을 때 학기 시작일 확정
-    const handleConfirmStartDate = () => {
-        if (tempStartDate) {
-            setSemesterStartDate(new Date(tempStartDate));
-            addEvent({
-                title: '03개강일',
-                description: '학기 시작일',
-                startDate: tempStartDate,
-                endDate: tempStartDate, // Provider가 종료일을 자동으로 하루 뒤로 조정해줍니다.
-            });
-            setViewMode('weekly'); // 주간 뷰로 전환
-        }
-    };
 
     const handleMoreClick = (dayEvents: Event[], e: React.MouseEvent<HTMLButtonElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -110,16 +85,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                             <button onClick={() => setViewMode('weekly')}
                                     className={viewMode === 'weekly' ? 'active' : ''}>주간
                             </button>
-                        </div>
-                        <div className="semester-start-date">
-                            <label htmlFor="semester-start">학기 시작일: </label>
-                            <input
-                                type="date"
-                                id="semester-start"
-                                value={tempStartDate}
-                                onChange={handleDateInput}
-                            />
-                            <button onClick={handleConfirmStartDate}>변경</button>
                         </div>
                     </div>
                 </div>
@@ -168,7 +133,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
                             return (
                                 <div
-                                    onClick={() => selectedDate.selectDate(new Date(date.date))}
+                                    onClick={() => {
+                                        selectedDate.selectDate(new Date(date.date));
+                                        onAddEvent();
+                                    }}
                                     className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''}`}
                                     key={date.date}>
                                     <span className="day-number">{date.day}</span>
@@ -198,7 +166,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
                                             return (
                                                 <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                    {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
+                                                    {isFirstDayOfEvent ? event.title : <>&nbsp;</>}
                                                 </li>
                                             );
                                         })}

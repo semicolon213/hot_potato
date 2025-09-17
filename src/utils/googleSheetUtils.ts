@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+const sheetDataCache = new Map<string, any[][]>();
 let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
 
