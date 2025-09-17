@@ -222,8 +222,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onSave }
                             const dayEvents = events.filter(event => {
                                 const startDate = new Date(event.startDate);
                                 const endDate = new Date(event.endDate);
+                                startDate.setHours(0, 0, 0, 0);
+                                endDate.setHours(0, 0, 0, 0);
+
                                 const currentDate = new Date(date.date);
-                                return currentDate >= startDate && currentDate < endDate;
+                                currentDate.setHours(0, 0, 0, 0);
+                                
+                                return currentDate >= startDate && currentDate <= endDate;
                             });
                             const isSelected = selectedDate.date === date.date;
                             const isSunday = date.dayIndexOfWeek === 0;

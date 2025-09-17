@@ -130,10 +130,13 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             }
 
             let endDate = endStr.split('T')[0];
-            if (item.start.date && item.start.date === item.end.date) {
-              const date = new Date(endDate);
-              date.setDate(date.getDate() + 1);
-              endDate = date.toISOString().split('T')[0];
+
+            // If it's an all-day event, the end date from Google is exclusive.
+            // We need to make it inclusive for our rendering logic (<=).
+            if (item.start.date) { // Check if it's an all-day event
+                const date = new Date(endDate);
+                date.setDate(date.getDate() - 1); // Subtract one day
+                endDate = date.toISOString().split('T')[0];
             }
 
             return {

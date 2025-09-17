@@ -775,14 +775,8 @@ const App: React.FC = () => {
                 if (data && data.length > 1) {
                     return data.slice(1).map((row: string[]) => {
                         const startDate = row[2] || '';
-                        let endDate = row[3] || '';
+                        const endDate = row[3] || '';
                         const startDateTime = row[6] || '';
-
-                        if (startDate && startDate === endDate && !startDateTime) {
-                            const date = new Date(endDate);
-                            date.setDate(date.getDate() + 1);
-                            endDate = date.toISOString().split('T')[0];
-                        }
 
                         return {
                             id: `${spreadsheetId}-${row[0] || ''}`,
@@ -876,10 +870,25 @@ const App: React.FC = () => {
             return `${year}-${month}-${day}`;
         };
 
+        // Helper for inclusive date calculation, as per user preference
+        const addInclusiveDays = (startDate: Date, days: number) => {
+            const newDate = new Date(startDate);
+            newDate.setDate(newDate.getDate() + days - 1);
+            return newDate;
+        };
+
         const eventsToSave = [];
 
         // 개강일
         eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
+
+        // 수업일수 events
+        const classDay30 = addInclusiveDays(semesterStartDate, 30);
+        const classDay60 = addInclusiveDays(semesterStartDate, 60);
+        const classDay90 = addInclusiveDays(semesterStartDate, 90);
+        eventsToSave.push({ title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30) });
+        eventsToSave.push({ title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60) });
+        eventsToSave.push({ title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90) });
 
         // 기말고사
         if (finalExamsPeriod.start && finalExamsPeriod.end) {
