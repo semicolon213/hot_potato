@@ -94,6 +94,13 @@
   color: var(--text-dark); /* 기본 텍스트 색상 */
 }
 
+.day.holiday .day-number {
+    color: var(--error) !important;
+    font-weight: bold;
+}
+
+
+
 .day.not-current-month {
   color: var(--text-light);
   background-color: var(--lightgrey);

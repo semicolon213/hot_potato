@@ -167,7 +167,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                             }}
                             onClick={() => setSelectedEvent(event)}
                         >
-                            <span className="event-title">{event.title}</span>
+                            <span className="event-title">{event.icon} {event.title}</span>
                         </div>
                     ))}
                 </div>

@@ -1,6 +1,23 @@
 import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
 
+const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
+    holiday: { color: '#EA4335', icon: '🏖️' },
+    exam: { color: '#4285F4', icon: '✍️' },
+    assignment: { color: '#FBBC05', icon: '🔔' },
+    event: { color: '#34A853', icon: '🎉' },
+    makeup: { color: '#A142F4', icon: '✨' },
+    default: { color: '#7986CB', icon: '' },
+};
+
+const getEventStyle = (event: Event) => {
+    if (event.isHoliday) {
+        return eventTypeStyles.holiday;
+    }
+    const type = event.type as keyof typeof eventTypeStyles;
+    return eventTypeStyles[type] || eventTypeStyles.default;
+};
+
 interface CalendarProviderProps {
   children: ReactNode;
   accessToken: string | null;

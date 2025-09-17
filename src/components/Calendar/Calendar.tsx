@@ -3,13 +3,18 @@ import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
+import DayPopover from './DayPopover';
 
 interface CalendarProps {
     onAddEvent: () => void;
     onSelectEvent: (event: Event, position: { top: number; left: number }) => void;
+    viewMode: 'monthly' | 'weekly';
+    setViewMode: (mode: 'monthly' | 'weekly') => void;
+    selectedWeek: number;
+    setSelectedWeek: (week: number) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode, setViewMode, selectedWeek, setSelectedWeek }) => {
     const {
         dispatch,
         currentDate,
@@ -22,13 +27,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
-    const [viewMode, setViewMode] = useState('monthly');
-    const [selectedWeek, setSelectedWeek] = useState(1);
+    
     const [moreEventsModal, setMoreEventsModal] = useState<{
         isOpen: boolean;
         events: Event[];
         position: { top: number; left: number };
     }>({ isOpen: false, events: [], position: { top: 0, left: 0 } });
+
+    const [popover, setPopover] = useState<{ visible: boolean; events: Event[]; date: string; top: number; left: number; }>({ visible: false, events: [], date: '', top: 0, left: 0 });
 
     const moreButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -64,6 +70,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         onSelectEvent(event, { top: rect.top, left: rect.left });
     };
 
+    const handleDayMouseEnter = (e: React.MouseEvent<HTMLDivElement>, dayEvents: Event[], date: string) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setPopover({
+            visible: true,
+            events: dayEvents,
+            date: date,
+            top: rect.bottom + 5,
+            left: rect.left,
+        });
+    };
+
+    const handleDayMouseLeave = () => {
+        setPopover(p => ({ ...p, visible: false }));
+    };
+
     const weeksInMonth = useMemo(() => {
         const weeksArr: any[][] = [];
         if (!daysInMonth) return [];
@@ -76,6 +97,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
     const eventLayouts = useMemo(() => {
         const layouts = new Map<string, (Event | null)[]>();
         weeksInMonth.forEach(week => {
+            if(week.length === 0) return;
             const weekStart = new Date(week[0].date);
             const weekEnd = new Date(week[6].date);
             weekEnd.setHours(23, 59, 59, 999);
@@ -98,6 +120,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
                 for (let i = 0; i < 7; i++) {
                     const day = week[i];
+                    if(!day) continue;
                     const dayStart = new Date(day.date);
                     const dayEnd = new Date(day.date);
                     dayEnd.setDate(dayEnd.getDate() + 1);
@@ -117,38 +140,40 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         });
         return layouts;
     }, [weeksInMonth, events]);
+    
+    const getWeekDatesText = (weekNum: number) => {
+        if (!semesterStartDate) return '';
+        const start = new Date(semesterStartDate);
+        start.setDate(start.getDate() + (weekNum - 1) * 7);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
+    };
 
     return (
         <>
             <div className="calendar-header-container">
                 <div className='calendar-header-top'>
-                    <div className="year-display">{currentDate.year}</div>
+                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
+                        <h2>
+                            {viewMode === 'monthly' ? (
+                                `${currentDate.year}년 ${currentDate.month}월`
+                            ) : (
+                                `${selectedWeek}주차`
+                            )}
+                        </h2>
+                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                    </div>
                     <div className="header-right-controls">
                         <div className="view-switcher">
                             <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
                             <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
                         </div>
+                        <button onClick={onAddEvent} className="add-event-button">+일정추가</button>
                     </div>
                 </div>
-                <div className="month-navigation">
-                    <div className="month-controls">
-                        {viewMode === 'monthly' && <button className="arrow-button" onClick={dispatch.handlePrevMonth}>&#8249;</button>}
-                        <span className="month-display">{currentDate.month}월</span>
-                        {viewMode === 'monthly' && <button className="arrow-button" onClick={dispatch.handleNextMonth}>&#8250;</button>}
-                    </div>
-                    <button onClick={onAddEvent} className="add-event-button" style={{ marginLeft: 'auto' }}>+일정추가</button>
-                </div>
-                {viewMode === 'weekly' && (
-                    <div className="week-navigation">
-                        <div className='week-navigation-buttons'>
-                            {Array.from({ length: 15 }, (_, i) => i + 1).map(weekNum => (
-                                <button key={weekNum} onClick={() => setSelectedWeek(weekNum)} className={selectedWeek === weekNum ? 'active' : ''}>
-                                    {weekNum}주차
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
             {viewMode === 'monthly' ? (
                 <div className="calendar-body-container">
@@ -165,14 +190,17 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                                 const isSelected = selectedDate.date === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isCurrentMonth = currentDate.month === date.month;
+                                const isHoliday = dayEvents.some(e => e.isHoliday);
 
                                 return (
                                     <div
+                                        onMouseEnter={(e) => handleDayMouseEnter(e, dayEvents, date.date)}
+                                        onMouseLeave={handleDayMouseLeave}
                                         onClick={() => {
                                             selectedDate.selectDate(new Date(date.date));
                                             onAddEvent();
                                         }}
-                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''}`}
+                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
                                         <ul className="event-list">
@@ -193,6 +221,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
                                                 return (
                                                     <li key={event.id + date.date} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
+                                                        <span style={{marginRight: '4px'}}>{event.icon}</span>
                                                         {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
                                                     </li>
                                                 );
@@ -221,6 +250,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                         onSelectEvent(event, moreEventsModal.position);
                         setMoreEventsModal({ ...moreEventsModal, isOpen: false });
                     }}
+                />
+            )}
+            {popover.visible && (
+                <DayPopover 
+                    events={popover.events} 
+                    date={popover.date} 
+                    position={{ top: popover.top, left: popover.left }} 
                 />
             )}
         </>
