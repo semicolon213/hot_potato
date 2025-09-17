@@ -3,13 +3,16 @@ import InfoCard from "../components/document/InfoCard";
 import DocumentList from "../components/document/DocumentList";
 import StatCard from "../components/document/StatCard";
 import { useDocumentTable, type Document } from "../hooks/useDocumentTable";
+import { useTemplateUI, type Template } from "../hooks/useTemplateUI";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
+  customTemplates: Template[];
 }
 
-const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange }) => {
+const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, customTemplates }) => {
   const { documentColumns, documents } = useDocumentTable();
+  const { onUseTemplate } = useTemplateUI(customTemplates, onPageChange, '', '전체');
 
   const recentDocuments = [
     { name: "2024년 예산 계획안", time: "1일전" },
@@ -17,11 +20,24 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
     { name: "인사 발령 안내", time: "어제" },
   ];
 
-  const frequentlyUsedForms = [
-    { name: "보고서" },
-    { name: "기획안" },
-    { name: "회의록" },
-  ];
+  const frequentlyUsedForms = Array.from(
+    customTemplates
+      .filter(template => template.favorites_tag)
+      .reduce((map, template) => {
+        if (!map.has(template.favorites_tag!)) {
+          map.set(template.favorites_tag!, {
+            name: template.favorites_tag!,
+            type: template.type,
+            title: template.title,
+          });
+        }
+        return map;
+      }, new Map<string, { name: string; type: string; title: string; } >()).values()
+  );
+
+  const handleFavoriteClick = (item: { name: string; type: string; title: string; }) => {
+    onUseTemplate(item.type, item.title);
+  };
 
   const statCards = [
     {
@@ -55,11 +71,12 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
           items={recentDocuments}
         />
         <InfoCard
-          title="자주 찾는 양식"
+          title="즐겨찾기"
           subtitle="자주 사용하는 양식을 빠르게 접근하세요"
           icon="icon-star"
           backgroundColor="var(--table-header-bg)"
           items={frequentlyUsedForms}
+          onItemClick={handleFavoriteClick}
         />
       </div>
 

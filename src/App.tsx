@@ -1327,6 +1327,7 @@ const App: React.FC = () => {
         return (
             <DocumentManagement
                 onPageChange={handlePageChange}
+                customTemplates={customTemplates}
                 data-oid="i8mtyop"
             />
         );
