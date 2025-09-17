@@ -154,7 +154,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate, refreshKey]);
 
   const events = useMemo(() => {
-    const combinedEvents = [...googleEvents, ...sheetEvents];
+    const combinedEvents = [...sheetEvents, ...googleEvents];
 
     return combinedEvents
       .map(event => ({
