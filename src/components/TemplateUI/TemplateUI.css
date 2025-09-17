@@ -237,21 +237,23 @@ margin-left: 0;
     cursor: pointer;
     padding: 0;
     margin-right: 10px; /* Add some space between buttons */
+    display: flex; /* Align icon properly */
+    align-items: center; /* Align icon properly */
 }
 
-.favorite-button img {
-    width: 20px;
-    height: 20px;
-    filter: grayscale(100%);
-    transition: filter 0.2s ease-in-out, transform 0.2s ease-in-out;
-}
-
-.favorite-button.favorited img {
-    filter: none; /* Show original color (yellow) */
-}
-
-.favorite-button:hover img {
+.favorite-button:hover {
     transform: scale(1.1);
+}
+
+.favorite-button svg {
+    width: 30px;
+    height: 30px;
+    fill: #d1d5db; /* 기본 회색 (빈 별) */
+    transition: fill 0.2s ease-in-out;
+}
+
+.favorite-button.favorited svg {
+    fill: #facc15; /* 즐겨찾기 노란색 */
 }
 
 .new-usage-count {
