@@ -25,9 +25,12 @@ interface HeaderProps {
     isAdmin: boolean;
   };
   onLogout?: () => void;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  onSearchSubmit: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout, searchTerm, onSearchChange, onSearchSubmit }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -130,6 +133,13 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
               type="text"
               className="search-input"
               placeholder="문서 검색"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  onSearchSubmit();
+                }
+              }}
               data-oid="750ewi9"
           />
         </div>

@@ -6,6 +6,7 @@ export interface Document {
   lastModified: string;
   dueDate: string;
   status: string;
+  url: string;
 }
 
 // 2. 커스텀 훅 정의
@@ -14,9 +15,9 @@ export const useDocumentTable = () => {
   const documentColumns = [
     { key: 'docNumber' as const, header: '문서번호', width: '15%', cellClassName: 'doc-number-cell' },
     { key: 'title' as const, header: '제목', width: '25%', cellClassName: 'title-cell' },
-    { key: 'author' as const, header: '작성자', width: '15%', cellClassName: 'author-cell' },
+    { key: 'author' as const, header: '기안자', width: '15%', cellClassName: 'author-cell' },
     { key: 'lastModified' as const, header: '최근 수정일', width: '15%', cellClassName: 'date-cell' },
-    { key: 'dueDate' as const, header: '기한일', width: '15%', cellClassName: 'date-cell' },
+    { key: 'dueDate' as const, header: '결재일', width: '15%', cellClassName: 'date-cell' },
     {
       key: 'status' as const,
       header: '상태',
@@ -39,6 +40,7 @@ export const useDocumentTable = () => {
       lastModified: "2024-03-16",
       dueDate: "2024-03-15",
       status: "진행중",
+      url: "",
     },
     {
       docNumber: "DOC-2024-002",
@@ -47,6 +49,7 @@ export const useDocumentTable = () => {
       lastModified: "2024-03-15",
       dueDate: "2024-03-14",
       status: "완료",
+      url: "",
     },
     {
       docNumber: "DOC-2024-003",
@@ -55,6 +58,7 @@ export const useDocumentTable = () => {
       lastModified: "2024-03-14",
       dueDate: "2024-03-13",
       status: "반려",
+      url: "",
     },
     {
       docNumber: "DOC-2024-005",
@@ -63,6 +67,7 @@ export const useDocumentTable = () => {
       lastModified: "2024-03-12",
       dueDate: "2024-03-11",
       status: "임시저장",
+      url: "",
     },
   ];
 

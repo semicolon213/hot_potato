@@ -1,4 +1,3 @@
-import { updateSheetCell } from "./utils/googleSheetUtils";
 import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -25,7 +24,7 @@ import NewBoardPost from "./pages/Board/NewBoardPost";
 import AnnouncementsPage from "./pages/Announcements/Announcements";
 import NewAnnouncementPost from "./pages/Announcements/NewAnnouncementPost";
 import Proceedings from "./pages/proceedings";
-import { getSheetData } from "./utils/googleSheetUtils";
+import { getSheetData, updateSheetCell } from "./utils/googleSheetUtils";
 
 import type { Template } from "./hooks/useTemplateUI";
 
@@ -323,6 +322,8 @@ const App: React.FC = () => {
   const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
   const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
   const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
     // State for Calendar
     const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
     const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -1384,6 +1385,16 @@ const App: React.FC = () => {
     setCurrentPage(pageName as PageType);
   };
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleSearchSubmit = () => {
+    if (currentPage !== 'docbox') {
+      handlePageChange('docbox');
+    }
+  };
+
   // 현재 페이지에 따른 컴포넌트 렌더링 (develop의 모든 페이지 유지)
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -1416,7 +1427,7 @@ const App: React.FC = () => {
             />
         );
       case "docbox":
-        return <Docbox data-oid="t94yibd" />;
+        return <Docbox data-oid="t94yibd" searchTerm={searchTerm} />;
       case "new_document":
         return (
             <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} updateTemplateFavorite={updateTemplateFavorite} data-oid="ou.h__l" />
@@ -1480,7 +1491,7 @@ const App: React.FC = () => {
         <div className="app-container" data-oid="g1w-gjq">
           <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
           <div className="main-panel" data-oid="n9gxxwr">
-            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} />
+            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} searchTerm={searchTerm} onSearchChange={handleSearch} onSearchSubmit={handleSearchSubmit} />
             <div className="content" id="dynamicContent" data-oid="nn2e18p">
               {renderCurrentPage()}
             </div>

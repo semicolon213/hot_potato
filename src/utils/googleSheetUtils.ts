@@ -301,3 +301,75 @@ export const copyGoogleDocument = async (fileId: string, newTitle: string): Prom
     return null;
   }
 };
+
+export const deleteRowsByDocIds = async (
+  spreadsheetId: string,
+  sheetName: string,
+  docIds: string[]
+): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    // 1. Find the sheetId (numeric) for the given sheetName
+    const sheetIdResponse = await gapi.client.sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId,
+    });
+    const sheet = sheetIdResponse.result.sheets.find(
+      (s: any) => s.properties.title === sheetName
+    );
+    if (!sheet) {
+      throw new Error(`Sheet "${sheetName}" not found.`);
+    }
+    const numericSheetId = sheet.properties.sheetId;
+
+    // 2. Get all data to find the header and document_id column
+    const data = await getSheetData(spreadsheetId, sheetName, 'A:Z'); // Get enough columns
+    if (!data || data.length === 0) return;
+
+    const header = data[0];
+    const docIdColIndex = header.indexOf('document_id');
+
+    if (docIdColIndex === -1) {
+      console.error('Required column "document_id" not found.');
+      return;
+    }
+
+    const rowsToDelete: number[] = [];
+    data.forEach((row, index) => {
+      if (index > 0 && docIds.includes(row[docIdColIndex])) { // index > 0 to skip header
+        rowsToDelete.push(index);
+      }
+    });
+
+    if (rowsToDelete.length === 0) {
+      return; // No rows to delete
+    }
+
+    // 3. Sort row indices in descending order
+    rowsToDelete.sort((a, b) => b - a);
+
+    // 4. Create batch update requests
+    const requests = rowsToDelete.map(rowIndex => ({
+      deleteDimension: {
+        range: {
+          sheetId: numericSheetId,
+          dimension: 'ROWS',
+          startIndex: rowIndex,
+          endIndex: rowIndex + 1,
+        },
+      },
+    }));
+
+    // 5. Execute the batch update
+    await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      resource: {
+        requests: requests,
+      },
+    });
+  } catch (error) {
+    console.error('Error deleting rows from sheet:', error);
+    throw error; // Re-throw the error to be caught by the caller
+  }
+};

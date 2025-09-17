@@ -90,6 +90,10 @@
 
 
 
+.list-item:hover {
+  background-color: #f9f9f9;
+}
+
 .item-info {
   flex-grow: 1;
   margin-left: 17px;
