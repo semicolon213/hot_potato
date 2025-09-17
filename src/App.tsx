@@ -28,6 +28,7 @@ import Proceedings from "./pages/proceedings";
 import { getSheetData } from "./utils/googleSheetUtils";
 
 import type { Template } from "./hooks/useTemplateUI";
+import type { DateRange, CustomPeriod } from "./hooks/useCalendarContext";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -232,6 +233,10 @@ const App: React.FC = () => {
     // State for Calendar
     const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
     const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+    const [semesterStartDate, setSemesterStartDate] = useState(new Date());
+    const [finalExamsPeriod, setFinalExamsPeriod] = useState<DateRange>({ start: null, end: null });
+    const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
+    const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
 
   // SHEET_ID는 상수로 정의됨
   const boardSheetName = '시트1';
@@ -856,6 +861,80 @@ const App: React.FC = () => {
         console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
       };
 
+      const saveAcademicScheduleToSheet = async () => {
+        if (!calendarStudentSpreadsheetId) {
+            alert("학생용 캘린더 시트를 찾을 수 없습니다. 먼저 구글 드라이브에서 'calendar_student' 시트가 있는지 확인해주세요.");
+            return;
+        }
+
+        const formatDate = (date: Date | null) => {
+            if (!date) return '';
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const eventsToSave = [];
+
+        // 개강일
+        eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
+
+        // 기말고사
+        if (finalExamsPeriod.start && finalExamsPeriod.end) {
+            eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end) });
+        }
+
+        // 성적입력 및 강의평가
+        if (gradeEntryPeriod.start && gradeEntryPeriod.end) {
+            eventsToSave.push({ title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end) });
+        }
+
+        // Custom periods
+        customPeriods.forEach(p => {
+            if (p.period.start && p.period.end) {
+                eventsToSave.push({ title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end) });
+            }
+        });
+
+        const values = eventsToSave.map((event, index) => [
+            `acad-${index + 1}`,
+            event.title,
+            event.startDate,
+            event.endDate,
+            '', // description
+            '', // colorId
+            '', // startDateTime
+            '', // endDateTime
+        ]);
+
+        try {
+            // Clear existing academic events (e.g., rows A2:H100)
+            await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+                spreadsheetId: calendarStudentSpreadsheetId,
+                range: `${calendarSheetName}!A2:H100`, // Assuming academic events are within this range
+            });
+
+            // Append new events
+            await (window as any).gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: calendarStudentSpreadsheetId,
+                range: `${calendarSheetName}!A2`,
+                valueInputOption: 'RAW',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: values,
+                },
+            });
+
+            alert('학사일정이 성공적으로 저장되었습니다.');
+            await fetchCalendarEvents(); // Refresh calendar
+        } catch (error) {
+            console.error('Error saving academic schedule to Google Sheet:', error);
+            alert('학사일정 저장 중 오류가 발생했습니다.');
+        }
+    };
+
   useEffect(() => {
     const storedAccessToken = localStorage.getItem('googleAccessToken');
     if (storedAccessToken) {
@@ -1185,12 +1264,20 @@ const App: React.FC = () => {
         );
       case "calendar":
           return <MyCalendarPage
-              data-oid="uz.ewbm"
               accessToken={googleAccessToken}
               calendarEvents={calendarEvents}
               addCalendarEvent={addCalendarEvent}
               updateCalendarEvent={updateCalendarEvent}
               deleteCalendarEvent={deleteCalendarEvent}
+              semesterStartDate={semesterStartDate}
+              setSemesterStartDate={setSemesterStartDate}
+              finalExamsPeriod={finalExamsPeriod}
+              setFinalExamsPeriod={setFinalExamsPeriod}
+              gradeEntryPeriod={gradeEntryPeriod}
+              setGradeEntryPeriod={setGradeEntryPeriod}
+              customPeriods={customPeriods}
+              setCustomPeriods={setCustomPeriods}
+              onSaveAcademicSchedule={saveAcademicScheduleToSheet}
               />;
       case "preferences":
         return (

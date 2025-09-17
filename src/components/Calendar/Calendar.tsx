@@ -9,9 +9,10 @@ import MoreEventsModal from './MoreEventsModal';
 interface CalendarProps {
     onAddEvent: () => void;
     onSelectEvent: (event: Event, position: { top: number; left: number }) => void;
+    onSave: () => Promise<void>;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onSave }) => {
     const {
         dispatch,
         currentDate,
@@ -20,8 +21,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         events,
         semesterStartDate,
         setSemesterStartDate,
-        makeupPeriod,
-        setMakeupPeriod,
         finalExamsPeriod,
         setFinalExamsPeriod,
         gradeEntryPeriod,
@@ -104,18 +103,70 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
     };
 
     const handleCustomPeriodChange = (id: string, part: 'start' | 'end', value: string) => {
+        const newDate = new Date(value);
+        const periodToUpdate = customPeriods.find(p => p.id === id);
+        if (!periodToUpdate) return;
+
+        if (part === 'start' && periodToUpdate.period.end && newDate > periodToUpdate.period.end) {
+            alert('시작일은 종료일보다 늦을 수 없습니다.');
+            return;
+        }
+        if (part === 'end' && periodToUpdate.period.start && newDate < periodToUpdate.period.start) {
+            alert('종료일은 시작일보다 빠를 수 없습니다.');
+            return;
+        }
+
         const updatedPeriods = customPeriods.map(p => {
             if (p.id === id) {
-                return { ...p, period: { ...p.period, [part]: new Date(value) } };
+                return { ...p, period: { ...p.period, [part]: newDate } };
             }
             return p;
         });
         setCustomPeriods(updatedPeriods);
     };
 
+    const handleFinalExamsPeriodChange = (part: 'start' | 'end', value: string) => {
+        const newDate = new Date(value);
+        if (part === 'start' && finalExamsPeriod.end && newDate > finalExamsPeriod.end) {
+            alert('시작일은 종료일보다 늦을 수 없습니다.');
+            return;
+        }
+        if (part === 'end' && finalExamsPeriod.start && newDate < finalExamsPeriod.start) {
+            alert('종료일은 시작일보다 빠를 수 없습니다.');
+            return;
+        }
+        setFinalExamsPeriod({ ...finalExamsPeriod, [part]: newDate });
+    };
+
+    const handleGradeEntryPeriodChange = (part: 'start' | 'end', value: string) => {
+        const newDate = new Date(value);
+        if (part === 'start' && gradeEntryPeriod.end && newDate > gradeEntryPeriod.end) {
+            alert('시작일은 종료일보다 늦을 수 없습니다.');
+            return;
+        }
+        if (part === 'end' && gradeEntryPeriod.start && newDate < gradeEntryPeriod.start) {
+            alert('종료일은 시작일보다 빠를 수 없습니다.');
+            return;
+        }
+        setGradeEntryPeriod({ ...gradeEntryPeriod, [part]: newDate });
+    };
+
     const handleDeleteCustomPeriod = (id: string) => {
+        if (window.confirm('이 항목을 정말로 삭제하시겠습니까?')) {
             const updatedPeriods = customPeriods.filter(p => p.id !== id);
             setCustomPeriods(updatedPeriods);
+        }
+    };
+
+    const handleSave = async () => {
+        await onSave();
+        setIsSemesterPickerOpen(false);
+    };
+
+    const handleCloseWithoutSaving = () => {
+        if (window.confirm('저장 되지 않습니다. 그래도 닫겠습니까?')) {
+            setIsSemesterPickerOpen(false);
+        }
     };
 
     return (
@@ -243,7 +294,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                 />
             )}
             {isSemesterPickerOpen && (
-                <div className="semester-picker-overlay" onClick={() => setIsSemesterPickerOpen(false)}>
+                <div className="semester-picker-overlay" onClick={handleCloseWithoutSaving}>
                     <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>
                         {/* 개강일 */}
                         <div className="date-selector-row">
@@ -255,34 +306,19 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                                 onChange={(e) => setSemesterStartDate(new Date(e.target.value))}
                             />
                         </div>
-                        {/* 보강기간 */}
-                        <div className="date-selector-row">
-                            <label>보강기간</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(makeupPeriod.start)}
-                                onChange={(e) => setMakeupPeriod({ ...makeupPeriod, start: new Date(e.target.value) })}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(makeupPeriod.end)}
-                                onChange={(e) => setMakeupPeriod({ ...makeupPeriod, end: new Date(e.target.value) })}
-                            />
-                        </div>
                         {/* 기말고사 */}
                         <div className="date-selector-row">
                             <label>기말고사</label>
                             <input
                                 type="date"
                                 value={formatDateForInput(finalExamsPeriod.start)}
-                                onChange={(e) => setFinalExamsPeriod({ ...finalExamsPeriod, start: new Date(e.target.value) })}
+                                onChange={(e) => handleFinalExamsPeriodChange('start', e.target.value)}
                             />
                             <span>~</span>
                             <input
                                 type="date"
                                 value={formatDateForInput(finalExamsPeriod.end)}
-                                onChange={(e) => setFinalExamsPeriod({ ...finalExamsPeriod, end: new Date(e.target.value) })}
+                                onChange={(e) => handleFinalExamsPeriodChange('end', e.target.value)}
                             />
                         </div>
                         {/* 성적입력 및 강의평가 */}
@@ -291,13 +327,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                             <input
                                 type="date"
                                 value={formatDateForInput(gradeEntryPeriod.start)}
-                                onChange={(e) => setGradeEntryPeriod({ ...gradeEntryPeriod, start: new Date(e.target.value) })}
+                                onChange={(e) => handleGradeEntryPeriodChange('start', e.target.value)}
                             />
                             <span>~</span>
                             <input
                                 type="date"
                                 value={formatDateForInput(gradeEntryPeriod.end)}
-                                onChange={(e) => setGradeEntryPeriod({ ...gradeEntryPeriod, end: new Date(e.target.value) })}
+                                onChange={(e) => handleGradeEntryPeriodChange('end', e.target.value)}
                             />
                         </div>
 
@@ -331,7 +367,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                             <button onClick={handleAddCustomPeriod}>추가</button>
                         </div>
 
-                        <button onClick={() => setIsSemesterPickerOpen(false)}>닫기</button>
+                        <div className="modal-actions">
+                            <button onClick={handleSave}>완료</button>
+                            <button onClick={handleCloseWithoutSaving} className="close-btn">닫기</button>
+                        </div>
                     </div>
                 </div>
             )}

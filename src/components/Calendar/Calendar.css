@@ -319,3 +319,14 @@
     background-color: var(--error);
     color: white;
 }
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.modal-actions .close-btn {
+    background-color: var(--grey);
+    color: var(--text-dark);
+}

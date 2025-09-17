@@ -42,8 +42,6 @@ interface CalendarContextType {
     setSelectedEvent: (event: Event | null) => void;
     semesterStartDate: Date;
     setSemesterStartDate: (date: Date) => void;
-    makeupPeriod: DateRange;
-    setMakeupPeriod: (period: DateRange) => void;
     finalExamsPeriod: DateRange;
     setFinalExamsPeriod: (period: DateRange) => void;
     gradeEntryPeriod: DateRange;

@@ -8,6 +8,14 @@ interface CalendarProviderProps {
   addSheetEvent: (event: Omit<Event, 'id'>) => Promise<void>;
   updateSheetEvent: (eventId: string, event: Omit<Event, 'id'>) => Promise<void>;
   deleteSheetEvent: (eventId: string) => Promise<void>;
+  semesterStartDate: Date;
+  setSemesterStartDate: (date: Date) => void;
+  finalExamsPeriod: DateRange;
+  setFinalExamsPeriod: (period: DateRange) => void;
+  gradeEntryPeriod: DateRange;
+  setGradeEntryPeriod: (period: DateRange) => void;
+  customPeriods: CustomPeriod[];
+  setCustomPeriods: (periods: CustomPeriod[]) => void;
 }
 
 const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -16,17 +24,20 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   sheetEvents,
   addSheetEvent,
   updateSheetEvent,
-  deleteSheetEvent
+  deleteSheetEvent,
+  semesterStartDate,
+  setSemesterStartDate,
+  finalExamsPeriod,
+  setFinalExamsPeriod,
+  gradeEntryPeriod,
+  setGradeEntryPeriod,
+  customPeriods,
+  setCustomPeriods,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [semesterStartDate, setSemesterStartDate] = useState(new Date());
-  const [makeupPeriod, setMakeupPeriod] = useState<DateRange>({ start: null, end: null });
-  const [finalExamsPeriod, setFinalExamsPeriod] = useState<DateRange>({ start: null, end: null });
-  const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
-  const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
@@ -403,8 +414,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setSelectedEvent,
     semesterStartDate,
     setSemesterStartDate,
-    makeupPeriod,
-    setMakeupPeriod,
     finalExamsPeriod,
     setFinalExamsPeriod,
     gradeEntryPeriod,
