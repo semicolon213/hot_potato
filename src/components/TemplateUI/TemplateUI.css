@@ -224,11 +224,36 @@ margin-left: 0;
 
 .new-card-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end; /* Align items to the right */
     align-items: center;
     padding: 14px 20px;
     background-color: #f8f9fa;
     border-top: 1px solid #e9ecef;
+}
+
+.favorite-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-right: 10px; /* Add some space between buttons */
+    display: flex; /* Align icon properly */
+    align-items: center; /* Align icon properly */
+}
+
+.favorite-button:hover {
+    transform: scale(1.1);
+}
+
+.favorite-button svg {
+    width: 30px;
+    height: 30px;
+    fill: #d1d5db; /* 기본 회색 (빈 별) */
+    transition: fill 0.2s ease-in-out;
+}
+
+.favorite-button.favorited svg {
+    fill: #facc15; /* 즐겨찾기 노란색 */
 }
 
 .new-usage-count {

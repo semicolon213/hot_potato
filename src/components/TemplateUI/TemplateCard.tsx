@@ -13,6 +13,8 @@ interface Props {
     style?: React.CSSProperties;
     attributes?: DraggableAttributes;
     listeners?: DraggableSyntheticListeners;
+    onToggleFavorite?: (template: Template) => void; // 즐겨찾기 토글 함수
+    isFavorite?: boolean; // 즐겨찾기 상태
 }
 
 const tagToClassMap: { [key: string]: string } = {
@@ -35,7 +37,7 @@ function getCustomTagColorClass(tagName: string): string {
 }
 
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
-    ({ template, onUse, onDelete, onEdit, isFixed, defaultTags, style, attributes, listeners }, ref) => {
+    ({ template, onUse, onDelete, onEdit, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite }, ref) => {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const menuRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +95,7 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                                 </div>
                             )}
                         </div>
-                        
+
                         {/* 삭제 버튼 (휴지통 아이콘) */}
                         <button onClick={handleDelete} title="삭제" className="delete-template-button">
                             <BiTrash />
@@ -106,6 +108,15 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                     <p className="new-card-description">{template.parttitle || template.description}</p>
                 </div>
                 <div className="new-card-footer">
+                    {onToggleFavorite && (
+                        <button
+                            className={`favorite-button ${isFavorite ? 'favorited' : ''}`}
+                            onClick={() => onToggleFavorite(template)}
+                            title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" className="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        </button>
+                    )}
                     <button
                         className="new-use-button"
                         onClick={() => onUse(template.type, template.title)}

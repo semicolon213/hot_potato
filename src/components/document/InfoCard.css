@@ -80,9 +80,15 @@
   height: 65px;
 }
 
-.list-item:last-child {
-  border-bottom: none;
+.list-item.clickable {
+  cursor: pointer;
 }
+
+.list-item.clickable:hover {
+  background-color: #f8f9fa;
+}
+
+
 
 .item-info {
   flex-grow: 1;

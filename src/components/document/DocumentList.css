@@ -115,6 +115,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  transform: translate(-8px, 10px);
 }
 
 .status-text {
