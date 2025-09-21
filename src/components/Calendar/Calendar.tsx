@@ -24,6 +24,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         semesterStartDate,
         setSemesterStartDate,
         selectedEvent,
+        eventTypes,
+        activeFilters,
+        setActiveFilters,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -37,6 +40,35 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [popover, setPopover] = useState<{ visible: boolean; events: Event[]; date: string; top: number; left: number; }>({ visible: false, events: [], date: '', top: 0, left: 0 });
 
     const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+    const filterLabels: { [key: string]: string } = {
+        all: '전체',
+        holiday: '휴일/휴강',
+        exam: '시험',
+        assignment: '과제',
+        event: '행사',
+        makeup: '보강',
+    };
+
+    const handleFilterChange = (filter: string) => {
+        if (filter === 'all') {
+            setActiveFilters(['all']);
+            return;
+        }
+
+        const newFilters = activeFilters.includes('all')
+            ? [filter] // If 'all' is selected, start a new selection
+            : activeFilters.includes(filter)
+                ? activeFilters.filter(f => f !== filter) // Deselect if already selected
+                : [...activeFilters, filter]; // Add to selection
+
+        // If all filters are deselected, select 'all' again
+        if (newFilters.length === 0) {
+            setActiveFilters(['all']);
+        } else {
+            setActiveFilters(newFilters);
+        }
+    };
 
     useEffect(() => {
         const semesterStartEvent = events.find(event => event.title === '개강일');
@@ -170,6 +202,17 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         <div className="view-switcher">
                             <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
                             <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
+                        </div>
+                        <div className="filter-tags-container">
+                            {['all', ...eventTypes].map(filter => (
+                                <button
+                                    key={filter}
+                                    className={`filter-tag ${activeFilters.includes(filter) ? 'active' : ''}`}
+                                    onClick={() => handleFilterChange(filter)}
+                                >
+                                    {filterLabels[filter] || filter}
+                                </button>
+                            ))}
                         </div>
                         <button onClick={onAddEvent} className="add-event-button">+일정추가</button>
                     </div>

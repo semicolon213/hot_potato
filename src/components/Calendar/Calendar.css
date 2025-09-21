@@ -193,6 +193,35 @@
   border-color: var(--primary);
 }
 
+.filter-tags-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-tag {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-md);
+  background-color: transparent;
+  color: #6b7280; /* from .new-tab */
+  cursor: pointer;
+  font-size: 14px; /* from .new-tab */
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-tag:hover {
+  background-color: var(--lightgrey);
+  color: #4b5563; /* from .new-tab:hover */
+}
+
+.filter-tag.active {
+  background-color: #e8f1ff; /* A light, subtle blue */
+  color: #212529; /* from .new-tab.new-active */
+  font-weight: bold; /* from .new-tab.new-active */
+}
+
 .week-navigation {
   width: 100%;
   overflow-x: auto;

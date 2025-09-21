@@ -1,6 +1,7 @@
 import React from 'react';
 import useCalendarContext from '../../hooks/useCalendarContext.ts';
 import './CalendarSidebar.css';
+import MiniCalendar from './MiniCalendar';
 
 interface CalendarSidebarProps {
     onSelectWeek: (week: number) => void;
@@ -31,6 +32,11 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
+                <h3>미니 월력</h3>
+                <MiniCalendar />
+            </div>
+
+            <div className="sidebar-section">
                 <h3>학기 주차 네비게이션</h3>
                 <ul className="week-navigation-list">
                     {Array.from({ length: 15 }, (_, i) => i + 1).map(weekNum => (
@@ -41,23 +47,6 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
                         >
                             {weekNum}주차
                             <span className="week-dates">{getWeekDates(weekNum)}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            
-            <div className="sidebar-section">
-                <h3>미니 월력</h3>
-                <p style={{fontSize: '14px', color: 'var(--text-light)'}}>(미니 캘린더 구현 예정)</p>
-            </div>
-
-            <div className="sidebar-section">
-                <h3>일정 필터링</h3>
-                <ul className="filter-list">
-                    {eventFilters.map(filter => (
-                        <li key={filter.id} className="filter-item">
-                            <input type="checkbox" id={`filter-${filter.id}`} defaultChecked={filter.id === 'all'} />
-                            <label htmlFor={`filter-${filter.id}`}>{filter.label}</label>
                         </li>
                     ))}
                 </ul>

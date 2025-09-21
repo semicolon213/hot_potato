@@ -1,0 +1,83 @@
+
+.mini-calendar {
+  width: 100%;
+  background-color: transparent; /* 사이드바와 동일한 배경색 사용 */
+  border: none; /* 테두리 제거 */
+  padding: 0; /* 내부 여백 제거 */
+}
+
+.mini-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mini-calendar-header h4 {
+  margin: 0;
+  font-size: 14px; /* 헤더 글자 크기 축소 */
+  font-weight: 600;
+}
+
+.mini-calendar-header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px; /* 버튼 크기 축소 */
+  padding: 4px;
+  color: var(--text-medium);
+}
+
+.mini-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0; /* 셀 간격 축소 */
+  align-items: center;
+}
+
+.mini-calendar-day-name,
+.mini-calendar-day {
+  text-align: center;
+  font-size: 12px; /* 날짜 글자 크기 */
+  width: 100%;
+  aspect-ratio: 1 / 1; /* 정사각형 모양 유지 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mini-calendar-day-name {
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.mini-calendar-day {
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.mini-calendar-day.not-current-month {
+  color: var(--text-disabled);
+}
+
+.mini-calendar-day.today {
+  background-color: var(--border-light);
+}
+
+.mini-calendar-day.in-selected-week {
+  background-color: #C2E7FF;
+  color: var(--primary);
+  font-weight: 600;
+  border-radius: 0;
+  height: 80%;
+}
+
+.mini-calendar-day.week-start {
+    border-top-left-radius: 50%;
+    border-bottom-left-radius: 50%;
+}
+
+.mini-calendar-day.week-end {
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+}

@@ -41,10 +41,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [semesterStartDate, setSemesterStartDate] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
+  const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
 
-  const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
+  const eventTypes = ['holiday', 'exam', 'assignment', 'event', 'makeup'];
 
   useEffect(() => {
     if (!accessToken) return;
@@ -172,13 +174,21 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const events = useMemo(() => {
     const combinedEvents = [...sheetEvents, ...googleEvents];
+    const filteredEvents = activeFilters.includes('all')
+        ? combinedEvents
+        : combinedEvents.filter(event => {
+            if (event.isHoliday && activeFilters.includes('holiday')) return true;
+            // @ts-ignore
+            const eventType = event.type as string;
+            return activeFilters.includes(eventType);
+        });
 
-    return combinedEvents
+    return filteredEvents
       .map(event => ({
         ...event,
         color: event.isHoliday ? '#F08080' : ((eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB')),
       }));
-  }, [googleEvents, sheetEvents, eventColors, calendarColor]);
+  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -418,6 +428,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setSemesterStartDate,
     triggerRefresh,
     eventColors,
+    eventTypes,
+    activeFilters,
+    setActiveFilters,
   };
 
   return (
