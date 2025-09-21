@@ -201,6 +201,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     <div className="header-right-controls">
                         <div className="view-switcher">
                             <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
+                            <span className="separator">/</span>
                             <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
                         </div>
                         <div className="filter-tags-container">
@@ -214,7 +215,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 </button>
                             ))}
                         </div>
-                        <button onClick={onAddEvent} className="add-event-button">+일정추가</button>
                     </div>
                 </div>
             </div>
@@ -232,6 +232,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 const dayEvents = dayLayout.filter(e => e !== null) as Event[];
                                 const isSelected = selectedDate.date === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
+                                const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
                                 const isHoliday = dayEvents.some(e => e.isHoliday);
 
@@ -243,7 +244,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                             selectedDate.selectDate(new Date(date.date));
                                             onAddEvent();
                                         }}
-                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isHoliday ? 'holiday' : ''}`}
+                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
                                         <ul className="event-list">

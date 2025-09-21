@@ -140,7 +140,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
             <div className="weekly-header">
                 <div className="time-column-header"></div>
                 {weekDays.map((day, index) => (
-                    <div key={day.date} className="day-header">
+                    <div key={day.date} className={`day-header ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
                         <span className="day-name">{daysOfWeek[index]}</span>
                         <span className="day-number">{day.day}</span>
                     </div>
@@ -180,10 +180,10 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                             <div key={hour} className="time-slot-label">{hour}</div>
                         ))}
                     </div>
-                    {weekDays.map(day => {
+                    {weekDays.map((day, index) => {
                         const timedEvents = events.filter(event => event.startDate === day.date && event.startDateTime);
                         return (
-                            <div key={day.date} className="day-column">
+                            <div key={day.date} className={`day-column ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
                                 <div className="timed-events-grid">
                                     {hours.map(hour => <div key={hour} className="time-grid-line"></div>)}
                                     {timedEvents.map(event => (

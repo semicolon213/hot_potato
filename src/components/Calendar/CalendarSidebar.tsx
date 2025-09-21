@@ -32,12 +32,12 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
-                <h3>미니 월력</h3>
+                
                 <MiniCalendar />
             </div>
 
             <div className="sidebar-section">
-                <h3>학기 주차 네비게이션</h3>
+                <h3>주차별 보기</h3>
                 <ul className="week-navigation-list">
                     {Array.from({ length: 15 }, (_, i) => i + 1).map(weekNum => (
                         <li

@@ -37,8 +37,8 @@
 }
 
 .week-navigation-item.active {
-    background-color: var(--primary);
-    color: white;
+    background-color: #e9ecef;
+    color: #212529;
     font-weight: 600;
 }
 
@@ -50,7 +50,7 @@
 }
 
 .week-navigation-item.active .week-dates {
-    color: rgba(255, 255, 255, 0.8);
+    color: #6c757d;
 }
 
 .filter-list {
