@@ -787,6 +787,7 @@ const App: React.FC = () => {
                             colorId: row[5] || '',
                             startDateTime: startDateTime,
                             endDateTime: row[7] || '',
+                            type: row[8] || '',
                         };
                     });
                 }

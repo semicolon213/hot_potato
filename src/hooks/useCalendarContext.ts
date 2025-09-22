@@ -49,6 +49,9 @@ interface CalendarContextType {
     customPeriods: CustomPeriod[];
     setCustomPeriods: (periods: CustomPeriod[]) => void;
     eventColors: any;
+    eventTypes: string[];
+    activeFilters: string[];
+    setActiveFilters: (filters: string[]) => void;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

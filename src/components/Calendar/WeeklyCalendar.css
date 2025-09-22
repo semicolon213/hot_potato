@@ -35,6 +35,21 @@
     display: block;
 }
 
+.day-header.sunday .day-name,
+.day-header.sunday .day-number {
+    color: var(--error);
+}
+
+.day-header.saturday .day-name,
+.day-header.saturday .day-number {
+    color: var(--primary);
+}
+
+.day-column.sunday,
+.day-column.saturday {
+    background-color: #f8f9fa;
+}
+
 .weekly-all-day-section {
     display: flex;
     border-bottom: 1px solid #e0e0e0;

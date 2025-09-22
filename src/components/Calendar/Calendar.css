@@ -2,7 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .year-display {
@@ -94,6 +96,13 @@
   color: var(--text-dark); /* 기본 텍스트 색상 */
 }
 
+.day.holiday .day-number {
+    color: var(--error) !important;
+    font-weight: bold;
+}
+
+
+
 .day.not-current-month {
   color: var(--text-light);
   background-color: var(--lightgrey);
@@ -102,6 +111,12 @@
 .day.sunday .day-number {
   color: var(--error);
 }
+
+.day.saturday .day-number {
+  color: var(--primary);
+}
+
+
 
 .event-list {
   list-style: none;
@@ -169,21 +184,68 @@
 
 .view-switcher {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-md);
+  background-color: #f8f9fa;
+  padding: 4px;
 }
 
 .view-switcher button {
-  padding: 5px 15px;
-  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border: none;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  background-color: #fff;
+  background-color: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.view-switcher .separator {
+    color: var(--border-color);
+    padding: 0 2px;
 }
 
 .view-switcher button.active {
-  background-color: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+  background-color: white;
+  color: var(--text-dark);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.view-switcher button:hover:not(.active) {
+    color: var(--text-dark);
+}
+
+.filter-tags-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-tag {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-md);
+  background-color: transparent;
+  color: #6b7280; /* from .new-tab */
+  cursor: pointer;
+  font-size: 14px; /* from .new-tab */
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-tag:hover {
+  color: #4b5563; /* from .new-tab:hover */
+  background-color: #f8f9fa;
+}
+
+.filter-tag.active {
+  color: var(--text-dark);
+  font-weight: bold;
+  background-color: transparent;
 }
 
 .week-navigation {

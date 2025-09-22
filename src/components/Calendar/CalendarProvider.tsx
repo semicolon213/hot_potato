@@ -1,6 +1,23 @@
 import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event, type DateRange, type CustomPeriod } from "../../hooks/useCalendarContext.ts";
 
+const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
+    holiday: { color: '#EA4335', icon: '🏖️' },
+    exam: { color: '#4285F4', icon: '✍️' },
+    assignment: { color: '#FBBC05', icon: '🔔' },
+    event: { color: '#34A853', icon: '🎉' },
+    makeup: { color: '#A142F4', icon: '✨' },
+    default: { color: '#7986CB', icon: '' },
+};
+
+const getEventStyle = (event: Event) => {
+    if (event.isHoliday) {
+        return eventTypeStyles.holiday;
+    }
+    const type = event.type as keyof typeof eventTypeStyles;
+    return eventTypeStyles[type] || eventTypeStyles.default;
+};
+
 interface CalendarProviderProps {
   children: ReactNode;
   accessToken: string | null;
@@ -39,10 +56,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
+  const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
 
-  const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
+  const eventTypes = ['holiday', 'exam', 'assignment', 'event', 'makeup'];
 
   useEffect(() => {
     if (!accessToken) return;
@@ -172,14 +191,22 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate, refreshKey]);
 
   const events = useMemo(() => {
-    const combinedEvents = [...googleEvents, ...sheetEvents];
+    const combinedEvents = [...sheetEvents, ...googleEvents];
+    const filteredEvents = activeFilters.includes('all')
+        ? combinedEvents
+        : combinedEvents.filter(event => {
+            if (event.isHoliday && activeFilters.includes('holiday')) return true;
+            // @ts-ignore
+            const eventType = event.type as string;
+            return activeFilters.includes(eventType);
+        });
 
-    return combinedEvents
+    return filteredEvents
       .map(event => ({
         ...event,
         color: event.isHoliday ? '#F08080' : ((eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB')),
       }));
-  }, [googleEvents, sheetEvents, eventColors, calendarColor]);
+  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -425,6 +452,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setCustomPeriods,
     triggerRefresh,
     eventColors,
+    eventTypes,
+    activeFilters,
+    setActiveFilters,
   };
 
   return (
