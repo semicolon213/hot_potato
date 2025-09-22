@@ -124,7 +124,7 @@
   margin: 0;
   width: 100%;
   overflow-y: auto; /* 이벤트가 많을 경우 스크롤 */
-  flex-grow: 1; /* 남은 공간을 모두 차지하도록 설정 */
+  flex-shrink: 0; /* 남은 공간을 모두 차지하도록 설정 */
   padding-bottom: 5px;
 }
 
@@ -396,4 +396,30 @@
 .modal-actions .close-btn {
     background-color: var(--grey);
     color: var(--text-dark);
+}
+.overflow-event-lines {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.overflow-event-line {
+    height: 4px;
+    border-radius: 2px;
+    margin: 0 5px;
+}
+
+.overflow-event-line.continuation-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: 0;
+}
+
+.overflow-event-line.continuation-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-right: 0;
 }

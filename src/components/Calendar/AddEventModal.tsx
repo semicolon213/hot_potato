@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import useCalendarContext, { type Event } from '../../hooks/useCalendarContext.ts';
 import './AddEventModal.css';
 
@@ -71,7 +72,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     }
   };
 
-  return (
+  const modalContent = (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>{isEditMode ? '일정 수정' : '일정 추가'}</h2>
@@ -127,6 +128,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AddEventModal;

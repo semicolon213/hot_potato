@@ -8,7 +8,7 @@ import DayPopover from './DayPopover';
 
 interface CalendarProps {
     onAddEvent: () => void;
-    onSelectEvent: (event: Event, position: { top: number; left: number }) => void;
+    onSelectEvent: (event: Event, rect: DOMRect) => void;
     viewMode: 'monthly' | 'weekly';
     setViewMode: (mode: 'monthly' | 'weekly') => void;
     selectedWeek: number;
@@ -43,8 +43,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [moreEventsModal, setMoreEventsModal] = useState<{
         isOpen: boolean;
         events: Event[];
+        date: string;
         position: { top: number; left: number };
-    }>({ isOpen: false, events: [], position: { top: 0, left: 0 } });
+    }>({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
     const [newPeriodName, setNewPeriodName] = useState("");
@@ -98,7 +99,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         }
     }, [events, setSemesterStartDate]);
 
-    const handleMoreClick = (dayEvents: Event[], e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleMoreClick = (dayEvents: Event[], date: string, e: React.MouseEvent) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const modalWidth = 250;
         const modalHeight = 200;
@@ -113,14 +114,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setMoreEventsModal({
             isOpen: true,
             events: dayEvents,
+            date: date,
             position: { top, left },
         });
     };
 
     const handleEventClick = (event: Event, e: React.MouseEvent) => {
         e.stopPropagation();
-        const rect = e.currentTarget.getBoundingClientRect();
-        onSelectEvent(event, { top: rect.top, left: rect.left });
+        onSelectEvent(event, e.currentTarget.getBoundingClientRect());
     };
 
     const formatDateForInput = (date: Date | null) => {
@@ -377,6 +378,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                     key={date.date}>
                                     <span className="day-number">{date.day}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                                     <ul className="event-list">
                                         {dayLayout.slice(0, 2).map((event, index) => {
                                             if (!event) {
@@ -399,12 +401,29 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                 </li>
                                             );
                                         })}
-                                        {dayEvents.length > 2 && (
-                                            <button ref={moreButtonRef} className="more-button" onClick={(e) => handleMoreClick(dayEvents, e)}>
-                                                {dayEvents.length - 2}개 더보기
-                                            </button>
-                                        )}
                                     </ul>
+                                    <div className="overflow-event-lines" onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoreClick(dayEvents, date.date, e);
+                                    }}>
+                                        {dayLayout.slice(2).map((event, index) => {
+                                            if (!event) return null;
+
+                                            const eventStartDate = new Date(event.startDate);
+                                            const eventEndDate = new Date(event.endDate);
+                                            const currentDateObj = new Date(date.date);
+
+                                            const isFirstDay = eventStartDate.toDateString() === currentDateObj.toDateString();
+                                            const isLastDay = eventEndDate.toDateString() === currentDateObj.toDateString();
+
+                                            let lineClasses = 'overflow-event-line';
+                                            if (!isFirstDay) lineClasses += ' continuation-left';
+                                            if (!isLastDay) lineClasses += ' continuation-right';
+
+                                            return <div key={index} className={lineClasses} style={{ backgroundColor: event.color }}></div>;
+                                        })}
+                                    </div>
+                                    </div>
                                 </div>
                             );
                         })}
@@ -416,10 +435,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             {moreEventsModal.isOpen && (
                 <MoreEventsModal
                     events={moreEventsModal.events}
+                    date={moreEventsModal.date}
                     onClose={() => setMoreEventsModal({ ...moreEventsModal, isOpen: false })}
                     position={moreEventsModal.position}
-                    onSelectEvent={(event) => {
-                        onSelectEvent(event, moreEventsModal.position);
+                    onSelectEvent={(event, e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        onSelectEvent(event, rect); // Call the parent's onSelectEvent
                         setMoreEventsModal({ ...moreEventsModal, isOpen: false });
                     }}
                 />

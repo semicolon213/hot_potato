@@ -39,19 +39,35 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: () => Promise<void> }>
         setViewMode('weekly');
     };
 
-    const handleSelectEvent = (event: Event, position: { top: number; left: number }) => {
+    const handleSelectEvent = (event: Event, rect: DOMRect) => {
         const modalWidth = 480; // As defined in EventDetailModal.css
         const modalHeight = 250; // Approximate height
-        const {innerWidth, innerHeight} = window;
-        let {top, left} = position;
-        if (left + modalWidth > innerWidth) {
-            left = innerWidth - modalWidth - 20; // Adjust with some padding
-        }
+        const { innerWidth, innerHeight } = window;
+        const gap = 10; // Gap from the event item
+
+        let top = rect.bottom + gap;
+        let left = rect.left;
+
+        // If it overflows bottom, try to place it above
         if (top + modalHeight > innerHeight) {
-            top = innerHeight - modalHeight - 20; // Adjust with some padding
+            top = rect.top - modalHeight - gap;
         }
+        // If it still overflows top (small screen or tall modal), place it at the top of the viewport
+        if (top < 0) {
+            top = gap;
+        }
+
+        // If it overflows right, place it aligned to the right of the event
+        if (left + modalWidth > innerWidth) {
+            left = rect.right - modalWidth;
+        }
+        // If it still overflows left, place it at the left of the viewport
+        if (left < 0) {
+            left = gap;
+        }
+
         setSelectedEvent(event);
-        setModalPosition({top, left});
+        setModalPosition({ top, left });
     };
 
     const handleEdit = (event: Event) => {
@@ -78,22 +94,22 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: () => Promise<void> }>
                     selectedWeek={selectedWeek}
                     setSelectedWeek={setSelectedWeek}
                 />
-                {isAddModalOpen && (
-                    <AddEventModal
-                        eventToEdit={eventToEdit}
-                        onClose={handleCloseAddModal}
-                    />
-                )}
-                {selectedEvent && (
-                    <EventDetailModal
-                        event={selectedEvent}
-                        onClose={() => setSelectedEvent(null)}
-                        onDelete={deleteEvent}
-                        onEdit={handleEdit}
-                        position={modalPosition}
-                    />
-                )}
             </main>
+            {isAddModalOpen && (
+                <AddEventModal
+                    eventToEdit={eventToEdit}
+                    onClose={handleCloseAddModal}
+                />
+            )}
+            {selectedEvent && (
+                <EventDetailModal
+                    event={selectedEvent}
+                    onClose={() => setSelectedEvent(null)}
+                    onDelete={deleteEvent}
+                    onEdit={handleEdit}
+                    position={modalPosition}
+                />
+            )}
         </>
     );
 };
