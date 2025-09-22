@@ -11,17 +11,17 @@ const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[
     if (weekDays.length === 0) return { layout: [], canvasHeight: 0 };
 
     const weekStart = new Date(weekDays[0].date);
-    const weekEnd = new Date(weekDays[6].date);
+    const weekEnd = new Date(weekDays[weekDays.length - 1].date);
 
     const allDayEvents = events.filter(e => {
         if (e.startDateTime) return false; // Not an all-day event
         const eventStart = new Date(e.startDate);
         const eventEnd = new Date(e.endDate);
         // Check if event overlaps with the current week
-        return eventStart < new Date(weekEnd.getTime() + 24 * 60 * 60 * 1000) && eventEnd > weekStart;
+        return eventStart < new Date(weekEnd.getTime() + 24 * 60 * 60 * 1000) && eventEnd >= weekStart;
     });
 
-    const layout: { event: Event; left: number; width: number; top: number; }[] = [];
+    const layout: { event: Event; left: number; width: number; top: number; isContinuationLeft: boolean; isContinuationRight: boolean; }[] = [];
     const occupiedRows: (Event | null)[][] = [];
 
     allDayEvents.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -30,8 +30,11 @@ const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[
         const eventStart = new Date(event.startDate);
         const eventEnd = new Date(event.endDate);
 
+        const isContinuationLeft = eventStart < weekStart;
+        const isContinuationRight = eventEnd > weekEnd;
+
         const startIndex = Math.max(0, Math.floor((eventStart.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)));
-        const endIndex = Math.min(6, Math.floor((new Date(eventEnd.getTime() - 1).getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)));
+        const endIndex = Math.min(6, Math.floor((eventEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)));
         
         const span = endIndex - startIndex + 1;
 
@@ -61,6 +64,8 @@ const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[
             left: (startIndex / 7) * 100,
             width: (span / 7) * 100,
             top: rowIndex * 24, // 24px per row (20px height + 4px margin)
+            isContinuationLeft,
+            isContinuationRight,
         });
     });
 
@@ -155,21 +160,29 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                         <div key={day.date} className="all-day-column"></div>
                     ))}
                     {/* Absolutely positioned events */}
-                    {allDayLayout.map(({ event, left, width, top }) => (
-                        <div
-                            key={event.id}
-                            className="all-day-event-item"
-                            style={{
-                                left: `${left}%`,
-                                width: `calc(${width}% - 2px)`,
-                                top: `${top}px`,
-                                backgroundColor: event.color,
-                            }}
-                            onClick={() => setSelectedEvent(event)}
-                        >
-                            <span className="event-title">{event.icon} {event.title}</span>
-                        </div>
-                    ))}
+                    {allDayLayout.map(({ event, left, width, top, isContinuationLeft, isContinuationRight }) => {
+                        const itemClasses = [
+                            "all-day-event-item",
+                            isContinuationLeft ? "continuation-left" : "",
+                            isContinuationRight ? "continuation-right" : "",
+                        ].join(" ");
+
+                        return (
+                            <div
+                                key={event.id}
+                                className={itemClasses}
+                                style={{
+                                    left: `${left}%`,
+                                    width: `calc(${width}% - 2px)`,
+                                    top: `${top}px`,
+                                    backgroundColor: event.color,
+                                }}
+                                onClick={() => setSelectedEvent(event)}
+                            >
+                                <span className="event-title">{event.icon} {event.title}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

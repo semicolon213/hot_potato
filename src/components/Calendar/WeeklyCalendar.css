@@ -86,7 +86,18 @@
     box-sizing: border-box;
     z-index: 1;
     white-space: nowrap;
-    overflow: visible;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.all-day-event-item.continuation-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.all-day-event-item.continuation-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .all-day-event-item .event-title {
