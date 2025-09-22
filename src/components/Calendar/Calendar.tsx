@@ -168,15 +168,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         const periodToUpdate = customPeriods.find(p => p.id === id);
         if (!periodToUpdate) return;
 
-        if (part === 'start' && periodToUpdate.period.end && newDate > periodToUpdate.period.end) {
-            alert('시작일은 종료일보다 늦을 수 없습니다.');
-            return;
-        }
-        if (part === 'end' && periodToUpdate.period.start && newDate < periodToUpdate.period.start) {
-            alert('종료일은 시작일보다 빠를 수 없습니다.');
-            return;
-        }
-
         const updatedPeriods = customPeriods.map(p => {
             if (p.id === id) {
                 return { ...p, period: { ...p.period, [part]: newDate } };
@@ -191,14 +182,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         const newDate = new Date(value);
         if (isNaN(newDate.getTime())) return;
 
-        if (part === 'start' && finalExamsPeriod.end && newDate > finalExamsPeriod.end) {
-            alert('시작일은 종료일보다 늦을 수 없습니다.');
-            return;
-        }
-        if (part === 'end' && finalExamsPeriod.start && newDate < finalExamsPeriod.start) {
-            alert('종료일은 시작일보다 빠를 수 없습니다.');
-            return;
-        }
         setFinalExamsPeriod({ ...finalExamsPeriod, [part]: newDate });
     };
 
@@ -207,14 +190,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         const newDate = new Date(value);
         if (isNaN(newDate.getTime())) return;
 
-        if (part === 'start' && gradeEntryPeriod.end && newDate > gradeEntryPeriod.end) {
-            alert('시작일은 종료일보다 늦을 수 없습니다.');
-            return;
-        }
-        if (part === 'end' && gradeEntryPeriod.start && newDate < gradeEntryPeriod.start) {
-            alert('종료일은 시작일보다 빠를 수 없습니다.');
-            return;
-        }
         setGradeEntryPeriod({ ...gradeEntryPeriod, [part]: newDate });
     };
 
@@ -226,6 +201,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     const handleSave = async () => {
+        // Validate all periods before saving
+        const allPeriods = [
+            { name: '기말고사', period: finalExamsPeriod },
+            { name: '성적입력 및 강의평가', period: gradeEntryPeriod },
+            ...customPeriods.map(p => ({ name: p.name, period: p.period }))
+        ];
+
+        for (const item of allPeriods) {
+            const { start, end } = item.period;
+            if (start && end && start > end) {
+                alert(`'${item.name}' 기간의 종료일은 시작일보다 빠를 수 없습니다.`);
+                return; // Stop saving
+            }
+        }
+
         await onSave();
         setIsSemesterPickerOpen(false);
     };
