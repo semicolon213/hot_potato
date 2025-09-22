@@ -268,7 +268,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const lanes: (Date | null)[] = [];
             for (const event of weekEvents) {
                 const eventStart = new Date(event.startDate);
-                let laneIndex = lanes.findIndex(laneEndDate => laneEndDate && laneEndDate <= eventStart);
+                let laneIndex = lanes.findIndex(laneEndDate => laneEndDate && laneEndDate < eventStart);
                 if (laneIndex === -1) {
                     laneIndex = lanes.length;
                 }

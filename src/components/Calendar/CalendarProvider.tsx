@@ -149,10 +149,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             }
 
             let endDate = endStr.split('T')[0];
+            const startDate = startStr.split('T')[0];
 
             // If it's an all-day event, the end date from Google is exclusive.
             // We need to make it inclusive for our rendering logic (<=).
-            if (item.start.date) { // Check if it's an all-day event
+            // Only do this if the end date is after the start date, to handle malformed events.
+            if (item.start.date && endDate > startDate) { // Check if it's an all-day event
                 const date = new Date(endDate);
                 date.setDate(date.getDate() - 1); // Subtract one day
                 endDate = date.toISOString().split('T')[0];
@@ -161,7 +163,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             return {
               id: item.id,
               title: item.summary || 'No Title',
-              startDate: startStr.split('T')[0],
+              startDate: startDate,
               endDate: endDate,
               startDateTime: item.start.dateTime,
               endDateTime: item.end.dateTime,
@@ -253,8 +255,10 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
               requestBody.start = { dateTime: event.startDateTime, timeZone: 'Asia/Seoul' };
               requestBody.end = { dateTime: event.endDateTime, timeZone: 'Asia/Seoul' };
             } else {
+              const exclusiveEndDate = new Date(event.endDate);
+              exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
               requestBody.start = { date: event.startDate };
-              requestBody.end = { date: event.endDate };
+              requestBody.end = { date: exclusiveEndDate.toISOString().split('T')[0] };
             }
 
             const response = await fetch(
@@ -292,6 +296,22 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     }
 
     try {
+      const requestBody: any = {
+        summary: event.title,
+        description: event.description,
+        colorId: event.colorId,
+      };
+
+      if (event.startDateTime && event.endDateTime) {
+        requestBody.start = { dateTime: event.startDateTime, timeZone: 'Asia/Seoul' };
+        requestBody.end = { dateTime: event.endDateTime, timeZone: 'Asia/Seoul' };
+      } else {
+        const exclusiveEndDate = new Date(event.endDate);
+        exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+        requestBody.start = { date: event.startDate };
+        requestBody.end = { date: exclusiveEndDate.toISOString().split('T')[0] };
+      }
+
       const response = await fetch(
           `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
           {
@@ -300,17 +320,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              summary: event.title,
-              description: event.description,
-              start: {
-                date: event.startDate,
-              },
-              end: {
-                date: event.endDate,
-              },
-              colorId: event.colorId,
-            }),
+            body: JSON.stringify(requestBody),
           }
       );
 
