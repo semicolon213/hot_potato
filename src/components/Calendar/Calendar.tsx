@@ -394,8 +394,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                             const eventEndDate = new Date(event.endDate);
                                             const currentDate = new Date(date.date);
                                             const isFirstDayOfEvent = eventStartDate.toDateString() === currentDate.toDateString();
-                                            const actualEventEndDate = new Date(eventEndDate.getTime() - 24 * 60 * 60 * 1000);
-                                            const isLastDayOfEvent = actualEventEndDate.toDateString() === currentDate.toDateString();
+                                            const isLastDayOfEvent = eventEndDate.toDateString() === currentDate.toDateString();
                                             let itemClasses = 'event-item';
                                             if (!isFirstDayOfEvent) itemClasses += ' continuation-left';
                                             if (!isLastDayOfEvent) itemClasses += ' continuation-right';

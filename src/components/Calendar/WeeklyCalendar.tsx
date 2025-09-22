@@ -172,8 +172,8 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                                 key={event.id}
                                 className={itemClasses}
                                 style={{
-                                    left: `${left}%`,
-                                    width: `calc(${width}% - 2px)`,
+                                    left: `calc(${left}% + 5px)`,
+                                    width: `calc(${width}% - 10px)`,
                                     top: `${top}px`,
                                     backgroundColor: event.color,
                                 }}

@@ -77,12 +77,11 @@
 .all-day-event-item {
     position: absolute;
     color: #000;
-    padding: 2px 8px;
+    padding: 2px 5px;
     border-radius: var(--border-radius-sm);
     font-size: 12px;
     margin: 2px 0;
     cursor: pointer;
-    height: 20px;
     box-sizing: border-box;
     z-index: 1;
     white-space: nowrap;
