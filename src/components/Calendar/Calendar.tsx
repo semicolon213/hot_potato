@@ -323,8 +323,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="header-right-controls">
+                        <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '-7px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
                         <div className="view-switcher">
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '8px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '2px' }} />
+
                             <button onClick={() => setViewMode('monthly')}
                                     className={viewMode === 'monthly' ? 'active' : ''}>월간
                             </button>
