@@ -261,7 +261,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const weekEvents = events.filter(e => {
                 const eventStart = new Date(e.startDate);
                 const eventEnd = new Date(e.endDate);
-                return eventStart <= weekEnd && eventEnd >= weekStart;
+                // 월간 뷰에서는 시간 지정 이벤트를 제외합니다 (종일 이벤트만 표시).
+                return !e.startDateTime && eventStart <= weekEnd && eventEnd >= weekStart;
             });
 
             const lanes: (Date | null)[] = [];
