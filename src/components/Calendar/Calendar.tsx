@@ -429,7 +429,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         }
                                     }}>
                                         {(() => {
-                                            const moreCount = dayLayout.slice(2).filter(Boolean).length;
+                                            const moreCount = dayLayout.slice(3).filter(Boolean).length;
                                             if (moreCount > 0) {
                                                 return <span className="more-events-text">{moreCount}개 더보기</span>;
                                             }
