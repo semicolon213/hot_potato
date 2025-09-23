@@ -9,25 +9,9 @@ interface CalendarSidebarProps {
 }
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
-    const { semesterStartDate, finalExamsPeriod, gradeEntryPeriod, customPeriods } = useCalendarContext();
+    const { semesterStartDate, extraWeeks, setExtraWeeks } = useCalendarContext();
 
-    const calculateTotalWeeks = () => {
-        let supplementaryWeeks = 0;
-        const makeupPeriods = customPeriods.filter(p => p.name === '보강기간');
-
-        makeupPeriods.forEach(p => {
-            if (p.period.start && p.period.end) {
-                const diffTime = Math.abs(new Date(p.period.end).getTime() - new Date(p.period.start).getTime());
-                // Add 1 to include the start day, then calculate weeks
-                const diffDays = (diffTime / (1000 * 60 * 60 * 24)) + 1;
-                supplementaryWeeks += Math.ceil(diffDays / 7);
-            }
-        });
-
-        return 15 + supplementaryWeeks;
-    };
-
-    const totalWeeks = calculateTotalWeeks();
+    const totalWeeks = 15 + extraWeeks;
 
     const getWeekDates = (weekNum: number) => {
         if (!semesterStartDate) return '';
@@ -55,7 +39,10 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
             </div>
 
             <div className="sidebar-section">
-                <h3>주차별 보기</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3>주차별 보기</h3>
+                    <button onClick={() => setExtraWeeks(extraWeeks + 1)} style={{ padding: '2px 8px', fontSize: '12px' }}>주차 추가</button>
+                </div>
                 <ul className="week-navigation-list">
                     {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(weekNum => (
                         <li
@@ -63,8 +50,16 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
                             className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
                             onClick={() => onSelectWeek(weekNum)}
                         >
-                            {weekNum}주차
-                            <span className="week-dates">{getWeekDates(weekNum)}</span>
+                            <span style={{ flexGrow: 1 }}>
+                                {weekNum}주차
+                                <span className="week-dates">{getWeekDates(weekNum)}</span>
+                            </span>
+                            {weekNum > 15 && (
+                                <button onClick={(e) => {
+                                    e.stopPropagation(); // Prevent li's onClick
+                                    setExtraWeeks(extraWeeks - 1);
+                                }} style={{ padding: '2px 5px', fontSize: '12px', background: 'transparent', border: 'none', color: 'var(--error)' }}>삭제</button>
+                            )}
                         </li>
                     ))}
                 </ul>
