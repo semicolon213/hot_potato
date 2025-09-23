@@ -132,12 +132,15 @@
   font-size: 12px;
   border-radius: var(--border-radius-sm);
   margin-bottom: 2px;
-  padding: 2px 5px;
+  padding: 0 5px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   margin-left: 5px;
   margin-right: 5px;
+  display: flex;
+  align-items: center;
+  height: 20px;
   background-color: var(--secondary-light); /* 기본 배경색 추가 */
   color: var(--text-dark); /* 기본 글자색 추가 */
 }
