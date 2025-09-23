@@ -5,6 +5,7 @@ import "../components/TemplateUI/TemplateUI.css";
 import {
     DndContext,
     closestCenter,
+    closestCorners,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -15,6 +16,7 @@ import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
+    rectSortingStrategy,
 } from '@dnd-kit/sortable';
 
 // UI Components
@@ -275,12 +277,12 @@ export default function NewDocument({
                         <h2 className="section-title">기본 템플릿</h2>
                         <DndContext
                             sensors={sensors}
-                            collisionDetection={closestCenter}
+                            collisionDetection={closestCorners}
                             onDragEnd={handleDefaultDragEnd}
                         >
                             <SortableContext
                                 items={filteredDefaultTemplates.map(t => t.type)}
-                                strategy={verticalListSortingStrategy}
+                                strategy={rectSortingStrategy}
                             >
                                 <div className="new-templates-container" style={{ paddingLeft: '20px' }}>
                                     {filteredDefaultTemplates.map(template => (
@@ -324,12 +326,12 @@ export default function NewDocument({
                         <div style={{ marginLeft: '-20px', paddingRight: '40px' }}>
                             <DndContext
                                 sensors={sensors}
-                                collisionDetection={closestCenter}
+                                collisionDetection={closestCorners}
                                 onDragEnd={handleCustomDragEnd}
                             >
                                 <SortableContext
                                     items={filteredCustomTemplates.map(t => t.rowIndex ? t.rowIndex.toString() : t.title)}
-                                    strategy={verticalListSortingStrategy}
+                                    strategy={rectSortingStrategy}
                                 >
                                     <TemplateList
                                         templates={filteredCustomTemplates}
