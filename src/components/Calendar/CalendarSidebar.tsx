@@ -9,7 +9,25 @@ interface CalendarSidebarProps {
 }
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
-    const { semesterStartDate } = useCalendarContext();
+    const { semesterStartDate, finalExamsPeriod, gradeEntryPeriod, customPeriods } = useCalendarContext();
+
+    const calculateTotalWeeks = () => {
+        let supplementaryWeeks = 0;
+        const makeupPeriods = customPeriods.filter(p => p.name === '보강기간');
+
+        makeupPeriods.forEach(p => {
+            if (p.period.start && p.period.end) {
+                const diffTime = Math.abs(new Date(p.period.end).getTime() - new Date(p.period.start).getTime());
+                // Add 1 to include the start day, then calculate weeks
+                const diffDays = (diffTime / (1000 * 60 * 60 * 24)) + 1;
+                supplementaryWeeks += Math.ceil(diffDays / 7);
+            }
+        });
+
+        return 15 + supplementaryWeeks;
+    };
+
+    const totalWeeks = calculateTotalWeeks();
 
     const getWeekDates = (weekNum: number) => {
         if (!semesterStartDate) return '';
@@ -39,7 +57,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
             <div className="sidebar-section">
                 <h3>주차별 보기</h3>
                 <ul className="week-navigation-list">
-                    {Array.from({ length: 15 }, (_, i) => i + 1).map(weekNum => (
+                    {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(weekNum => (
                         <li
                             key={weekNum}
                             className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
