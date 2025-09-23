@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./Docbox.css";
 import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds } from "../utils/googleSheetUtils";
 import { addRecentDocument } from "../utils/localStorageUtils";
+import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
 
 interface Document {
   id: string;
@@ -21,6 +22,7 @@ interface DocboxProps {
 
 const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
   const [selectedSort, setSelectedSort] = useState<string>("최신순");
   const [startDate, setStartDate] = useState<string>("");
@@ -36,7 +38,9 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
     const fetchAndSyncDocuments = async () => {
       console.log("Fetching and syncing documents...");
       const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
-      if (!sheetId) return;
+      if (!sheetId) {
+        return;
+      }
 
       const data = await getSheetData(sheetId, DOC_SHEET_NAME, 'A:I');
       if (!data || data.length <= 1) {
@@ -104,19 +108,25 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       }
     };
 
-    // Initial fetch
-    fetchAndSyncDocuments();
+    const loadDocs = async () => {
+      setIsLoading(true);
+      try {
+        await fetchAndSyncDocuments();
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Set up event listener for tab visibility changes
+    loadDocs();
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchAndSyncDocuments();
+        loadDocs();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -299,7 +309,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 onChange={(e) => setStartDate(e.target.value)}
               />
 
-              <span className="date-separator">~</span>
+              <span className="date-separator">~
+              </span>
               <input
                 type="date"
                 className="date-input"
@@ -327,7 +338,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         </div>
         <div className="doc-actions">
           <button className="btn-print" onClick={handleShare}>
-            <span className="icon-print"></span>
+            <BiShareAlt color="black" size={14} />
             공유
           </button>
           <button className="btn-delete" onClick={handleDelete}>
@@ -368,7 +379,15 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             <div className="table-header-cell status-cell">상태</div>
           </div>
 
-          {paginatedDocuments.map((doc) => (
+          {isLoading ? (
+            <div className="table-row">
+              <div className="table-cell loading-cell">
+                <BiLoaderAlt className="spinner" />
+                <span>문서를 불러오는 중입니다...</span>
+              </div>
+            </div>
+          ) : paginatedDocuments.length > 0 ? (
+            paginatedDocuments.map((doc) => (
             <div className="table-row" key={doc.id}>
               <div className="table-cell checkbox-cell">
                 <input
@@ -392,7 +411,14 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          ) : (
+            <div className="table-row">
+              <div className="table-cell no-results-cell">
+                문서가 없습니다.
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
