@@ -38,6 +38,7 @@ interface TemplatePageProps {
   addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
   updateTemplate: (rowIndex: number, newDocData: { title: string; description:string; tag: string; }, oldTitle: string) => void;
   updateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => void;
+  isTemplatesLoading?: boolean;
 }
 
 export default function NewDocument({ 
@@ -50,7 +51,8 @@ export default function NewDocument({
     updateTag, 
     addTemplate,
     updateTemplate,
-    updateTemplateFavorite
+    updateTemplateFavorite,
+    isTemplatesLoading
 }: TemplatePageProps) {
     
     // Lifted state for global search and filter
@@ -254,10 +256,6 @@ export default function NewDocument({
     return (
         <div>
             {/* Top Level Controls */}
-            <SearchBar
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-            />
             <CategoryTabs 
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
@@ -267,6 +265,11 @@ export default function NewDocument({
                 addTag={addTag} 
                 deleteTag={deleteTag} 
                 updateTag={updateTag} 
+            />
+
+            <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
             />
 
             {/* Side-by-Side Layout */}
@@ -340,6 +343,7 @@ export default function NewDocument({
                                         onEditTemplate={handleEditClick} // Pass the handler here
                                         defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                         onToggleFavorite={handleToggleFavorite} // Pass down the function
+                                        isLoading={isTemplatesLoading}
                                     />
                                 </SortableContext>
                             </DndContext>
