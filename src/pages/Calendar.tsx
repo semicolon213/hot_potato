@@ -53,7 +53,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 
     const handleSelectEvent = (event: Event, rect: DOMRect) => {
         const modalWidth = 480; // As defined in EventDetailModal.css
-        const modalHeight = 250; // Approximate height
+        const modalHeight = 150; // Approximate height
         const { innerWidth, innerHeight } = window;
         const gap = 10; // Gap from the event item
 

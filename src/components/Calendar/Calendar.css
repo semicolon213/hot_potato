@@ -76,7 +76,7 @@
 
 .day {
   border: 1px solid var(--border-color);
-  height: 110px;
+  height: 130px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -402,27 +402,12 @@
 }
 .overflow-event-lines {
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 2px;
+    margin-top: 4px;
+    padding-left: 5px;
     cursor: pointer;
 }
 
-.overflow-event-line {
-    height: 4px;
-    border-radius: 2px;
-    margin: 0 5px;
-}
-
-.overflow-event-line.continuation-left {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    margin-left: 0;
-}
-
-.overflow-event-line.continuation-right {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    margin-right: 0;
+.more-events-text {
+    font-size: 12px;
+    color: var(--text-medium);
 }

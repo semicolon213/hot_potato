@@ -198,9 +198,25 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const events = useMemo(() => {
     const combinedEvents = [...sheetEvents, ...googleEvents];
+
+    const sortedEvents = combinedEvents.sort((a, b) => {
+        const startDateA = new Date(a.startDate).getTime();
+        const startDateB = new Date(b.startDate).getTime();
+
+        if (startDateA !== startDateB) {
+            return startDateA - startDateB;
+        }
+
+        // If start dates are the same, sort by duration descending
+        const durationA = new Date(a.endDate).getTime() - startDateA;
+        const durationB = new Date(b.endDate).getTime() - startDateB;
+        
+        return durationB - durationA;
+    });
+
     const filteredEvents = activeFilters.includes('all')
-        ? combinedEvents
-        : combinedEvents.filter(event => {
+        ? sortedEvents
+        : sortedEvents.filter(event => {
             if (event.isHoliday && activeFilters.includes('holiday')) return true;
             // @ts-ignore
             const eventType = event.type as string;
