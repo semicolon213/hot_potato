@@ -52,8 +52,6 @@ interface CalendarContextType {
     eventTypes: string[];
     activeFilters: string[];
     setActiveFilters: (filters: string[]) => void;
-    extraWeeks: number;
-    setExtraWeeks: (weeks: number) => void;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

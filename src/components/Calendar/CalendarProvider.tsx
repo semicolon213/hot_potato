@@ -60,7 +60,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
-  const [extraWeeks, setExtraWeeks] = useState(0);
 
   const eventTypes = ['holiday', 'exam', 'event', 'makeup'];
 
@@ -466,8 +465,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     eventTypes,
     activeFilters,
     setActiveFilters,
-    extraWeeks,
-    setExtraWeeks,
   };
 
   return (

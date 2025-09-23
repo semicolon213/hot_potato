@@ -39,27 +39,16 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
             </div>
 
             <div className="sidebar-section">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3>주차별 보기</h3>
-                    <button onClick={() => setExtraWeeks(extraWeeks + 1)} style={{ padding: '2px 8px', fontSize: '12px' }}>주차 추가</button>
-                </div>
+                <h3>주차별 보기</h3>
                 <ul className="week-navigation-list">
-                    {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(weekNum => (
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map(weekNum => (
                         <li
                             key={weekNum}
                             className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
                             onClick={() => onSelectWeek(weekNum)}
                         >
-                            <span style={{ flexGrow: 1 }}>
-                                {weekNum}주차
-                                <span className="week-dates">{getWeekDates(weekNum)}</span>
-                            </span>
-                            {weekNum > 15 && (
-                                <button onClick={(e) => {
-                                    e.stopPropagation(); // Prevent li's onClick
-                                    setExtraWeeks(extraWeeks - 1);
-                                }} style={{ padding: '2px 5px', fontSize: '12px', background: 'transparent', border: 'none', color: 'var(--error)' }}>삭제</button>
-                            )}
+                            {weekNum}주차
+                            <span className="week-dates">{getWeekDates(weekNum)}</span>
                         </li>
                     ))}
                 </ul>
