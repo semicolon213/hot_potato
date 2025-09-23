@@ -62,7 +62,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
   const [extraWeeks, setExtraWeeks] = useState(0);
 
-  const eventTypes = ['holiday', 'exam', 'assignment', 'event', 'makeup'];
+  const eventTypes = ['holiday', 'exam', 'event', 'makeup'];
 
   useEffect(() => {
     if (!accessToken) return;
