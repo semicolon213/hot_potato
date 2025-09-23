@@ -1,0 +1,545 @@
+.student-detail-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.student-detail-modal {
+  background: var(--white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 95%;
+  max-width: 900px;
+  max-height: 95vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--lightgrey);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: 1.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-header h2::before {
+  content: "👤";
+  font-size: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-btn, .save-btn, .cancel-btn, .close-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-btn {
+  background: var(--primary);
+  color: white;
+}
+
+.edit-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.save-btn {
+  background: var(--success);
+  color: white;
+}
+
+.save-btn:hover {
+  background: var(--success-hover);
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: var(--error);
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: var(--error);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.close-btn {
+  background: var(--text-light);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: var(--text-medium);
+  transform: translateY(-1px);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--lightgrey);
+  padding: 0 32px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 20px 24px;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab-button:hover {
+  color: var(--primary);
+  background: var(--accent);
+}
+
+.tab-button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--white);
+}
+
+.modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  background: var(--white);
+}
+
+.student-info h3, .student-issues h3 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-field label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.info-field input,
+.info-field select {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+.info-field input:focus,
+.info-field select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.info-field input:disabled,
+.info-field select:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.add-issue-form {
+  background: var(--white);
+  padding: 32px;
+  border-radius: var(--border-radius-lg);
+  margin-bottom: 32px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  position: relative;
+}
+
+.add-issue-form::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-field label::before {
+  content: "•";
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: var(--white);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover {
+  border-color: var(--secondary);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.add-issue-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.add-issue-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.add-issue-btn:active {
+  transform: translateY(0);
+}
+
+.issues-list h4 {
+  margin: 0 0 24px 0;
+  color: var(--text-dark);
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.issues-list h4::before {
+  content: "📋";
+  font-size: 1.125rem;
+}
+
+.loading, .no-issues {
+  text-align: center;
+  color: var(--text-light);
+  padding: 60px 20px;
+  font-style: italic;
+  background: var(--lightgrey);
+  border-radius: var(--border-radius-md);
+  border: 2px dashed var(--border-color);
+}
+
+.issues-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.issue-card {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  transition: all 0.2s ease;
+  box-shadow: var(--card-shadow);
+  position: relative;
+}
+
+.issue-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.issue-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--primary);
+}
+
+.issue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.issue-date {
+  font-size: 0.875rem;
+  color: var(--text-light);
+  font-weight: 500;
+  background: var(--lightgrey);
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.issue-date::before {
+  content: "📅";
+  font-size: 0.75rem;
+}
+
+.issue-level {
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.issue-level.낮음 {
+  background: var(--success);
+  color: white;
+}
+
+.issue-level.보통 {
+  background: var(--warning);
+  color: var(--text-dark);
+}
+
+.issue-level.높음 {
+  background: #ff9800;
+  color: white;
+}
+
+.issue-level.심각 {
+  background: var(--error);
+  color: white;
+}
+
+.issue-type {
+  font-size: 0.875rem;
+  color: var(--primary);
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  width: fit-content;
+}
+
+.issue-type::before {
+  content: "🏷️";
+  font-size: 0.75rem;
+}
+
+.issue-content {
+  font-size: 0.875rem;
+  color: var(--text-medium);
+  line-height: 1.6;
+  background: var(--lightgrey);
+  padding: 12px;
+  border-radius: var(--border-radius-sm);
+  border-left: 4px solid var(--primary);
+}
+
+@media (max-width: 768px) {
+  .student-detail-modal {
+    width: 98%;
+    margin: 10px;
+    max-height: 98vh;
+    border-radius: 16px;
+  }
+  
+  .modal-header {
+    padding: 20px 24px;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  
+  .modal-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .modal-content {
+    padding: 24px 20px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .add-issue-form {
+    padding: 24px 20px;
+  }
+  
+  .issues-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .tab-button {
+    padding: 16px 20px;
+    font-size: 0.875rem;
+  }
+  
+  .edit-btn, .save-btn, .cancel-btn {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .close-btn {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+  }
+}

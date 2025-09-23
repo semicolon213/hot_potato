@@ -1,5 +1,22 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Student, StudentWithCouncil, CouncilPosition } from '../types/student';
+
+interface Student {
+  no_student: string;
+  name: string;
+  address: string;
+  grade: string;
+  state: string;
+  council: string;
+}
+
+interface CouncilPosition {
+  year: string;
+  position: string;
+}
+
+export interface StudentWithCouncil extends Student {
+  parsedCouncil: CouncilPosition[];
+}
 
 export const useStudentManagement = (studentSpreadsheetId: string | null) => {
   const [students, setStudents] = useState<StudentWithCouncil[]>([]);
