@@ -42,6 +42,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         selectedEvent,
         activeFilters,
         setActiveFilters,
+        user,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -55,12 +56,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
     const [newPeriodName, setNewPeriodName] = useState("");
+    const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const moreButtonRef = useRef<HTMLButtonElement>(null);
     const filterLabels: { [key: string]: string } = {
         all: '전체',
         holiday: '휴일/휴강',
         exam: '시험',
-        assignment: '과제',
+        midterm_exam: '중간고사',
+        final_exam: '기말고사',
         event: '행사',
         makeup: '보강',
     };
@@ -346,7 +349,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="header-right-controls">
-                        <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '-7px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
+                        {user && user.isAdmin && (
+                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '-7px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
+                        )}
                         <div className="view-switcher">
 
                             <button onClick={() => setViewMode('monthly')}
@@ -357,7 +362,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             </button>
                         </div>
                         <div className="filter-tags-container">
-                            {['all', ...eventTypes].map(filter => (
+                            {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
                                 <button
                                     key={filter}
                                     className={`filter-tag ${activeFilters.includes(filter) ? 'active' : ''}`}
@@ -366,6 +371,47 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     {filterLabels[filter] || filter}
                                 </button>
                             ))}
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <button
+                                    className={`filter-tag ${activeFilters.includes('midterm_exam') || activeFilters.includes('final_exam') ? 'active' : ''}`}
+                                    onClick={() => setIsExamDropdownOpen(!isExamDropdownOpen)}
+                                >
+                                    시험
+                                </button>
+                                {isExamDropdownOpen && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        backgroundColor: '#f9f9f9',
+                                        minWidth: '120px',
+                                        boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                                        zIndex: 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        padding: '8px',
+                                        borderRadius: '4px',
+                                        border: '1px solid #ddd',
+                                    }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={activeFilters.includes('midterm_exam')}
+                                                onChange={() => handleFilterChange('midterm_exam')}
+                                                style={{ marginRight: '8px' }}
+                                            />
+                                            중간고사
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={activeFilters.includes('final_exam')}
+                                                onChange={() => handleFilterChange('final_exam')}
+                                                style={{ marginRight: '8px' }}
+                                            />
+                                            기말고사
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

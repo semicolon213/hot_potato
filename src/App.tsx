@@ -902,12 +902,12 @@ const App: React.FC = () => {
 
         // 중간고사
         if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
-            eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end) });
+            eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'midterm_exam' });
         }
 
         // 기말고사
         if (finalExamsPeriod.start && finalExamsPeriod.end) {
-            eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end) });
+            eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'final_exam' });
         }
 
         // 성적입력 및 강의평가
@@ -931,6 +931,7 @@ const App: React.FC = () => {
             '', // colorId
             '', // startDateTime
             '', // endDateTime
+            event.type || '', // Column I for type
         ]);
 
         try {
@@ -1296,6 +1297,7 @@ const App: React.FC = () => {
         );
       case "calendar":
           return <MyCalendarPage
+              user={user}
               accessToken={googleAccessToken}
               calendarEvents={calendarEvents}
               addCalendarEvent={addCalendarEvent}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event, type DateRange, type CustomPeriod } from "../../hooks/useCalendarContext.ts";
+import { type User } from "../../App.tsx";
 
 const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     holiday: { color: '#EA4335', icon: '🏖️' },
@@ -20,6 +21,7 @@ const getEventStyle = (event: Event) => {
 
 interface CalendarProviderProps {
   children: ReactNode;
+  user: User | null;
   accessToken: string | null;
   sheetEvents: Event[];
   addSheetEvent: (event: Omit<Event, 'id'>) => Promise<void>;
@@ -39,6 +41,7 @@ interface CalendarProviderProps {
 
 const CalendarProvider: React.FC<CalendarProviderProps> = ({
   children,
+  user,
   accessToken,
   sheetEvents,
   addSheetEvent,
@@ -489,6 +492,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     eventTypes,
     activeFilters,
     setActiveFilters,
+    user,
   };
 
   return (

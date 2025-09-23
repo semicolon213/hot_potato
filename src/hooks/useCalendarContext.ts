@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import { type User } from "../App.tsx";
 
 interface DateInfo {
     year: string;
@@ -54,6 +55,7 @@ interface CalendarContextType {
     eventTypes: string[];
     activeFilters: string[];
     setActiveFilters: (filters: string[]) => void;
+    user: User | null;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

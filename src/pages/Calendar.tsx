@@ -1,3 +1,4 @@
+import { type User } from "../App.tsx";
 import React, {useState} from "react"; // Remove useEffect
 import CalendarProvider from "../components/Calendar/CalendarProvider";
 import Calendar from "../components/Calendar/Calendar";
@@ -9,6 +10,7 @@ import CalendarSidebar from "../components/Calendar/CalendarSidebar";
 import "./Calendar.css";
 
 interface CalendarPageProps {
+    user: User | null;
     accessToken: string | null; // Accept accessToken as prop
     calendarEvents: Event[];
     addCalendarEvent: (event: Omit<Event, 'id'>) => Promise<void>;
@@ -126,6 +128,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
     );
 };
 const CalendarPage: React.FC<CalendarPageProps> = ({
+                                                       user,
                                                        accessToken,
                                                        calendarEvents,
                                                        addCalendarEvent,
@@ -146,6 +149,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
     return (
         <div id="Calendar">
             <CalendarProvider
+                user={user}
                 accessToken={accessToken}
                 sheetEvents={calendarEvents}
                 addSheetEvent={addCalendarEvent}
