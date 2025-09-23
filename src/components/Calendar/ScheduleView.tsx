@@ -16,12 +16,13 @@ const ScheduleView: React.FC = () => {
     const { events } = useCalendarContext();
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to the beginning of the day for comparison
+    const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
 
     const futureEvents = events
         .filter(event => {
-            const eventStartDate = new Date(event.startDate);
-            return eventStartDate >= today && !event.isHoliday;
+            const eventDateParts = event.startDate.split('-').map(Number);
+            const eventStartDateUTC = new Date(Date.UTC(eventDateParts[0], eventDateParts[1] - 1, eventDateParts[2]));
+            return eventStartDateUTC.getTime() >= todayUTCStart.getTime() && !event.isHoliday;
         })
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
@@ -34,17 +35,34 @@ const ScheduleView: React.FC = () => {
         <div className="schedule-view-container">
             {futureEvents.length > 0 ? (
                 <ul className="schedule-list">
-                    {futureEvents.map(event => (
-                        <li key={event.id} className="schedule-item">
-                            <div className="schedule-item-tag" style={{ backgroundColor: event.color }}>
-                                {filterLabels[event.type || ''] || '일반'}
-                            </div>
-                            <div className="schedule-item-content">
-                                <div className="schedule-item-date">{formatDate(event.startDate)}</div>
-                                <div className="schedule-item-title">{event.title}</div>
-                            </div>
-                        </li>
-                    ))}
+                    {futureEvents.map(event => {
+                        const eventDateParts = event.startDate.split('-').map(Number);
+                        const eventStartDateUTC = new Date(Date.UTC(eventDateParts[0], eventDateParts[1] - 1, eventDateParts[2]));
+                        const diffTime = eventStartDateUTC.getTime() - todayUTCStart.getTime();
+                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                        let dDayText = '';
+                        if (diffDays === 0) {
+                            dDayText = 'D-day';
+                        } else if (diffDays > 0) {
+                            dDayText = `D-${diffDays}`;
+                        } else {
+                            dDayText = `D+${-diffDays}`;
+                        }
+
+                        return (
+                            <li key={event.id} className="schedule-item">
+                                <div className="schedule-item-tag" style={{ backgroundColor: event.color }}>
+                                    {filterLabels[event.type || ''] || '일반'}
+                                </div>
+                                <div className="schedule-item-content">
+                                    <div className="schedule-item-date">{formatDate(event.startDate)}</div>
+                                    <div className="schedule-item-title">{event.title}</div>
+                                </div>
+                                <div className="schedule-item-dday">{dDayText}</div>
+                            </li>
+                        );
+                    })}
                 </ul>
             ) : (
                 <div className="no-events-message">

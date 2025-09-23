@@ -338,7 +338,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         <>
             <div className="calendar-header-container">
                 <div className='calendar-header-top'>
-                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
                         <h2>
                             {viewMode === 'monthly' ? (
