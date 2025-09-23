@@ -143,6 +143,15 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setNewPeriodName("");
     };
 
+    const handleAddMakeupPeriod = () => {
+        const newPeriod = {
+            id: `custom-${Date.now()}`,
+            name: "보강기간",
+            period: { start: null, end: null },
+        };
+        setCustomPeriods([...customPeriods, newPeriod]);
+    };
+
     const handleDateChange = (setter: (date: Date) => void, value: string) => {
         if (value) {
             const newDate = new Date(value);
@@ -512,6 +521,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 onChange={(e) => setNewPeriodName(e.target.value)}
                             />
                             <button onClick={handleAddCustomPeriod}>추가</button>
+                            <button onClick={handleAddMakeupPeriod}>보강</button>
                         </div>
 
                         <div className="modal-actions">
