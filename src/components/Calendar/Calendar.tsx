@@ -57,6 +57,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
+    const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const moreButtonRef = useRef<HTMLButtonElement>(null);
     const filterLabels: { [key: string]: string } = {
         all: '전체',
@@ -353,13 +354,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '-7px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
                         )}
                         <div className="view-switcher">
-
-                            <button onClick={() => setViewMode('monthly')}
-                                    className={viewMode === 'monthly' ? 'active' : ''}>월간
-                            </button>
-                            <button onClick={() => setViewMode('weekly')}
-                                    className={viewMode === 'weekly' ? 'active' : ''}>주간
-                            </button>
+                            <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
+                            <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
+                        </div>
+                        <div className="view-switcher">
+                            <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
+                            <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
                         </div>
                         <div className="filter-tags-container">
                             {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
@@ -416,80 +416,84 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     </div>
                 </div>
             </div>
-            {viewMode === 'monthly' ? (
-                <div className="calendar-body-container">
-                    <div className="day-wrapper">
-                        {weeks.map((week, index) => (
-                            <div className={`calendar-item ${index === 0 ? 'sunday' : ''}`} key={week}>{week}</div>
-                        ))}
-                    </div>
-                    <div className="day-wrapper">
-                        {daysInMonth.map((date) => {
-                            const dayLayout = eventLayouts.get(date.date) || [];
-                            const dayEvents = dayLayout.filter((e): e is Event => e !== null);
+            {calendarViewMode === 'calendar' ? (
+                viewMode === 'monthly' ? (
+                    <div className="calendar-body-container">
+                        <div className="day-wrapper">
+                            {weeks.map((week, index) => (
+                                <div className={`calendar-item ${index === 0 ? 'sunday' : ''}`} key={week}>{week}</div>
+                            ))}
+                        </div>
+                        <div className="day-wrapper">
+                            {daysInMonth.map((date) => {
+                                const dayLayout = eventLayouts.get(date.date) || [];
+                                const dayEvents = dayLayout.filter((e): e is Event => e !== null);
 
-                            const isSelected = selectedDate.date === date.date;
-                            const isSunday = date.dayIndexOfWeek === 0;
-                            const isSaturday = date.dayIndexOfWeek === 6;
-                            const isCurrentMonth = currentDate.month === date.month;
-                            const isHoliday = dayEvents.some(e => e.isHoliday);
+                                const isSelected = selectedDate.date === date.date;
+                                const isSunday = date.dayIndexOfWeek === 0;
+                                const isSaturday = date.dayIndexOfWeek === 6;
+                                const isCurrentMonth = currentDate.month === date.month;
+                                const isHoliday = dayEvents.some(e => e.isHoliday);
 
-                            return (
-                                <div
-                                    onClick={() => {
-                                        selectedDate.selectDate(new Date(date.date));
-                                        onAddEvent();
-                                    }}
-                                    className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
-                                    key={date.date}>
-                                    <span className="day-number">{date.day}</span>
-                                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                                    <ul className="event-list">
-                                        {dayLayout.slice(0, 3).map((event, index) => {
-                                            if (!event) {
-                                                return <li key={index} className="event-item" style={{ visibility: 'hidden' }}>&nbsp;</li>;
-                                            }
-                                            const eventStartDate = new Date(event.startDate);
-                                            const eventEndDate = new Date(event.endDate);
-                                            const currentDate = new Date(date.date);
-                                            const isFirstDayOfEvent = eventStartDate.toDateString() === currentDate.toDateString();
-                                            const isLastDayOfEvent = eventEndDate.toDateString() === currentDate.toDateString();
-                                            let itemClasses = 'event-item';
-                                            if (!isFirstDayOfEvent) itemClasses += ' continuation-left';
-                                            if (!isLastDayOfEvent) itemClasses += ' continuation-right';
-                                            if (selectedEvent && selectedEvent.id === event.id) itemClasses += ' selected';
+                                return (
+                                    <div
+                                        onClick={() => {
+                                            selectedDate.selectDate(new Date(date.date));
+                                            onAddEvent();
+                                        }}
+                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
+                                        key={date.date}>
+                                        <span className="day-number">{date.day}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                                        <ul className="event-list">
+                                            {dayLayout.slice(0, 3).map((event, index) => {
+                                                if (!event) {
+                                                    return <li key={index} className="event-item" style={{ visibility: 'hidden' }}>&nbsp;</li>;
+                                                }
+                                                const eventStartDate = new Date(event.startDate);
+                                                const eventEndDate = new Date(event.endDate);
+                                                const currentDate = new Date(date.date);
+                                                const isFirstDayOfEvent = eventStartDate.toDateString() === currentDate.toDateString();
+                                                const isLastDayOfEvent = eventEndDate.toDateString() === currentDate.toDateString();
+                                                let itemClasses = 'event-item';
+                                                if (!isFirstDayOfEvent) itemClasses += ' continuation-left';
+                                                if (!isLastDayOfEvent) itemClasses += ' continuation-right';
+                                                if (selectedEvent && selectedEvent.id === event.id) itemClasses += ' selected';
 
-                                            return (
-                                                <li key={event.id + date.date} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                    <span style={{marginRight: '4px'}}>{event.icon}</span>
-                                                    {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                    <div className="overflow-event-lines" onClick={(e) => {
-                                        const moreCount = dayLayout.slice(3).filter(Boolean).length;
-                                        if (moreCount > 0) {
-                                            e.stopPropagation();
-                                            handleMoreClick(dayEvents, date.date, e);
-                                        }
-                                    }}>
-                                        {(() => {
+                                                return (
+                                                    <li key={event.id + date.date} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
+                                                        <span style={{marginRight: '4px'}}>{event.icon}</span>
+                                                        {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                        <div className="overflow-event-lines" onClick={(e) => {
                                             const moreCount = dayLayout.slice(3).filter(Boolean).length;
                                             if (moreCount > 0) {
-                                                return <span className="more-events-text">{moreCount}개 더보기</span>;
+                                                e.stopPropagation();
+                                                handleMoreClick(dayEvents, date.date, e);
                                             }
-                                            return null;
-                                        })()}
+                                        }}>
+                                            {(() => {
+                                                const moreCount = dayLayout.slice(3).filter(Boolean).length;
+                                                if (moreCount > 0) {
+                                                    return <span className="more-events-text">{moreCount}개 더보기</span>;
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+                                        </div>
                                     </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <WeeklyCalendar selectedWeek={selectedWeek} />
+                )
             ) : (
-                <WeeklyCalendar selectedWeek={selectedWeek} />
+                <div>일정 화면 (구현 예정)</div>
             )}
             {moreEventsModal.isOpen && (
                 <MoreEventsModal
