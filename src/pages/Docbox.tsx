@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Docbox.css";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds } from "../utils/googleSheetUtils";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds, updateLastModifiedInSheetByDocId } from "../utils/googleSheetUtils";
 import { addRecentDocument } from "../utils/localStorageUtils";
 import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
 
@@ -75,7 +75,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
 
       const batch = gapi.client.newBatch();
       initialDocs.forEach(doc => {
-        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name' }), { id: doc.id });
+        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name,modifiedTime' }), { id: doc.id });
       });
 
       try {
@@ -91,12 +91,21 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
           }
           
           const latestTitle = response.result.name;
+          const latestModifiedTime = response.result.modifiedTime;
           const docIndex = syncedDocs.findIndex(d => d.id === docId);
 
-          if (docIndex !== -1 && latestTitle && latestTitle !== syncedDocs[docIndex].title) {
-            console.log(`Syncing title for ${docId}: "${syncedDocs[docIndex].title}" -> "${latestTitle}"`);
-            syncedDocs[docIndex].title = latestTitle;
-            updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
+          if (docIndex !== -1) {
+            if (latestTitle && latestTitle !== syncedDocs[docIndex].title) {
+              console.log(`Syncing title for ${docId}: "${syncedDocs[docIndex].title}" -> "${latestTitle}"`);
+              syncedDocs[docIndex].title = latestTitle;
+              updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
+            }
+            if (latestModifiedTime && new Date(latestModifiedTime).getTime() !== new Date(syncedDocs[docIndex].lastModified).getTime()) {
+              const date = new Date(latestModifiedTime);
+              const formattedDate = `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}. ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+              syncedDocs[docIndex].lastModified = formattedDate;
+              updateLastModifiedInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, formattedDate);
+            }
           }
         });
 
@@ -147,13 +156,27 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
 
   const filteredDocuments = documents
     .filter((doc) => {
-      const matchesSearch = searchTerm === '' || doc.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = searchTerm === '' || doc.title.replace(/\s/g, '').toLowerCase().includes(searchTerm.replace(/\s/g, '').toLowerCase());
       const matchesAuthor = selectedAuthor === "전체" || doc.author === selectedAuthor;
-      const docDate = new Date(doc.lastModified.replace(/\./g, '-').slice(0, -1));
+      let docDate = null;
+      const match = doc.documentNumber.match(/(\d{8})/);
+      if (match) {
+        const dateStr = match[1];
+        docDate = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
+      }
+
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
-      if (start && docDate < start) return false;
-      if (end && docDate > end) return false;
+      if (end) {
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (start || end) {
+        if (!docDate) return false;
+        if (start && docDate < start) return false;
+        if (end && docDate > end) return false;
+      }
+
       return matchesSearch && matchesAuthor;
     })
     .sort((a, b) => {
@@ -321,7 +344,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             </div>
           </div>
         </div>
-        <div className="filter-row" style={{ marginTop: "-35px" }}>
+        <div className="filter-row" style={{ marginTop: "0" }}>
             <div className="filter-actions" style={{width: "100%"}}>
                 <button className="btn-reset" onClick={handleResetFilters}>
                     필터 초기화
