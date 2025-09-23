@@ -4,6 +4,7 @@ import useCalendarContext, { type Event, type DateRange, type CustomPeriod } fro
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
+import ScheduleView from './ScheduleView';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -493,7 +494,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     <WeeklyCalendar selectedWeek={selectedWeek} />
                 )
             ) : (
-                <div>일정 화면 (구현 예정)</div>
+                <ScheduleView />
             )}
             {moreEventsModal.isOpen && (
                 <MoreEventsModal
