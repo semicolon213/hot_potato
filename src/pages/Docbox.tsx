@@ -260,8 +260,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   return (
     <div className="content docbox-padding" id="dynamicContent">
       <div className="filter-section">
-        <div className="filter-row">
-          <div className="filter-group">
+        <div className="filter-row" style={{ marginBottom: 0 }}>
+          <div className="filter-group author-sort-filter">
             <div className="filter-label">기안자</div>
             <div className="select-container">
               <select
@@ -274,7 +274,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             </div>
           </div>
 
-          <div className="filter-group">
+          <div className="filter-group author-sort-filter">
             <div className="filter-label">정렬</div>
             <div className="select-container">
               <select
@@ -288,8 +288,6 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
               </select>
             </div>
           </div>
-        </div>
-        <div className="filter-row second-row">
           <div className="filter-group date-group">
             <div className="filter-label">기간</div>
             <div className="date-range">
@@ -311,12 +309,13 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
               />
             </div>
           </div>
-
-          <div className="filter-actions">
-            <button className="btn-reset" onClick={handleResetFilters}>
-              필터 초기화
-            </button>
-          </div>
+        </div>
+        <div className="filter-row" style={{ marginTop: "-35px" }}>
+            <div className="filter-actions" style={{width: "100%"}}>
+                <button className="btn-reset" onClick={handleResetFilters}>
+                    필터 초기화
+                </button>
+            </div>
         </div>
       </div>
 
