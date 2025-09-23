@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "./DocumentManagement.css";
 import InfoCard, { type Item as InfoCardItem } from "../components/document/InfoCard";
 import DocumentList from "../components/document/DocumentList";
 import StatCard from "../components/document/StatCard";
@@ -200,7 +201,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     }));
 
   return (
-    <div className="content">
+    <div className="content document-management-container">
       <div className="cards-row">
         <InfoCard
           title="최근 문서"

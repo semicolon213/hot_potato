@@ -258,7 +258,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const endIndex = Math.min(currentPage * itemsPerPage, filteredDocuments.length);
 
   return (
-    <div className="content" id="dynamicContent">
+    <div className="content docbox-padding" id="dynamicContent">
       <div className="filter-section">
         <div className="filter-row">
           <div className="filter-group">

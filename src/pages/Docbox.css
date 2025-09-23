@@ -592,3 +592,7 @@
   box-shadow: none !important;
   outline: none !important;
 }
+
+.docbox-padding {
+  padding: 0 40px;
+}
