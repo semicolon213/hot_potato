@@ -862,6 +862,7 @@ const App: React.FC = () => {
         gradeEntryPeriod: DateRange;
         customPeriods: CustomPeriod[];
     }) => {
+        console.log("Saving academic schedule with data:", scheduleData);
         const { semesterStartDate, finalExamsPeriod, gradeEntryPeriod, customPeriods } = scheduleData;
         if (!calendarStudentSpreadsheetId) {
             alert("학생용 캘린더 시트를 찾을 수 없습니다. 먼저 구글 드라이브에서 'calendar_student' 시트가 있는지 확인해주세요.");
@@ -1006,8 +1007,12 @@ const App: React.FC = () => {
                 } else {
                     console.error(`Could not find spreadsheet with name '${name}'`);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Error searching for ${name} spreadsheet:`, error);
+                if (error.status === 401) {
+                    console.error("Authentication error detected. Forcing logout.");
+                    handleLogout();
+                }
             }
         }));
 
@@ -1118,8 +1123,12 @@ const App: React.FC = () => {
                 } else {
                     console.error(`Could not find spreadsheet with name '${name}'`);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Error searching for ${name} spreadsheet:`, error);
+                if (error.status === 401) {
+                    console.error("Authentication error detected. Forcing logout.");
+                    handleLogout();
+                }
             }
         }));
 
