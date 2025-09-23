@@ -293,7 +293,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   return (
     <div className="content docbox-padding" id="dynamicContent">
       <div className="filter-section">
-        <div className="filter-row" style={{ marginBottom: 0 }}>
+        <div className="filter-row" style={{ marginBottom: 0, alignItems: 'flex-end' }}>
           <div className="filter-group author-sort-filter">
             <div className="filter-label">기안자</div>
             <div className="select-container">
@@ -343,13 +343,11 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
               />
             </div>
           </div>
-        </div>
-        <div className="filter-row" style={{ marginTop: "0" }}>
-            <div className="filter-actions" style={{width: "100%"}}>
-                <button className="btn-reset" onClick={handleResetFilters}>
-                    필터 초기화
-                </button>
-            </div>
+          <div className="filter-actions" style={{ marginBottom: '0px' }}>
+            <button className="btn-reset" onClick={handleResetFilters}>
+                필터 초기화
+            </button>
+          </div>
         </div>
       </div>
 
