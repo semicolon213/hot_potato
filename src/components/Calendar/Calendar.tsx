@@ -33,6 +33,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setSemesterStartDate,
         finalExamsPeriod,
         setFinalExamsPeriod,
+        midtermExamsPeriod,
+        setMidtermExamsPeriod,
         gradeEntryPeriod,
         eventTypes,
         setGradeEntryPeriod,
@@ -200,6 +202,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setFinalExamsPeriod({ ...finalExamsPeriod, [part]: newDate });
     };
 
+    const handleMidtermExamsPeriodChange = (part: 'start' | 'end', value: string) => {
+        if (!value) return;
+        const newDate = new Date(value);
+        if (isNaN(newDate.getTime())) return;
+
+        setMidtermExamsPeriod({ ...midtermExamsPeriod, [part]: newDate });
+    };
+
     const handleGradeEntryPeriodChange = (part: 'start' | 'end', value: string) => {
         if (!value) return;
         const newDate = new Date(value);
@@ -242,6 +252,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         await onSave({
             semesterStartDate,
             finalExamsPeriod,
+            midtermExamsPeriod,
             gradeEntryPeriod,
             customPeriods
         });
@@ -482,6 +493,20 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 type="date"
                                 value={formatDateForInput(semesterStartDate)}
                                 onChange={(e) => handleDateChange(setSemesterStartDate, e.target.value)}
+                            />
+                        </div>
+                        <div className="date-selector-row">
+                            <label>중간고사</label>
+                            <input
+                                type="date"
+                                value={formatDateForInput(midtermExamsPeriod.start)}
+                                onChange={(e) => handleMidtermExamsPeriodChange('start', e.target.value)}
+                            />
+                            <span>~</span>
+                            <input
+                                type="date"
+                                value={formatDateForInput(midtermExamsPeriod.end)}
+                                onChange={(e) => handleMidtermExamsPeriodChange('end', e.target.value)}
                             />
                         </div>
                         <div className="date-selector-row">

@@ -44,6 +44,8 @@ interface CalendarContextType {
     setSemesterStartDate: (date: Date) => void;
     finalExamsPeriod: DateRange;
     setFinalExamsPeriod: (period: DateRange) => void;
+    midtermExamsPeriod: DateRange;
+    setMidtermExamsPeriod: (period: DateRange) => void;
     gradeEntryPeriod: DateRange;
     setGradeEntryPeriod: (period: DateRange) => void;
     customPeriods: CustomPeriod[];

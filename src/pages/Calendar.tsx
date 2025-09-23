@@ -18,6 +18,8 @@ interface CalendarPageProps {
     setSemesterStartDate: (date: Date) => void;
     finalExamsPeriod: DateRange;
     setFinalExamsPeriod: (period: DateRange) => void;
+    midtermExamsPeriod: DateRange;
+    setMidtermExamsPeriod: (period: DateRange) => void;
     gradeEntryPeriod: DateRange;
     setGradeEntryPeriod: (period: DateRange) => void;
     customPeriods: CustomPeriod[];
@@ -133,6 +135,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                                                        setSemesterStartDate,
                                                        finalExamsPeriod,
                                                        setFinalExamsPeriod,
+                                                       midtermExamsPeriod,
+                                                       setMidtermExamsPeriod,
                                                        gradeEntryPeriod,
                                                        setGradeEntryPeriod,
                                                        customPeriods,
@@ -151,6 +155,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                 setSemesterStartDate={setSemesterStartDate}
                 finalExamsPeriod={finalExamsPeriod}
                 setFinalExamsPeriod={setFinalExamsPeriod}
+                midtermExamsPeriod={midtermExamsPeriod}
+                setMidtermExamsPeriod={setMidtermExamsPeriod}
                 gradeEntryPeriod={gradeEntryPeriod}
                 setGradeEntryPeriod={setGradeEntryPeriod}
                 customPeriods={customPeriods}

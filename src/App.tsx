@@ -235,6 +235,7 @@ const App: React.FC = () => {
     const [isCalendarLoading, setIsCalendarLoading] = useState(false);
     const [semesterStartDate, setSemesterStartDate] = useState(new Date());
     const [finalExamsPeriod, setFinalExamsPeriod] = useState<DateRange>({ start: null, end: null });
+    const [midtermExamsPeriod, setMidtermExamsPeriod] = useState<DateRange>({ start: null, end: null });
     const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
     const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
 
@@ -859,11 +860,12 @@ const App: React.FC = () => {
       const saveAcademicScheduleToSheet = async (scheduleData: {
         semesterStartDate: Date;
         finalExamsPeriod: DateRange;
+        midtermExamsPeriod: DateRange;
         gradeEntryPeriod: DateRange;
         customPeriods: CustomPeriod[];
     }) => {
         console.log("Saving academic schedule with data:", scheduleData);
-        const { semesterStartDate, finalExamsPeriod, gradeEntryPeriod, customPeriods } = scheduleData;
+        const { semesterStartDate, finalExamsPeriod, midtermExamsPeriod, gradeEntryPeriod, customPeriods } = scheduleData;
         if (!calendarStudentSpreadsheetId) {
             alert("학생용 캘린더 시트를 찾을 수 없습니다. 먼저 구글 드라이브에서 'calendar_student' 시트가 있는지 확인해주세요.");
             return;
@@ -897,6 +899,11 @@ const App: React.FC = () => {
         eventsToSave.push({ title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30) });
         eventsToSave.push({ title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60) });
         eventsToSave.push({ title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90) });
+
+        // 중간고사
+        if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
+            eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end) });
+        }
 
         // 기말고사
         if (finalExamsPeriod.start && finalExamsPeriod.end) {
@@ -1298,6 +1305,8 @@ const App: React.FC = () => {
               setSemesterStartDate={setSemesterStartDate}
               finalExamsPeriod={finalExamsPeriod}
               setFinalExamsPeriod={setFinalExamsPeriod}
+              midtermExamsPeriod={midtermExamsPeriod}
+              setMidtermExamsPeriod={setMidtermExamsPeriod}
               gradeEntryPeriod={gradeEntryPeriod}
               setGradeEntryPeriod={setGradeEntryPeriod}
               customPeriods={customPeriods}
