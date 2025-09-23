@@ -513,15 +513,19 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             </div>
                         ))}
 
-                        <div className="add-period-form">
-                            <input
-                                type="text"
-                                placeholder="항목 이름"
-                                value={newPeriodName}
-                                onChange={(e) => setNewPeriodName(e.target.value)}
-                            />
-                            <button onClick={handleAddCustomPeriod}>추가</button>
-                            <button onClick={handleAddMakeupPeriod}>보강</button>
+                        <div className="add-period-form" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="항목 이름"
+                                    value={newPeriodName}
+                                    onChange={(e) => setNewPeriodName(e.target.value)}
+                                />
+                                <button onClick={handleAddCustomPeriod}>추가</button>
+                            </div>
+                            <div style={{ position: 'absolute', right: 0 }}>
+                                <button onClick={handleAddMakeupPeriod}>보강</button>
+                            </div>
                         </div>
 
                         <div className="modal-actions">
