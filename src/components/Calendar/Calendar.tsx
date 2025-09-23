@@ -4,7 +4,6 @@ import useCalendarContext, { type Event, type DateRange, type CustomPeriod } fro
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
-import DayPopover from './DayPopover';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -54,7 +53,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
     const [newPeriodName, setNewPeriodName] = useState("");
-    const [popover, setPopover] = useState<{ visible: boolean; events: Event[]; date: string; top: number; left: number; }>({ visible: false, events: [], date: '', top: 0, left: 0 });
     const moreButtonRef = useRef<HTMLButtonElement>(null);
     const filterLabels: { [key: string]: string } = {
         all: '전체',
@@ -174,7 +172,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             }
         }
     };
-    
+
     const handleCustomPeriodChange = (id: string, part: 'start' | 'end', value: string) => {
         if (!value) return;
         const newDate = new Date(value);
@@ -252,21 +250,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         if (window.confirm('저장 되지 않습니다. 그래도 닫겠습니까?')) {
             setIsSemesterPickerOpen(false);
         }
-    };
-
-    const handleDayMouseEnter = (e: React.MouseEvent<HTMLDivElement>, dayEvents: Event[], date: string) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setPopover({
-            visible: true,
-            events: dayEvents,
-            date: date,
-            top: rect.bottom + 5,
-            left: rect.left,
-        });
-    };
-
-    const handleDayMouseLeave = () => {
-        setPopover(p => ({ ...p, visible: false }));
     };
 
     const weeksInMonth = useMemo(() => {
@@ -396,8 +379,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
                             return (
                                 <div
-                                    onMouseEnter={(e) => handleDayMouseEnter(e, dayEvents, date.date)}
-                                    onMouseLeave={handleDayMouseLeave}
                                     onClick={() => {
                                         selectedDate.selectDate(new Date(date.date));
                                         onAddEvent();
@@ -407,7 +388,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     <span className="day-number">{date.day}</span>
                                     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                                     <ul className="event-list">
-                                        {dayLayout.slice(0, 2).map((event, index) => {
+                                        {dayLayout.slice(0, 3).map((event, index) => {
                                             if (!event) {
                                                 return <li key={index} className="event-item" style={{ visibility: 'hidden' }}>&nbsp;</li>;
                                             }
@@ -430,25 +411,19 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         })}
                                     </ul>
                                     <div className="overflow-event-lines" onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMoreClick(dayEvents, date.date, e);
+                                        const moreCount = dayLayout.slice(3).filter(Boolean).length;
+                                        if (moreCount > 0) {
+                                            e.stopPropagation();
+                                            handleMoreClick(dayEvents, date.date, e);
+                                        }
                                     }}>
-                                        {dayLayout.slice(2).map((event, index) => {
-                                            if (!event) return null;
-
-                                            const eventStartDate = new Date(event.startDate);
-                                            const eventEndDate = new Date(event.endDate);
-                                            const currentDateObj = new Date(date.date);
-
-                                            const isFirstDay = eventStartDate.toDateString() === currentDateObj.toDateString();
-                                            const isLastDay = eventEndDate.toDateString() === currentDateObj.toDateString();
-
-                                            let lineClasses = 'overflow-event-line';
-                                            if (!isFirstDay) lineClasses += ' continuation-left';
-                                            if (!isLastDay) lineClasses += ' continuation-right';
-
-                                            return <div key={index} className={lineClasses} style={{ backgroundColor: event.color }}></div>;
-                                        })}
+                                        {(() => {
+                                            const moreCount = dayLayout.slice(2).filter(Boolean).length;
+                                            if (moreCount > 0) {
+                                                return <span className="more-events-text">{moreCount}개 더보기</span>;
+                                            }
+                                            return null;
+                                        })()}
                                     </div>
                                     </div>
                                 </div>
@@ -552,13 +527,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
                     </div>
                 </div>
-            )}
-            {popover.visible && (
-                <DayPopover
-                    events={popover.events}
-                    date={popover.date}
-                    position={{ top: popover.top, left: popover.left }}
-                />
             )}
         </>
     );
