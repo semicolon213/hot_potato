@@ -22,10 +22,20 @@ interface CalendarPageProps {
     setGradeEntryPeriod: (period: DateRange) => void;
     customPeriods: CustomPeriod[];
     setCustomPeriods: (periods: CustomPeriod[]) => void;
-    onSaveAcademicSchedule: () => Promise<void>;
+    onSaveAcademicSchedule: (scheduleData: {
+        semesterStartDate: Date;
+        finalExamsPeriod: DateRange;
+        gradeEntryPeriod: DateRange;
+        customPeriods: CustomPeriod[];
+    }) => Promise<void>;
 }
 
-const CalendarContent: React.FC<{ onSaveAcademicSchedule: () => Promise<void> }> = ({onSaveAcademicSchedule}) => {
+const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
+    semesterStartDate: Date;
+    finalExamsPeriod: DateRange;
+    gradeEntryPeriod: DateRange;
+    customPeriods: CustomPeriod[];
+}) => Promise<void> }> = ({onSaveAcademicSchedule}) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
     const {selectedEvent, setSelectedEvent, deleteEvent} = useCalendarContext();

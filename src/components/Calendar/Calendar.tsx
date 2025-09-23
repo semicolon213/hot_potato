@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
-import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
+import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../hooks/useCalendarContext';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
@@ -13,7 +13,12 @@ interface CalendarProps {
     setViewMode: (mode: 'monthly' | 'weekly') => void;
     selectedWeek: number;
     setSelectedWeek: (week: number) => void;
-    onSave: () => Promise<void>;
+    onSave: (scheduleData: {
+        semesterStartDate: Date;
+        finalExamsPeriod: DateRange;
+        gradeEntryPeriod: DateRange;
+        customPeriods: CustomPeriod[];
+    }) => Promise<void>;
 }
 
 const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
@@ -211,6 +216,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     const handleSave = async () => {
+        // Validate custom periods before saving
+        for (const p of customPeriods) {
+            if (!p.period.start || !p.period.end) {
+                alert(`'${p.name}' 기간의 시작일과 종료일을 모두 설정해주세요.`);
+                return;
+            }
+        }
+
         // Validate all periods before saving
         const allPeriods = [
             { name: '기말고사', period: finalExamsPeriod },
@@ -226,7 +239,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             }
         }
 
-        await onSave();
+        await onSave({
+            semesterStartDate,
+            finalExamsPeriod,
+            gradeEntryPeriod,
+            customPeriods
+        });
         setIsSemesterPickerOpen(false);
     };
 

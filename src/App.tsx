@@ -856,7 +856,13 @@ const App: React.FC = () => {
         console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
       };
 
-      const saveAcademicScheduleToSheet = async () => {
+      const saveAcademicScheduleToSheet = async (scheduleData: {
+        semesterStartDate: Date;
+        finalExamsPeriod: DateRange;
+        gradeEntryPeriod: DateRange;
+        customPeriods: CustomPeriod[];
+    }) => {
+        const { semesterStartDate, finalExamsPeriod, gradeEntryPeriod, customPeriods } = scheduleData;
         if (!calendarStudentSpreadsheetId) {
             alert("학생용 캘린더 시트를 찾을 수 없습니다. 먼저 구글 드라이브에서 'calendar_student' 시트가 있는지 확인해주세요.");
             return;
