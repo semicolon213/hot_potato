@@ -6,13 +6,11 @@
   gap: 24px;
   justify-content: start;
   padding: 0 32px;
-  background: var(--white);
+  background: #fefefe;
   border-bottom: 1px solid var(--border-light);
   margin: 0;
+  grid-row: 1;
 }
-
-
-
 
 /* 미니멀리즘 검색 영역 */
 .search-container {
@@ -28,31 +26,26 @@
   border: 1px solid var(--border-light);
 }
 
-.search-input {
+.search-inputbox {
   flex: 1;
   border: none;
   outline: none;
   font-size: 14px;
   background: transparent;
-  color: var(--text-dark);
+  color: #000000;
   font-weight: 400;
 }
 
-.search-input::placeholder {
-  color: var(--text-light);
+.search-inputbox::placeholder {
+  color: #666666;
   font-weight: 400;
 }
 
 /* 검색 아이콘 색상 수정 */
-.search-icon {
-  color: var(--text-light);
+.search-container i {
+  color: #000000;
   margin-right: 8px;
-  font-size: 18px;
-  transition: color 0.2s ease;
-}
-
-.search-container:hover .search-icon {
-  color: var(--text-dark);
+  font-size: 16px;
 }
 
 .header-actions {
@@ -80,16 +73,15 @@
 }
 
 /* 헤더 아이콘 색상 수정 */
-.header-icon {
-  color: var(--text-dark);
+.chat-button i,
+.bell-button i {
+  color: #000000;
   font-size: 18px;
-  transition: all 0.2s ease;
 }
 
-.chat-button:hover .header-icon,
-.bell-button:hover .header-icon {
+.chat-button:hover i,
+.bell-button:hover i {
   color: var(--primary);
-  transform: scale(1.1);
 }
 
 .chat-notification-dot {
@@ -138,111 +130,68 @@
   gap: 12px;
 }
 
-/* 미니멀리즘 사용자 프로필 & 로그아웃 버튼 (완전 동일 스타일) */
-.user-profile, .logout-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius-md);
+/* 미니멀리즘 사용자 프로필 */
+.user-button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: #333333; /* 어두운 색상으로 강제 지정 */
   padding: 6px 12px;
-  background-color: var(--white);
-  transition: all 0.2s ease;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  border: 1px solid var(--border-light);
-  gap: 8px;
-  margin-right: 8px;
-  height: 36px;
-  min-width: fit-content;
-  box-sizing: border-box;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-dark);
-  line-height: 1;
-  letter-spacing: 0;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.user-profile:hover, .logout-button:hover {
+.user-button:hover {
   background-color: var(--lightgrey);
   border-color: var(--primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  color: var(--primary);
 }
 
-.user-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid var(--border-light);
-  background: var(--primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.user-profile:hover .user-avatar {
-  border-color: var(--primary);
-  background: var(--primary-dark);
-}
-
-.user-name {
-  font-size: 12px;
+/* 로그아웃 버튼 */
+.logout-button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: #333333; /* 어두운 색상으로 강제 지정 */
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-dark);
+  transition: all 0.2s ease;
   white-space: nowrap;
-  display: inline-block;
-  line-height: 1;
-  margin: 0;
-  padding: 0;
 }
 
-/* 로그아웃 버튼 기본 버튼 스타일 중립화 */
-.logout-button { -webkit-appearance: none; appearance: none; }
-
-.logout-icon {
-  font-size: 14px;
-  flex-shrink: 0;
+.logout-button:hover {
+  background-color: var(--lightgrey);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* 로그인 버튼 */
 .login-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
   background: var(--primary);
   border: 1px solid var(--primary);
-  border-radius: var(--border-radius-md);
   color: white;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.2s ease;
-  height: 36px;
 }
 
 .login-button:hover {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
 }
-
-.login-icon {
-  font-size: 14px;
-}
-
-
 
 /* 메인 컨텐츠 내부 영역 */
 .content {
   flex: 1;
-  background-color: var(--white);
+  background-color: white;
   padding: 10px;
   overflow-y: auto;
   margin: 0;
@@ -307,22 +256,12 @@
 
 .chat-minimize, .chat-close {
   cursor: pointer;
+  font-size: 18px;
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.chat-close:hover {
-  background-color: var(--lightgrey);
-}
-
-.close-icon {
-  font-size: 16px;
-  color: var(--text-dark);
 }
 
 .chat-body {
@@ -469,11 +408,6 @@
   flex-shrink: 0;
 }
 
-.notification-icon-svg {
-  font-size: 16px;
-  color: var(--text-dark);
-}
-
 .notification-content {
   flex: 1;
 }
@@ -549,7 +483,7 @@
 
 /* 모달 컨텐츠 크기 조정 */
 .modal-content {
-  background: var(--white);
+  background: white;
   border-radius: var(--border-radius-md);
   width: 500px; /* 기존 400px에서 500px로 확장 */
   max-width: 90%;
@@ -578,7 +512,7 @@
 .modal-textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid #ddd;
   border-radius: var(--border-radius-sm);
   font-size: 14px;
   box-sizing: border-box;
@@ -589,14 +523,14 @@
 
 .modal-textarea:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: #007bff;
 }
 
 /* 입력 필드 스타일 개선 */
 .modal-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid #ddd;
   border-radius: var(--border-radius-sm);
   font-size: 14px;
   box-sizing: border-box;
@@ -605,13 +539,13 @@
 
 .modal-input:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: #007bff;
 }
 
 /* 플레이스홀더 스타일 */
 .modal-input::placeholder,
 .modal-textarea::placeholder {
-  color: var(--text-light);
+  color: #999;
   opacity: 1;
 }
 
@@ -703,4 +637,13 @@
 
 .modal-button.confirm:hover {
   background: var(--primary-dark);
+}
+
+/* 채팅 및 알림 아이콘 색상 및 크기 조정 */
+.chat-button .icon,
+.bell-button .icon {
+    color: #333333; /* 아이콘만 어두운 색으로 지정 */
+    width: auto;
+    height: auto;
+    font-size: 18px; /* 다른 아이콘과 크기 맞춤 */
 }

@@ -80,8 +80,18 @@
   height: 65px;
 }
 
-.list-item:last-child {
-  border-bottom: none;
+.list-item.clickable {
+  cursor: pointer;
+}
+
+.list-item.clickable:hover {
+  background-color: #f8f9fa;
+}
+
+
+
+.list-item:hover {
+  background-color: #f9f9f9;
 }
 
 .item-info {

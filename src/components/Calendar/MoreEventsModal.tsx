@@ -20,7 +20,7 @@ const MoreEventsModal: React.FC<MoreEventsModalProps> = ({ events, onClose, posi
         <ul className="more-events-list">
           {events.map(event => (
             <li key={event.id} className="more-event-item" style={{ backgroundColor: event.color }} onClick={() => onSelectEvent(event)}>
-              {event.title.replace(/^\d{2}\s*/, '')}
+              {event.title}
             </li>
           ))}
         </ul>

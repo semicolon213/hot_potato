@@ -1,7 +1,7 @@
 /* ===== 문서함 테이블 영역 ===== */
 .document-container {
   border: 1px solid var(--border-color);
-  margin-top: 40px;
+  margin-top: 15px;
   margin-bottom: 1px;
   border-radius: var(--border-radius-lg);
   overflow: hidden;
@@ -17,29 +17,55 @@
 /* 테이블 헤더 스타일 */
 .table-header {
   display: flex;
-  padding: 20px 0;
+  padding: 12px 0;
   background-color: var(--table-header-bg);
   border-bottom: 1px solid var(--border-light);
 }
 
 .table-header-cell {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-dark);
-  padding: 0 16px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.table-header-cell.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease;
+}
+
+.table-header-cell.sortable:hover {
+  background-color: #f8f9fa;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sort-indicator {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: bold;
+  opacity: 0.8;
 }
 
 /* 테이블 행 스타일 */
 .table-row {
   display: flex;
   border-bottom: 1px solid var(--border-lighter);
-  padding: 18px 0;
+  padding: 10px 0;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .table-row:hover {
-  background-color: var(--lightgrey);
+  background-color: #f9f9f9;
 }
 
 .table-row:last-child {
@@ -47,9 +73,9 @@
 }
 
 .table-cell {
-  font-size: 15px;
-  color: var(--text-medium);
-  padding: 0 16px;
+  font-size: 14px;
+  color: var(--text-dark);
+  padding: 8px 16px;
   display: flex;
   align-items: center;
 }
@@ -84,11 +110,12 @@
   min-width: 50px;
   padding: 5px 3px;
   border-radius: var(--border-radius-lg);
-  background-color: var(--secondary);
+  background-color: #5a6578;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  transform: translate(-8px, 10px);
 }
 
 .status-text {
@@ -100,19 +127,19 @@
 }
 
 .status-badge.progress, .status-badge.진행중 {
-  background-color: var(--secondary);
+  background-color: #5a6578;
 }
 
 .status-badge.complete, .status-badge.완료 {
-  background-color: var(--success);
+  background-color: #4CAF50;
 }
 
 .status-badge.rejected, .status-badge.반려 {
-  background-color: var(--error);
+  background-color: #F44336;
 }
 
 .status-badge.temp, .status-badge.임시저장 {
-  background-color: var(--gray-border);
+  background-color: #9E9E9E;
 }
 
 /* 섹션 헤더 스타일 - 테이블 상단 제목 영역 */
@@ -128,6 +155,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 100%; /* 컨테이너 높이를 100%로 설정하여 내부 아이템 중앙 정렬 */
 }
 
 .section-title {
@@ -135,7 +163,6 @@
   font-weight: bold;
   color: var(--text-dark);
   margin-left: 30px;
-  margin-top: 2px;
 }
 
 .view-all-button {

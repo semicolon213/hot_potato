@@ -1,27 +1,163 @@
-import React from "react";
-import InfoCard from "../components/document/InfoCard";
+import React, { useState, useEffect } from "react";
+import InfoCard, { type Item as InfoCardItem } from "../components/document/InfoCard";
 import DocumentList from "../components/document/DocumentList";
 import StatCard from "../components/document/StatCard";
 import { useDocumentTable, type Document } from "../hooks/useDocumentTable";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/googleSheetUtils";
+import { getRecentDocuments, addRecentDocument } from "../utils/localStorageUtils";
+import { formatRelativeTime } from "../utils/timeUtils";
+import { useTemplateUI, type Template } from "../hooks/useTemplateUI";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
+  customTemplates: Template[];
 }
 
-const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange }) => {
-  const { documentColumns, documents } = useDocumentTable();
 
-  const recentDocuments = [
-    { name: "2024년 예산 계획안", time: "1일전" },
-    { name: "3월 회의록", time: "2시간 전" },
-    { name: "인사 발령 안내", time: "어제" },
-  ];
+interface FetchedDocument {
+  id: string;
+  title: string;
+  author: string;
+  lastModified: string;
+  url: string;
+  documentNumber: string;
+  approvalDate: string;
+  status: string;
+  originalIndex: number;
+}
 
-  const frequentlyUsedForms = [
-    { name: "보고서" },
-    { name: "기획안" },
-    { name: "회의록" },
-  ];
+const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, customTemplates }) => {
+  const { documentColumns } = useDocumentTable();
+  const [documents, setDocuments] = useState<FetchedDocument[]>([]);
+  const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
+    const { onUseTemplate } = useTemplateUI(customTemplates, onPageChange, '', '전체');
+
+  const handleDocClick = (doc: { url?: string }) => {
+    if (doc.url) {
+      // Find the full document from the main list to add to recents
+      const fullDoc = documents.find(d => d.url === doc.url);
+      if (fullDoc) {
+        addRecentDocument(fullDoc);
+      }
+      window.open(doc.url, '_blank');
+    }
+  };
+
+  useEffect(() => {
+    const SPREADSHEET_NAME = 'hot_potato_DB';
+    const DOC_SHEET_NAME = 'documents';
+
+    const fetchAndSyncDocuments = async () => {
+      const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
+      if (!sheetId) return;
+
+      const data = await getSheetData(sheetId, DOC_SHEET_NAME, 'A:I');
+      if (!data || data.length <= 1) {
+        setDocuments([]);
+        return;
+      }
+
+      const header = data[0];
+      const initialDocs: FetchedDocument[] = data.slice(1).map((row, index) => {
+        const doc: any = {};
+        header.forEach((key, hIndex) => {
+          doc[key] = row[hIndex];
+        });
+        return {
+          id: doc.document_id,
+          title: doc.title,
+          author: doc.author,
+          lastModified: doc.last_modified,
+          url: doc.url,
+          documentNumber: doc.document_number,
+          approvalDate: doc.approval_date,
+          status: doc.status,
+          originalIndex: index,
+        };
+      }).filter(doc => doc.id);
+
+      const gapi = (window as any).gapi;
+      if (!gapi?.client?.drive || initialDocs.length === 0) {
+        setDocuments(initialDocs);
+        return;
+      }
+
+      const batch = gapi.client.newBatch();
+      initialDocs.forEach(doc => {
+        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name' }), { id: doc.id });
+      });
+
+      try {
+        const batchResponse = await batch;
+        const driveResults = batchResponse.result;
+        const syncedDocs = [...initialDocs];
+
+        Object.keys(driveResults).forEach(docId => {
+          const response = driveResults[docId];
+          if (!response || !response.result) {
+            return;
+          }
+
+          const latestTitle = response.result.name;
+          const docIndex = syncedDocs.findIndex(d => d.id === docId);
+
+          if (docIndex !== -1 && latestTitle && latestTitle !== syncedDocs[docIndex].title) {
+            syncedDocs[docIndex].title = latestTitle;
+            updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
+          }
+        });
+
+        setDocuments(syncedDocs);
+
+      } catch (error) {
+        console.error("Error during title sync on load:", error);
+        setDocuments(initialDocs);
+      }
+    };
+
+    const loadRecentDocuments = () => {
+      const recents = getRecentDocuments();
+      const formattedRecents = recents.map(doc => ({
+        name: doc.title,
+        time: formatRelativeTime(doc.lastAccessed),
+        url: doc.url,
+      }));
+      setRecentDocuments(formattedRecents);
+    };
+
+    fetchAndSyncDocuments();
+    loadRecentDocuments();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAndSyncDocuments();
+        loadRecentDocuments();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const frequentlyUsedForms = Array.from(
+    customTemplates
+      .filter(template => template.favorites_tag)
+      .reduce((map, template) => {
+        if (!map.has(template.favorites_tag!)) {
+          map.set(template.favorites_tag!, {
+            name: template.favorites_tag!,
+            type: template.type,
+            title: template.title,
+          });
+        }
+        return map;
+      }, new Map<string, { name: string; type: string; title: string; } >()).values()
+  );
+
+    const handleFavoriteClick = (item: { name: string; type: string; title: string; }) => {
+        onUseTemplate(item.type, item.title);
+    };
 
   const statCards = [
     {
@@ -38,11 +174,30 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
     },
     {
       count: 3,
-      title: "임시 저장",
+      title: "내 문서함",
       backgroundColor: "rgb(243, 238, 234)",
       textColor: "#333",
     },
   ];
+
+  const processedDocuments = documents
+    .sort((a, b) => {
+      const dateA = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));
+      const dateB = new Date(b.lastModified.replace(/\./g, '-').slice(0, -1));
+      const dateDiff = dateB.getTime() - dateA.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return b.originalIndex - a.originalIndex;
+    })
+    .slice(0, 4)
+    .map(doc => ({
+      docNumber: doc.documentNumber,
+      title: doc.title,
+      author: doc.author,
+      lastModified: doc.lastModified,
+      dueDate: doc.approvalDate,
+      status: doc.status,
+      url: doc.url,
+    }));
 
   return (
     <div className="content">
@@ -53,21 +208,24 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange })
           icon="icon-file"
           backgroundColor="var(--accent)"
           items={recentDocuments}
+          onItemClick={handleDocClick}
         />
         <InfoCard
-          title="자주 찾는 양식"
+          title="즐겨찾기"
           subtitle="자주 사용하는 양식을 빠르게 접근하세요"
           icon="icon-star"
           backgroundColor="var(--table-header-bg)"
           items={frequentlyUsedForms}
+          onItemClick={handleFavoriteClick}
         />
       </div>
 
       <DocumentList<Document>
         title="문서함"
         columns={documentColumns}
-        data={documents}
+        data={processedDocuments}
         onPageChange={onPageChange}
+        onRowClick={handleDocClick}
       />
 
       <div className="stats-container">

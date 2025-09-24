@@ -75,38 +75,16 @@ const CalendarContent: React.FC = () => {
 };
 
 const CalendarPage: React.FC<CalendarPageProps> = ({ accessToken, calendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent }) => { // Accept accessToken as prop
-  const [selectedRole, setSelectedRole] = useState<string>('admin'); // Default role
 
   return (
     <>
-      <div style={{ marginBottom: '10px', display: 'flex', gap: '10px' }}>
-        <button
-          onClick={() => setSelectedRole('admin')}
-          style={{ padding: '8px 15px', border: selectedRole === 'admin' ? '2px solid blue' : '1px solid gray', borderRadius: '5px', cursor: 'pointer' }}
-        >
-          관리자
-        </button>
-        <button
-          onClick={() => setSelectedRole('professor')}
-          style={{ padding: '8px 15px', border: selectedRole === 'professor' ? '2px solid blue' : '1px solid gray', borderRadius: '5px', cursor: 'pointer' }}
-        >
-          교수
-        </button>
-        <button
-          onClick={() => setSelectedRole('student')}
-          style={{ padding: '8px 15px', border: selectedRole === 'student' ? '2px solid blue' : '1px solid gray', borderRadius: '5px', cursor: 'pointer' }}
-        >
-          학생
-        </button>
-      </div>
       <CalendarProvider
         accessToken={accessToken}
-        selectedRole={selectedRole}
         sheetEvents={calendarEvents}
         addSheetEvent={addCalendarEvent}
         updateSheetEvent={updateCalendarEvent}
         deleteSheetEvent={deleteCalendarEvent}
-      > {/* Pass selectedRole */}
+      >
         <CalendarContent />
       </CalendarProvider>
     </>

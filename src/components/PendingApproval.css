@@ -17,7 +17,7 @@
 }
 
 .pending-card {
-  background: var(--white, #f8f8f7);
+  background: var(--white, #fefefe);
   border-radius: 1rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 2.5rem 2rem;
@@ -158,7 +158,6 @@
   font-size: 0.875rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  animation: pulse 2s infinite;
   writing-mode: horizontal-tb;
   text-orientation: mixed;
   white-space: nowrap;
@@ -174,14 +173,7 @@
   color: var(--text-dark, #333);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
+
 
 /* 로딩 애니메이션 */
 .loading-dots {

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+const sheetDataCache = new Map<string, any[][]>();
 let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
 
@@ -62,6 +63,12 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
 };
 
 export const getSheetIdByName = async (name: string): Promise<string | null> => {
+  const cachedId = localStorage.getItem(`spreadsheet_id_${name}`);
+  if (cachedId) {
+    console.log(`Found cached spreadsheet ID for "${name}"`);
+    return cachedId;
+  }
+
   try {
     const response = await (window as any).gapi.client.drive.files.list({
       q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
@@ -69,7 +76,9 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
     });
     const files = response.result.files;
     if (files && files.length > 0) {
-      return files[0].id;
+      const fileId = files[0].id;
+      localStorage.setItem(`spreadsheet_id_${name}`, fileId);
+      return fileId;
     } else {
       alert(`Spreadsheet with name "${name}" not found.`);
       return null;
@@ -78,6 +87,22 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
     console.log('Error searching for spreadsheet. Check console for details.');
     return null;
   }
+};
+
+export const updateSheetCell = async (spreadsheetId: string, sheetName: string, rowIndex: number, columnIndex: number, value: string): Promise<void> => {
+    await initializeGoogleAPIOnce();
+    const gapi = (window as any).gapi;
+
+    const range = `${sheetName}!${String.fromCharCode(65 + columnIndex)}${rowIndex}`;
+
+    await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: [[value]]
+        }
+    });
 };
 
 // This function is not used in this file, but it was in App.tsx
@@ -138,6 +163,125 @@ export const deleteSheetRow = async (spreadsheetId: string, sheetName: string, r
   });
 };
 
+export const checkSheetExists = async (spreadsheetId: string, sheetName: string): Promise<boolean> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    const response = await gapi.client.sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId,
+    });
+
+    const sheet = response.result.sheets.find(
+      (s: any) => s.properties.title === sheetName
+    );
+
+    return !!sheet;
+  } catch (error) {
+    console.error('Error checking for sheet:', error);
+    return false;
+  }
+};
+
+export const createNewSheet = async (spreadsheetId: string, sheetName: string): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      resource: {
+        requests: [
+          {
+            addSheet: {
+              properties: {
+                title: sheetName,
+              },
+            },
+          },
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Error creating new sheet:', error);
+  }
+};
+
+export const appendSheetData = async (spreadsheetId: string, sheetName: string, values: any[][]): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!A1`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      resource: {
+        values: values,
+      },
+    });
+  } catch (error) {
+    console.error('Error appending sheet data:', error);
+  }
+};
+
+export const getSheetData = async (spreadsheetId: string, sheetName: string, range: string): Promise<any[][] | null> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    const response = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!${range}`,
+    });
+    return response.result.values;
+  } catch (error) {
+    console.error('Error getting sheet data:', error);
+    return null;
+  }
+};
+
+export const updateTitleInSheetByDocId = async (
+  spreadsheetId: string,
+  sheetName: string,
+  docId: string,
+  newTitle: string
+): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    const data = await getSheetData(spreadsheetId, sheetName, 'A:C'); // Assuming id is in A, title in C
+    if (!data || data.length === 0) return;
+
+    const header = data[0];
+    const docIdColIndex = header.indexOf('document_id');
+    const titleColIndex = header.indexOf('title');
+
+    if (docIdColIndex === -1 || titleColIndex === -1) {
+      console.error('Required columns (document_id, title) not found.');
+      return;
+    }
+
+    const rowIndex = data.findIndex(row => row[docIdColIndex] === docId);
+
+    if (rowIndex !== -1) {
+      const range = `${sheetName}!${String.fromCharCode(65 + titleColIndex)}${rowIndex + 1}`;
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: [[newTitle]],
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Error updating title in sheet:', error);
+  }
+};
+
 export const copyGoogleDocument = async (fileId: string, newTitle: string): Promise<{ id: string, webViewLink: string } | null> => {
   await initializeGoogleAPIOnce();
   const gapi = (window as any).gapi;
@@ -155,5 +299,77 @@ export const copyGoogleDocument = async (fileId: string, newTitle: string): Prom
     console.error('Error copying Google Document:', error);
     alert('Google 문서를 복사하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
     return null;
+  }
+};
+
+export const deleteRowsByDocIds = async (
+  spreadsheetId: string,
+  sheetName: string,
+  docIds: string[]
+): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    // 1. Find the sheetId (numeric) for the given sheetName
+    const sheetIdResponse = await gapi.client.sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId,
+    });
+    const sheet = sheetIdResponse.result.sheets.find(
+      (s: any) => s.properties.title === sheetName
+    );
+    if (!sheet) {
+      throw new Error(`Sheet "${sheetName}" not found.`);
+    }
+    const numericSheetId = sheet.properties.sheetId;
+
+    // 2. Get all data to find the header and document_id column
+    const data = await getSheetData(spreadsheetId, sheetName, 'A:Z'); // Get enough columns
+    if (!data || data.length === 0) return;
+
+    const header = data[0];
+    const docIdColIndex = header.indexOf('document_id');
+
+    if (docIdColIndex === -1) {
+      console.error('Required column "document_id" not found.');
+      return;
+    }
+
+    const rowsToDelete: number[] = [];
+    data.forEach((row, index) => {
+      if (index > 0 && docIds.includes(row[docIdColIndex])) { // index > 0 to skip header
+        rowsToDelete.push(index);
+      }
+    });
+
+    if (rowsToDelete.length === 0) {
+      return; // No rows to delete
+    }
+
+    // 3. Sort row indices in descending order
+    rowsToDelete.sort((a, b) => b - a);
+
+    // 4. Create batch update requests
+    const requests = rowsToDelete.map(rowIndex => ({
+      deleteDimension: {
+        range: {
+          sheetId: numericSheetId,
+          dimension: 'ROWS',
+          startIndex: rowIndex,
+          endIndex: rowIndex + 1,
+        },
+      },
+    }));
+
+    // 5. Execute the batch update
+    await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      resource: {
+        requests: requests,
+      },
+    });
+  } catch (error) {
+    console.error('Error deleting rows from sheet:', error);
+    throw error; // Re-throw the error to be caught by the caller
   }
 };

@@ -1,6 +1,9 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
+// Windows 팝업 입력 포커스 이슈 우회: 가림 탐지 비활성화
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+
 // 개발 환경 감지 (여러 방법으로 확인)
 const isDev = process.env.NODE_ENV === 'development' || 
               process.env.ELECTRON_IS_DEV === '1' ||
@@ -21,7 +24,9 @@ function createWindow() {
       contextIsolation: true,
       enableRemoteModule: false,
       webSecurity: false, // Google OAuth를 위해 임시로 비활성화
-      allowRunningInsecureContent: true
+      allowRunningInsecureContent: true,
+      backgroundThrottling: false
+      ,webviewTag: true
     },
     icon: (process.platform === 'win32'
       ? path.join(__dirname, '../public/logo.ico')
@@ -45,7 +50,20 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     // Google OAuth URL은 팝업으로 허용
     if (url.includes('accounts.google.com') || url.includes('oauth2')) {
-      return { action: 'allow' };
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          parent: mainWindow,
+          modal: false,
+          autoHideMenuBar: true,
+          show: false,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            backgroundThrottling: false
+          }
+        }
+      };
     }
     // 다른 외부 링크는 기본 브라우저에서 열기
     shell.openExternal(url);
@@ -166,6 +184,13 @@ app.on('window-all-closed', () => {
 
 // 보안: 새 윈도우 생성 방지 (Google OAuth 제외)
 app.on('web-contents-created', (event, contents) => {
+  // 새로 생성되는 자식 윈도우는 표시/포커스 보장
+  contents.on('did-create-window', (childWindow) => {
+    childWindow.once('ready-to-show', () => {
+      childWindow.show();
+      childWindow.focus();
+    });
+  });
   contents.on('new-window', (event, navigationUrl) => {
     // Google OAuth URL은 팝업으로 허용
     if (navigationUrl.includes('accounts.google.com') || navigationUrl.includes('oauth2')) {

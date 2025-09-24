@@ -9,6 +9,7 @@ import { appendRow } from 'papyrus-db'; // Google Sheets API 접근용
 import Login from './components/auth/Login';
 import PendingApproval from './components/auth/PendingApproval';
 import Admin from './pages/Admin';
+import Students from './pages/Students';
 
 import MyCalendarPage from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
@@ -23,6 +24,8 @@ import NewBoardPost from "./pages/Board/NewBoardPost";
 import AnnouncementsPage from "./pages/Announcements/Announcements";
 import NewAnnouncementPost from "./pages/Announcements/NewAnnouncementPost";
 import Proceedings from "./pages/proceedings";
+import GoogleServicePage from "./pages/GoogleService";
+import { getSheetData, updateSheetCell } from "./utils/googleSheetUtils";
 
 import type { Template } from "./hooks/useTemplateUI";
 
@@ -290,7 +293,7 @@ export interface User {
     accessToken?: string; // accessToken을 포함하도록 수정
 }
 
-type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings';
+type PageType = 'dashboard' | 'admin' | 'board' | 'documents' | 'calendar' | 'users' | 'settings' | 'new-board-post' | 'announcements' | 'new-announcement-post' | 'document_management' | 'docbox' | 'new_document' | 'preferences' | 'mypage' | 'empty_document' | 'proceedings' | 'students' | 'staff' | 'google_appscript' | 'google_sheets' | 'google_docs' | 'google_gemini' | 'google_groups' | 'google_calendar';
 
 const App: React.FC = () => {
   // User authentication state (from feature/login)
@@ -317,7 +320,10 @@ const App: React.FC = () => {
   const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
   const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
   const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
-    const [calendarSpreadsheetId, setCalendarSpreadsheetId] = useState<string | null>(null);
+  const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
+  const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
+  const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
     // State for Calendar
     const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
@@ -624,6 +630,28 @@ const App: React.FC = () => {
     }
   };
 
+  const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: string | undefined) => {
+    if (!hotPotatoDBSpreadsheetId) {
+        console.error("Spreadsheet ID is not available.");
+        return;
+    }
+    try {
+        // G열은 7번째 열이므로, columnIndex는 6입니다.
+        await updateSheetCell(
+            hotPotatoDBSpreadsheetId,
+            'document_template',
+            rowIndex,
+            6, // Column G
+            favoriteStatus || '' // 새로운 값 또는 빈 문자열로 셀을 비웁니다.
+        );
+        console.log(`Template favorite status updated in Google Sheets for row ${rowIndex}.`);
+        await fetchTemplates(); // 시트와 UI를 동기화하기 위해 템플릿을 다시 불러옵니다.
+    } catch (error) {
+        console.error('Error updating template favorite status in Google Sheet:', error);
+        // 여기서 UI 롤백 로직을 추가할 수 있습니다.
+    }
+  };
+
   const fetchPosts = async () => {
     if (!boardSpreadsheetId) return;
     setIsBoardLoading(true);
@@ -693,7 +721,7 @@ const App: React.FC = () => {
     try {
       const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: hotPotatoDBSpreadsheetId,
-        range: 'document_template!B2:F', // Range covers B, C, D, E columns
+        range: 'document_template!B2:G', // Range covers B to G columns
       });
 
       const data = response.result.values;
@@ -706,6 +734,7 @@ const App: React.FC = () => {
           tag: row[2] || '',         // Column D -> tag
           type: row[0] || '',        // Use title as type
           documentId: row[4] || '',  // Column F -> documentId
+          favorites_tag: row[5] || '', // Column G -> favorites_tag
         }));
 
         const filteredTemplates = allTemplates.filter(template => {
@@ -819,60 +848,70 @@ const App: React.FC = () => {
         setIsLoading(false);
     }, []);
     const fetchCalendarEvents = async () => {
-        if (!calendarSpreadsheetId) return;
+        const spreadsheetIds = [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId].filter(Boolean) as string[];
+        if (spreadsheetIds.length === 0) {
+            setCalendarEvents([]);
+            return;
+        }
+
         setIsCalendarLoading(true);
         try {
-          const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: calendarSpreadsheetId,
-            range: `${calendarSheetName}!A:H`,
-          });
+            const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
+                const data = await getSheetData(spreadsheetId, calendarSheetName, 'A:H');
 
-          const data = response.result.values;
-          if (data && data.length > 1) {
-            const parsedEvents: Event[] = data.slice(1).map((row: string[]) => {
-              const startDate = row[2] || '';
-              let endDate = row[3] || '';
-              const startDateTime = row[6] || '';
+                if (data && data.length > 1) {
+                    return data.slice(1).map((row: string[]) => {
+                        const startDate = row[2] || '';
+                        let endDate = row[3] || '';
+                        const startDateTime = row[6] || '';
 
-              // If it's an all-day event and start/end are the same, make endDate exclusive
-              if (startDate && startDate === endDate && !startDateTime) {
-                const date = new Date(endDate);
-                date.setDate(date.getDate() + 1);
-                endDate = date.toISOString().split('T')[0];
-              }
+                        if (startDate && startDate === endDate && !startDateTime) {
+                            const date = new Date(endDate);
+                            date.setDate(date.getDate() + 1);
+                            endDate = date.toISOString().split('T')[0];
+                        }
 
-              return {
-                id: row[0] || '',
-                title: row[1] || '',
-                startDate: startDate,
-                endDate: endDate,
-                description: row[4] || '',
-                colorId: row[5] || '',
-                startDateTime: startDateTime,
-                endDateTime: row[7] || '',
-              };
+                        return {
+                            id: `${spreadsheetId}-${row[0] || ''}`,
+                            title: row[1] || '',
+                            startDate: startDate,
+                            endDate: endDate,
+                            description: row[4] || '',
+                            colorId: row[5] || '',
+                            startDateTime: startDateTime,
+                            endDateTime: row[7] || '',
+                        };
+                    });
+                }
+                return [];
             });
-            setCalendarEvents(parsedEvents);
-            console.log('Loaded calendar events:', parsedEvents);
-          } else {
-            setCalendarEvents([]);
-          }
-        } catch (error) {
-          console.error('Error fetching calendar events from Google Sheet:', error);
-          console.log('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
-        } finally {
-          setIsCalendarLoading(false);
-        }
-      };
 
-      const addCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
-        if (!calendarSpreadsheetId) {
-          console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
-          return;
+            const results = await Promise.all(allEventsPromises);
+            const allEvents = results.flat().filter(Boolean);
+
+            const uniqueEvents = allEvents.filter((event, index, self) =>
+                index === self.findIndex((e) => e.id === event.id)
+            );
+
+            setCalendarEvents(uniqueEvents);
+            console.log('Loaded calendar events:', uniqueEvents);
+        } catch (error) {
+            console.error('Error fetching calendar events from Google Sheet:', error);
+            console.log('캘린더 일정을 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setIsCalendarLoading(false);
+        }
+    };
+
+    const addCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
+        const targetSpreadsheetId = calendarStudentSpreadsheetId || calendarProfessorSpreadsheetId;
+        if (!targetSpreadsheetId) {
+            console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
+            return;
         }
         try {
           const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-            spreadsheetId: calendarSpreadsheetId,
+              spreadsheetId: targetSpreadsheetId,
             range: `${calendarSheetName}!A:A`,
           });
 
@@ -890,7 +929,7 @@ const App: React.FC = () => {
             'endDateTime_calendar': eventData.endDateTime,
           };
 
-          await appendRow(calendarSpreadsheetId, calendarSheetName, newEventForSheet);
+          await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);
           await fetchCalendarEvents(); // Refetch calendar events after adding a new one
           console.log('일정이 성공적으로 추가되었습니다.');
         } catch (error) {
@@ -963,7 +1002,7 @@ const App: React.FC = () => {
                   if (response.result.files[0].id) {
                       const fileId = response.result.files[0].id;
                       console.log("Found 'calendar_professor' spreadsheet with ID:", fileId);
-                      setCalendarSpreadsheetId(fileId);
+                      setCalendarProfessorSpreadsheetId(fileId);
                   } else {
                       console.error("'calendar_professor' spreadsheet found but has no ID.");
                       console.log("'calendar_professor' spreadsheet found but has no ID.");
@@ -976,6 +1015,31 @@ const App: React.FC = () => {
               console.error("Error searching for calendar spreadsheet:", error);
               console.log("Error searching for calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
           }
+
+          // Find the student calendar spreadsheet ID by name
+          try {
+              const response = await (window as any).gapi.client.drive.files.list({
+                  q: "name='calendar_student' and mimeType='application/vnd.google-apps.spreadsheet'",
+                  fields: 'files(id, name)'
+              });
+              if (response.result.files && response.result.files.length > 0) {
+                  if (response.result.files[0].id) {
+                      const fileId = response.result.files[0].id;
+                      console.log("Found 'calendar_student' spreadsheet with ID:", fileId);
+                      setCalendarStudentSpreadsheetId(fileId);
+                  } else {
+                      console.error("'calendar_student' spreadsheet found but has no ID.");
+                      console.log("'calendar_student' spreadsheet found but has no ID.");
+                  }
+              } else {
+                  console.error("Could not find spreadsheet with name 'calendar_student'");
+                  console.log("Could not find spreadsheet with name 'calendar_student'");
+              }
+          } catch (error) {
+              console.error("Error searching for student calendar spreadsheet:", error);
+              console.log("Error searching for student calendar spreadsheet. Please make sure you have granted Google Drive permissions.");
+          }
+
 
           // Find the board spreadsheet ID by name
         try {
@@ -1023,6 +1087,30 @@ const App: React.FC = () => {
         } catch (error) {
           console.error("Error searching for hot_potato_DB spreadsheet:", error);
           console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
+        // Find the student spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='student' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'student' spreadsheet with ID:", fileId);
+              setStudentSpreadsheetId(fileId);
+            } else {
+              console.error("'student' spreadsheet found but has no ID.");
+              console.log("'student' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'student'");
+            console.log("Could not find spreadsheet with name 'student'");
+          }
+        } catch (error) {
+          console.error("Error searching for student spreadsheet:", error);
+          console.log("Error searching for student spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
         // gapi가 초기화된 후 데이터 로드
@@ -1169,6 +1257,30 @@ const App: React.FC = () => {
           console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
         }
 
+        // Find the student spreadsheet ID by name
+        try {
+          const response = await (window as any).gapi.client.drive.files.list({
+            q: "name='student' and mimeType='application/vnd.google-apps.spreadsheet'",
+            fields: 'files(id, name)'
+          });
+          if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files[0].id) {
+              const fileId = response.result.files[0].id;
+              console.log("Found 'student' spreadsheet with ID:", fileId);
+              setStudentSpreadsheetId(fileId);
+            } else {
+              console.error("'student' spreadsheet found but has no ID.");
+              console.log("'student' spreadsheet found but has no ID.");
+            }
+          } else {
+            console.error("Could not find spreadsheet with name 'student'");
+            console.log("Could not find spreadsheet with name 'student'");
+          }
+        } catch (error) {
+          console.error("Error searching for student spreadsheet:", error);
+          console.log("Error searching for student spreadsheet. Please make sure you have granted Google Drive permissions.");
+        }
+
         // gapi가 초기화된 후 데이터 로드
         const fetchInitialData = async (retryCount = 0) => {
           try {
@@ -1229,10 +1341,8 @@ const App: React.FC = () => {
   }, [announcementSpreadsheetId]);
 
     useEffect(() => {
-        if (calendarSpreadsheetId) {
-            fetchCalendarEvents();
-        }
-    }, [calendarSpreadsheetId]);
+        fetchCalendarEvents();
+    }, [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
   useEffect(() => {
     if (hotPotatoDBSpreadsheetId) {
       const fetchTemplateData = async () => {
@@ -1276,6 +1386,16 @@ const App: React.FC = () => {
     setCurrentPage(pageName as PageType);
   };
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleSearchSubmit = () => {
+    if (currentPage !== 'docbox') {
+      handlePageChange('docbox');
+    }
+  };
+
   // 현재 페이지에 따른 컴포넌트 렌더링 (develop의 모든 페이지 유지)
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -1303,14 +1423,15 @@ const App: React.FC = () => {
         return (
             <DocumentManagement
                 onPageChange={handlePageChange}
+                customTemplates={customTemplates}
                 data-oid="i8mtyop"
             />
         );
       case "docbox":
-        return <Docbox data-oid="t94yibd" />;
+        return <Docbox data-oid="t94yibd" searchTerm={searchTerm} />;
       case "new_document":
         return (
-            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} updateTemplateFavorite={updateTemplateFavorite} data-oid="ou.h__l" />
         );
       case "calendar":
           return <MyCalendarPage
@@ -1335,12 +1456,28 @@ const App: React.FC = () => {
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'admin':
         return <Admin />;
+      case 'students':
+        return <Students onPageChange={handlePageChange} studentSpreadsheetId={studentSpreadsheetId} />;
+      case 'staff':
+        return <div>교직원 관리 페이지 (구현 예정)</div>;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':
         return <div>사용자 관리 페이지 (구현 예정)</div>;
       case 'settings':
         return <div>설정 페이지 (구현 예정)</div>;
+      case 'google_appscript':
+        return <GoogleServicePage service="appscript" />;
+      case 'google_sheets':
+        return <GoogleServicePage service="sheets" />;
+      case 'google_docs':
+        return <GoogleServicePage service="docs" />;
+      case 'google_gemini':
+        return <GoogleServicePage service="gemini" />;
+      case 'google_groups':
+        return <GoogleServicePage service="groups" />;
+      case 'google_calendar':
+        return <GoogleServicePage service="calendar" />;
       default:
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
     }
@@ -1367,7 +1504,7 @@ const App: React.FC = () => {
         <div className="app-container" data-oid="g1w-gjq">
           <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
           <div className="main-panel" data-oid="n9gxxwr">
-            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} />
+            <Header onPageChange={handlePageChange} userInfo={user} onLogout={handleLogout} searchTerm={searchTerm} onSearchChange={handleSearch} onSearchSubmit={handleSearchSubmit} />
             <div className="content" id="dynamicContent" data-oid="nn2e18p">
               {renderCurrentPage()}
             </div>

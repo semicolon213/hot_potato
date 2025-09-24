@@ -31,8 +31,8 @@
   --secondary: #38bdf8;                  /* 연한 하늘색 (sky-400) */
   --secondary-light: #7dd3fc;            /* 더 연한 하늘색 (sky-300) */
   --accent: #e0f2fe;                     /* 매우 연한 하늘색 (sky-50) */
-  --background: #f8f8f7;                 /* 순백색 배경 */
-  --white: #f8f8f7;
+  --background: #fefefe;                 /* 순백색 배경 */
+  --white: #fefefe;
   --lightgrey: #f8fafc;                  /* 연한 회색 (slate-50) */
   --border-color: #e2e8f0;               /* 연한 회색 테두리 (slate-200) */
   --border-light: #f1f5f9;               /* 더 연한 회색 (slate-100) */
@@ -164,7 +164,6 @@
   font-weight: bold;
   color: var(--text-dark);
   margin-left: 30px;
-  margin-top: 2px;
 }
 
 .view-all-button {
@@ -233,7 +232,7 @@
 .table-row {
   display: flex;
   border-bottom: 1px solid var(--border-lighter);
-  padding: 18px 0;
+  padding: 9px 0; /* 세로 길이를 줄이기 위해 padding 값 수정 */
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -253,7 +252,7 @@
 
 /* 테이블 셀 너비 설정 */
 .doc-number-cell {
-  width: 15%;
+  width: 10%;
   padding: 0 16px;
   padding-left: 30px;
   font-size: 13px;
@@ -276,8 +275,13 @@
   padding: 0 8px;
 }
 
+.approval-date-cell {
+    width: 15%;
+    padding: 0 8px;
+}
+
 .status-cell {
-  width: 15%;
+  width: 10%;
   padding: 0 8px;
   display: flex;
   align-items: center;
@@ -581,3 +585,9 @@
   color: var(--text-medium);
 }
 
+.no-line {
+  border-bottom: none !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}

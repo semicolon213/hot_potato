@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import "./Sidebar.css";
 import { 
-  BiHomeAlt2, 
   BiMessageSquareDetail, 
   BiFileBlank, 
   BiCalendar, 
@@ -10,6 +9,7 @@ import {
   BiShield,
   BiChevronDown
 } from "react-icons/bi";
+import { SiGoogle } from "react-icons/si";
 
 interface SidebarProps {
   onPageChange: (pageName: string) => void;
@@ -157,6 +157,52 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
                 >
                   <span className="submenu-bullet">•</span>
                   교직원
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* GoogleService: 관리자 메뉴 바로 위에 위치 */}
+      <div className="menu-section">
+        <div className="menu-container">
+          <div
+            className={`menu-item menu-item-with-submenu ${activeMenu === "googleService" ? "active" : ""}`}
+            onClick={() => handleMenuClick("googleService", true)}
+          >
+            <SiGoogle className="menu-icon" />
+            <div className="menu-text">구글서비스</div>
+            <BiChevronDown className={`submenu-arrow ${activeMenu === "googleService" ? "rotated" : ""}`} />
+            {activeMenu === "googleService" && (
+              <div className="submenu">
+                <div className="submenu-item" onClick={() => onPageChange("google_appscript")}>
+                  <span className="submenu-bullet">•</span>
+                  앱스크립트
+                </div>
+                <div className="submenu-item" onClick={() => onPageChange("google_sheets")}>
+                  <span className="submenu-bullet">•</span>
+                  구글시트
+                </div>
+                <div className="submenu-item" onClick={() => onPageChange("google_docs")}>
+                  <span className="submenu-bullet">•</span>
+                  구글독스
+                </div>
+                <div className="submenu-item" onClick={() => onPageChange("google_gemini")}>
+                  <span className="submenu-bullet">•</span>
+                  제미나이
+                </div>
+                <div className="submenu-item" onClick={() => onPageChange("google_groups")}>
+                  <span className="submenu-bullet">•</span>
+                  그룹스
+                </div>
+                <div className="submenu-item" onClick={() => onPageChange("google_calendar")}>
+                  <span className="submenu-bullet">•</span>
+                  캘린더
+                </div>
+                <div className="submenu-item" onClick={() => onPageChange("google_chat")}>
+                  <span className="submenu-bullet">•</span>
+                  채팅
                 </div>
               </div>
             )}

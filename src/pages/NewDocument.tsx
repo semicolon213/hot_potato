@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/useTemplateUI";
 import type { Template } from "../hooks/useTemplateUI";
 import "../components/TemplateUI/TemplateUI.css";
@@ -35,6 +35,7 @@ interface TemplatePageProps {
   updateTag: (oldTag: string, newTag: string) => void;
   addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
   updateTemplate: (rowIndex: number, newDocData: { title: string; description:string; tag: string; }, oldTitle: string) => void;
+  updateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => void;
 }
 
 export default function NewDocument({ 
@@ -46,7 +47,8 @@ export default function NewDocument({
     deleteTag, 
     updateTag, 
     addTemplate,
-    updateTemplate
+    updateTemplate,
+    updateTemplateFavorite
 }: TemplatePageProps) {
     
     // Lifted state for global search and filter
@@ -55,6 +57,25 @@ export default function NewDocument({
 
     const [defaultTemplateItems, setDefaultTemplateItems] = useState(defaultTemplates);
     const [customTemplateItems, setCustomTemplateItems] = useState(customTemplates);
+
+    // 즐겨찾기 로직 추가
+    const handleToggleFavorite = useCallback((toggledTemplate: Template) => {
+        const favoriteCount = customTemplateItems.filter(t => t.favorites_tag).length;
+        const isCurrentlyFavorite = !!toggledTemplate.favorites_tag;
+
+        if (!isCurrentlyFavorite && favoriteCount >= 3) {
+            alert("즐겨찾기는 최대 3개까지 추가할 수 있습니다.");
+            return;
+        }
+
+        const newFavoritesTag = isCurrentlyFavorite ? undefined : toggledTemplate.title;
+
+        // API 호출
+        if (toggledTemplate.rowIndex) {
+            updateTemplateFavorite(toggledTemplate.rowIndex, newFavoritesTag);
+        }
+
+    }, [customTemplateItems]);
 
     useEffect(() => {
         const storedDefaultOrder = localStorage.getItem('defaultTemplateOrder');
@@ -316,6 +337,7 @@ export default function NewDocument({
                                         onDeleteTemplate={deleteTemplate}
                                         onEditTemplate={handleEditClick} // Pass the handler here
                                         defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                                        onToggleFavorite={handleToggleFavorite} // Pass down the function
                                     />
                                 </SortableContext>
                             </DndContext>

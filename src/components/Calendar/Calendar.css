@@ -151,7 +151,7 @@
 
 .event-item.selected {
   background-color: var(--primary);
-  color: #f8f8f7;
+  color: #fefefe;
 }
 
 .calendar-header-top {

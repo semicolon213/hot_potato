@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import useCalendarContext, { type Event } from '../../hooks/useCalendarContext';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
@@ -17,11 +17,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
         daysInMonth,
         selectedDate,
         events,
-        setSelectedEvent,
         semesterStartDate,
         setSemesterStartDate,
-        addEvent,
-        triggerRefresh, // 새로고침 함수 가져오기
         selectedEvent,
     } = useCalendarContext();
 
@@ -36,30 +33,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
     const moreButtonRef = useRef<HTMLButtonElement>(null);
 
-    // input에서만 관리할 임시 날짜 상태
-    const [tempStartDate, setTempStartDate] = useState(
-        semesterStartDate.toISOString().split('T')[0]
-    );
-
-    // input에서 날짜 변경 → 임시 저장
-    const handleDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTempStartDate(e.target.value);
-    };
-
-    // 버튼 눌렀을 때 학기 시작일 확정
-    const handleConfirmStartDate = () => {
-        if (tempStartDate) {
-            setSemesterStartDate(new Date(tempStartDate));
-            addEvent({
-                title: '03개강일',
-                description: '학기 시작일',
-                startDate: tempStartDate,
-                endDate: tempStartDate, // Provider가 종료일을 자동으로 하루 뒤로 조정해줍니다.
-            });
-            triggerRefresh(); // 확정 버튼 클릭 시 캘린더 새로고침 실행
-            setViewMode('weekly'); // 주간 뷰로 전환
+    useEffect(() => {
+        const semesterStartEvent = events.find(event => event.title === '개강일');
+        if (semesterStartEvent) {
+            setSemesterStartDate(new Date(semesterStartEvent.startDate));
         }
-    };
+    }, [events, setSemesterStartDate]);
+
 
     const handleMoreClick = (dayEvents: Event[], e: React.MouseEvent<HTMLButtonElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -106,16 +86,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                                     className={viewMode === 'weekly' ? 'active' : ''}>주간
                             </button>
                         </div>
-                        <div className="semester-start-date">
-                            <label htmlFor="semester-start">학기 시작일: </label>
-                            <input
-                                type="date"
-                                id="semester-start"
-                                value={tempStartDate}
-                                onChange={handleDateInput}
-                            />
-                            <button onClick={handleConfirmStartDate}>확정</button>
-                        </div>
                     </div>
                 </div>
                 <div className="month-navigation">
@@ -131,8 +101,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                         <div className='week-navigation-buttons'>
                             {Array.from({ length: 15 }, (_, i) => i + 1).map(weekNum => (
                                 <button key={weekNum} onClick={() => {
-                                setSelectedWeek(weekNum);
-                            }} className={selectedWeek === weekNum ? 'active' : ''}>
+                                    setSelectedWeek(weekNum);
+                                }} className={selectedWeek === weekNum ? 'active' : ''}>
                                     {weekNum}주차
                                 </button>
                             ))}
@@ -163,7 +133,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
 
                             return (
                                 <div
-                                    onClick={() => selectedDate.selectDate(new Date(date.date))}
+                                    onClick={() => {
+                                        selectedDate.selectDate(new Date(date.date));
+                                        onAddEvent();
+                                    }}
                                     className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''}`}
                                     key={date.date}>
                                     <span className="day-number">{date.day}</span>
@@ -190,11 +163,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent }) => {
                                                 itemClasses += ' selected';
                                             }
 
-                                            const showTitle = isFirstDayOfEvent || date.dayIndexOfWeek === 0;
 
                                             return (
                                                 <li key={event.id} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                    {event.title.replace(/^\d{2}\s*/, '')}
+                                                    {isFirstDayOfEvent ? event.title : <>&nbsp;</>}
                                                 </li>
                                             );
                                         })}

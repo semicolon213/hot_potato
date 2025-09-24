@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "./Header.css";
-import { 
-  FiSearch, 
-  FiBell, 
-  FiMessageCircle, 
-  FiUser, 
-  FiLogOut,
-  FiFileText,
-  FiUsers,
-  FiCalendar,
-  FiX
-} from "react-icons/fi";
+import {
+  searchIcon,
+  fileIcon,
+  usersIcon,
+  calendarIcon,
+} from "../assets/Icons";
+import { BiSolidChat, BiSolidBell } from "react-icons/bi";
 
 import { useAuthStore } from "../hooks/useAuthStore";
 
@@ -29,9 +25,12 @@ interface HeaderProps {
     isAdmin: boolean;
   };
   onLogout?: () => void;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  onSearchSubmit: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout, searchTerm, onSearchChange, onSearchSubmit }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelPanelOpen] = useState(false);
   const [isChatOverlayOpen, setIsChatOverlayOpen] = useState(false);
@@ -123,31 +122,36 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
       <div className="header" data-oid="klo-qi-">
 
         <div className="search-container" data-oid="ztfgwty">
-          <FiSearch className="search-icon" />
+          <img
+              src={searchIcon}
+              alt="Search Icon"
+              className="icon"
+              data-oid="i8vx3cc"
+          />
+
           <input
               type="text"
-              className="search-input"
+              className="search-inputbox"
               placeholder="문서 검색"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  onSearchSubmit();
+                }
+              }}
               data-oid="750ewi9"
           />
         </div>
 
         <div className="header-actions" data-oid="xq1uhkt">
           <div
-              className="chat-button"
-              onClick={handleChatButtonClick}
-              data-oid=".jf5:th"
-          >
-            <FiMessageCircle className="header-icon" />
-            <div className="chat-notification-dot" data-oid="czkq0wr"></div>
-          </div>
-
-          <div
               className="bell-button"
               onClick={handleNotificationClick}
               data-oid="gglwxgo"
           >
-            <FiBell className="header-icon" />
+            <BiSolidBell className="icon" />
+
             <div className="notification-dot" data-oid="99.ajod"></div>
 
             {isNotificationPanelOpen && (
@@ -166,7 +170,12 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                         data-oid="xzllr9g"
                     >
                       <div className="notification-icon" data-oid="t6pzccj">
-                        <FiFileText className="notification-icon-svg" />
+                        <img
+                            src={fileIcon}
+                            alt="File Icon"
+                            className="icon"
+                            data-oid="v-xr5ix"
+                        />
                       </div>
                       <div className="notification-content" data-oid="r2xgw38">
                         <div className="notification-message" data-oid="u4zmrza">
@@ -182,7 +191,12 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                         data-oid="r:jkhyb"
                     >
                       <div className="notification-icon" data-oid="t7.f.dw">
-                        <FiUsers className="notification-icon-svg" />
+                        <img
+                            src={usersIcon}
+                            alt="Users Icon"
+                            className="icon"
+                            data-oid="w4ijwi_"
+                        />
                       </div>
                       <div className="notification-content" data-oid="xqf51j.">
                         <div className="notification-message" data-oid="gjgtjo:">
@@ -195,7 +209,12 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                     </div>
                     <div className="notification-item" data-oid="t6qid1d">
                       <div className="notification-icon" data-oid="2.cahya">
-                        <FiCalendar className="notification-icon-svg" />
+                        <img
+                            src={calendarIcon}
+                            alt="Calendar Icon"
+                            className="icon"
+                            data-oid="t2kqrl2"
+                        />
                       </div>
                       <div className="notification-content" data-oid="0w5wib4">
                         <div className="notification-message" data-oid="wrf5u28">
@@ -208,7 +227,12 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                     </div>
                     <div className="notification-item" data-oid="chv.jxw">
                       <div className="notification-icon" data-oid="c6cyizi">
-                        <FiFileText className="notification-icon-svg" />
+                        <img
+                            src={fileIcon}
+                            alt="File Icon"
+                            className="icon"
+                            data-oid="b7qhy7."
+                        />
                       </div>
                       <div className="notification-content" data-oid="4r77:8z">
                         <div className="notification-message" data-oid="pxi35on">
@@ -229,28 +253,15 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
 
           {displayUser ? (
               <>
-                <div
-                    className="user-profile"
-                    onClick={() => onPageChange("mypage")}
-                    data-oid="piz:rdy"
-                >
-                  <div className="user-avatar" data-oid="4ks-vou">
-                    {displayUser.name.charAt(0)}
-                  </div>
-                  <div className="user-name" data-oid="xz4ud-l">
-                      {displayUser.name}
-                  </div>
-                </div>
+                <button className="user-button" onClick={() => onPageChange("mypage")} data-oid="piz:rdy">
+                  {displayUser.name}
+                </button>
                 <button onClick={handleLogout} className="logout-button">
-                  <FiLogOut className="logout-icon" />
                   로그아웃
                 </button>
               </>
           ) : (
-              <button onClick={() => onPageChange("login")} className="login-button">
-                <FiUser className="login-icon" />
-                Google 로그인
-              </button>
+              <button onClick={() => onPageChange("login")}>Google 로그인</button>
           )}
         </div>
         
@@ -267,7 +278,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout }) => 
                       onClick={() => setIsChatOverlayOpen(false)}
                       data-oid="gy2sd29"
                   >
-                    <FiX className="close-icon" />
+                    &times;
                   </div>
                 </div>
               </div>

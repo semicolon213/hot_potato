@@ -7,11 +7,12 @@ interface Props {
     onDeleteTemplate: (rowIndex: number) => void;
     onEditTemplate?: (template: Template) => void;
     defaultTags: string[];
+    onToggleFavorite: (template: Template) => void;
 }
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);
 
-export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, defaultTags }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, defaultTags, onToggleFavorite }: Props) {
     return (
         <div className="new-templates-container">
             {templates.map((template) => {
@@ -36,6 +37,8 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         onEdit={onEditTemplate}
                         isFixed={isFixed}
                         defaultTags={defaultTags}
+                        onToggleFavorite={onToggleFavorite}
+                        isFavorite={!!template.favorites_tag}
                     />
                 )
             })}
