@@ -1,10 +1,10 @@
-.modal-overlay {
+.add-event-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: transparent; /* No dimming */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -15,17 +15,35 @@
   background: white;
   padding: 20px;
   border-radius: var(--border-radius-md);
-  min-width: 400px;
-  max-width: 600px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 380px; /* Reduced size */
+  max-width: 500px; /* Reduced size */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.modal-content h2 {
-  margin-top: 0;
+.close-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+}
+
+.title-input {
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0;
+    padding: 8px 0;
+}
+.title-input:focus {
+    outline: none;
+    border-bottom-color: var(--primary);
 }
 
 .modal-content label {
@@ -34,12 +52,13 @@
   gap: 5px;
 }
 
-.modal-content input,
-.modal-content textarea {
+.modal-content input {
   padding: 8px;
   border-radius: var(--border-radius-sm);
   border: 1px solid #ccc;
 }
+
+
 
 .modal-actions {
   display: flex;
@@ -48,21 +67,12 @@
   margin-top: 10px;
 }
 
-.submit-button, .cancel-button, .time-add-button {
+.submit-button, .cancel-button {
     padding: 10px 15px;
     border: none;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     font-size: 16px;
-}
-
-.time-add-button {
-    background-color: var(--text-light);
-    color: white;
-}
-
-.time-add-button:hover {
-    background-color: var(--text-medium);
 }
 
 .submit-button {
@@ -160,47 +170,38 @@
     cursor: pointer;
 }
 
+.date-time-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
-.custom-tag-container {
+.date-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.time-row {
     display: flex;
     gap: 10px;
-    align-items: center;
 }
 
-.custom-tag-input {
-    flex-grow: 1;
-}
-
-.custom-color-picker {
-    position: relative;
-}
-
-.color-display {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid #ddd;
-    cursor: pointer;
-}
-
-.color-palette-popup {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: white;
+.time-add-button-inline {
+    padding: 8px 12px;
     border: 1px solid #ccc;
     border-radius: var(--border-radius-sm);
-    padding: 5px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 5px;
-    z-index: 1010;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    background-color: #f8f9fa;
+    cursor: pointer;
+    height: 37px; /* To match input height */
 }
 
-.color-swatch-popup {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    cursor: pointer;
+.add-event-modal-overlay .modal-content .add-event-description {
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc;
+    min-height: 24px; /* Ensure initial height is respected */
+    max-height: 150px; /* Limit growth */
+    resize: none; /* Disable manual resizing */
+    overflow-y: auto; /* Show scrollbar when needed */
 }

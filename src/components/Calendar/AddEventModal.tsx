@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import useCalendarContext, { type Event } from '../../hooks/useCalendarContext.ts';
 import './AddEventModal.css';
+import xIcon from '../../assets/Icons/x.svg';
 
 interface AddEventModalProps {
   onClose: () => void;
@@ -10,6 +11,8 @@ interface AddEventModalProps {
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
   const { addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles } = useCalendarContext();
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState(selectedDate.date);
@@ -35,6 +38,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       exam: '시험',
       meeting: '회의',
   };
+
+  useEffect(() => {
+    titleInputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (isEditMode && eventToEdit) {
@@ -115,18 +122,47 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     }
   };
 
+  const autoResizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+    const maxHeight = 150; // From CSS
+
+    textarea.style.height = 'auto'; // Reset height to calculate new scrollHeight
+    const scrollHeight = textarea.scrollHeight;
+
+    if (scrollHeight > maxHeight) {
+      textarea.style.height = `${maxHeight}px`;
+      textarea.style.overflowY = 'auto';
+    } else {
+      textarea.style.height = `${scrollHeight}px`;
+      textarea.style.overflowY = 'hidden';
+    }
+  };
+
+  useEffect(() => {
+    // Adjust textarea height whenever description changes
+    autoResizeTextarea(descriptionRef.current);
+  }, [description]);
+
   const modalContent = (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="add-event-modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>{isEditMode ? '일정 수정' : '일정 추가'}</h2>
-        <label>
-          제목:
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <label>
-          설명:
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-        </label>
+        <img src={xIcon} alt="Close" className="close-icon" onClick={onClose} />
+        <input
+          ref={titleInputRef}
+          type="text"
+          placeholder="제목"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="title-input"
+        />
+        <textarea
+            ref={descriptionRef}
+            placeholder="설명"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="add-event-description"
+            rows={1}
+        />
 
         {!isEditMode && (
             <div className="save-target-group">
@@ -188,32 +224,37 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             </>
         )}
 
-        <label>
-          시작일:
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </label>
-        {showTime && (
-          <label>
-            시작 시간:
-            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-          </label>
-        )}
-        {!showTime && (
-          <label>
-            종료일:
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </label>
-        )}
-        {showTime && (
-          <label>
-            종료 시간:
-            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-          </label>
-        )}
+        <div className="date-time-container">
+            <div className="date-row">
+                <label>
+                  시작일:
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </label>
+                {!showTime && (
+                  <label>
+                    종료일:
+                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </label>
+                )}
+                <button className="time-add-button-inline" onClick={() => setShowTime(!showTime)}>
+                    {showTime ? '시간 제거' : '시간 추가'}
+                </button>
+            </div>
+            {showTime && (
+                <div className="time-row">
+                    <label>
+                      시작 시간:
+                      <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                    </label>
+                    <label>
+                      종료 시간:
+                      <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                    </label>
+                </div>
+            )}
+        </div>
+
         <div className="modal-actions">
-          <button className="time-add-button" onClick={() => setShowTime(!showTime)}>
-            {showTime ? '시간 제거' : '시간 추가'}
-          </button>
           <button className="submit-button" onClick={handleSave}>
             {isEditMode ? '수정' : '일정 추가'}
           </button>
