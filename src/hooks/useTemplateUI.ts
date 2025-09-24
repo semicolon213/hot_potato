@@ -67,6 +67,7 @@ export function useTemplateUI(
                 case 'professor': return '교수용_DB';
                 case 'assistant': return '조교용_DB';
                 case 'executive': return '집행부용_DB';
+                case 'adjunct':
                 case 'student':
                 default:
                     return 'hot_potato_DB';

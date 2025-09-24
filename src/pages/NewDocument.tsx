@@ -246,7 +246,7 @@ export default function NewDocument({
 
     const [showPermissionModal, setShowPermissionModal] = useState(false);
     const [permissionContext, setPermissionContext] = useState<{ type: string; title: string } | null>(null);
-    const [selectedRole, setSelectedRole] = useState<'student' | 'executive' | 'assistant' | 'professor'>('student');
+    const [selectedRole, setSelectedRole] = useState<'student' | 'executive' | 'assistant' | 'professor' | 'adjunct'>('student');
 
     const handleUseTemplateClick = (type: string, title: string) => {
         setPermissionContext({ type, title });
@@ -528,6 +528,16 @@ export default function NewDocument({
                                         onChange={() => setSelectedRole('assistant')}
                                     />
                                     <span className="role-name">조교</span>
+                                </label>
+                                <label className="role-option">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="adjunct"
+                                        checked={selectedRole === 'adjunct'}
+                                        onChange={() => setSelectedRole('adjunct')}
+                                    />
+                                    <span className="role-name">겸임교원</span>
                                 </label>
                                 <label className="role-option">
                                     <input
