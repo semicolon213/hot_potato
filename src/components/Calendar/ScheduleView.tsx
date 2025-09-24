@@ -13,7 +13,7 @@ const filterLabels: { [key: string]: string } = {
 };
 
 const ScheduleView: React.FC = () => {
-    const { events } = useCalendarContext();
+    const { events, isFetchingGoogleEvents } = useCalendarContext();
 
     const today = new Date();
     const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
@@ -30,6 +30,14 @@ const ScheduleView: React.FC = () => {
         const date = new Date(dateString);
         return `${date.getMonth() + 1}월 ${date.getDate()}일`;
     };
+
+    if (isFetchingGoogleEvents) {
+        return (
+            <div className="schedule-view-container">
+                <div className="loading-message">일정을 불러오는 중...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="schedule-view-container">

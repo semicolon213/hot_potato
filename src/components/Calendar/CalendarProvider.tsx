@@ -68,6 +68,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
+  const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
 
   const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
 
@@ -116,6 +117,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     if (!accessToken) return;
 
     const fetchGoogleEvents = async () => {
+      setIsFetchingGoogleEvents(true);
       try {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -194,6 +196,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
       } catch (error) {
         console.error("Failed to fetch Google Calendar events:", error);
         setGoogleEvents([]);
+      } finally {
+        setIsFetchingGoogleEvents(false);
       }
     };
 
@@ -527,6 +531,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setActiveFilters,
     user,
     goToDate: setCurrentDate,
+    isFetchingGoogleEvents,
   };
 
   return (

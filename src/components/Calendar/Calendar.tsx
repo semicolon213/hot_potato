@@ -106,7 +106,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         if (midtermEvent && midtermEvent.startDate && midtermEvent.endDate) {
             const newMidtermStart = new Date(midtermEvent.startDate);
             const newMidtermEnd = new Date(midtermEvent.endDate);
-            if (!isNaN(newMidtermStart.getTime()) && !isNaN(newMidtermEnd.getTime())) {
+            if (
+                !isNaN(newMidtermStart.getTime()) &&
+                !isNaN(newMidtermEnd.getTime()) &&
+                (midtermExamsPeriod.start?.getTime() !== newMidtermStart.getTime() || midtermExamsPeriod.end?.getTime() !== newMidtermEnd.getTime())
+            ) {
                 setMidtermExamsPeriod({ start: newMidtermStart, end: newMidtermEnd });
             }
         }
@@ -115,11 +119,15 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         if (finalEvent && finalEvent.startDate && finalEvent.endDate) {
             const newFinalStart = new Date(finalEvent.startDate);
             const newFinalEnd = new Date(finalEvent.endDate);
-            if (!isNaN(newFinalStart.getTime()) && !isNaN(newFinalEnd.getTime())) {
+            if (
+                !isNaN(newFinalStart.getTime()) &&
+                !isNaN(newFinalEnd.getTime()) &&
+                (finalExamsPeriod.start?.getTime() !== newFinalStart.getTime() || finalExamsPeriod.end?.getTime() !== newFinalEnd.getTime())
+            ) {
                 setFinalExamsPeriod({ start: newFinalStart, end: newFinalEnd });
             }
         }
-    }, [events, setSemesterStartDate, setMidtermExamsPeriod, setFinalExamsPeriod]);
+    }, [events, setSemesterStartDate, midtermExamsPeriod, setMidtermExamsPeriod, finalExamsPeriod, setFinalExamsPeriod]);
 
     useEffect(() => {
         const isMidtermChecked = activeFilters.includes('midterm_exam');
