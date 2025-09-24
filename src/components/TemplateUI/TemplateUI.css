@@ -612,3 +612,46 @@ margin-left: 0;
     transform: rotate(360deg);
   }
 }
+
+/* Permission Modal Styles */
+.modal-description {
+    font-size: 15px;
+    color: #4a5568;
+    margin-bottom: 25px;
+}
+
+.role-selection-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.role-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.role-option:hover {
+    border-color: var(--primary);
+}
+
+.role-option input[type="radio"] {
+    margin-right: 15px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+}
+
+.role-option .role-name {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.role-option input[type="radio"]:checked + .role-name {
+    color: var(--primary);
+}
