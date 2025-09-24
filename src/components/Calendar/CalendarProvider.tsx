@@ -68,7 +68,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
 
-  const eventTypes = ['holiday', 'exam', 'event', 'makeup'];
+  const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
 
   useEffect(() => {
     if (!accessToken) return;

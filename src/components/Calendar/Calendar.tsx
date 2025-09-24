@@ -68,6 +68,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         final_exam: '기말고사',
         event: '행사',
         makeup: '보강',
+        meeting: '회의',
     };
 
     const handleFilterChange = (filter: string) => {
