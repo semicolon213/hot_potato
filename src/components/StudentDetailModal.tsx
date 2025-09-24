@@ -76,7 +76,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
     setIsLoading(true);
     try {
-      // std_issue 시트에서 데이터 가져오기
       const data = await getSheetData(studentSpreadsheetId, 'std_issue', 'A:E');
       
       if (data && data.length > 1) {
@@ -105,7 +104,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     if (!editedStudent || !studentSpreadsheetId) return;
 
     try {
-      // Google Sheets에서 시트 목록을 먼저 확인
       const gapi = (window as any).gapi;
       const spreadsheet = await gapi.client.sheets.spreadsheets.get({
         spreadsheetId: studentSpreadsheetId
@@ -114,12 +112,10 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       const sheets = spreadsheet.result.sheets;
       const firstSheetName = sheets[0].properties.title;
       
-      // 해당 시트에서 학생 데이터 찾기 및 업데이트
       const data = await getSheetData(studentSpreadsheetId, firstSheetName, 'A:F');
       if (data && data.length > 1) {
         const rowIndex = data.findIndex(row => row[0] === student?.no_student);
         if (rowIndex !== -1) {
-          // Google Sheets API를 사용하여 행 업데이트
           const range = `${firstSheetName}!A${rowIndex + 1}:F${rowIndex + 1}`;
           await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: studentSpreadsheetId,
@@ -148,7 +144,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       }
     } catch (error) {
       console.error('학생 정보 업데이트 실패:', error);
-      alert('학생 정보 업데이트에 실패했습니다: ' + error.message);
+      alert('학생 정보 업데이트에 실패했습니다.');
     }
   };
 
@@ -166,7 +162,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
       await appendSheetData(studentSpreadsheetId, 'std_issue', [issueData]);
       
-      // 로컬 상태 업데이트
       const newIssueWithId: StudentIssue = {
         ...newIssue,
         id: `issue_${Date.now()}`,
@@ -174,10 +169,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       };
       setIssues(prev => [...prev, newIssueWithId]);
       
-      // 폼 초기화
       setNewIssue({
         no_member: student?.no_student || '',
-        date_issue: new Date().toISOString().split('T')[0], // 오늘 날짜로 초기화
+        date_issue: new Date().toISOString().split('T')[0],
         type_issue: '',
         level_issue: '',
         content_issue: ''
@@ -186,7 +180,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       alert('특이사항이 성공적으로 추가되었습니다.');
     } catch (error) {
       console.error('특이사항 추가 실패:', error);
-      alert('특이사항 추가에 실패했습니다: ' + error.message);
+      alert('특이사항 추가에 실패했습니다.');
     }
   };
 
@@ -196,36 +190,38 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   const handleIssueInputChange = (field: keyof Omit<StudentIssue, 'id'>, value: string) => {
-    console.log('Issue input change:', field, value);
-    setNewIssue(prev => {
-      const updated = { ...prev, [field]: value };
-      console.log('Updated newIssue:', updated);
-      return updated;
-    });
+    setNewIssue(prev => ({ ...prev, [field]: value }));
+  };
+
+  // 일렉트론에서 입력 필드 포커스 문제 해결
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    e.target.focus();
+    e.target.select();
   };
 
   if (!isOpen || !student || !editedStudent) return null;
 
   return (
-    <div className="student-detail-modal-overlay" onClick={onClose}>
-      <div className="student-detail-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="modal-header">
           <h2>학생 정보</h2>
-          <div className="modal-actions">
+          <div className="header-actions">
             {!isEditing ? (
               <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                ✏️ 수정
+                수정
               </button>
             ) : (
               <div className="edit-actions">
                 <button className="save-btn" onClick={handleSave}>
-                  💾 저장
+                  저장
                 </button>
                 <button className="cancel-btn" onClick={() => {
                   setIsEditing(false);
                   setEditedStudent({ ...student });
                 }}>
-                  ❌ 취소
+                  취소
                 </button>
               </div>
             )}
@@ -235,180 +231,206 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="modal-tabs">
           <button 
-            className={`tab-button ${activeTab === 'info' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
             onClick={() => setActiveTab('info')}
           >
-            📋 기본 정보
+            기본 정보
           </button>
           <button 
-            className={`tab-button ${activeTab === 'issues' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'issues' ? 'active' : ''}`}
             onClick={() => setActiveTab('issues')}
           >
-            ⚠️ 특이사항
+            특이사항
           </button>
         </div>
 
-        <div className="modal-content">
+        {/* Content */}
+        <div className="modal-body">
           {activeTab === 'info' && (
-            <div className="student-info">
-              <div className="info-section">
-                <h3>기본 정보</h3>
-                <div className="info-grid">
-                  <div className="info-field">
-                    <label>학번</label>
-                    <input
-                      type="text"
-                      value={editedStudent.no_student}
-                      onChange={(e) => handleInputChange('no_student', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="info-field">
-                    <label>이름</label>
-                    <input
-                      type="text"
-                      value={editedStudent.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="info-field">
-                    <label>학년</label>
-                    <select
-                      value={editedStudent.grade}
-                      onChange={(e) => handleInputChange('grade', e.target.value)}
-                      disabled={!isEditing}
-                    >
-                      <option value="">선택하세요</option>
-                      <option value="1">1학년</option>
-                      <option value="2">2학년</option>
-                      <option value="3">3학년</option>
-                      <option value="4">4학년</option>
-                    </select>
-                  </div>
-                  <div className="info-field">
-                    <label>상태</label>
-                    <select
-                      value={editedStudent.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                      disabled={!isEditing}
-                    >
-                      <option value="">선택하세요</option>
-                      <option value="재학">재학</option>
-                      <option value="휴학">휴학</option>
-                      <option value="졸업">졸업</option>
-                      <option value="자퇴">자퇴</option>
-                    </select>
-                  </div>
-                  <div className="info-field full-width">
-                    <label>주소</label>
-                    <input
-                      type="text"
-                      value={editedStudent.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="info-field full-width">
-                    <label>학생회 직책</label>
-                    <input
-                      type="text"
-                      value={editedStudent.council}
-                      onChange={(e) => handleInputChange('council', e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="예: 25년 기획부장/24년 총무부장"
-                    />
-                  </div>
+            <div className="info-section">
+              <h3>기본 정보</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>학번</label>
+                  <input
+                    type="text"
+                    value={editedStudent.no_student}
+                    onChange={(e) => handleInputChange('no_student', e.target.value)}
+                    disabled={!isEditing}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>이름</label>
+                  <input
+                    type="text"
+                    value={editedStudent.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    disabled={!isEditing}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>학년</label>
+                  <select
+                    value={editedStudent.grade}
+                    onChange={(e) => handleInputChange('grade', e.target.value)}
+                    disabled={!isEditing}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="1">1학년</option>
+                    <option value="2">2학년</option>
+                    <option value="3">3학년</option>
+                    <option value="4">4학년</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>상태</label>
+                  <select
+                    value={editedStudent.state}
+                    onChange={(e) => handleInputChange('state', e.target.value)}
+                    disabled={!isEditing}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="재학">재학</option>
+                    <option value="휴학">휴학</option>
+                    <option value="졸업">졸업</option>
+                    <option value="자퇴">자퇴</option>
+                  </select>
+                </div>
+                <div className="form-group full-width">
+                  <label>주소</label>
+                  <input
+                    type="text"
+                    value={editedStudent.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    disabled={!isEditing}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  />
+                </div>
+                <div className="form-group full-width">
+                  <label>학생회 직책</label>
+                  <input
+                    type="text"
+                    value={editedStudent.council}
+                    onChange={(e) => handleInputChange('council', e.target.value)}
+                    disabled={!isEditing}
+                    placeholder="예: 25 기획부장/24 총무부장"
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  />
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'issues' && (
-            <div className="student-issues">
-              <div className="issues-section">
-                <h3>특이사항 기록</h3>
-                
-                <div className="add-issue-form" key={`issue-form-${student?.no_student}`}>
-                  <div className="form-row">
-                    <div className="form-field">
-                      <label>발생일</label>
-                      <input
-                        key={`date-${student?.no_student}`}
-                        type="date"
-                        value={newIssue.date_issue}
-                        onChange={(e) => handleIssueInputChange('date_issue', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>유형</label>
-                      <select
-                        key={`type-${student?.no_student}`}
-                        value={newIssue.type_issue}
-                        onChange={(e) => handleIssueInputChange('type_issue', e.target.value)}
-                      >
-                        <option value="">선택하세요</option>
-                        <option value="학업">학업</option>
-                        <option value="출석">출석</option>
-                        <option value="행동">행동</option>
-                        <option value="기타">기타</option>
-                      </select>
-                    </div>
-                    <div className="form-field">
-                      <label>심각도</label>
-                      <select
-                        key={`level-${student?.no_student}`}
-                        value={newIssue.level_issue}
-                        onChange={(e) => handleIssueInputChange('level_issue', e.target.value)}
-                      >
-                        <option value="">선택하세요</option>
-                        <option value="낮음">낮음</option>
-                        <option value="보통">보통</option>
-                        <option value="높음">높음</option>
-                        <option value="심각">심각</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-field">
-                    <label>내용</label>
-                    <textarea
-                      key={`content-${student?.no_student}`}
-                      value={newIssue.content_issue}
-                      onChange={(e) => handleIssueInputChange('content_issue', e.target.value)}
-                      placeholder="특이사항 내용을 입력하세요..."
-                      rows={3}
-                    />
-                  </div>
-                  <button className="add-issue-btn" onClick={handleAddIssue}>
-                    ➕ 특이사항 추가
+            <div className="issues-section">
+              <h3>특이사항 기록</h3>
+              
+              <div className="add-issue-form">
+                <div className="form-row">
+                <div className="form-group">
+                  <label>발생일</label>
+                  <input
+                    type="date"
+                    value={newIssue.date_issue}
+                    onChange={(e) => handleIssueInputChange('date_issue', e.target.value)}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>유형</label>
+                  <select
+                    value={newIssue.type_issue}
+                    onChange={(e) => handleIssueInputChange('type_issue', e.target.value)}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="학업">학업</option>
+                    <option value="출석">출석</option>
+                    <option value="행동">행동</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>심각도</label>
+                  <select
+                    value={newIssue.level_issue}
+                    onChange={(e) => handleIssueInputChange('level_issue', e.target.value)}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="낮음">낮음</option>
+                    <option value="보통">보통</option>
+                    <option value="높음">높음</option>
+                    <option value="심각">심각</option>
+                  </select>
+                </div>
+                </div>
+                <div className="form-group">
+                  <label>내용</label>
+                  <textarea
+                    value={newIssue.content_issue}
+                    onChange={(e) => handleIssueInputChange('content_issue', e.target.value)}
+                    placeholder="특이사항 내용을 입력하세요..."
+                    rows={3}
+                    onFocus={handleInputFocus}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseUp={(e) => e.preventDefault()}
+                  />
+                </div>
+                <div className="form-actions">
+                  <button className="add-btn" onClick={handleAddIssue}>
+                    특이사항 추가
                   </button>
                 </div>
+              </div>
 
-                <div className="issues-list">
-                  <h4>기록된 특이사항 ({issues.length}건)</h4>
-                  {isLoading ? (
-                    <div className="loading">특이사항을 불러오는 중...</div>
-                  ) : issues.length === 0 ? (
-                    <div className="no-issues">기록된 특이사항이 없습니다.</div>
-                  ) : (
-                    <div className="issues-grid">
-                      {issues.map((issue) => (
-                        <div key={issue.id} className="issue-card">
-                          <div className="issue-header">
-                            <span className="issue-date">{issue.date_issue}</span>
-                            <span className={`issue-level ${issue.level_issue.toLowerCase()}`}>
-                              {issue.level_issue}
-                            </span>
-                          </div>
-                          <div className="issue-type">{issue.type_issue}</div>
-                          <div className="issue-content">{issue.content_issue}</div>
+              <div className="issues-list">
+                <h4>기록된 특이사항 ({issues.length}건)</h4>
+                {isLoading ? (
+                  <div className="loading">특이사항을 불러오는 중...</div>
+                ) : issues.length === 0 ? (
+                  <div className="no-issues">기록된 특이사항이 없습니다.</div>
+                ) : (
+                  <div className="issues-grid">
+                    {issues.map((issue) => (
+                      <div key={issue.id} className="issue-card">
+                        <div className="issue-header">
+                          <span className="issue-date">{issue.date_issue}</span>
+                          <span className={`issue-level ${issue.level_issue}`}>
+                            {issue.level_issue}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <div className="issue-type">{issue.type_issue}</div>
+                        <div className="issue-content">{issue.content_issue}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
