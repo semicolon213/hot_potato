@@ -211,6 +211,16 @@ export const useAuth = (onLogin: (user: User) => void) => {
 
   // 회원가입 요청
   const handleRegistration = async () => {
+    if (!formData.email.trim()) {
+      setLoginState(prev => ({ ...prev, error: '이메일 정보가 없습니다. 다시 로그인해주세요.' }));
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      setLoginState(prev => ({ ...prev, error: '이름 정보가 없습니다. 다시 로그인해주세요.' }));
+      return;
+    }
+
     if (!formData.studentId.trim()) {
       setLoginState(prev => ({ ...prev, error: '학번/교번을 입력해주세요.' }));
       return;

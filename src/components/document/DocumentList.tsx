@@ -26,9 +26,10 @@ interface DocumentListProps<T extends object> {
   onSort?: (key: keyof T) => void;
   showViewAll?: boolean;
   isLoading?: boolean;
+  onRowDoubleClick?: (row: T) => void;
 }
 
-const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading }: DocumentListProps<T>) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick }: DocumentListProps<T>) => {
   return (
     <div className="document-container">
       <div className="table-container">
@@ -83,11 +84,12 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
           </div>
         ) : data.length > 0 ? (
           data.map((row, index) => (
-            <div
-              className="table-row"
+            <div 
+              className="table-row" 
               key={index}
               onClick={() => onRowClick && onRowClick(row)}
-              style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+              onDoubleClick={() => onRowDoubleClick?.(row)}
+              style={{ cursor: (onRowClick || onRowDoubleClick) ? 'pointer' : 'default' }}
             >
               {columns.map((col) => (
                 <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
