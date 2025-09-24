@@ -35,6 +35,21 @@
     display: block;
 }
 
+.day-header.sunday .day-name,
+.day-header.sunday .day-number {
+    color: var(--error);
+}
+
+.day-header.saturday .day-name,
+.day-header.saturday .day-number {
+    color: var(--primary);
+}
+
+.day-column.sunday,
+.day-column.saturday {
+    background-color: #f8f9fa;
+}
+
 .weekly-all-day-section {
     display: flex;
     border-bottom: 1px solid #e0e0e0;
@@ -62,16 +77,29 @@
 .all-day-event-item {
     position: absolute;
     color: #000;
-    padding: 2px 8px;
+    padding: 0 5px;
     border-radius: var(--border-radius-sm);
     font-size: 12px;
     margin: 2px 0;
     cursor: pointer;
-    height: 20px;
     box-sizing: border-box;
     z-index: 1;
     white-space: nowrap;
-    overflow: visible;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.all-day-event-item.continuation-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.all-day-event-item.continuation-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .all-day-event-item .event-title {

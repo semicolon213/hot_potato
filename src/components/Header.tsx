@@ -264,7 +264,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout, searc
               <button onClick={() => onPageChange("login")}>Google 로그인</button>
           )}
         </div>
-        
+
 
         {isChatOverlayOpen && (
             <div className="chat-overlay" data-oid="hotwdvh">

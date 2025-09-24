@@ -5,6 +5,7 @@ import "../components/TemplateUI/TemplateUI.css";
 import {
     DndContext,
     closestCenter,
+    closestCorners,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -15,6 +16,7 @@ import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
+    rectSortingStrategy,
 } from '@dnd-kit/sortable';
 
 // UI Components
@@ -36,6 +38,7 @@ interface TemplatePageProps {
   addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
   updateTemplate: (rowIndex: number, newDocData: { title: string; description:string; tag: string; }, oldTitle: string) => void;
   updateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => void;
+  isTemplatesLoading?: boolean;
 }
 
 export default function NewDocument({ 
@@ -48,7 +51,8 @@ export default function NewDocument({
     updateTag, 
     addTemplate,
     updateTemplate,
-    updateTemplateFavorite
+    updateTemplateFavorite,
+    isTemplatesLoading
 }: TemplatePageProps) {
     
     // Lifted state for global search and filter
@@ -240,6 +244,30 @@ export default function NewDocument({
         onUseTemplate 
     } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
 
+    const [showPermissionModal, setShowPermissionModal] = useState(false);
+    const [permissionContext, setPermissionContext] = useState<{ type: string; title: string } | null>(null);
+    const [selectedRole, setSelectedRole] = useState<'student' | 'executive' | 'assistant' | 'professor' | 'adjunct'>('student');
+
+    const handleUseTemplateClick = (type: string, title: string) => {
+        setPermissionContext({ type, title });
+        setSelectedRole('student'); // Reset to default
+        setShowPermissionModal(true);
+    };
+
+    const handlePermissionCancel = () => {
+        setShowPermissionModal(false);
+        setPermissionContext(null);
+    };
+
+    const handlePermissionSubmit = () => {
+        if (permissionContext) {
+            // @ts-ignore
+            onUseTemplate(permissionContext.type, permissionContext.title, selectedRole);
+        }
+        setShowPermissionModal(false);
+        setPermissionContext(null);
+    };
+
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
     const orderedTags = useMemo(() => {
         // Create a unique array of default tags, preserving their first-seen order.
@@ -252,10 +280,6 @@ export default function NewDocument({
     return (
         <div>
             {/* Top Level Controls */}
-            <SearchBar
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-            />
             <CategoryTabs 
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
@@ -267,6 +291,11 @@ export default function NewDocument({
                 updateTag={updateTag} 
             />
 
+            <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+            />
+
             {/* Side-by-Side Layout */}
             <div className="new-document-layout">
                 {/* Left Sidebar: Default Templates */}
@@ -275,12 +304,12 @@ export default function NewDocument({
                         <h2 className="section-title">기본 템플릿</h2>
                         <DndContext
                             sensors={sensors}
-                            collisionDetection={closestCenter}
+                            collisionDetection={closestCorners}
                             onDragEnd={handleDefaultDragEnd}
                         >
                             <SortableContext
                                 items={filteredDefaultTemplates.map(t => t.type)}
-                                strategy={verticalListSortingStrategy}
+                                strategy={rectSortingStrategy}
                             >
                                 <div className="new-templates-container" style={{ paddingLeft: '20px' }}>
                                     {filteredDefaultTemplates.map(template => (
@@ -288,7 +317,7 @@ export default function NewDocument({
                                             key={template.type}
                                             id={template.type}
                                             template={template}
-                                            onUse={onUseTemplate}
+                                            onUse={handleUseTemplateClick} // No delete for default templates
                                             onDelete={() => {}} // No delete for default templates
                                             onEdit={() => {}} // No edit for default templates
                                             isFixed={true}
@@ -324,20 +353,21 @@ export default function NewDocument({
                         <div style={{ marginLeft: '-20px', paddingRight: '40px' }}>
                             <DndContext
                                 sensors={sensors}
-                                collisionDetection={closestCenter}
+                                collisionDetection={closestCorners}
                                 onDragEnd={handleCustomDragEnd}
                             >
                                 <SortableContext
                                     items={filteredCustomTemplates.map(t => t.rowIndex ? t.rowIndex.toString() : t.title)}
-                                    strategy={verticalListSortingStrategy}
+                                    strategy={rectSortingStrategy}
                                 >
                                     <TemplateList
                                         templates={filteredCustomTemplates}
-                                        onUseTemplate={onUseTemplate}
+                                        onUseTemplate={handleUseTemplateClick}
                                         onDeleteTemplate={deleteTemplate}
                                         onEditTemplate={handleEditClick} // Pass the handler here
                                         defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                         onToggleFavorite={handleToggleFavorite} // Pass down the function
+                                        isLoading={isTemplatesLoading}
                                     />
                                 </SortableContext>
                             </DndContext>
@@ -460,6 +490,83 @@ export default function NewDocument({
                             </button>
                             <button className="modal-button confirm" onClick={handleUpdateDocSubmit}>
                                 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Permission Modal */}
+            {showPermissionModal && (
+                <div className="modal-overlay" onClick={handlePermissionCancel}>
+                    <div className="modal-content permission-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>공개 범위 설정</h2>
+                            <button className="modal-close" onClick={handlePermissionCancel}>
+                                &times;
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p className="modal-description">이 문서를 볼 수 있는 최소 역할을 선택하세요. 상위 역할은 자동으로 포함됩니다.</p>
+                            <div className="role-selection-container">
+                                <label className="role-option">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="professor"
+                                        checked={selectedRole === 'professor'}
+                                        onChange={() => setSelectedRole('professor')}
+                                    />
+                                    <span className="role-name">교수</span>
+                                </label>
+                                <label className="role-option">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="assistant"
+                                        checked={selectedRole === 'assistant'}
+                                        onChange={() => setSelectedRole('assistant')}
+                                    />
+                                    <span className="role-name">조교</span>
+                                </label>
+                                <label className="role-option">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="adjunct"
+                                        checked={selectedRole === 'adjunct'}
+                                        onChange={() => setSelectedRole('adjunct')}
+                                    />
+                                    <span className="role-name">겸임교원</span>
+                                </label>
+                                <label className="role-option">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="executive"
+                                        checked={selectedRole === 'executive'}
+                                        onChange={() => setSelectedRole('executive')}
+                                    />
+                                    <span className="role-name">집행부</span>
+                                </label>
+                                <label className="role-option">
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value="student"
+                                        checked={selectedRole === 'student'}
+                                        onChange={() => setSelectedRole('student')}
+                                    />
+                                    <span className="role-name">학생</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="modal-button cancel" onClick={handlePermissionCancel}>
+                                취소
+                            </button>
+                            <button className="modal-button confirm" onClick={handlePermissionSubmit}>
+                                확인
                             </button>
                         </div>
                     </div>

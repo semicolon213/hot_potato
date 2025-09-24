@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "./DocumentManagement.css";
 import InfoCard, { type Item as InfoCardItem } from "../components/document/InfoCard";
 import DocumentList from "../components/document/DocumentList";
 import StatCard from "../components/document/StatCard";
@@ -29,6 +30,7 @@ interface FetchedDocument {
 const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, customTemplates }) => {
   const { documentColumns } = useDocumentTable();
   const [documents, setDocuments] = useState<FetchedDocument[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
     const { onUseTemplate } = useTemplateUI(customTemplates, onPageChange, '', '전체');
 
@@ -125,13 +127,18 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       setRecentDocuments(formattedRecents);
     };
 
-    fetchAndSyncDocuments();
-    loadRecentDocuments();
+    const loadData = async () => {
+        setIsLoading(true);
+        await fetchAndSyncDocuments();
+        loadRecentDocuments();
+        setIsLoading(false);
+    }
+
+    loadData();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchAndSyncDocuments();
-        loadRecentDocuments();
+        loadData();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -200,7 +207,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     }));
 
   return (
-    <div className="content">
+    <div className="content document-management-container">
       <div className="cards-row">
         <InfoCard
           title="최근 문서"
@@ -226,6 +233,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         data={processedDocuments}
         onPageChange={onPageChange}
         onRowClick={handleDocClick}
+        isLoading={isLoading}
       />
 
       <div className="stats-container">

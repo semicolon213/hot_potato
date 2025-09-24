@@ -1,7 +1,26 @@
 import React, { useState, useRef } from 'react';
 import { useStudentManagement } from '../hooks/useStudentManagement';
 import DocumentList from '../components/document/DocumentList';
+import StudentDetailModal from '../components/StudentDetailModal';
 import './Students.css';
+
+interface Student {
+  no_student: string;
+  name: string;
+  address: string;
+  grade: string;
+  state: string;
+  council: string;
+}
+
+interface CouncilPosition {
+  year: string;
+  position: string;
+}
+
+interface StudentWithCouncil extends Student {
+  parsedCouncil: CouncilPosition[];
+}
 
 interface StudentsProps {
   onPageChange: (pageName: string) => void;
@@ -27,16 +46,25 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
     getAllYears,
     getCouncilTableData,
     studentColumns,
-    councilColumns
+    councilColumns,
+    fetchStudents
   } = useStudentManagement(studentSpreadsheetId);
 
   const [activeTab, setActiveTab] = useState<'list' | 'council'>('list');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentWithCouncil | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const years = getAllYears();
   const councilData = selectedYear ? getCouncilTableData(selectedYear) : [];
+
+  // Council 데이터용 정렬 함수
+  const handleCouncilSort = (key: string) => {
+    // council 데이터는 StudentWithCouncil과 다른 구조이므로 별도 처리
+    console.log('Council sort:', key);
+  };
 
   // 엑셀 파일 업로드 핸들러
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +81,28 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
         alert('파일 업로드에 실패했습니다.');
       }
     }
+  };
+
+  // 학생 더블클릭 핸들러
+  const handleStudentDoubleClick = (student: StudentWithCouncil) => {
+    setSelectedStudent(student);
+    setIsModalOpen(true);
+  };
+
+  // 모달 닫기 핸들러
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedStudent(null);
+  };
+
+  // 학생 정보 업데이트 핸들러
+  const handleStudentUpdate = async () => {
+    // 데이터 다시 로드
+    if (studentSpreadsheetId) {
+      await fetchStudents();
+    }
+    setIsModalOpen(false);
+    setSelectedStudent(null);
   };
 
   if (isLoading) {
@@ -261,6 +311,7 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
           sortConfig={sortConfig}
           onSort={handleSort}
           showViewAll={false}
+          onRowDoubleClick={handleStudentDoubleClick}
         />
         </div>
       )}
@@ -295,13 +346,13 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
               <span className="council-badge-single">
                 <span className="badge-position">{row.position}</span>
               </span>
-            ) : col.render
+            ) : undefined
           }))}
           data={councilData}
           onPageChange={onPageChange}
           title={`${selectedYear}년 학생회 집행부`}
           sortConfig={sortConfig}
-          onSort={handleSort}
+          onSort={handleCouncilSort}
           showViewAll={false}
         />
             </div>
@@ -312,6 +363,15 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
           )}
         </div>
       )}
+
+      {/* 학생 상세 정보 모달 */}
+      <StudentDetailModal
+        student={selectedStudent}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onUpdate={handleStudentUpdate}
+        studentSpreadsheetId={studentSpreadsheetId}
+      />
     </div>
   );
 };

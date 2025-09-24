@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./Docbox.css";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds } from "../utils/googleSheetUtils";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds, updateLastModifiedInSheetByDocId } from "../utils/googleSheetUtils";
 import { addRecentDocument } from "../utils/localStorageUtils";
+import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
 
 interface Document {
   id: string;
@@ -21,6 +22,7 @@ interface DocboxProps {
 
 const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
   const [selectedSort, setSelectedSort] = useState<string>("최신순");
   const [startDate, setStartDate] = useState<string>("");
@@ -36,7 +38,9 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
     const fetchAndSyncDocuments = async () => {
       console.log("Fetching and syncing documents...");
       const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
-      if (!sheetId) return;
+      if (!sheetId) {
+        return;
+      }
 
       const data = await getSheetData(sheetId, DOC_SHEET_NAME, 'A:I');
       if (!data || data.length <= 1) {
@@ -71,7 +75,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
 
       const batch = gapi.client.newBatch();
       initialDocs.forEach(doc => {
-        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name' }), { id: doc.id });
+        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name,modifiedTime' }), { id: doc.id });
       });
 
       try {
@@ -87,12 +91,21 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
           }
           
           const latestTitle = response.result.name;
+          const latestModifiedTime = response.result.modifiedTime;
           const docIndex = syncedDocs.findIndex(d => d.id === docId);
 
-          if (docIndex !== -1 && latestTitle && latestTitle !== syncedDocs[docIndex].title) {
-            console.log(`Syncing title for ${docId}: "${syncedDocs[docIndex].title}" -> "${latestTitle}"`);
-            syncedDocs[docIndex].title = latestTitle;
-            updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
+          if (docIndex !== -1) {
+            if (latestTitle && latestTitle !== syncedDocs[docIndex].title) {
+              console.log(`Syncing title for ${docId}: "${syncedDocs[docIndex].title}" -> "${latestTitle}"`);
+              syncedDocs[docIndex].title = latestTitle;
+              updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
+            }
+            if (latestModifiedTime && new Date(latestModifiedTime).getTime() !== new Date(syncedDocs[docIndex].lastModified).getTime()) {
+              const date = new Date(latestModifiedTime);
+              const formattedDate = `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}. ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+              syncedDocs[docIndex].lastModified = formattedDate;
+              updateLastModifiedInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, formattedDate);
+            }
           }
         });
 
@@ -104,19 +117,25 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       }
     };
 
-    // Initial fetch
-    fetchAndSyncDocuments();
+    const loadDocs = async () => {
+      setIsLoading(true);
+      try {
+        await fetchAndSyncDocuments();
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Set up event listener for tab visibility changes
+    loadDocs();
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchAndSyncDocuments();
+        loadDocs();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -137,13 +156,27 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
 
   const filteredDocuments = documents
     .filter((doc) => {
-      const matchesSearch = searchTerm === '' || doc.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = searchTerm === '' || doc.title.replace(/\s/g, '').toLowerCase().includes(searchTerm.replace(/\s/g, '').toLowerCase());
       const matchesAuthor = selectedAuthor === "전체" || doc.author === selectedAuthor;
-      const docDate = new Date(doc.lastModified.replace(/\./g, '-').slice(0, -1));
+      let docDate = null;
+      const match = doc.documentNumber.match(/(\d{8})/);
+      if (match) {
+        const dateStr = match[1];
+        docDate = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
+      }
+
       const start = startDate ? new Date(startDate) : null;
       const end = endDate ? new Date(endDate) : null;
-      if (start && docDate < start) return false;
-      if (end && docDate > end) return false;
+      if (end) {
+        end.setHours(23, 59, 59, 999);
+      }
+
+      if (start || end) {
+        if (!docDate) return false;
+        if (start && docDate < start) return false;
+        if (end && docDate > end) return false;
+      }
+
       return matchesSearch && matchesAuthor;
     })
     .sort((a, b) => {
@@ -258,10 +291,10 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const endIndex = Math.min(currentPage * itemsPerPage, filteredDocuments.length);
 
   return (
-    <div className="content" id="dynamicContent">
+    <div className="content docbox-padding" id="dynamicContent">
       <div className="filter-section">
-        <div className="filter-row">
-          <div className="filter-group">
+        <div className="filter-row" style={{ marginBottom: 0, alignItems: 'flex-end' }}>
+          <div className="filter-group author-sort-filter">
             <div className="filter-label">기안자</div>
             <div className="select-container">
               <select
@@ -274,7 +307,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             </div>
           </div>
 
-          <div className="filter-group">
+          <div className="filter-group author-sort-filter">
             <div className="filter-label">정렬</div>
             <div className="select-container">
               <select
@@ -288,8 +321,6 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
               </select>
             </div>
           </div>
-        </div>
-        <div className="filter-row second-row">
           <div className="filter-group date-group">
             <div className="filter-label">기간</div>
             <div className="date-range">
@@ -301,7 +332,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 onChange={(e) => setStartDate(e.target.value)}
               />
 
-              <span className="date-separator">~</span>
+              <span className="date-separator">~
+              </span>
               <input
                 type="date"
                 className="date-input"
@@ -311,10 +343,9 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
               />
             </div>
           </div>
-
-          <div className="filter-actions">
+          <div className="filter-actions" style={{ marginBottom: '0px' }}>
             <button className="btn-reset" onClick={handleResetFilters}>
-              필터 초기화
+                필터 초기화
             </button>
           </div>
         </div>
@@ -328,7 +359,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         </div>
         <div className="doc-actions">
           <button className="btn-print" onClick={handleShare}>
-            <span className="icon-print"></span>
+            <BiShareAlt color="black" size={14} />
             공유
           </button>
           <button className="btn-delete" onClick={handleDelete}>
@@ -369,7 +400,15 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             <div className="table-header-cell status-cell">상태</div>
           </div>
 
-          {paginatedDocuments.map((doc) => (
+          {isLoading ? (
+            <div className="table-row">
+              <div className="table-cell loading-cell">
+                <BiLoaderAlt className="spinner" />
+                <span>문서를 불러오는 중입니다...</span>
+              </div>
+            </div>
+          ) : paginatedDocuments.length > 0 ? (
+            paginatedDocuments.map((doc) => (
             <div className="table-row" key={doc.id}>
               <div className="table-cell checkbox-cell">
                 <input
@@ -393,7 +432,14 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          ) : (
+            <div className="table-row">
+              <div className="table-cell no-results-cell">
+                문서가 없습니다.
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

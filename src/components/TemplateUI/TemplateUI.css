@@ -39,13 +39,12 @@ margin-right: 12px;
 }
 
 .new-search-input {
-flex: 1;
-border: none;
-font-size: 16px;
-color: #334155;
-background: transparent;
-padding: 10px 0;
-max-width: 600px;
+    flex: 1;
+    border: none;
+    font-size: 14px;
+    color: #334155;
+    background: transparent;
+    padding: 0; /* 패딩은 wrapper에서 제어 */
 }
 
 .new-search-input:focus {
@@ -98,9 +97,10 @@ background-color: #f1f2f4;
 .new-tabs-container {
 display: flex;
 flex-wrap: wrap; /* Allow tags to wrap to the next line */
+margin-top: 20px;
 margin-bottom: 20px;
 padding-bottom: 8px;
-padding-left: 20px;
+padding-left: 30px;
 position: relative;
 }
 
@@ -320,7 +320,7 @@ margin-left: 0;
     position: absolute;
     top: 100%;
     right: 0;
-    background-color: #f8f8f7;
+    background-color: white;
     border-radius: var(--border-radius-md);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 10;
@@ -597,4 +597,70 @@ margin-left: 0;
 .modal-content .modal-actions .cancel-btn {
     background-color: #f1f3f5;
     color: #495057;
+}
+
+.loading-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100px;
+  gap: 10px;
+  color: black;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Permission Modal Styles */
+.modal-description {
+    font-size: 15px;
+    color: #4a5568;
+    margin-bottom: 25px;
+}
+
+.role-selection-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.role-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.role-option:hover {
+    border-color: var(--primary);
+}
+
+.role-option input[type="radio"] {
+    margin-right: 15px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+}
+
+.role-option .role-name {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.role-option input[type="radio"]:checked + .role-name {
+    color: var(--primary);
 }

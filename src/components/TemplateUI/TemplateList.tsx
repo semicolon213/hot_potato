@@ -1,5 +1,6 @@
 import {initialTemplates, type Template} from "../../hooks/useTemplateUI";
 import { SortableTemplateCard } from "./SortableTemplateCard";
+import { BiLoaderAlt } from "react-icons/bi";
 
 interface Props {
     templates: Template[];
@@ -8,14 +9,20 @@ interface Props {
     onEditTemplate?: (template: Template) => void;
     defaultTags: string[];
     onToggleFavorite: (template: Template) => void;
+    isLoading?: boolean;
 }
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);
 
-export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, defaultTags, onToggleFavorite }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, defaultTags, onToggleFavorite, isLoading }: Props) {
     return (
         <div className="new-templates-container">
-            {templates.map((template) => {
+            {isLoading ? (
+              <div className="loading-cell" style={{ gridColumn: '1 / -1' }}>
+                <BiLoaderAlt className="spinner" />
+                <span>템플릿을 가져오는 중입니다...</span>
+              </div>
+            ) : templates.map((template) => {
                 const isFixed = fixedTemplateTypes.includes(template.type);
                 const id = template.rowIndex ? template.rowIndex.toString() : template.title;
 

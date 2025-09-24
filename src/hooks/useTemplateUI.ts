@@ -60,8 +60,21 @@ export function useTemplateUI(
     }, [templates, searchTerm, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
-    const onUseTemplate = useCallback(async (type: string, title: string) => {
-        const SPREADSHEET_NAME = 'hot_potato_DB';
+    const onUseTemplate = useCallback(async (type: string, title: string, role: string) => {
+        
+        const getSpreadsheetNameByRole = (role: string): string => {
+            switch (role) {
+                case 'professor': return '교수용_DB';
+                case 'assistant': return '조교용_DB';
+                case 'executive': return '집행부용_DB';
+                case 'adjunct':
+                case 'student':
+                default:
+                    return 'hot_potato_DB';
+            }
+        };
+
+        const SPREADSHEET_NAME = getSpreadsheetNameByRole(role);
         const DOC_SHEET_NAME = 'documents';
 
         const isDefault = defaultTemplates.some(t => t.type === type);
@@ -102,7 +115,7 @@ export function useTemplateUI(
                     const sheetExists = await checkSheetExists(spreadsheetId, DOC_SHEET_NAME);
                     if (!sheetExists) {
                         await createNewSheet(spreadsheetId, DOC_SHEET_NAME);
-                        const header = [['document_id', 'document_number', 'title', 'author', 'created_at', 'last_modified', 'approval_date', 'status', 'url']];
+                        const header = [['document_id', 'document_number', 'title', 'author', 'created_at', 'last_modified', 'approval_date', 'status', 'url', 'permission']];
                         await appendSheetData(spreadsheetId, DOC_SHEET_NAME, header);
                     }
                     
@@ -127,6 +140,7 @@ export function useTemplateUI(
                         '',
                         '진행중',
                         copiedDocument.webViewLink,
+                        role, // Save the selected role
                     ];
 
                     await appendSheetData(spreadsheetId, DOC_SHEET_NAME, [newRow]);

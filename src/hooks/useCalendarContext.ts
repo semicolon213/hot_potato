@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import { type User } from "../App.tsx";
 
 interface DateInfo {
     year: string;
@@ -17,7 +18,11 @@ export interface Event {
     color?: string;
     colorId?: string;
     isHoliday?: boolean;
+    type?: string;
 }
+
+export type DateRange = { start: Date | null; end: Date | null };
+export type CustomPeriod = { id: string; name: string; period: DateRange };
 
 interface CalendarContextType {
     currentDate: DateInfo;
@@ -39,7 +44,24 @@ interface CalendarContextType {
     setSelectedEvent: (event: Event | null) => void;
     semesterStartDate: Date;
     setSemesterStartDate: (date: Date) => void;
+    finalExamsPeriod: DateRange;
+    setFinalExamsPeriod: (period: DateRange) => void;
+    midtermExamsPeriod: DateRange;
+    setMidtermExamsPeriod: (period: DateRange) => void;
+    gradeEntryPeriod: DateRange;
+    setGradeEntryPeriod: (period: DateRange) => void;
+    customPeriods: CustomPeriod[];
+    setCustomPeriods: (periods: CustomPeriod[]) => void;
     eventColors: any;
+    eventTypes: string[];
+    activeFilters: string[];
+    setActiveFilters: (filters: string[]) => void;
+    user: User | null;
+    goToDate: (date: Date) => void;
+    isFetchingGoogleEvents: boolean;
+    searchTerm: string;
+    setSearchTerm: (term: string) => void;
+    filterLabels: { [key: string]: string };
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);
