@@ -28,7 +28,7 @@ import Proceedings from "./pages/proceedings";
 import { getSheetData } from "./utils/googleSheetUtils";
 
 import type { Template } from "./hooks/useTemplateUI";
-import type { DateRange, CustomPeriod } from "./hooks/useCalendarContext";
+import type { DateRange, CustomPeriod, Event } from "./hooks/useCalendarContext";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -167,17 +167,6 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
     return googleAPIInitPromise;
 };
 
-export interface Event {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-  colorId: string;
-  startDateTime: string;
-  endDateTime: string;
-}
-
 // Post interface shared between Board and App
 export interface Post {
   id: string;
@@ -188,6 +177,7 @@ export interface Post {
   likes: number;
   contentPreview: string;
 }
+
 
 
 // User interface from feature/login

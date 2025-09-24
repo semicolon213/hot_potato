@@ -220,10 +220,20 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     const filteredEvents = activeFilters.includes('all')
         ? sortedEvents
         : sortedEvents.filter(event => {
-            if (event.isHoliday && activeFilters.includes('holiday')) return true;
-            // @ts-ignore
-            const eventType = event.type as string;
-            return activeFilters.includes(eventType);
+            const eventType = event.type || '';
+            // If any of the active filters match the event's type, show it.
+            if (activeFilters.includes(eventType)) {
+                return true;
+            }
+            // Special case for holidays which have a boolean flag
+            if (event.isHoliday && activeFilters.includes('holiday')) {
+                return true;
+            }
+            // Special case for the general 'exam' filter
+            if (activeFilters.includes('exam') && (eventType === 'midterm_exam' || eventType === 'final_exam')) {
+                return true;
+            }
+            return false;
         });
 
     return filteredEvents
@@ -493,6 +503,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     activeFilters,
     setActiveFilters,
     user,
+    goToDate: setCurrentDate,
   };
 
   return (

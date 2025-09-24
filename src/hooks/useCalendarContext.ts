@@ -18,6 +18,7 @@ export interface Event {
     color?: string;
     colorId?: string;
     isHoliday?: boolean;
+    type?: string;
 }
 
 export type DateRange = { start: Date | null; end: Date | null };
@@ -56,6 +57,7 @@ interface CalendarContextType {
     activeFilters: string[];
     setActiveFilters: (filters: string[]) => void;
     user: User | null;
+    goToDate: (date: Date) => void;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

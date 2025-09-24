@@ -44,6 +44,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         activeFilters,
         setActiveFilters,
         user,
+        goToDate,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -109,6 +110,30 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             console.log("No valid '개강일' event found to update semesterStartDate.");
         }
     }, [events, setSemesterStartDate]);
+
+    useEffect(() => {
+        const isMidtermChecked = activeFilters.includes('midterm_exam');
+        const isFinalChecked = activeFilters.includes('final_exam');
+
+        const midtermDate = midtermExamsPeriod?.start;
+        const finalDate = finalExamsPeriod?.start;
+
+        if (isMidtermChecked && !isFinalChecked && midtermDate) {
+            goToDate(midtermDate);
+        } else if (!isMidtermChecked && isFinalChecked && finalDate) {
+            goToDate(finalDate);
+        } else if (isMidtermChecked && isFinalChecked && midtermDate && finalDate) {
+            const today = new Date();
+            const midtermDiff = Math.abs(midtermDate.getTime() - today.getTime());
+            const finalDiff = Math.abs(finalDate.getTime() - today.getTime());
+
+            if (midtermDiff <= finalDiff) {
+                goToDate(midtermDate);
+            } else {
+                goToDate(finalDate);
+            }
+        }
+    }, [activeFilters, midtermExamsPeriod, finalExamsPeriod, goToDate]);
 
     const handleMoreClick = (dayEvents: Event[], date: string, e: React.MouseEvent) => {
         const rect = e.currentTarget.getBoundingClientRect();
