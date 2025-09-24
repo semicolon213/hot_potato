@@ -93,21 +93,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     useEffect(() => {
-        console.log("Checking for '개강일' event in updated events array:", events);
         const semesterStartEvent = events.find(event => event.title === '개강일');
-        console.log("Found '개강일' event:", semesterStartEvent);
 
         if (semesterStartEvent && semesterStartEvent.startDate) {
-            console.log("Attempting to set semesterStartDate with:", semesterStartEvent.startDate);
             const newStartDate = new Date(semesterStartEvent.startDate);
             if (!isNaN(newStartDate.getTime())) {
                 setSemesterStartDate(newStartDate);
-                console.log("Successfully set semesterStartDate to:", newStartDate);
-            } else {
-                console.error("'개강일' event's startDate resulted in an Invalid Date:", semesterStartEvent.startDate);
             }
-        } else {
-            console.log("No valid '개강일' event found to update semesterStartDate.");
         }
 
         const midtermEvent = events.find(event => event.title === '중간고사');
@@ -132,6 +124,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     useEffect(() => {
         const isMidtermChecked = activeFilters.includes('midterm_exam');
         const isFinalChecked = activeFilters.includes('final_exam');
+
+        // If no specific exam is checked, navigate back to today's date.
+        if (!isMidtermChecked && !isFinalChecked) {
+            goToDate(new Date()); // Go back to today
+            return;
+        }
 
         const midtermDate = midtermExamsPeriod?.start;
         const finalDate = finalExamsPeriod?.start;
