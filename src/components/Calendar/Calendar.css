@@ -141,8 +141,7 @@
   display: flex;
   align-items: center;
   height: 20px;
-  background-color: var(--secondary-light); /* 기본 배경색 추가 */
-  color: var(--text-dark); /* 기본 글자색 추가 */
+  color: white; /* 글자색 흰색으로 변경 */
 }
 
 .more-button {

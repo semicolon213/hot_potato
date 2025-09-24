@@ -19,8 +19,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const [endTime, setEndTime] = useState('00:00');
   const [saveTarget, setSaveTarget] = useState<'google' | 'sheet'>('google');
   const [tag, setTag] = useState('event');
+  const [isCustomTag, setIsCustomTag] = useState(false);
+  const [customTag, setCustomTag] = useState('');
+  const [customColor, setCustomColor] = useState('#7986CB');
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const isEditMode = !!eventToEdit;
+
+  const tenColors = ['#7986CB', '#33B679', '#8E24AA', '#E67C73', '#F6BF26', '#F4511E', '#039BE5', '#616161', '#3F51B5', '#0B8043'];
 
   const tagLabels: { [key: string]: string } = {
       holiday: '휴일/휴강',
@@ -41,7 +47,15 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
       if (eventToEdit.id.startsWith('cal-')) {
           setSaveTarget('sheet');
-          setTag(eventToEdit.type || 'event');
+          const isPredefined = eventTypes.includes(eventToEdit.type || '');
+          if (isPredefined) {
+              setTag(eventToEdit.type || 'event');
+              setIsCustomTag(false);
+          } else {
+              setIsCustomTag(true);
+              setCustomTag(eventToEdit.type || '');
+              setCustomColor(eventToEdit.color || '#7986CB');
+          }
       } else {
           setSaveTarget('google');
       }
@@ -52,7 +66,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         setEndTime(eventToEdit.endDateTime.split('T')[1].substring(0, 5));
       }
     }
-  }, [eventToEdit, isEditMode]);
+  }, [eventToEdit, isEditMode, eventTypes]);
 
   useEffect(() => {
     if (showTime) {
@@ -68,9 +82,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       };
 
       if (saveTarget === 'sheet') {
-          eventData.type = tag;
+          if (isCustomTag) {
+              eventData.type = customTag;
+              eventData.color = customColor;
+          } else {
+              eventData.type = tag;
+          }
       } else {
-          eventData.colorId = '1'; // Default color for personal events
+          eventData.colorId = '9'; // Default color for personal events
       }
 
       if (showTime) {
@@ -127,22 +146,46 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         )}
 
         {saveTarget === 'sheet' && (
-            <div className="tag-selection-group">
-                {eventTypes.map(type => (
-                    <button
-                        key={type}
-                        className={`target-button ${tag === type ? 'active' : ''}`}
-                        onClick={() => setTag(type)}
-                        style={tag === type ? {
-                            backgroundColor: eventTypeStyles[type]?.color || '#343a40',
-                            color: 'white',
-                            borderColor: eventTypeStyles[type]?.color || '#343a40'
-                        } : {}}
-                    >
-                        {tagLabels[type] || type}
-                    </button>
-                ))}
-            </div>
+            <>
+                <div className="tag-selection-group">
+                    {eventTypes.map(type => (
+                        <button
+                            key={type}
+                            className={`target-button ${!isCustomTag && tag === type ? 'active' : ''}`}
+                            onClick={() => { setTag(type); setIsCustomTag(false); }}
+                            style={!isCustomTag && tag === type ? {
+                                backgroundColor: eventTypeStyles[type]?.color || '#343a40',
+                                color: 'white',
+                                borderColor: eventTypeStyles[type]?.color || '#343a40'
+                            } : {}}
+                        >
+                            {tagLabels[type] || type}
+                        </button>
+                    ))}
+                    <button className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                </div>
+                {isCustomTag && (
+                    <div className="custom-tag-container">
+                        <input
+                            type="text"
+                            placeholder="태그 이름 입력"
+                            value={customTag}
+                            onChange={(e) => setCustomTag(e.target.value)}
+                            className="custom-tag-input"
+                        />
+                        <div className="custom-color-picker">
+                            <button className="color-display" style={{ backgroundColor: customColor }} onClick={() => setShowColorPicker(!showColorPicker)}></button>
+                            {showColorPicker && (
+                                <div className="color-palette-popup">
+                                    {tenColors.map(c => (
+                                        <div key={c} className="color-swatch-popup" style={{ backgroundColor: c }} onClick={() => { setCustomColor(c); setShowColorPicker(false); }}></div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </>
         )}
 
         <label>

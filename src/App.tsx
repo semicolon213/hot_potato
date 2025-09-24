@@ -177,6 +177,7 @@ export interface Event {
   startDateTime: string;
   endDateTime: string;
   type?: string;
+  color?: string;
 }
 
 // Post interface shared between Board and App
@@ -787,10 +788,11 @@ const App: React.FC = () => {
                             startDate: startDate,
                             endDate: endDate,
                             description: row[4] || '',
-                            colorId: row[5] || '',
+                            color: row[5] || '', // Read from colorId_calendar column
                             startDateTime: startDateTime,
                             endDateTime: row[7] || '',
                             type: row[8] || '',
+                            colorId: '',
                         };
                     });
                 }
@@ -835,10 +837,10 @@ const App: React.FC = () => {
             'startDate_calendar': eventData.startDate,
             'endDate_calendar': eventData.endDate,
             'description_calendar': eventData.description,
-            'colorId_calendar': eventData.colorId,
             'startDateTime_calendar': eventData.startDateTime,
             'endDateTime_calendar': eventData.endDateTime,
             'tag_calendar': eventData.type || '',
+            'colorId_calendar': (eventData as any).color || '',
           };
 
           await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);

@@ -250,13 +250,15 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
     return filteredEvents
       .map(event => {
-        let color = calendarColor || '#7986CB'; // Default color
-        if (event.type && eventTypeStyles[event.type]) {
+        let color;
+        if (event.color) { // Custom color from sheet
+            color = event.color;
+        } else if (event.type && eventTypeStyles[event.type]) { // Sheet events by type
             color = eventTypeStyles[event.type].color;
-        } else if (event.colorId && eventColors && eventColors[event.colorId]) {
-            color = eventColors[event.colorId].background;
-        } else if (event.isHoliday) {
-            color = '#F08080'; // Specific holiday color
+        } else if (event.isHoliday) { // Holiday events
+            color = '#F08080';
+        } else { // Personal Google Calendar events
+            color = '#7986CB';
         }
 
         return {
