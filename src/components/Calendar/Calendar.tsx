@@ -45,6 +45,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setActiveFilters,
         user,
         goToDate,
+        searchTerm,
+        setSearchTerm,
+        filterLabels,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -61,20 +64,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const moreButtonRef = useRef<HTMLButtonElement>(null);
-    const filterLabels: { [key: string]: string } = {
-        all: '전체',
-        holiday: '휴일/휴강',
-        exam: '시험',
-        midterm_exam: '중간고사',
-        final_exam: '기말고사',
-        event: '행사',
-        makeup: '보강',
-        meeting: '회의',
-    };
+    const [inputValue, setInputValue] = useState(searchTerm);
+
+    useEffect(() => {
+        setInputValue(searchTerm);
+    }, [searchTerm]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
             setActiveFilters(['all']);
+            goToDate(new Date()); // Navigate home
             return;
         }
 
@@ -84,37 +83,34 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 ? activeFilters.filter(f => f !== filter) // Deselect if already selected
                 : [...activeFilters, filter]; // Add to selection
 
-        // If all filters are deselected, select 'all' again
+        // If all filters are deselected, select 'all' again and navigate home
         if (newFilters.length === 0) {
             setActiveFilters(['all']);
+            goToDate(new Date());
         } else {
             setActiveFilters(newFilters);
         }
     };
 
     useEffect(() => {
-        console.log("Checking for '개강일' event in updated events array:", events);
         const semesterStartEvent = events.find(event => event.title === '개강일');
-        console.log("Found '개강일' event:", semesterStartEvent);
 
         if (semesterStartEvent && semesterStartEvent.startDate) {
-            console.log("Attempting to set semesterStartDate with:", semesterStartEvent.startDate);
             const newStartDate = new Date(semesterStartEvent.startDate);
             if (!isNaN(newStartDate.getTime())) {
                 setSemesterStartDate(newStartDate);
-                console.log("Successfully set semesterStartDate to:", newStartDate);
-            } else {
-                console.error("'개강일' event's startDate resulted in an Invalid Date:", semesterStartEvent.startDate);
             }
-        } else {
-            console.log("No valid '개강일' event found to update semesterStartDate.");
         }
 
         const midtermEvent = events.find(event => event.title === '중간고사');
         if (midtermEvent && midtermEvent.startDate && midtermEvent.endDate) {
             const newMidtermStart = new Date(midtermEvent.startDate);
             const newMidtermEnd = new Date(midtermEvent.endDate);
-            if (!isNaN(newMidtermStart.getTime()) && !isNaN(newMidtermEnd.getTime())) {
+            if (
+                !isNaN(newMidtermStart.getTime()) &&
+                !isNaN(newMidtermEnd.getTime()) &&
+                (midtermExamsPeriod.start?.getTime() !== newMidtermStart.getTime() || midtermExamsPeriod.end?.getTime() !== newMidtermEnd.getTime())
+            ) {
                 setMidtermExamsPeriod({ start: newMidtermStart, end: newMidtermEnd });
             }
         }
@@ -123,11 +119,15 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         if (finalEvent && finalEvent.startDate && finalEvent.endDate) {
             const newFinalStart = new Date(finalEvent.startDate);
             const newFinalEnd = new Date(finalEvent.endDate);
-            if (!isNaN(newFinalStart.getTime()) && !isNaN(newFinalEnd.getTime())) {
+            if (
+                !isNaN(newFinalStart.getTime()) &&
+                !isNaN(newFinalEnd.getTime()) &&
+                (finalExamsPeriod.start?.getTime() !== newFinalStart.getTime() || finalExamsPeriod.end?.getTime() !== newFinalEnd.getTime())
+            ) {
                 setFinalExamsPeriod({ start: newFinalStart, end: newFinalEnd });
             }
         }
-    }, [events, setSemesterStartDate, setMidtermExamsPeriod, setFinalExamsPeriod]);
+    }, [events, setSemesterStartDate, midtermExamsPeriod, setMidtermExamsPeriod, finalExamsPeriod, setFinalExamsPeriod]);
 
     useEffect(() => {
         const isMidtermChecked = activeFilters.includes('midterm_exam');
@@ -381,7 +381,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     return (
         <>
             <div className="calendar-header-container">
-                <div className='calendar-header-top'>
+                <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
                         <h2>
@@ -392,11 +392,29 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
+                            <i>&#x1F50D;</i>
+                            <input
+                                type="text"
+                                placeholder="일정 검색..."
+                                className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const terms = inputValue.split(' ').filter(t => t.length > 0);
+                                        const formattedTerms = terms.map(t => t.startsWith('#') ? t : `#${t}`);
+                                        setSearchTerm(formattedTerms.join(' '));
+                                    }
+                                }}
+                            />
+                        </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
-                    <div className="header-right-controls">
+                    <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '-7px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
+                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                         )}
                         <div className="view-switcher">
                             <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>

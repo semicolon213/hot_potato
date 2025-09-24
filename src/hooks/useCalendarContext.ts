@@ -58,6 +58,10 @@ interface CalendarContextType {
     setActiveFilters: (filters: string[]) => void;
     user: User | null;
     goToDate: (date: Date) => void;
+    isFetchingGoogleEvents: boolean;
+    searchTerm: string;
+    setSearchTerm: (term: string) => void;
+    filterLabels: { [key: string]: string };
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

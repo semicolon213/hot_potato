@@ -68,8 +68,20 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
+  const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
+  const filterLabels: { [key: string]: string } = {
+      all: '전체',
+      holiday: '휴일/휴강',
+      exam: '시험',
+      midterm_exam: '중간고사',
+      final_exam: '기말고사',
+      event: '행사',
+      makeup: '보강',
+      meeting: '회의',
+  };
 
   useEffect(() => {
     if (!accessToken) return;
@@ -116,6 +128,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     if (!accessToken) return;
 
     const fetchGoogleEvents = async () => {
+      setIsFetchingGoogleEvents(true);
       try {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -194,6 +207,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
       } catch (error) {
         console.error("Failed to fetch Google Calendar events:", error);
         setGoogleEvents([]);
+      } finally {
+        setIsFetchingGoogleEvents(false);
       }
     };
 
@@ -218,7 +233,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         return durationB - durationA;
     });
 
-    const filteredEvents = activeFilters.includes('all')
+    const filteredByTags = activeFilters.includes('all')
         ? sortedEvents
         : sortedEvents.filter(event => {
             const eventType = event.type || '';
@@ -248,7 +263,29 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             return isVisible;
         });
 
-    return filteredEvents
+    const filteredBySearch = searchTerm
+        ? filteredByTags.filter(event => {
+            const queries = searchTerm.toLowerCase().split(' ').filter(q => q.startsWith('#'));
+            
+            if (queries.length === 0) {
+                // If there are no hashtag queries, just do a simple text search on the whole term
+                return event.title.toLowerCase().includes(searchTerm.toLowerCase());
+            }
+
+            // Event must match ALL hashtag queries
+            return queries.every(query => {
+                const cleanQuery = query.substring(1);
+                if (cleanQuery === '') return true;
+
+                const title = event.title.toLowerCase();
+                const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
+
+                return title.includes(cleanQuery) || typeLabel.includes(cleanQuery);
+            });
+          })
+        : filteredByTags;
+
+    return filteredBySearch
       .map(event => {
         let color;
         if (event.color) { // Custom color from sheet
@@ -266,7 +303,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
           color: color,
         };
       });
-  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters]);
+  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters, searchTerm, filterLabels]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -529,6 +566,10 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setActiveFilters,
     user,
     goToDate: setCurrentDate,
+    isFetchingGoogleEvents,
+    searchTerm,
+    setSearchTerm,
+    filterLabels,
   };
 
   return (

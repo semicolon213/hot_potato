@@ -39,6 +39,10 @@
   font-weight: 400;
 }
 
+.search-input.has-hashtags {
+    color: #808080; /* light gray */
+}
+
 .search-input::placeholder {
   color: #666666;
   font-weight: 400;
