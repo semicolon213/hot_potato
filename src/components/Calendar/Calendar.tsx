@@ -109,7 +109,25 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         } else {
             console.log("No valid '개강일' event found to update semesterStartDate.");
         }
-    }, [events, setSemesterStartDate]);
+
+        const midtermEvent = events.find(event => event.title === '중간고사');
+        if (midtermEvent && midtermEvent.startDate && midtermEvent.endDate) {
+            const newMidtermStart = new Date(midtermEvent.startDate);
+            const newMidtermEnd = new Date(midtermEvent.endDate);
+            if (!isNaN(newMidtermStart.getTime()) && !isNaN(newMidtermEnd.getTime())) {
+                setMidtermExamsPeriod({ start: newMidtermStart, end: newMidtermEnd });
+            }
+        }
+
+        const finalEvent = events.find(event => event.title === '기말고사');
+        if (finalEvent && finalEvent.startDate && finalEvent.endDate) {
+            const newFinalStart = new Date(finalEvent.startDate);
+            const newFinalEnd = new Date(finalEvent.endDate);
+            if (!isNaN(newFinalStart.getTime()) && !isNaN(newFinalEnd.getTime())) {
+                setFinalExamsPeriod({ start: newFinalStart, end: newFinalEnd });
+            }
+        }
+    }, [events, setSemesterStartDate, setMidtermExamsPeriod, setFinalExamsPeriod]);
 
     useEffect(() => {
         const isMidtermChecked = activeFilters.includes('midterm_exam');

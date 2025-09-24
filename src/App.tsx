@@ -759,7 +759,7 @@ const App: React.FC = () => {
             const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
                 const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: spreadsheetId,
-                    range: `${calendarSheetName}!A:H`,
+                    range: `${calendarSheetName}!A:I`,
                 });
                 const data = response.result.values;
 
