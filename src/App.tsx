@@ -892,12 +892,12 @@ const App: React.FC = () => {
 
         // 중간고사
         if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
-            eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'midterm_exam' });
+            eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'exam' });
         }
 
         // 기말고사
         if (finalExamsPeriod.start && finalExamsPeriod.end) {
-            eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'final_exam' });
+            eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'exam' });
         }
 
         // 성적입력 및 강의평가

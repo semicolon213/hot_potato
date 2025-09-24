@@ -221,19 +221,30 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         ? sortedEvents
         : sortedEvents.filter(event => {
             const eventType = event.type || '';
-            // If any of the active filters match the event's type, show it.
-            if (activeFilters.includes(eventType)) {
-                return true;
+            const eventTitle = event.title || '';
+
+            // Start with false, and turn true if any active filter matches.
+            let isVisible = false;
+
+            for (const filter of activeFilters) {
+                switch (filter) {
+                    case 'holiday':
+                        if (event.isHoliday) isVisible = true;
+                        break;
+                    case 'midterm_exam':
+                        if (eventType === 'exam' && eventTitle === '중간고사') isVisible = true;
+                        break;
+                    case 'final_exam':
+                        if (eventType === 'exam' && eventTitle === '기말고사') isVisible = true;
+                        break;
+                    default:
+                        // For all other filters ('event', 'meeting', etc.)
+                        if (eventType === filter) isVisible = true;
+                        break;
+                }
+                if (isVisible) break; // Found a match, no need to check other filters
             }
-            // Special case for holidays which have a boolean flag
-            if (event.isHoliday && activeFilters.includes('holiday')) {
-                return true;
-            }
-            // Special case for the general 'exam' filter
-            if (activeFilters.includes('exam') && (eventType === 'midterm_exam' || eventType === 'final_exam')) {
-                return true;
-            }
-            return false;
+            return isVisible;
         });
 
     return filteredEvents
