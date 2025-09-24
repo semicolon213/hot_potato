@@ -6,7 +6,7 @@
 }
 
 .widget {
-    background-color: var(--white);
+    background-color: #f8f8f7;
     border-radius: var(--border-radius-md);
     box-shadow: none;
     padding: 20px;

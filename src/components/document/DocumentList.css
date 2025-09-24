@@ -120,7 +120,7 @@
 
 .status-text {
   font-size: 11px;
-  color: white;
+  color: #f8f8f7;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
@@ -179,6 +179,6 @@
 }
 
 .section-header .view-all-button:hover {
-  color: white;
+  color: #f8f8f7;
   background-color: transparent;
 }

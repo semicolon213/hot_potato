@@ -20,7 +20,8 @@ body {
     overflow-y: auto;
     position: relative;
     z-index: 1;
-    background-color: var(--white);
+    background-color: #f8f8f7;
+    height: 100%;
 }
 
 .dashboard-header {
@@ -45,7 +46,7 @@ body {
 
 .add-widget-btn {
     background: var(--primary);
-    color: white;
+    color: #f8f8f7;
     border: none;
     padding: 10px 20px;
     border-radius: var(--border-radius-sm);
@@ -64,12 +65,12 @@ body {
 .add-widget-btn i {
     margin-right: 8px;
     font-size: 16px;
-    color: white;
+    color: ffffff;
 }
 
 .sync-btn {
     background: var(--success);
-    color: white;
+    color: #f8f8f7;
     border: none;
     padding: 10px 20px;
     border-radius: var(--border-radius-sm);
@@ -88,7 +89,7 @@ body {
 .sync-btn i {
     margin-right: 8px;
     font-size: 16px;
-    color: white;
+    color: #f8f8f7;
 }
 
 .sync-btn:disabled {
@@ -114,7 +115,7 @@ body {
 
 .empty-message {
     text-align: center;
-    background: var(--white);
+    background: #f8f8f7;
     padding: 40px;
     border-radius: var(--border-radius-lg);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -144,7 +145,7 @@ body {
 
 .add-first-widget-btn {
     background: linear-gradient(135deg, var(--primary) 0%, var(--text-dark) 100%);
-    color: white;
+    color: #f8f8f7;
     border: none;
     padding: 12px 24px;
     border-radius: var(--border-radius-md);

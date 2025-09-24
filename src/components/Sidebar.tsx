@@ -5,7 +5,6 @@ import {
   BiFileBlank, 
   BiCalendar, 
   BiUser, 
-  BiCog, 
   BiShield,
   BiChevronDown
 } from "react-icons/bi";
@@ -224,18 +223,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
           </div>
         </div>
       )}
-
-      <div className="menu-section">
-        <div className="menu-container">
-          <div
-            className="menu-item"
-            onClick={() => handleMenuClick("preferences")}
-          >
-            <BiCog className="menu-icon" />
-            <div className="menu-text">환경설정</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

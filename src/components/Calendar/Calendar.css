@@ -51,7 +51,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background-color: var(--white);
+  background-color: #f8f8f7;
   padding: 0 0;
   border-radius: var(--border-radius-lg);
 }
@@ -151,7 +151,7 @@
 
 .event-item.selected {
   background-color: var(--primary);
-  color: #fefefe;
+  color: #f8f8f7;
 }
 
 .calendar-header-top {
@@ -177,7 +177,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  background-color: var(--white);
+  background-color: #f8f8f7;
 }
 
 .view-switcher button.active {
@@ -203,7 +203,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  background-color: var(--white);
+  background-color: #f8f8f7;
   white-space: nowrap;
 }
 

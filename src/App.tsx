@@ -18,7 +18,6 @@ import DocumentManagement from "./pages/DocumentManagement";
 import EmptyDocument from "./pages/EmptyDocument";
 import Mypage from "./pages/Mypage";
 import NewDocument from "./pages/NewDocument";
-import Preferences from "./pages/Preferences";
 import Board from "./pages/Board/Board";
 import NewBoardPost from "./pages/Board/NewBoardPost";
 import AnnouncementsPage from "./pages/Announcements/Announcements";

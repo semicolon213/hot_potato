@@ -12,7 +12,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: #f8f8f7;
   padding: 20px;
   border-radius: var(--border-radius-md);
   min-width: 400px;
@@ -58,7 +58,7 @@
 
 .time-add-button {
     background-color: var(--text-light);
-    color: white;
+    color: #f8f8f7;
 }
 
 .time-add-button:hover {
@@ -67,7 +67,7 @@
 
 .submit-button {
     background-color: var(--primary);
-    color: white;
+    color: #f8f8f7;
 }
 
 .submit-button:hover {

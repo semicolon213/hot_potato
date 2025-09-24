@@ -1953,7 +1953,7 @@ function generateEmailTemplate(userEmail, adminKey) {
         }
         .copy-btn { 
             background-color: #007bff; 
-            color: white; 
+            color: #f8f8f7; 
             border: none; 
             padding: 10px 20px; 
             border-radius: 5px; 
