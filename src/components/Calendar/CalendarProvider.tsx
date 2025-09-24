@@ -1,33 +1,87 @@
 import React, { useState, useMemo, useEffect, type ReactNode } from "react";
-import { CalendarContext, type Event } from "../../hooks/useCalendarContext.ts";
+import { CalendarContext, type Event, type DateRange, type CustomPeriod } from "../../hooks/useCalendarContext.ts";
+import { type User } from "../../App.tsx";
+
+const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
+    holiday: { color: '#EA4335', icon: '🏖️' },
+    exam: { color: '#4285F4', icon: '✍️' },
+    assignment: { color: '#FBBC05', icon: '🔔' },
+    event: { color: '#FBBC05', icon: '🎉' }, // Changed to Yellow
+    makeup: { color: '#A142F4', icon: '✨' },
+    meeting: { color: '#34A853', icon: '🤝' }, // Changed to Green
+    default: { color: '#7986CB', icon: '' },
+};
+
+const getEventStyle = (event: Event) => {
+    if (event.isHoliday) {
+        return eventTypeStyles.holiday;
+    }
+    const type = event.type as keyof typeof eventTypeStyles;
+    return eventTypeStyles[type] || eventTypeStyles.default;
+};
 
 interface CalendarProviderProps {
   children: ReactNode;
+  user: User | null;
   accessToken: string | null;
   sheetEvents: Event[];
   addSheetEvent: (event: Omit<Event, 'id'>) => Promise<void>;
   updateSheetEvent: (eventId: string, event: Omit<Event, 'id'>) => Promise<void>;
   deleteSheetEvent: (eventId: string) => Promise<void>;
+  semesterStartDate: Date;
+  setSemesterStartDate: (date: Date) => void;
+  finalExamsPeriod: DateRange;
+  setFinalExamsPeriod: (period: DateRange) => void;
+  midtermExamsPeriod: DateRange;
+  setMidtermExamsPeriod: (period: DateRange) => void;
+  gradeEntryPeriod: DateRange;
+  setGradeEntryPeriod: (period: DateRange) => void;
+  customPeriods: CustomPeriod[];
+  setCustomPeriods: (periods: CustomPeriod[]) => void;
 }
 
 const CalendarProvider: React.FC<CalendarProviderProps> = ({
   children,
+  user,
   accessToken,
   sheetEvents,
   addSheetEvent,
   updateSheetEvent,
-  deleteSheetEvent
+  deleteSheetEvent,
+  semesterStartDate,
+  setSemesterStartDate,
+  finalExamsPeriod,
+  setFinalExamsPeriod,
+  midtermExamsPeriod,
+  setMidtermExamsPeriod,
+  gradeEntryPeriod,
+  setGradeEntryPeriod,
+  customPeriods,
+  setCustomPeriods,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [semesterStartDate, setSemesterStartDate] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
   const [eventColors, setEventColors] = useState<any>({});
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
+  const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
+  const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
+  const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
+  const filterLabels: { [key: string]: string } = {
+      all: '전체',
+      holiday: '휴일/휴강',
+      exam: '시험',
+      midterm_exam: '중간고사',
+      final_exam: '기말고사',
+      event: '행사',
+      makeup: '보강',
+      meeting: '회의',
+  };
 
   useEffect(() => {
     if (!accessToken) return;
@@ -74,6 +128,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     if (!accessToken) return;
 
     const fetchGoogleEvents = async () => {
+      setIsFetchingGoogleEvents(true);
       try {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -115,16 +170,21 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             }
 
             let endDate = endStr.split('T')[0];
-            if (item.start.date && item.start.date === item.end.date) {
-              const date = new Date(endDate);
-              date.setDate(date.getDate() + 1);
-              endDate = date.toISOString().split('T')[0];
+            const startDate = startStr.split('T')[0];
+
+            // If it's an all-day event, the end date from Google is exclusive.
+            // We need to make it inclusive for our rendering logic (<=).
+            // Only do this if the end date is after the start date, to handle malformed events.
+            if (item.start.date && endDate > startDate) { // Check if it's an all-day event
+                const date = new Date(endDate);
+                date.setDate(date.getDate() - 1); // Subtract one day
+                endDate = date.toISOString().split('T')[0];
             }
 
             return {
               id: item.id,
               title: item.summary || 'No Title',
-              startDate: startStr.split('T')[0],
+              startDate: startDate,
               endDate: endDate,
               startDateTime: item.start.dateTime,
               endDateTime: item.end.dateTime,
@@ -147,6 +207,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
       } catch (error) {
         console.error("Failed to fetch Google Calendar events:", error);
         setGoogleEvents([]);
+      } finally {
+        setIsFetchingGoogleEvents(false);
       }
     };
 
@@ -154,14 +216,94 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate, refreshKey]);
 
   const events = useMemo(() => {
-    const combinedEvents = [...googleEvents, ...sheetEvents];
+    const combinedEvents = [...sheetEvents, ...googleEvents];
 
-    return combinedEvents
-      .map(event => ({
-        ...event,
-        color: event.isHoliday ? '#F08080' : ((eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB')),
-      }));
-  }, [googleEvents, sheetEvents, eventColors, calendarColor]);
+    const sortedEvents = combinedEvents.sort((a, b) => {
+        const startDateA = new Date(a.startDate).getTime();
+        const startDateB = new Date(b.startDate).getTime();
+
+        if (startDateA !== startDateB) {
+            return startDateA - startDateB;
+        }
+
+        // If start dates are the same, sort by duration descending
+        const durationA = new Date(a.endDate).getTime() - startDateA;
+        const durationB = new Date(b.endDate).getTime() - startDateB;
+        
+        return durationB - durationA;
+    });
+
+    const filteredByTags = activeFilters.includes('all')
+        ? sortedEvents
+        : sortedEvents.filter(event => {
+            const eventType = event.type || '';
+            const eventTitle = event.title || '';
+
+            // Start with false, and turn true if any active filter matches.
+            let isVisible = false;
+
+            for (const filter of activeFilters) {
+                switch (filter) {
+                    case 'holiday':
+                        if (event.isHoliday) isVisible = true;
+                        break;
+                    case 'midterm_exam':
+                        if (eventType === 'exam' && eventTitle === '중간고사') isVisible = true;
+                        break;
+                    case 'final_exam':
+                        if (eventType === 'exam' && eventTitle === '기말고사') isVisible = true;
+                        break;
+                    default:
+                        // For all other filters ('event', 'meeting', etc.)
+                        if (eventType === filter) isVisible = true;
+                        break;
+                }
+                if (isVisible) break; // Found a match, no need to check other filters
+            }
+            return isVisible;
+        });
+
+    const filteredBySearch = searchTerm
+        ? filteredByTags.filter(event => {
+            const queries = searchTerm.toLowerCase().split(' ').filter(q => q.startsWith('#'));
+            
+            if (queries.length === 0) {
+                // If there are no hashtag queries, just do a simple text search on the whole term
+                return event.title.toLowerCase().includes(searchTerm.toLowerCase());
+            }
+
+            // Event must match ALL hashtag queries
+            return queries.every(query => {
+                const cleanQuery = query.substring(1);
+                if (cleanQuery === '') return true;
+
+                const title = event.title.toLowerCase();
+                const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
+
+                return title.includes(cleanQuery) || typeLabel.includes(cleanQuery);
+            });
+          })
+        : filteredByTags;
+
+    return filteredBySearch
+      .map(event => {
+        let color;
+        if (event.color) { // Custom color from sheet
+            color = event.color;
+        } else if (event.type && eventTypeStyles[event.type]) { // Sheet events by type
+            color = eventTypeStyles[event.type].color;
+        } else if (event.isHoliday) { // Holiday events
+            color = '#F08080';
+        } else { // Personal Google Calendar events
+            color = '#7986CB';
+        }
+
+        return {
+          ...event,
+          color: color,
+        };
+      });
+  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters, searchTerm, filterLabels]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -198,27 +340,33 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     }
 
     try {
-      const response = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/primary/events`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+                  const requestBody: any = {
               summary: event.title,
               description: event.description,
-              start: {
-                date: event.startDate,
-              },
-              end: {
-                date: event.endDate,
-              },
               colorId: event.colorId,
-            }),
-          }
-      );
+            };
+
+            if (event.startDateTime && event.endDateTime) {
+              requestBody.start = { dateTime: event.startDateTime, timeZone: 'Asia/Seoul' };
+              requestBody.end = { dateTime: event.endDateTime, timeZone: 'Asia/Seoul' };
+            } else {
+              const exclusiveEndDate = new Date(event.endDate);
+              exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+              requestBody.start = { date: event.startDate };
+              requestBody.end = { date: exclusiveEndDate.toISOString().split('T')[0] };
+            }
+
+            const response = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                }
+            );
 
       if (!response.ok) {
         throw new Error(`Error creating Google Calendar event: ${response.statusText}`);
@@ -233,7 +381,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   };
 
   const addEvent = (event: Omit<Event, 'id'>) => {
-    addSheetEvent(event);
+    addGoogleEvent(event);
   };
 
   const updateGoogleEvent = async (eventId: string, event: Omit<Event, 'id'>) => {
@@ -243,6 +391,22 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     }
 
     try {
+      const requestBody: any = {
+        summary: event.title,
+        description: event.description,
+        colorId: event.colorId,
+      };
+
+      if (event.startDateTime && event.endDateTime) {
+        requestBody.start = { dateTime: event.startDateTime, timeZone: 'Asia/Seoul' };
+        requestBody.end = { dateTime: event.endDateTime, timeZone: 'Asia/Seoul' };
+      } else {
+        const exclusiveEndDate = new Date(event.endDate);
+        exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+        requestBody.start = { date: event.startDate };
+        requestBody.end = { date: exclusiveEndDate.toISOString().split('T')[0] };
+      }
+
       const response = await fetch(
           `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
           {
@@ -251,17 +415,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              summary: event.title,
-              description: event.description,
-              start: {
-                date: event.startDate,
-              },
-              end: {
-                date: event.endDate,
-              },
-              colorId: event.colorId,
-            }),
+            body: JSON.stringify(requestBody),
           }
       );
 
@@ -389,14 +543,33 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     },
     events,
     addEvent,
+    addSheetEvent,
     updateEvent,
     deleteEvent,
     selectedEvent,
     setSelectedEvent,
     semesterStartDate,
     setSemesterStartDate,
+    finalExamsPeriod,
+    setFinalExamsPeriod,
+    midtermExamsPeriod,
+    setMidtermExamsPeriod,
+    gradeEntryPeriod,
+    setGradeEntryPeriod,
+    customPeriods,
+    setCustomPeriods,
     triggerRefresh,
     eventColors,
+    eventTypes,
+    eventTypeStyles,
+    activeFilters,
+    setActiveFilters,
+    user,
+    goToDate: setCurrentDate,
+    isFetchingGoogleEvents,
+    searchTerm,
+    setSearchTerm,
+    filterLabels,
   };
 
   return (

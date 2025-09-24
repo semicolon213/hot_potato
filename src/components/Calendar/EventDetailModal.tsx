@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import './EventDetailModal.css';
 import { type Event } from '../../hooks/useCalendarContext';
 import trashIcon from '../../assets/Icons/trash.svg';
@@ -48,32 +49,32 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         }
     };
 
-    return (
-        <div className="event-detail-overlay" onClick={onClose}>
-            <div className="event-detail-container" style={{ top: position.top, left: position.left }} onClick={(e) => e.stopPropagation()}>
-                <div className="event-detail-header">
-                    <h2>{event.title}</h2>
-                    <div className="header-actions">
-                        <img src={editIcon} alt="Edit" onClick={() => onEdit(event)} className="header-icon" />
-                        <img src={trashIcon} alt="Delete" onClick={handleDelete} className="header-icon" />
-                        <img src={xIcon} alt="Close" onClick={onClose} className="header-icon close-button" />
-                    </div>
+    const modalContent = (
+        <div className="event-detail-container" style={{ top: position.top, left: position.left }} onClick={(e) => e.stopPropagation()}>
+            <div className="event-detail-header">
+                <h2>{event.title}</h2>
+                <div className="header-actions">
+                    <img src={editIcon} alt="Edit" onClick={() => onEdit(event)} className="header-icon" />
+                    <img src={trashIcon} alt="Delete" onClick={handleDelete} className="header-icon" />
+                    <img src={xIcon} alt="Close" onClick={onClose} className="header-icon close-button" />
                 </div>
-                <div className="event-detail-body">
+            </div>
+            <div className="event-detail-body">
+                <div className="detail-item">
+                    <span className="icon">🕒</span>
+                    <p>{formatEventDate(event.startDate, event.endDate)}</p>
+                </div>
+                {event.description && (
                     <div className="detail-item">
-                        <span className="icon">🕒</span>
-                        <p>{formatEventDate(event.startDate, event.endDate)}</p>
+                        <span className="icon">📄</span>
+                        <p>{event.description}</p>
                     </div>
-                    {event.description && (
-                        <div className="detail-item">
-                            <span className="icon">📄</span>
-                            <p>{event.description}</p>
-                        </div>
-                    )}
-                </div>
+                )}
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 export default EventDetailModal;

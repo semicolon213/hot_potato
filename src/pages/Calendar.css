@@ -1,13 +1,14 @@
 #Calendar {
-  padding: 0 40px;
+  display: flex;
+  height: calc(100vh - 60px); /* Adjust based on header height */
+  background-color: #fff;
 }
 
-.add-event-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
+.calendar-main-content {
+  flex-grow: 1;
   padding: 20px;
+  overflow-y: auto;
+  height: 100%;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
 }

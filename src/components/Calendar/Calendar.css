@@ -2,7 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .year-display {
@@ -74,7 +76,7 @@
 
 .day {
   border: 1px solid var(--border-color);
-  height: 110px;
+  height: 130px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -94,6 +96,13 @@
   color: var(--text-dark); /* 기본 텍스트 색상 */
 }
 
+.day.holiday .day-number {
+    color: var(--error) !important;
+    font-weight: bold;
+}
+
+
+
 .day.not-current-month {
   color: var(--text-light);
   background-color: var(--lightgrey);
@@ -103,13 +112,19 @@
   color: var(--error);
 }
 
+.day.saturday .day-number {
+  color: var(--primary);
+}
+
+
+
 .event-list {
   list-style: none;
   padding: 0;
   margin: 0;
   width: 100%;
   overflow-y: auto; /* 이벤트가 많을 경우 스크롤 */
-  flex-grow: 1; /* 남은 공간을 모두 차지하도록 설정 */
+  flex-shrink: 0; /* 남은 공간을 모두 차지하도록 설정 */
   padding-bottom: 5px;
 }
 
@@ -117,14 +132,16 @@
   font-size: 12px;
   border-radius: var(--border-radius-sm);
   margin-bottom: 2px;
-  padding: 2px 5px;
+  padding: 0 5px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   margin-left: 5px;
   margin-right: 5px;
-  background-color: var(--secondary-light); /* 기본 배경색 추가 */
-  color: var(--text-dark); /* 기본 글자색 추가 */
+  display: flex;
+  align-items: center;
+  height: 20px;
+  color: white; /* 글자색 흰색으로 변경 */
 }
 
 .more-button {
@@ -165,11 +182,17 @@
   display: flex;
   align-items: center;
   gap: 20px; /* Adjust as needed */
+  position: relative;
+  right: 50px;
 }
 
 .view-switcher {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-md);
+  background-color: #f8f9fa;
+  padding: 4px;
 }
 
 .view-switcher button {
@@ -178,12 +201,61 @@
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   background-color: var(--white);
+  background-color: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.view-switcher .separator {
+    color: var(--border-color);
+    padding: 0 2px;
 }
 
 .view-switcher button.active {
-  background-color: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+  background-color: #d1c9c9;
+  color: var(--text-dark);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.view-switcher button:hover:not(.active) {
+    color: var(--text-dark);
+}
+
+.filter-tags-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-md);
+  background-color: #f8f9fa;
+  padding: 4px;
+}
+
+.filter-tag {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  background-color: transparent;
+  color: #6b7280; /* from .new-tab */
+  cursor: pointer;
+  font-size: 14px; /* from .new-tab */
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-tag:hover {
+  color: #4b5563; /* from .new-tab:hover */
+  background-color: #f8f9fa;
+}
+
+.filter-tag.active {
+  background-color: #d1c9c9;
+  color: var(--text-dark);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .week-navigation {
@@ -229,3 +301,115 @@
   border-radius: var(--border-radius-sm);
 }
 
+.semester-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.semester-picker-modal {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    min-width: 600px;
+}
+
+.date-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.date-selector-row label {
+    font-size: 1em;
+    font-weight: bold;
+    white-space: nowrap;
+    min-width: 180px; /* Align labels */
+    text-align: left;
+}
+
+.semester-picker-modal input[type="date"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.75em;
+}
+
+.semester-picker-modal button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: white;
+    cursor: pointer;
+    font-size: 0.75em;
+}
+
+.add-period-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.add-period-form input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.75em;
+}
+
+.add-period-form button {
+    margin-top: 0;
+}
+
+.delete-period-btn {
+    background-color: transparent;
+    color: var(--error);
+    border: 1px solid var(--error);
+    margin-left: 10px;
+}
+
+.delete-period-btn:hover {
+    background-color: var(--error);
+    color: white;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.modal-actions .close-btn {
+    background-color: var(--grey);
+    color: var(--text-dark);
+}
+.overflow-event-lines {
+    flex-grow: 1;
+    margin-top: 4px;
+    padding-left: 5px;
+    cursor: pointer;
+}
+
+.more-events-text {
+    font-size: 12px;
+    color: var(--text-medium);
+}

@@ -27,6 +27,7 @@ import Proceedings from "./pages/proceedings";
 import { getSheetData, updateSheetCell } from "./utils/googleSheetUtils";
 
 import type { Template } from "./hooks/useTemplateUI";
+import type { DateRange, CustomPeriod, Event } from "./hooks/useCalendarContext";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -93,14 +94,14 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
 
             const gapi = (window as any).gapi;
 
-      // 더 정확한 초기화 상태 확인 (Gmail API, Docs API 포함)
-      const isClientInitialized = gapi.client &&
-        gapi.client.sheets &&
-        gapi.client.sheets.spreadsheets &&
-        gapi.client.gmail &&
-        gapi.client.gmail.users &&
-        gapi.client.docs &&
-        gapi.client.docs.documents;
+            // 더 정확한 초기화 상태 확인 (Gmail API, Docs API 포함)
+            const isClientInitialized = gapi.client &&
+                gapi.client.sheets &&
+                gapi.client.sheets.spreadsheets &&
+                gapi.client.gmail &&
+                gapi.client.gmail.users &&
+                gapi.client.docs &&
+                gapi.client.docs.documents;
 
             if (isClientInitialized) {
                 console.log("Google API가 이미 초기화되어 있습니다.");
@@ -268,6 +269,8 @@ export interface Event {
   colorId: string;
   startDateTime: string;
   endDateTime: string;
+  type?: string;
+  color?: string;
 }
 
 // Post interface shared between Board and App
@@ -328,6 +331,11 @@ const App: React.FC = () => {
     // State for Calendar
     const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
     const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+    const [semesterStartDate, setSemesterStartDate] = useState(new Date());
+    const [finalExamsPeriod, setFinalExamsPeriod] = useState<DateRange>({ start: null, end: null });
+    const [midtermExamsPeriod, setMidtermExamsPeriod] = useState<DateRange>({ start: null, end: null });
+    const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
+    const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
 
   // SHEET_ID는 상수로 정의됨
   const boardSheetName = '시트1';
@@ -857,19 +865,17 @@ const App: React.FC = () => {
         setIsCalendarLoading(true);
         try {
             const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
-                const data = await getSheetData(spreadsheetId, calendarSheetName, 'A:H');
+                const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: spreadsheetId,
+                    range: `${calendarSheetName}!A:I`,
+                });
+                const data = response.result.values;
 
                 if (data && data.length > 1) {
                     return data.slice(1).map((row: string[]) => {
                         const startDate = row[2] || '';
-                        let endDate = row[3] || '';
+                        const endDate = row[3] || '';
                         const startDateTime = row[6] || '';
-
-                        if (startDate && startDate === endDate && !startDateTime) {
-                            const date = new Date(endDate);
-                            date.setDate(date.getDate() + 1);
-                            endDate = date.toISOString().split('T')[0];
-                        }
 
                         return {
                             id: `${spreadsheetId}-${row[0] || ''}`,
@@ -880,6 +886,7 @@ const App: React.FC = () => {
                             colorId: row[5] || '',
                             startDateTime: startDateTime,
                             endDateTime: row[7] || '',
+                            type: row[8] || '',
                         };
                     });
                 }
@@ -924,9 +931,10 @@ const App: React.FC = () => {
             'startDate_calendar': eventData.startDate,
             'endDate_calendar': eventData.endDate,
             'description_calendar': eventData.description,
-            'colorId_calendar': eventData.colorId,
             'startDateTime_calendar': eventData.startDateTime,
             'endDateTime_calendar': eventData.endDateTime,
+            'tag_calendar': eventData.type || '',
+            'colorId_calendar': (eventData as any).color || '',
           };
 
           await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);
@@ -947,6 +955,109 @@ const App: React.FC = () => {
         console.log("Deleting event", eventId);
         console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
       };
+
+      const saveAcademicScheduleToSheet = async (scheduleData: {
+        semesterStartDate: Date;
+        finalExamsPeriod: DateRange;
+        midtermExamsPeriod: DateRange;
+        gradeEntryPeriod: DateRange;
+        customPeriods: CustomPeriod[];
+    }) => {
+        console.log("Saving academic schedule with data:", scheduleData);
+        const { semesterStartDate, finalExamsPeriod, midtermExamsPeriod, gradeEntryPeriod, customPeriods } = scheduleData;
+        if (!calendarStudentSpreadsheetId) {
+            alert("학생용 캘린더 시트를 찾을 수 없습니다. 먼저 구글 드라이브에서 'calendar_student' 시트가 있는지 확인해주세요.");
+            return;
+        }
+
+        const formatDate = (date: Date | null) => {
+            if (!date) return '';
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // Helper for inclusive date calculation, as per user preference
+        const addInclusiveDays = (startDate: Date, days: number) => {
+            const newDate = new Date(startDate);
+            newDate.setDate(newDate.getDate() + days - 1);
+            return newDate;
+        };
+
+        const eventsToSave = [];
+
+        // 개강일
+        eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
+
+        // 수업일수 events
+        const classDay30 = addInclusiveDays(semesterStartDate, 30);
+        const classDay60 = addInclusiveDays(semesterStartDate, 60);
+        const classDay90 = addInclusiveDays(semesterStartDate, 90);
+        eventsToSave.push({ title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30) });
+        eventsToSave.push({ title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60) });
+        eventsToSave.push({ title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90) });
+
+        // 중간고사
+        if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
+            eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'exam' });
+        }
+
+        // 기말고사
+        if (finalExamsPeriod.start && finalExamsPeriod.end) {
+            eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'exam' });
+        }
+
+        // 성적입력 및 강의평가
+        if (gradeEntryPeriod.start && gradeEntryPeriod.end) {
+            eventsToSave.push({ title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end) });
+        }
+
+        // Custom periods
+        customPeriods.forEach(p => {
+            if (p.period.start && p.period.end) {
+                eventsToSave.push({ title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end) });
+            }
+        });
+
+        const values = eventsToSave.map((event, index) => [
+            `acad-${index + 1}`,
+            event.title,
+            event.startDate,
+            event.endDate,
+            '', // description
+            '', // colorId
+            '', // startDateTime
+            '', // endDateTime
+            event.type || '', // Column I for type
+        ]);
+
+        try {
+            // Clear existing academic events (e.g., rows A2:H100)
+            await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+                spreadsheetId: calendarStudentSpreadsheetId,
+                range: `${calendarSheetName}!A2:H100`, // Assuming academic events are within this range
+            });
+
+            // Append new events
+            await (window as any).gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: calendarStudentSpreadsheetId,
+                range: `${calendarSheetName}!A2`,
+                valueInputOption: 'RAW',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: values,
+                },
+            });
+
+            alert('학사일정이 성공적으로 저장되었습니다.');
+            await fetchCalendarEvents(); // Refresh calendar
+        } catch (error) {
+            console.error('Error saving academic schedule to Google Sheet:', error);
+            alert('학사일정 저장 중 오류가 발생했습니다.');
+        }
+    };
 
   useEffect(() => {
     const storedAccessToken = localStorage.getItem('googleAccessToken');
@@ -1449,6 +1560,17 @@ const App: React.FC = () => {
               addCalendarEvent={addCalendarEvent}
               updateCalendarEvent={updateCalendarEvent}
               deleteCalendarEvent={deleteCalendarEvent}
+              semesterStartDate={semesterStartDate}
+              setSemesterStartDate={setSemesterStartDate}
+              finalExamsPeriod={finalExamsPeriod}
+              setFinalExamsPeriod={setFinalExamsPeriod}
+              midtermExamsPeriod={midtermExamsPeriod}
+              setMidtermExamsPeriod={setMidtermExamsPeriod}
+              gradeEntryPeriod={gradeEntryPeriod}
+              setGradeEntryPeriod={setGradeEntryPeriod}
+              customPeriods={customPeriods}
+              setCustomPeriods={setCustomPeriods}
+              onSaveAcademicSchedule={saveAcademicScheduleToSheet}
               />;
       case "preferences":
         return (
