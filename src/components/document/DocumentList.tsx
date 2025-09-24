@@ -1,5 +1,6 @@
 import React from "react";
 import "./DocumentList.css";
+import { BiLoaderAlt } from "react-icons/bi";
 
 // T는 데이터 객체의 타입을 나타내는 제네릭 타입
 interface Column<T extends object> {
@@ -24,9 +25,10 @@ interface DocumentListProps<T extends object> {
   };
   onSort?: (key: keyof T) => void;
   showViewAll?: boolean;
+  isLoading?: boolean;
 }
 
-const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true }: DocumentListProps<T>) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading }: DocumentListProps<T>) => {
   return (
     <div className="document-container">
       <div className="table-container">
@@ -72,20 +74,35 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
           ))}
         </div>
 
-        {data.map((row, index) => (
-          <div
-            className="table-row"
-            key={index}
-            onClick={() => onRowClick && onRowClick(row)}
-            style={{ cursor: onRowClick ? 'pointer' : 'default' }}
-          >
-            {columns.map((col) => (
-              <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
-                {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
-              </div>
-            ))}
+        {isLoading ? (
+          <div className="table-row">
+            <div className="table-cell loading-cell" style={{ width: '100%' }}>
+              <BiLoaderAlt className="spinner" />
+              <span>문서를 불러오는 중입니다...</span>
+            </div>
           </div>
-        ))}
+        ) : data.length > 0 ? (
+          data.map((row, index) => (
+            <div
+              className="table-row"
+              key={index}
+              onClick={() => onRowClick && onRowClick(row)}
+              style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+            >
+              {columns.map((col) => (
+                <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
+                  {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
+                </div>
+              ))}
+            </div>
+          ))
+        ) : (
+          <div className="table-row">
+            <div className="table-cell no-results-cell" style={{ width: '100%' }}>
+              문서가 없습니다.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

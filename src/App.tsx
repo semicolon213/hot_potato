@@ -304,6 +304,7 @@ const App: React.FC = () => {
     const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
     const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
     const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
+    const [isTemplatesLoading, setIsTemplatesLoading] = useState(true);
     const [tags, setTags] = useState<string[]>([]);
 
     // State for Board
@@ -1078,14 +1079,17 @@ const App: React.FC = () => {
             } else {
                 console.error("'hot_potato_DB' spreadsheet found but has no ID.");
                 console.log("'hot_potato_DB' spreadsheet found but has no ID.");
+                setIsTemplatesLoading(false);
             }
           } else {
             console.error("Could not find spreadsheet with name 'hot_potato_DB'");
             console.log("Could not find spreadsheet with name 'hot_potato_DB'");
+            setIsTemplatesLoading(false);
           }
         } catch (error) {
           console.error("Error searching for hot_potato_DB spreadsheet:", error);
           console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+          setIsTemplatesLoading(false);
         }
 
         // Find the student spreadsheet ID by name
@@ -1246,14 +1250,17 @@ const App: React.FC = () => {
             } else {
                 console.error("'hot_potato_DB' spreadsheet found but has no ID.");
                 console.log("'hot_potato_DB' spreadsheet found but has no ID.");
+                setIsTemplatesLoading(false);
             }
           } else {
             console.error("Could not find spreadsheet with name 'hot_potato_DB'");
             console.log("Could not find spreadsheet with name 'hot_potato_DB'");
+            setIsTemplatesLoading(false);
           }
         } catch (error) {
           console.error("Error searching for hot_potato_DB spreadsheet:", error);
           console.log("Error searching for hot_potato_DB spreadsheet. Please make sure you have granted Google Drive permissions.");
+          setIsTemplatesLoading(false);
         }
 
         // Find the student spreadsheet ID by name
@@ -1360,6 +1367,8 @@ const App: React.FC = () => {
           }
         } catch (error) {
           console.error("Error during template data fetch", error);
+        } finally {
+          setIsTemplatesLoading(false);
         }
       };
       fetchTemplateData();
@@ -1430,7 +1439,7 @@ const App: React.FC = () => {
         return <Docbox data-oid="t94yibd" searchTerm={searchTerm} />;
       case "new_document":
         return (
-            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} updateTemplateFavorite={updateTemplateFavorite} data-oid="ou.h__l" />
+            <NewDocument onPageChange={handlePageChange} customTemplates={customTemplates} deleteTemplate={deleteTemplate} tags={tags} addTag={addTag} deleteTag={deleteTag} updateTag={updateTag} addTemplate={addTemplate} updateTemplate={updateTemplate} updateTemplateFavorite={updateTemplateFavorite} isTemplatesLoading={isTemplatesLoading} data-oid="ou.h__l" />
         );
       case "calendar":
           return <MyCalendarPage

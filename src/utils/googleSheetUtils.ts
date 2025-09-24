@@ -282,6 +282,46 @@ export const updateTitleInSheetByDocId = async (
   }
 };
 
+export const updateLastModifiedInSheetByDocId = async (
+  spreadsheetId: string,
+  sheetName: string,
+  docId: string,
+  newLastModified: string
+): Promise<void> => {
+  await initializeGoogleAPIOnce();
+  const gapi = (window as any).gapi;
+
+  try {
+    const data = await getSheetData(spreadsheetId, sheetName, 'A:D'); // Assuming id is in A, last_modified in D
+    if (!data || data.length === 0) return;
+
+    const header = data[0];
+    const docIdColIndex = header.indexOf('document_id');
+    const lastModifiedColIndex = header.indexOf('last_modified');
+
+    if (docIdColIndex === -1 || lastModifiedColIndex === -1) {
+      console.error('Required columns (document_id, last_modified) not found.');
+      return;
+    }
+
+    const rowIndex = data.findIndex(row => row[docIdColIndex] === docId);
+
+    if (rowIndex !== -1) {
+      const range = `${sheetName}!${String.fromCharCode(65 + lastModifiedColIndex)}${rowIndex + 1}`;
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: [[newLastModified]],
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Error updating last_modified in sheet:', error);
+  }
+};
+
 export const copyGoogleDocument = async (fileId: string, newTitle: string): Promise<{ id: string, webViewLink: string } | null> => {
   await initializeGoogleAPIOnce();
   const gapi = (window as any).gapi;
