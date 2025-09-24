@@ -45,6 +45,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setActiveFilters,
         user,
         goToDate,
+        searchTerm,
+        setSearchTerm,
+        filterLabels,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -61,20 +64,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const moreButtonRef = useRef<HTMLButtonElement>(null);
-    const filterLabels: { [key: string]: string } = {
-        all: '전체',
-        holiday: '휴일/휴강',
-        exam: '시험',
-        midterm_exam: '중간고사',
-        final_exam: '기말고사',
-        event: '행사',
-        makeup: '보강',
-        meeting: '회의',
-    };
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
             setActiveFilters(['all']);
+            goToDate(new Date()); // Navigate home
             return;
         }
 
@@ -84,9 +78,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 ? activeFilters.filter(f => f !== filter) // Deselect if already selected
                 : [...activeFilters, filter]; // Add to selection
 
-        // If all filters are deselected, select 'all' again
+        // If all filters are deselected, select 'all' again and navigate home
         if (newFilters.length === 0) {
             setActiveFilters(['all']);
+            goToDate(new Date());
         } else {
             setActiveFilters(newFilters);
         }
@@ -132,12 +127,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     useEffect(() => {
         const isMidtermChecked = activeFilters.includes('midterm_exam');
         const isFinalChecked = activeFilters.includes('final_exam');
-
-        // If no specific exam is checked, navigate back to today's date.
-        if (!isMidtermChecked && !isFinalChecked) {
-            goToDate(new Date()); // Go back to today
-            return;
-        }
 
         const midtermDate = midtermExamsPeriod?.start;
         const finalDate = finalExamsPeriod?.start;
@@ -387,7 +376,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     return (
         <>
             <div className="calendar-header-container">
-                <div className='calendar-header-top'>
+                <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
                         <h2>
@@ -398,11 +387,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
+                            <i>&#x1F50D;</i>
+                            <input
+                                type="text"
+                                placeholder="일정 검색..."
+                                className="search-input"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
-                    <div className="header-right-controls">
+                    <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ marginRight: '-7px', cursor: 'pointer', fontSize: '25px', verticalAlign: 'middle', position: 'relative', top: '0px' }} />
+                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                         )}
                         <div className="view-switcher">
                             <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>

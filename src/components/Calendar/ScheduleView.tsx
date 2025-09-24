@@ -2,18 +2,8 @@ import React from 'react';
 import useCalendarContext from '../../hooks/useCalendarContext';
 import './ScheduleView.css';
 
-const filterLabels: { [key: string]: string } = {
-    all: '전체',
-    holiday: '휴일/휴강',
-    exam: '시험',
-    midterm_exam: '중간고사',
-    final_exam: '기말고사',
-    event: '행사',
-    makeup: '보강',
-};
-
 const ScheduleView: React.FC = () => {
-    const { events, isFetchingGoogleEvents } = useCalendarContext();
+    const { events, isFetchingGoogleEvents, filterLabels } = useCalendarContext();
 
     const today = new Date();
     const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));

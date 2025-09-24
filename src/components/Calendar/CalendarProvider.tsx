@@ -69,8 +69,19 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
   const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
+  const filterLabels: { [key: string]: string } = {
+      all: '전체',
+      holiday: '휴일/휴강',
+      exam: '시험',
+      midterm_exam: '중간고사',
+      final_exam: '기말고사',
+      event: '행사',
+      makeup: '보강',
+      meeting: '회의',
+  };
 
   useEffect(() => {
     if (!accessToken) return;
@@ -222,7 +233,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         return durationB - durationA;
     });
 
-    const filteredEvents = activeFilters.includes('all')
+    const filteredByTags = activeFilters.includes('all')
         ? sortedEvents
         : sortedEvents.filter(event => {
             const eventType = event.type || '';
@@ -252,7 +263,15 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             return isVisible;
         });
 
-    return filteredEvents
+    const filteredBySearch = searchTerm
+        ? filteredByTags.filter(event => {
+            const typeLabel = filterLabels[event.type || ''] || '';
+            return event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                   typeLabel.toLowerCase().includes(searchTerm.toLowerCase());
+          })
+        : filteredByTags;
+
+    return filteredBySearch
       .map(event => {
         let color = calendarColor || '#7986CB'; // Default color
         if (event.type && eventTypeStyles[event.type]) {
@@ -268,7 +287,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
           color: color,
         };
       });
-  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters]);
+  }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters, searchTerm, filterLabels]);
 
   const handlePrevYear = () => {
     setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -532,6 +551,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     user,
     goToDate: setCurrentDate,
     isFetchingGoogleEvents,
+    searchTerm,
+    setSearchTerm,
+    filterLabels,
   };
 
   return (
