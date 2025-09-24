@@ -6,8 +6,9 @@ const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     holiday: { color: '#EA4335', icon: '🏖️' },
     exam: { color: '#4285F4', icon: '✍️' },
     assignment: { color: '#FBBC05', icon: '🔔' },
-    event: { color: '#34A853', icon: '🎉' },
+    event: { color: '#FBBC05', icon: '🎉' }, // Changed to Yellow
     makeup: { color: '#A142F4', icon: '✨' },
+    meeting: { color: '#34A853', icon: '🤝' }, // Changed to Green
     default: { color: '#7986CB', icon: '' },
 };
 
@@ -248,10 +249,21 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         });
 
     return filteredEvents
-      .map(event => ({
-        ...event,
-        color: event.isHoliday ? '#F08080' : ((eventColors && eventColors[event.colorId]) ? eventColors[event.colorId].background : (calendarColor || '#7986CB')),
-      }));
+      .map(event => {
+        let color = calendarColor || '#7986CB'; // Default color
+        if (event.type && eventTypeStyles[event.type]) {
+            color = eventTypeStyles[event.type].color;
+        } else if (event.colorId && eventColors && eventColors[event.colorId]) {
+            color = eventColors[event.colorId].background;
+        } else if (event.isHoliday) {
+            color = '#F08080'; // Specific holiday color
+        }
+
+        return {
+          ...event,
+          color: color,
+        };
+      });
   }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters]);
 
   const handlePrevYear = () => {
@@ -492,6 +504,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     },
     events,
     addEvent,
+    addSheetEvent,
     updateEvent,
     deleteEvent,
     selectedEvent,
@@ -502,8 +515,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setFinalExamsPeriod,
     midtermExamsPeriod,
     setMidtermExamsPeriod,
-  midtermExamsPeriod,
-  setMidtermExamsPeriod,
     gradeEntryPeriod,
     setGradeEntryPeriod,
     customPeriods,
@@ -511,6 +522,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     triggerRefresh,
     eventColors,
     eventTypes,
+    eventTypeStyles,
     activeFilters,
     setActiveFilters,
     user,

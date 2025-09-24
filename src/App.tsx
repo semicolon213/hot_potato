@@ -167,6 +167,18 @@ const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null):
     return googleAPIInitPromise;
 };
 
+export interface Event {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  colorId: string;
+  startDateTime: string;
+  endDateTime: string;
+  type?: string;
+}
+
 // Post interface shared between Board and App
 export interface Post {
   id: string;
@@ -826,6 +838,7 @@ const App: React.FC = () => {
             'colorId_calendar': eventData.colorId,
             'startDateTime_calendar': eventData.startDateTime,
             'endDateTime_calendar': eventData.endDateTime,
+            'tag_calendar': eventData.type || '',
           };
 
           await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);
