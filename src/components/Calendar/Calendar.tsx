@@ -387,7 +387,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
+                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                    </div>
+                    <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        {user && user.isAdmin && (
+                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
+                        )}
+                        <div className="search-container" style={{ height: '40px', maxWidth: '300px' }}>
                             <i>&#x1F50D;</i>
                             <input
                                 type="text"
@@ -397,12 +403,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
-                    </div>
-                    <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        {user && user.isAdmin && (
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
-                        )}
                         <div className="view-switcher">
                             <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
                             <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
