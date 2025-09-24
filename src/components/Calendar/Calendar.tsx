@@ -64,6 +64,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const moreButtonRef = useRef<HTMLButtonElement>(null);
+    const [inputValue, setInputValue] = useState(searchTerm);
+
+    useEffect(() => {
+        setInputValue(searchTerm);
+    }, [searchTerm]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -387,22 +392,30 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
+                            <i>&#x1F50D;</i>
+                            <input
+                                type="text"
+                                placeholder="일정 검색..."
+                                className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const terms = inputValue.split(' ').filter(t => t.length > 0);
+                                        const formattedTerms = terms.map(t => t.startsWith('#') ? t : `#${t}`);
+                                        setSearchTerm(formattedTerms.join(' '));
+                                    }
+                                }}
+                            />
+                        </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
                             <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                         )}
-                        <div className="search-container" style={{ height: '40px', maxWidth: '300px' }}>
-                            <i>&#x1F50D;</i>
-                            <input
-                                type="text"
-                                placeholder="일정 검색..."
-                                className="search-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
                         <div className="view-switcher">
                             <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
                             <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>

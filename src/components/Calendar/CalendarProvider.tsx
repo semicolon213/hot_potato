@@ -265,9 +265,23 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
     const filteredBySearch = searchTerm
         ? filteredByTags.filter(event => {
-            const typeLabel = filterLabels[event.type || ''] || '';
-            return event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                   typeLabel.toLowerCase().includes(searchTerm.toLowerCase());
+            const queries = searchTerm.toLowerCase().split(' ').filter(q => q.startsWith('#'));
+            
+            if (queries.length === 0) {
+                // If there are no hashtag queries, just do a simple text search on the whole term
+                return event.title.toLowerCase().includes(searchTerm.toLowerCase());
+            }
+
+            // Event must match ALL hashtag queries
+            return queries.every(query => {
+                const cleanQuery = query.substring(1);
+                if (cleanQuery === '') return true;
+
+                const title = event.title.toLowerCase();
+                const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
+
+                return title.includes(cleanQuery) || typeLabel.includes(cleanQuery);
+            });
           })
         : filteredByTags;
 
