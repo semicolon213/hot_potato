@@ -13,8 +13,8 @@ interface AdminUser {
 }
 
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
-import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser } from '../utils/adminApi';
-import { sendEmailWithGmailAPI } from '../utils/gmailApi';
+import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser } from '../../../utils/api/adminApi';
+import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
 
 export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -206,7 +206,7 @@ export const useAdminPanel = () => {
           setEmailStatus('error');
         }
       } else {
-        setMessage('이메일 전송에 실패했습니다: ' + result.error);
+        setMessage('이메일 전송에 실패했습니다: ' + (result as any).error);
         setEmailStatus('error');
       }
       

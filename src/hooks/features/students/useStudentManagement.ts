@@ -280,14 +280,13 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
   };
 
   // 엑셀 파일 업로드 및 중복 검증
-  const handleExcelUpload = async (file: File) => {
+  const handleExcelUpload = async (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const data = e.target?.result as string;
           const lines = data.split('\n').filter(line => line.trim());
-          const headers = lines[0].split(',').map(h => h.trim());
           
           const newStudents: StudentWithCouncil[] = [];
           const duplicates: string[] = [];
@@ -343,7 +342,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
             alert(`${newStudents.length}명의 학생이 추가되었습니다.`);
           }
 
-          resolve(newStudents);
+          resolve();
         } catch (error) {
           reject(error);
         }

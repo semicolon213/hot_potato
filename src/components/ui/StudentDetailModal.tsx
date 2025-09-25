@@ -196,7 +196,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   // 일렉트론에서 입력 필드 포커스 문제 해결
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     e.target.focus();
-    e.target.select();
+    if ('select' in e.target && typeof e.target.select === 'function') {
+      e.target.select();
+    }
   };
 
   if (!isOpen || !student || !editedStudent) return null;

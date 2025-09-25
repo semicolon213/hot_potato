@@ -1,3 +1,11 @@
+/**
+ * @file App.tsx
+ * @brief Hot Potato 메인 애플리케이션 컴포넌트
+ * @details React 애플리케이션의 진입점으로, 인증 상태에 따라 다른 화면을 렌더링합니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import React from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
@@ -30,6 +38,11 @@ import type { Post, Event, DateRange, CustomPeriod } from './types/app';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+/**
+ * @brief 메인 애플리케이션 컴포넌트
+ * @details 사용자 인증 상태에 따라 로그인, 승인 대기, 메인 애플리케이션 화면을 렌더링합니다.
+ * @returns {JSX.Element} 렌더링된 컴포넌트
+ */
 const App: React.FC = () => {
   const {
     // User state
@@ -349,7 +362,7 @@ const App: React.FC = () => {
       const originalTemplate = customTemplates.find(t => t.rowIndex === rowIndex);
       const documentId = originalTemplate ? originalTemplate.documentId : '';
 
-      await updateTemplate(hotPotatoDBSpreadsheetId!, rowIndex, newDocData, documentId);
+      await updateTemplate(hotPotatoDBSpreadsheetId!, rowIndex, newDocData, documentId || '');
 
       // Migrate localStorage
       if (oldTitle && oldTitle !== newDocData.title) {
@@ -396,12 +409,20 @@ const App: React.FC = () => {
 
   // 로그인하지 않은 사용자
   if (!user) {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <div className="login-page-container">
+        <Login onLogin={handleLogin} />
+      </div>
+    );
   }
 
   // 승인되지 않은 사용자
   if (!user.isApproved) {
-    return <PendingApproval user={user} onLogout={handleLogout} />;
+    return (
+      <div className="login-page-container">
+        <PendingApproval user={user} onLogout={handleLogout} />
+      </div>
+    );
   }
 
   // 승인된 사용자 - develop의 레이아웃과 디자인 유지

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext';
 import './Calendar.css';
@@ -16,6 +16,7 @@ interface CalendarProps {
     onSave: (scheduleData: {
         semesterStartDate: Date;
         finalExamsPeriod: DateRange;
+        midtermExamsPeriod: DateRange;
         gradeEntryPeriod: DateRange;
         customPeriods: CustomPeriod[];
     }) => Promise<void>;
@@ -63,7 +64,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
-    const moreButtonRef = useRef<HTMLButtonElement>(null);
     const [inputValue, setInputValue] = useState(searchTerm);
 
     useEffect(() => {
@@ -215,14 +215,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         }
     };
 
-    const handlePeriodChange = (updater: (period: any) => void, part: 'start' | 'end', value: string) => {
-        if (value) {
-            const newDate = new Date(value);
-            if (!isNaN(newDate.getTime())) {
-                updater((prev: any) => ({ ...prev, [part]: newDate }));
-            }
-        }
-    };
 
     const handleCustomPeriodChange = (id: string, part: 'start' | 'end', value: string) => {
         if (!value) return;

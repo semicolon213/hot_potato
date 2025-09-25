@@ -1,33 +1,36 @@
 /* 로그인 관련 스타일 */
 
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
 }
 
 .login-card {
-  background: #f8f8f7;
+  background: #ffffff;
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   text-align: center;
   max-width: 400px;
   width: 100%;
+  margin: 0 auto;
 }
 
 .login-header {
   margin-bottom: 30px;
 }
 
-.logo {
+.logo,
+.login-logo {
   width: 80px;
   height: 80px;
   margin-bottom: 20px;
   border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.login-logo:hover {
+  transform: scale(1.05);
 }
 
 .login-header h1 {
@@ -99,8 +102,14 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f5f5f5;
   padding: 20px;
+}
+
+.signup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .registration-card {
@@ -123,13 +132,15 @@
   gap: 20px;
 }
 
-.form-group {
+.form-group,
+.input-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.form-group label {
+.form-group label,
+.input-group label {
   font-weight: 600;
   color: #333;
   font-size: 14px;
@@ -250,7 +261,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f5f5f5;
   padding: 20px;
 }
 

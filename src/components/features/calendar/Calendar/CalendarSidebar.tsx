@@ -9,9 +9,8 @@ interface CalendarSidebarProps {
 }
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
-    const { semesterStartDate, extraWeeks, setExtraWeeks } = useCalendarContext();
+    const { semesterStartDate } = useCalendarContext();
 
-    const totalWeeks = 15 + extraWeeks;
 
     const getWeekDates = (weekNum: number) => {
         if (!semesterStartDate) return '';
@@ -23,19 +22,12 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
         return `${start.getMonth() + 1}/${start.getDate()} ~ ${end.getMonth() + 1}/${end.getDate()}`;
     };
 
-    const eventFilters = [
-        { id: 'all', label: '전체' },
-        { id: 'holiday', label: '휴강일' },
-        { id: 'exam', label: '시험' },
-        { id: 'assignment', label: '과제 마감' },
-        { id: 'event', label: '학교 행사' },
-    ];
 
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
                 
-                <MiniCalendar />
+                <MiniCalendar selectedWeek={selectedWeek} />
             </div>
 
             <div className="sidebar-section">

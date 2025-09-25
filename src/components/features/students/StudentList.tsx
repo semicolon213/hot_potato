@@ -1,7 +1,13 @@
-// 학생 목록 컴포넌트
+/**
+ * @file StudentList.tsx
+ * @brief 학생 목록 컴포넌트
+ * @details 학생 데이터를 테이블 형태로 표시하고 정렬, 검색 기능을 제공합니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
 
 import React from 'react';
-import DocumentList from '../../documents/document/DocumentList';
+import DocumentList from '../documents/DocumentList';
 
 interface Student {
   no_student: string;
@@ -23,13 +29,13 @@ interface StudentWithCouncil extends Student {
 
 interface Column {
   key: string;
-  title: string;
+  header: string;
   sortable?: boolean;
   render?: (row: any) => React.ReactNode;
 }
 
 interface SortConfig {
-  key: string;
+  key: string | null;
   direction: 'asc' | 'desc';
 }
 

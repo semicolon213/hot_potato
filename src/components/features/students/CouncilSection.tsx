@@ -1,7 +1,7 @@
 // 학생회 섹션 컴포넌트
 
 import React from 'react';
-import DocumentList from '../../documents/document/DocumentList';
+import DocumentList from '../documents/DocumentList';
 
 interface CouncilData {
   name: string;
@@ -11,13 +11,13 @@ interface CouncilData {
 
 interface Column {
   key: string;
-  title: string;
+  header: string;
   sortable?: boolean;
   render?: (row: any) => React.ReactNode;
 }
 
 interface SortConfig {
-  key: string;
+  key: string | null;
   direction: 'asc' | 'desc';
 }
 

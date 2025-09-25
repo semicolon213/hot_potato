@@ -4,7 +4,7 @@
  * 위젯의 제목, 컴포넌트 타입 및 props를 반환합니다.
  */
 
-import { widgetData } from '../../components/features/dashboard/Dashboard/widgetData';
+import { widgetData } from '../../components/features/dashboard/widgetData';
 
 /**
  * 주어진 위젯 타입에 해당하는 콘텐츠 데이터를 생성하여 반환합니다.

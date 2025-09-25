@@ -6,7 +6,7 @@ import {
   usersIcon,
   calendarIcon,
 } from "../../assets/Icons";
-import { BiSolidChat, BiSolidBell } from "react-icons/bi";
+import { BiSolidBell } from "react-icons/bi";
 
 import { useAuthStore } from "../../hooks/features/auth/useAuthStore";
 
@@ -67,9 +67,6 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout, searc
     setIsNotificationPanelPanelOpen(!isNotificationPanelOpen);
   };
 
-  const handleChatButtonClick = () => {
-    setIsChatOverlayOpen(!isChatOverlayOpen);
-  };
 
   const handleSendMessage = () => {
     if (chatInput.trim() === "") return;

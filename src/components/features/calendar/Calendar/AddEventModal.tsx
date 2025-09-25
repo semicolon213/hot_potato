@@ -110,7 +110,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       }
 
       if (isEditMode && eventToEdit) {
-        updateEvent(eventToEdit.id, eventData);
+        updateEvent(eventToEdit.id, eventData as Event);
       } else {
         if (saveTarget === 'google') {
           addEvent(eventData as Event);

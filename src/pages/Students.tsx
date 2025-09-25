@@ -7,7 +7,7 @@ import {
   StudentActionButtons,
   StudentList,
   CouncilSection
-} from '../components/features/students/students';
+} from '../components/features/students';
 import '../styles/pages/Students.css';
 
 interface Student {
@@ -33,7 +33,7 @@ interface StudentsProps {
   studentSpreadsheetId: string | null;
 }
 
-const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId }) => {
+const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
   const {
     students,
     filteredStudents,
@@ -152,7 +152,7 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
             students={filteredStudents}
             columns={studentColumns}
             sortConfig={sortConfig}
-            onSort={handleSort}
+            onSort={(key: string) => handleSort(key as keyof StudentWithCouncil)}
             onStudentDoubleClick={handleStudentDoubleClick}
           />
         </div>
@@ -163,7 +163,7 @@ const Students: React.FC<StudentsProps> = ({ onPageChange, studentSpreadsheetId 
           years={years}
           selectedYear={selectedYear}
           onYearChange={setSelectedYear}
-          councilData={councilData}
+          councilData={councilData.map(item => ({ ...item, year: selectedYear }))}
           columns={councilColumns}
           sortConfig={sortConfig}
           onSort={handleCouncilSort}

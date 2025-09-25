@@ -249,7 +249,7 @@ export function useTemplateUI(
             console.error('Error creating Google Doc:', error);
             
             // 403 Forbidden 오류인 경우 스코프 문제일 가능성이 높음
-            if (error.status === 403 || (error.result && error.result.error && error.result.error.code === 403)) {
+            if ((error as any).status === 403 || ((error as any).result && (error as any).result.error && (error as any).result.error.code === 403)) {
                 alert('Google Docs API 사용 권한이 없습니다. 로그아웃 후 다시 로그인해주세요.');
             } else {
                 alert('Google Docs에서 문서를 생성하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');

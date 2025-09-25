@@ -1,4 +1,3 @@
-import React from 'react';
 
 function GoogleDocEmbed() {
     const styles = {

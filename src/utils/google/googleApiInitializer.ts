@@ -20,6 +20,12 @@ if (typeof window !== 'undefined') {
 
 // 직접 구현한 Google API 초기화 함수
 export const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string | null): Promise<void> => {
+    // 환경 변수 확인
+    if (!GOOGLE_CLIENT_ID) {
+        console.warn('Google Client ID가 설정되지 않았습니다. 환경 변수를 확인해주세요.');
+        return;
+    }
+
     // 이미 초기화되었으면 바로 반환
     if (isGoogleAPIInitialized) {
         return;
@@ -210,10 +216,10 @@ export const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string |
                     } catch (error) {
                         console.error("Google API Client Library 초기화 실패:", error);
                         console.error("오류 상세 정보:", {
-                            message: error.message,
-                            code: error.code,
-                            status: error.status,
-                            response: error.response?.data
+                            message: (error as any).message,
+                            code: (error as any).code,
+                            status: (error as any).status,
+                            response: (error as any).response?.data
                         });
                         reject(error);
                     }

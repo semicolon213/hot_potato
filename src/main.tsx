@@ -10,7 +10,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GoogleOAuthProvider 
       clientId={clientId}
-      redirectUri={window.location.origin}
     >
       <App />
     </GoogleOAuthProvider>

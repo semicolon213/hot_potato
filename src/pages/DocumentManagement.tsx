@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../styles/pages/DocumentManagement.css";
-import InfoCard, { type Item as InfoCardItem } from "../components/features/documents/document/InfoCard";
-import DocumentList from "../components/features/documents/document/DocumentList";
-import StatCard from "../components/features/documents/document/StatCard";
+import InfoCard, { type Item as InfoCardItem } from "../components/features/documents/InfoCard";
+import DocumentList from "../components/features/documents/DocumentList";
+import StatCard from "../components/features/documents/StatCard";
 import { useDocumentTable, type Document } from "../hooks/features/documents/useDocumentTable";
 import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/google/googleSheetUtils";
 import { getRecentDocuments, addRecentDocument } from "../utils/helpers/localStorageUtils";
@@ -163,7 +163,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   );
 
     const handleFavoriteClick = (item: { name: string; type: string; title: string; }) => {
-        onUseTemplate(item.type, item.title);
+        onUseTemplate(item.type, item.title, 'user');
     };
 
   const statCards = [
@@ -223,7 +223,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           icon="icon-star"
           backgroundColor="var(--table-header-bg)"
           items={frequentlyUsedForms}
-          onItemClick={handleFavoriteClick}
+          onItemClick={(item: any) => handleFavoriteClick(item)}
         />
       </div>
 

@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/features/templates/useTemplateUI";
 import type { Template } from "../hooks/features/templates/useTemplateUI";
-import "../components/features/templates/TemplateUI/TemplateUI.css";
+import "../components/features/templates/TemplateUI.css";
 import {
     DndContext,
-    closestCenter,
     closestCorners,
     KeyboardSensor,
     PointerSensor,
@@ -15,7 +14,6 @@ import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 
@@ -24,8 +22,8 @@ import {
     SearchBar,
     CategoryTabs,
     TemplateList,
-  } from "../components/features/templates/TemplateUI";
-  import { SortableTemplateCard } from "../components/features/templates/TemplateUI/SortableTemplateCard";
+  } from "../components/features/templates";
+  import { SortableTemplateCard } from "../components/features/templates/SortableTemplateCard";
 
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
@@ -97,7 +95,7 @@ export default function NewDocument({
             const baseTemplates = [...customTemplates];
             const orderedTemplates = orderedIds
                 .map((id: string) => baseTemplates.find(t => (t.rowIndex ? t.rowIndex.toString() : t.title) === id))
-                .filter((t): t is Template => !!t);
+                .filter((t: any): t is Template => !!t);
             
             const newTemplates = baseTemplates.filter(t => !orderedIds.includes(t.rowIndex ? t.rowIndex.toString() : t.title));
             setCustomTemplateItems([...orderedTemplates, ...newTemplates]);

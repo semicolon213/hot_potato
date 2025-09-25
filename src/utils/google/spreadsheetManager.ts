@@ -1,12 +1,30 @@
-// 스프레드시트 관련 유틸리티 함수들
+/**
+ * @file spreadsheetManager.ts
+ * @brief Google Sheets API 관리 유틸리티
+ * @details Google Sheets와의 모든 상호작용을 담당하는 중앙화된 유틸리티 모듈입니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
 
 import { appendRow } from 'papyrus-db';
 import { updateSheetCell } from './googleSheetUtils';
-import type { Post, Event, Template } from '../types/app';
+import type { Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { Template } from '../../hooks/features/templates/useTemplateUI';
 
-// 스프레드시트 ID 찾기 함수들
+/**
+ * @brief 스프레드시트 ID 찾기 함수
+ * @param {string} name - 찾을 스프레드시트의 이름
+ * @returns {Promise<string | null>} 스프레드시트 ID 또는 null
+ * @details Google Drive API를 사용하여 지정된 이름의 스프레드시트를 검색합니다.
+ */
 export const findSpreadsheetById = async (name: string): Promise<string | null> => {
     try {
+        // Google API가 초기화되지 않은 경우
+        if (!(window as any).gapi || !(window as any).gapi.client) {
+            console.warn('Google API가 초기화되지 않았습니다.');
+            return null;
+        }
+
         const response = await (window as any).gapi.client.drive.files.list({
             q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
             fields: 'files(id, name)'
@@ -17,11 +35,11 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
             console.log(`Found '${name}' spreadsheet with ID:`, fileId);
             return fileId;
         } else {
-            console.error(`Could not find spreadsheet with name '${name}'`);
+            console.warn(`Could not find spreadsheet with name '${name}'`);
             return null;
         }
     } catch (error) {
-        console.error(`Error searching for ${name} spreadsheet:`, error);
+        console.warn(`Error searching for ${name} spreadsheet:`, error);
         return null;
     }
 };

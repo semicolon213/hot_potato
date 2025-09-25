@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TemplateCard } from './TemplateCard';
-import type { Template } from '../../../../hooks/features/templates/useTemplateUI';
+import type { Template } from '../../../hooks/features/templates/useTemplateUI';
 
 interface Props {
     id: string;

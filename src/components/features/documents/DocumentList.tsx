@@ -4,7 +4,7 @@ import { BiLoaderAlt } from "react-icons/bi";
 
 // T는 데이터 객체의 타입을 나타내는 제네릭 타입
 interface Column<T extends object> {
-  key: keyof T & string;
+  key: string;
   header: string;
   width?: string;
   // render 함수는 이제 제네릭 타입 T를 사용하여 row의 타입을 정확히 알 수 있음
@@ -20,10 +20,10 @@ interface DocumentListProps<T extends object> {
   title: string;
   onRowClick?: (row: T) => void;
   sortConfig?: {
-    key: keyof T | null;
+    key: string | null;
     direction: 'asc' | 'desc';
-  };
-  onSort?: (key: keyof T) => void;
+  } | null;
+  onSort?: (key: string) => void;
   showViewAll?: boolean;
   isLoading?: boolean;
   onRowDoubleClick?: (row: T) => void;
@@ -93,7 +93,7 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
             >
               {columns.map((col) => (
                 <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
-                  {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
+                  {col.render ? col.render(row) : (row as any)[col.key] as React.ReactNode}
                 </div>
               ))}
             </div>

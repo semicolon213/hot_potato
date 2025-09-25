@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { type User } from "../../../App.tsx";
+import { type User } from "../../../types/app";
 
 interface DateInfo {
     year: string;
@@ -19,6 +19,7 @@ export interface Event {
     colorId?: string;
     isHoliday?: boolean;
     type?: string;
+    icon?: string;
 }
 
 export type DateRange = { start: Date | null; end: Date | null };
@@ -54,6 +55,11 @@ interface CalendarContextType {
     setCustomPeriods: (periods: CustomPeriod[]) => void;
     eventColors: any;
     eventTypes: string[];
+    eventTypeStyles: { [key: string]: { color: string; icon: string } };
+    addSheetEvent: (event: Event) => void;
+    updateEvent: (id: string, event: Event) => void;
+    extraWeeks: number;
+    setExtraWeeks: (weeks: number) => void;
     activeFilters: string[];
     setActiveFilters: (filters: string[]) => void;
     user: User | null;

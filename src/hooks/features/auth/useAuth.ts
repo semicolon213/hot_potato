@@ -84,6 +84,11 @@ export const useAuth = (onLogin: (user: User) => void) => {
         setLoginState(prev => ({ ...prev, isLoading: true, error: '' }));
 
         const response = await fetch(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenResponse.access_token}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const userInfo = await response.json();
         
         const { email, name } = userInfo;

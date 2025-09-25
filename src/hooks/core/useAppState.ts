@@ -1,7 +1,14 @@
-// App.tsx의 상태 관리 로직을 분리한 커스텀 훅
+/**
+ * @file useAppState.ts
+ * @brief 전역 애플리케이션 상태 관리 훅
+ * @details 사용자 인증, 페이지 상태, 데이터 로딩 등을 관리하는 중앙화된 상태 관리 훅입니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
 
 import { useState, useEffect } from 'react';
-import type { User, PageType, Post, Event, DateRange, CustomPeriod, Template } from '../types/app';
+import type { User, PageType, Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { Template } from '../features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce } from '../../utils/google/googleApiInitializer';
 import { 
     findSpreadsheetById, 
@@ -12,6 +19,11 @@ import {
     fetchCalendarEvents 
 } from '../../utils/google/spreadsheetManager';
 
+/**
+ * @brief 전역 애플리케이션 상태 관리 훅
+ * @details 애플리케이션의 모든 상태를 중앙에서 관리하며, Google API 초기화와 데이터 로딩을 담당합니다.
+ * @returns {Object} 애플리케이션 상태와 핸들러 함수들
+ */
 export const useAppState = () => {
     // User authentication state
     const [user, setUser] = useState<User | null>(null);

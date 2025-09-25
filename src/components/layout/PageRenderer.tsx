@@ -1,7 +1,16 @@
 // 페이지 렌더링 로직을 분리한 컴포넌트
 
+/**
+ * @file PageRenderer.tsx
+ * @brief 페이지 렌더링 컴포넌트
+ * @details 현재 페이지 상태에 따라 적절한 페이지 컴포넌트를 렌더링합니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import React from 'react';
-import type { PageType, User, Post, Event, DateRange, CustomPeriod, Template } from '../../types/app';
+import type { PageType, User, Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
 import MyCalendarPage from '../../pages/Calendar';
@@ -172,6 +181,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "calendar":
         return <MyCalendarPage
           data-oid="uz.ewbm"
+          user={user}
           accessToken={googleAccessToken}
           calendarEvents={calendarEvents}
           addCalendarEvent={onAddCalendarEvent}

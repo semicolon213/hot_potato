@@ -1,4 +1,4 @@
-import {initialTemplates, type Template} from "../../../../hooks/features/templates/useTemplateUI";
+import {initialTemplates, type Template} from "../../../hooks/features/templates/useTemplateUI";
 import { SortableTemplateCard } from "./SortableTemplateCard";
 import { BiLoaderAlt } from "react-icons/bi";
 

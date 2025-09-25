@@ -5,12 +5,13 @@ export interface Event {
   title: string;
   startDate: string;
   endDate: string;
-  description: string;
-  colorId: string;
-  startDateTime: string;
-  endDateTime: string;
+  description?: string;
+  colorId?: string;
+  startDateTime?: string;
+  endDateTime?: string;
   type?: string;
   color?: string;
+  isHoliday?: boolean;
 }
 
 export interface Post {
@@ -65,6 +66,7 @@ export interface DateRange {
 }
 
 export interface CustomPeriod {
+  id: string;
   name: string;
   period: DateRange;
 }

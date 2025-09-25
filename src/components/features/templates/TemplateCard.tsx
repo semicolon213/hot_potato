@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { Template } from "../../../../hooks/features/templates/useTemplateUI";
+import type { Template } from "../../../hooks/features/templates/useTemplateUI";
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { BiTrash, BiDotsVerticalRounded } from "react-icons/bi";
 

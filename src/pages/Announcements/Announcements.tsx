@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import '../../styles/pages/Announcements.css';
-import type { Post } from '../../App'; // Import Post interface from App.tsx
+import type { Post } from '../../types/app';
 import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
 
 interface AnnouncementsProps {

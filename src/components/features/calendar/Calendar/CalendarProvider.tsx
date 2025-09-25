@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, type ReactNode } from "react";
 import { CalendarContext, type Event, type DateRange, type CustomPeriod } from "../../../../hooks/features/calendar/useCalendarContext.ts";
-import { type User } from "../../../../App.tsx";
+import { type User } from "../../../../types/app";
 
 const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     holiday: { color: '#EA4335', icon: '🏖️' },
@@ -12,13 +12,6 @@ const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     default: { color: '#7986CB', icon: '' },
 };
 
-const getEventStyle = (event: Event) => {
-    if (event.isHoliday) {
-        return eventTypeStyles.holiday;
-    }
-    const type = event.type as keyof typeof eventTypeStyles;
-    return eventTypeStyles[type] || eventTypeStyles.default;
-};
 
 interface CalendarProviderProps {
   children: ReactNode;
@@ -45,7 +38,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   user,
   accessToken,
   sheetEvents,
-  addSheetEvent,
   updateSheetEvent,
   deleteSheetEvent,
   semesterStartDate,
@@ -543,7 +535,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     },
     events,
     addEvent,
-    addSheetEvent,
     updateEvent,
     deleteEvent,
     selectedEvent,
@@ -570,6 +561,11 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     searchTerm,
     setSearchTerm,
     filterLabels,
+    addSheetEvent: addEvent,
+    extraWeeks: 0,
+    setExtraWeeks: (weeks: number) => {
+      console.log('Set extra weeks:', weeks);
+    },
   };
 
   return (

@@ -1,4 +1,4 @@
-import { type User } from "../App.tsx";
+import { type User } from "../types/app";
 import React, {useState} from "react"; // Remove useEffect
 import CalendarProvider from "../components/features/calendar/Calendar/CalendarProvider";
 import Calendar from "../components/features/calendar/Calendar/Calendar";
@@ -29,6 +29,7 @@ interface CalendarPageProps {
     onSaveAcademicSchedule: (scheduleData: {
         semesterStartDate: Date;
         finalExamsPeriod: DateRange;
+        midtermExamsPeriod: DateRange;
         gradeEntryPeriod: DateRange;
         customPeriods: CustomPeriod[];
     }) => Promise<void>;
@@ -37,6 +38,7 @@ interface CalendarPageProps {
 const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
     semesterStartDate: Date;
     finalExamsPeriod: DateRange;
+    midtermExamsPeriod: DateRange;
     gradeEntryPeriod: DateRange;
     customPeriods: CustomPeriod[];
 }) => Promise<void> }> = ({onSaveAcademicSchedule}) => {
