@@ -1,13 +1,13 @@
 import { type User } from "../App.tsx";
 import React, {useState} from "react"; // Remove useEffect
-import CalendarProvider from "../components/Calendar/CalendarProvider";
-import Calendar from "../components/Calendar/Calendar";
-import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from "../hooks/useCalendarContext.ts";
-import EventDetailModal from "../components/Calendar/EventDetailModal";
-import AddEventModal from "../components/Calendar/AddEventModal";
-import CalendarSidebar from "../components/Calendar/CalendarSidebar";
+import CalendarProvider from "../components/features/calendar/Calendar/CalendarProvider";
+import Calendar from "../components/features/calendar/Calendar/Calendar";
+import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from "../hooks/features/calendar/useCalendarContext.ts";
+import EventDetailModal from "../components/features/calendar/Calendar/EventDetailModal";
+import AddEventModal from "../components/features/calendar/Calendar/AddEventModal";
+import CalendarSidebar from "../components/features/calendar/Calendar/CalendarSidebar";
 // Remove Login and GoogleOAuthProvider imports
-import "./Calendar.css";
+import "../styles/pages/Calendar.css";
 
 interface CalendarPageProps {
     user: User | null;

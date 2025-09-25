@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect } from "react";
-import "./GoogleService.css";
+import "../styles/pages/GoogleService.css";
 
 interface GoogleServiceProps {
   service: "appscript" | "sheets" | "docs" | "gemini" | "groups" | "calendar" | "chat";

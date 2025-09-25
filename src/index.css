@@ -1,3 +1,6 @@
+/* CSS 변수 import */
+@import './styles/variables.css';
+
 @font-face {
   font-family: 'GmarketSansMedium';
   src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
@@ -17,10 +20,6 @@
   src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-}
-
-:root {
---main-font: system-ui;
 }
 
 html {
@@ -49,37 +48,12 @@ body, html, * {
 font-family: var(--main-font), 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif !important;
 }
 
-/* 기본 설정 및 변수 */
+/* 기본 설정 */
 * {
 margin: 0;
 padding: 0;
 box-sizing: border-box;
 font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regular', sans-serif;
-}
-
-/* 미니멀리즘 색상 팔레트 */
-:root {
---primary: #0ea5e9;                    /* 하늘색 (sky-500) */
---primary-dark: #0284c7;               /* 진한 하늘색 (sky-600) */
---secondary: #38bdf8;                  /* 연한 하늘색 (sky-400) */
---secondary-light: #7dd3fc;            /* 더 연한 하늘색 (sky-300) */
---accent: #f0f9ff;                     /* 매우 연한 하늘색 (sky-50) */
---background: #f8f8f7;                 /* 순백색 배경 */
---white: #f8f8f7;
---lightgrey: #f8fafc;                  /* 연한 회색 (slate-50) */
---border-color: #e2e8f0;               /* 연한 회색 테두리 (slate-200) */
---border-light: #f1f5f9;               /* 더 연한 회색 (slate-100) */
---border-lighter: #f8fafc;             /* 가장 연한 회색 (slate-50) */
---text-dark: #000000;                  /* 검은색 */
---text-medium: #000000;                /* 검은색 */
---text-light: #666666;                 /* 중간 회색 */
---menu-bg: #0ea5e9;                    /* 하늘색 메뉴 배경 */
---table-header-bg: #f8fafc;            /* 연한 회색 테이블 헤더 */
---card-shadow: none;
---card-shadow-hover: none;
---border-radius-lg: 12px;
---border-radius-md: 8px;
---border-radius-sm: 4px;
 }
 
 /* === 미니멀리즘 레이아웃 === */
@@ -105,178 +79,21 @@ overflow: hidden;
 background-color: #f8f8f7;
 }
 
-/* 테마 CSS 파일 */
-
-/* 구글 테마 (기본 테마) */
-.theme-default {
---primary: #1976d2;                /* 구글 블루 */
---primary-dark: #1565c0;           /* 진한 구글 블루 */
---secondary: #4caf50;              /* 구글 그린 */
---secondary-light: #81c784;        /* 연한 구글 그린 */
---accent: #e3f2fd;                 /* 매우 연한 구글 블루 */
---background: #f8f8f7;             /* 순백색 배경 */
-
-/* 구글 테마에 맞는 회색 톤 */
---lightgrey: #f5f5f5;              /* 구글 스타일 연한 회색 */
---border-color: #e0e0e0;           /* 구글 스타일 테두리 */
---border-light: #f0f0f0;           /* 구글 스타일 연한 테두리 */
---border-lighter: #fafafa;         /* 구글 스타일 가장 연한 테두리 */
-
-/* 구글 테마에 맞는 텍스트 색상 */
---text-dark: #212121;              /* 구글 머티리얼 다크 그레이 */
---text-medium: #424242;            /* 구글 머티리얼 미디엄 그레이 */
---text-light: #757575;             /* 구글 머티리얼 라이트 그레이 */
-
-/* 구글 색상 팔레트 */
---success: #4caf50;                /* 구글 그린 */
---success-hover: #388e3c;          /* 진한 구글 그린 */
---error: #ff3d00;                  /* 구글 레드 */
---warning: #ffc107;                /* 구글 옐로우 */
---info: #2196f3;                   /* 구글 인포 블루 */
-
-/* 구글 테마에 맞는 추가 색상 */
---disabled-shadow: rgba(117, 117, 117, 0.3); /* 구글 스타일 비활성화 그림자 */
---gray-light: #f5f5f5;             /* 구글 스타일 연한 회색 */
---gray-border: #e0e0e0;            /* 구글 스타일 테두리 */
-
-/* 구글 테마에 맞는 UI 요소 색상 */
---menu-bg: #1976d2;                /* 구글 블루 메뉴 배경 */
---table-header-bg: #f5f5f5;        /* 구글 스타일 테이블 헤더 */
---card-bg: #f8f8f7;                /* 카드 배경 */
---hover-bg: #e3f2fd;               /* 호버 배경 (구글 블루 연한 버전) */
---focus-color: #1976d2;            /* 포커스 색상 */
---link-color: #1976d2;             /* 링크 색상 */
---button-primary: #1976d2;         /* 기본 버튼 색상 */
---button-secondary: #4caf50;       /* 보조 버튼 색상 */
---button-danger: #ff3d00;          /* 위험 버튼 색상 */
---button-warning: #ffc107;         /* 경고 버튼 색상 */
-
-/* 공통 효과 */
---card-shadow: none;
---card-shadow-hover: none;
---border-radius-lg: 12px;
---border-radius-md: 8px;
---border-radius-sm: 4px;
-}
-
-/* 보라색 테마 */
-.theme-purple {
---primary: #8b5cf6;                /* 보라색 (violet-500) */
---primary-dark: #7c3aed;           /* 진한 보라색 (violet-600) */
---secondary: #a78bfa;              /* 연한 보라색 (violet-400) */
---secondary-light: #c4b5fd;        /* 더 연한 보라색 (violet-300) */
---accent: #f3e8ff;                 /* 매우 연한 보라색 (violet-50) */
---background: #f8f8f7;             /* 순백색 배경 */
-
-/* 구글 테마와 동일한 회색 톤 */
---lightgrey: #f5f5f5;              /* 구글 스타일 연한 회색 */
---border-color: #e0e0e0;           /* 구글 스타일 테두리 */
---border-light: #f0f0f0;           /* 구글 스타일 연한 테두리 */
---border-lighter: #fafafa;         /* 구글 스타일 가장 연한 테두리 */
-
-/* 구글 테마와 동일한 텍스트 색상 */
---text-dark: #212121;              /* 구글 머티리얼 다크 그레이 */
---text-medium: #424242;            /* 구글 머티리얼 미디엄 그레이 */
---text-light: #757575;             /* 구글 머티리얼 라이트 그레이 */
-
-/* 보라색 테마 색상 팔레트 */
---success: #8b5cf6;                /* 보라색 */
---success-hover: #7c3aed;          /* 진한 보라색 */
---error: #ff3d00;                  /* 구글 레드 */
---warning: #ffc107;                /* 구글 옐로우 */
---info: #8b5cf6;                   /* 보라색 인포 */
-
-/* 구글 테마와 동일한 추가 색상 */
---disabled-shadow: rgba(117, 117, 117, 0.3); /* 구글 스타일 비활성화 그림자 */
---gray-light: #f5f5f5;             /* 구글 스타일 연한 회색 */
---gray-border: #e0e0e0;            /* 구글 스타일 테두리 */
-
-/* 보라색 테마 UI 요소 색상 */
---menu-bg: #8b5cf6;                /* 보라색 메뉴 배경 */
---table-header-bg: #f5f5f5;        /* 구글 스타일 테이블 헤더 */
---card-bg: #f8f8f7;                /* 카드 배경 */
---hover-bg: #f3e8ff;               /* 호버 배경 (보라색 연한 버전) */
---focus-color: #8b5cf6;            /* 포커스 색상 */
---link-color: #8b5cf6;             /* 링크 색상 */
---button-primary: #8b5cf6;         /* 기본 버튼 색상 */
---button-secondary: #a78bfa;       /* 보조 버튼 색상 */
---button-danger: #ff3d00;          /* 위험 버튼 색상 */
---button-warning: #ffc107;         /* 경고 버튼 색상 */
-
-/* 공통 효과 */
---card-shadow: none;
---card-shadow-hover: none;
---border-radius-lg: 12px;
---border-radius-md: 8px;
---border-radius-sm: 4px;
-}
-
-/* 서브메뉴 아이템 호버 시 색상 */
+/* 테마별 특수 스타일 */
 .theme-purple .submenu-item:hover .menu-text {
 color: #35343e;
 }
 
-
-/* 초록색 테마 */
-.theme-green {
---primary: #10b981;                /* 에메랄드 그린 (emerald-500) */
---primary-dark: #059669;           /* 진한 에메랄드 그린 */
---secondary: #34d399;              /* 연한 에메랄드 (emerald-400) */
---secondary-light: #6ee7b7;        /* 더 연한 에메랄드 (emerald-300) */
---accent: #ecfdf5;                 /* 매우 연한 에메랄드 (emerald-50) */
---background: #f8f8f7;             /* 순백색 배경 */
-
-/* 구글 테마와 동일한 회색 톤 */
---lightgrey: #f5f5f5;              /* 구글 스타일 연한 회색 */
---border-color: #e0e0e0;           /* 구글 스타일 테두리 */
---border-light: #f0f0f0;           /* 구글 스타일 연한 테두리 */
---border-lighter: #fafafa;         /* 구글 스타일 가장 연한 테두리 */
-
-/* 구글 테마와 동일한 텍스트 색상 */
---text-dark: #212121;              /* 구글 머티리얼 다크 그레이 */
---text-medium: #424242;            /* 구글 머티리얼 미디엄 그레이 */
---text-light: #757575;             /* 구글 머티리얼 라이트 그레이 */
-
-/* 초록색 테마 색상 팔레트 */
---success: #10b981;                /* 에메랄드 그린 */
---success-hover: #059669;          /* 진한 에메랄드 그린 */
---error: #ff3d00;                  /* 구글 레드 */
---warning: #ffc107;                /* 구글 옐로우 */
---info: #10b981;                   /* 에메랄드 그린 인포 */
-
-/* 구글 테마와 동일한 추가 색상 */
---disabled-shadow: rgba(117, 117, 117, 0.3); /* 구글 스타일 비활성화 그림자 */
---gray-light: #f5f5f5;             /* 구글 스타일 연한 회색 */
---gray-border: #e0e0e0;            /* 구글 스타일 테두리 */
-
-/* 초록색 테마 UI 요소 색상 */
---menu-bg: #10b981;                /* 에메랄드 그린 메뉴 배경 */
---table-header-bg: #f5f5f5;        /* 구글 스타일 테이블 헤더 */
---card-bg: #f8f8f7;                /* 카드 배경 */
---hover-bg: #ecfdf5;               /* 호버 배경 (에메랄드 그린 연한 버전) */
---focus-color: #10b981;            /* 포커스 색상 */
---link-color: #10b981;             /* 링크 색상 */
---button-primary: #10b981;         /* 기본 버튼 색상 */
---button-secondary: #34d399;       /* 보조 버튼 색상 */
---button-danger: #ff3d00;          /* 위험 버튼 색상 */
---button-warning: #ffc107;         /* 경고 버튼 색상 */
-
-/* 공통 효과 */
---card-shadow: none;
---card-shadow-hover: none;
---border-radius-lg: 12px;
---border-radius-md: 8px;
---border-radius-sm: 4px;
-}
-
-/* 초록색 테마의 서브메뉴 아이템 색상 변경 */
 .theme-green .submenu-item .menu-text {
 color: #52704f;
 }
 
-/* 서브메뉴 아이템 호버 시 색상 */
 .theme-green .submenu-item:hover .menu-text {
-color: #000000; /* 호버 시 검은색으로 변경 */
+color: #000000;
+}
+
+.theme-gray .submenu-item:hover .menu-text {
+color: #000000;
 }
 
 /* 모든 테마 공통 스타일 */
@@ -384,63 +201,6 @@ border-color: var(--border-color);
 .theme-green .notification-item:hover,
 .theme-gray .notification-item:hover {
 background-color: var(--hover-bg);
-}
-
-/* 회색 테마 */
-.theme-gray {
---primary: #64748b;                 /* 슬레이트 그레이 (slate-500) */
---primary-dark: #475569;           /* 진한 슬레이트 그레이 */
---secondary: #94a3b8;               /* 연한 슬레이트 (slate-400) */
---secondary-light: #cbd5e1;         /* 더 연한 슬레이트 (slate-300) */
---accent: #f8fafc;                  /* 매우 연한 슬레이트 (slate-50) */
---background: #f8f8f7;              /* 순백색 배경 */
-
-/* 구글 테마와 동일한 회색 톤 */
---lightgrey: #f5f5f5;              /* 구글 스타일 연한 회색 */
---border-color: #e0e0e0;           /* 구글 스타일 테두리 */
---border-light: #f0f0f0;           /* 구글 스타일 연한 테두리 */
---border-lighter: #fafafa;         /* 구글 스타일 가장 연한 테두리 */
-
-/* 구글 테마와 동일한 텍스트 색상 */
---text-dark: #212121;              /* 구글 머티리얼 다크 그레이 */
---text-medium: #424242;            /* 구글 머티리얼 미디엄 그레이 */
---text-light: #757575;             /* 구글 머티리얼 라이트 그레이 */
-
-/* 회색 테마 색상 팔레트 */
---success: #64748b;                 /* 슬레이트 그레이 */
---success-hover: #475569;           /* 진한 슬레이트 그레이 */
---error: #ff3d00;                   /* 구글 레드 */
---warning: #ffc107;                 /* 구글 옐로우 */
---info: #64748b;                   /* 슬레이트 그레이 인포 */
-
-/* 구글 테마와 동일한 추가 색상 */
---disabled-shadow: rgba(117, 117, 117, 0.3); /* 구글 스타일 비활성화 그림자 */
---gray-light: #f5f5f5;             /* 구글 스타일 연한 회색 */
---gray-border: #e0e0e0;            /* 구글 스타일 테두리 */
-
-/* 회색 테마 UI 요소 색상 */
---menu-bg: #64748b;                 /* 슬레이트 그레이 메뉴 배경 */
---table-header-bg: #f5f5f5;        /* 구글 스타일 테이블 헤더 */
---card-bg: #f8f8f7;                /* 카드 배경 */
---hover-bg: #f8fafc;               /* 호버 배경 (슬레이트 그레이 연한 버전) */
---focus-color: #64748b;            /* 포커스 색상 */
---link-color: #64748b;             /* 링크 색상 */
---button-primary: #64748b;         /* 기본 버튼 색상 */
---button-secondary: #94a3b8;       /* 보조 버튼 색상 */
---button-danger: #ff3d00;          /* 위험 버튼 색상 */
---button-warning: #ffc107;         /* 경고 버튼 색상 */
-
-/* 공통 효과 */
---card-shadow: none;
---card-shadow-hover: none;
---border-radius-lg: 12px;
---border-radius-md: 8px;
---border-radius-sm: 4px;
-}
-
-/* 서브메뉴 아이템 호버 시 색상 */
-.theme-gray .submenu-item:hover .menu-text {
-color: #000000; /* 호버 시 검은색으로 변경 */
 }
 
 /* 환경설정 페이지 스타일 */

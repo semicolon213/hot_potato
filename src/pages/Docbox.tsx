@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import "./Docbox.css";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds, updateLastModifiedInSheetByDocId } from "../utils/googleSheetUtils";
-import { addRecentDocument } from "../utils/localStorageUtils";
+import "../styles/pages/Docbox.css";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds, updateLastModifiedInSheetByDocId } from "../utils/google/googleSheetUtils";
+import { addRecentDocument } from "../utils/helpers/localStorageUtils";
 import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
 
 interface Document {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import './Announcements.css';
+import '../../styles/pages/Announcements.css';
 import type { Post } from '../../App'; // Import Post interface from App.tsx
-import { deleteSheetRow } from '../../utils/googleSheetUtils';
+import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;

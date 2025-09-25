@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useWidgetManagement } from "../hooks/useWidgetManagement";
-import "./Dashboard.css";
-import WidgetGrid from "../components/Dashboard/WidgetGrid";
-import AddWidgetModal from "../components/Dashboard/AddWidgetModal";
+import { useWidgetManagement } from "../hooks/features/dashboard/useWidgetManagement";
+import "../styles/pages/Dashboard.css";
+import WidgetGrid from "../components/features/dashboard/Dashboard/WidgetGrid";
+import AddWidgetModal from "../components/features/dashboard/Dashboard/AddWidgetModal";
 
 interface DashboardProps {
   hotPotatoDBSpreadsheetId: string | null;

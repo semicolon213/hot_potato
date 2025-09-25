@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/useTemplateUI";
-import type { Template } from "../hooks/useTemplateUI";
-import "../components/TemplateUI/TemplateUI.css";
+import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/features/templates/useTemplateUI";
+import type { Template } from "../hooks/features/templates/useTemplateUI";
+import "../components/features/templates/TemplateUI/TemplateUI.css";
 import {
     DndContext,
     closestCenter,
@@ -24,8 +24,8 @@ import {
     SearchBar,
     CategoryTabs,
     TemplateList,
-} from "../components/TemplateUI";
-import { SortableTemplateCard } from "../components/TemplateUI/SortableTemplateCard";
+  } from "../components/features/templates/TemplateUI";
+  import { SortableTemplateCard } from "../components/features/templates/TemplateUI/SortableTemplateCard";
 
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
