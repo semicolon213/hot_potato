@@ -1,6 +1,6 @@
 import React from "react";
-import GoogleDocEmbed from "../components/GoogleDocEmbed";
-import "./proceedings.css";
+import GoogleDocEmbed from "../components/ui/GoogleDocEmbed";
+import "../styles/pages/proceedings.css";
 
 const Proceedings: React.FC = () => {
   return (

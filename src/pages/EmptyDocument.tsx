@@ -1,5 +1,5 @@
 import React from "react";
-import "./EmptyDocument.css";
+import "../styles/pages/EmptyDocument.css";
 
 const EmptyDocument: React.FC = () => {
   return (

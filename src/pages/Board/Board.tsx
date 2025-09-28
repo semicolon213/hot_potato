@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import './Board.css';
-import type { Post } from '../../App'; // Import Post interface from App.tsx
-import { deleteSheetRow } from '../../utils/googleSheetUtils';
+import '../../styles/pages/Board.css';
+import type { Post } from '../../types/app';
+import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
 
 interface BoardProps {
   onPageChange: (pageName: string) => void;

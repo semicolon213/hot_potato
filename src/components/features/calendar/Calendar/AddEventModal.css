@@ -1,0 +1,210 @@
+.add-event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent; /* No dimming */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.add-event-modal-overlay .modal-content {
+  background: white;
+  padding: 45px 20px 20px;
+  border-radius: var(--border-radius-md);
+  min-width: 380px; /* Reduced size */
+  max-width: 500px; /* Reduced size */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.close-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+}
+
+.modal-content .title-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0;
+    padding: 8px 0;
+}
+
+.modal-content label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.modal-content input {
+  padding: 8px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid #ccc;
+}
+
+
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.submit-button, .cancel-button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.submit-button {
+    background-color: #343a40;
+    color: white;
+}
+
+.submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cancel-button {
+    background-color: var(--lightgrey);
+    color: var(--text-dark);
+}
+
+.cancel-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.save-target-group,
+.tag-selection-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.target-button {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius-sm);
+  background-color: #f8f9fa;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.target-button.active {
+  background-color: #343a40;
+  color: white;
+  border-color: #343a40;
+  font-weight: 600;
+}
+
+.target-button:not(.active):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.custom-tag-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.custom-tag-input {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc;
+}
+
+.custom-color-picker {
+    position: relative;
+}
+
+.color-display {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    cursor: pointer;
+}
+
+.color-palette-popup {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius-sm);
+    padding: 5px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    z-index: 1010;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.color-swatch-popup {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.date-time-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.date-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.time-row {
+    display: flex;
+    gap: 10px;
+}
+
+.time-add-button-inline {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius-sm);
+    background-color: #f8f9fa;
+    cursor: pointer;
+    height: 37px; /* To match input height */
+}
+
+.add-event-modal-overlay .modal-content .add-event-description {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc;
+    min-height: 24px; /* Ensure initial height is respected */
+    max-height: 150px; /* Limit growth */
+    resize: none; /* Disable manual resizing */
+    overflow-y: auto; /* Show scrollbar when needed */
+}

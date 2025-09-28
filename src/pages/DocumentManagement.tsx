@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import "./DocumentManagement.css";
-import InfoCard, { type Item as InfoCardItem } from "../components/document/InfoCard";
-import DocumentList from "../components/document/DocumentList";
-import StatCard from "../components/document/StatCard";
-import { useDocumentTable, type Document } from "../hooks/useDocumentTable";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/googleSheetUtils";
-import { getRecentDocuments, addRecentDocument } from "../utils/localStorageUtils";
-import { formatRelativeTime } from "../utils/timeUtils";
-import { useTemplateUI, type Template } from "../hooks/useTemplateUI";
+import "../styles/pages/DocumentManagement.css";
+import InfoCard, { type Item as InfoCardItem } from "../components/features/documents/InfoCard";
+import DocumentList from "../components/features/documents/DocumentList";
+import StatCard from "../components/features/documents/StatCard";
+import { useDocumentTable, type Document } from "../hooks/features/documents/useDocumentTable";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/google/googleSheetUtils";
+import { getRecentDocuments, addRecentDocument } from "../utils/helpers/localStorageUtils";
+import { formatRelativeTime } from "../utils/helpers/timeUtils";
+import { useTemplateUI, type Template } from "../hooks/features/templates/useTemplateUI";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -163,7 +163,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   );
 
     const handleFavoriteClick = (item: { name: string; type: string; title: string; }) => {
-        onUseTemplate(item.type, item.title);
+        onUseTemplate(item.type, item.title, 'user');
     };
 
   const statCards = [
@@ -223,7 +223,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           icon="icon-star"
           backgroundColor="var(--table-header-bg)"
           items={frequentlyUsedForms}
-          onItemClick={handleFavoriteClick}
+          onItemClick={(item: any) => handleFavoriteClick(item)}
         />
       </div>
 

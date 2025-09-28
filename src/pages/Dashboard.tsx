@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useWidgetManagement } from "../hooks/useWidgetManagement";
-import "./Dashboard.css";
-import WidgetGrid from "../components/Dashboard/WidgetGrid";
-import AddWidgetModal from "../components/Dashboard/AddWidgetModal";
+import { useWidgetManagement } from "../hooks/features/dashboard/useWidgetManagement";
+import "../styles/pages/Dashboard.css";
+import WidgetGrid from "../components/features/dashboard/WidgetGrid";
+import AddWidgetModal from "../components/features/dashboard/AddWidgetModal";
 
 interface DashboardProps {
   hotPotatoDBSpreadsheetId: string | null;
@@ -41,8 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ hotPotatoDBSpreadsheetId }) => {
         <h1>대시보드</h1>
         <div className="dashboard-actions">
           <button className="add-widget-btn" onClick={() => setIsModalOpen(true)}>
-            <i className="fas fa-plus"></i>
-            위젯 추가
+            <i className="fas fa-plus"></i>위젯 추가
           </button>
         </div>
       </div>

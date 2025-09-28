@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useEffect } from "react";
-import "./GoogleService.css";
+import "../styles/pages/GoogleService.css";
 
 interface GoogleServiceProps {
-  service: "appscript" | "sheets" | "docs" | "gemini" | "groups" | "calendar" | "chat";
+  service: "appscript" | "sheets" | "docs" | "gemini" | "groups" | "calendar" | "chats";
 } 
 
 const SERVICE_URLS: Record<GoogleServiceProps["service"], string> = {
@@ -12,7 +12,7 @@ const SERVICE_URLS: Record<GoogleServiceProps["service"], string> = {
   gemini: "https://gemini.google.com/app?is_sa=1&android-min-version=301356232&ios-min-version=322.0",
   groups: "https://groups.google.com",
   calendar: "https://calendar.google.com/calendar/u/0/",
-  chat: "https://chat.google.com/u/0/"
+  chats: "https://mail.google.com/chat/u/0/#chat/home"
 };
 
 const GoogleServicePage: React.FC<GoogleServiceProps> = ({ service }) => {

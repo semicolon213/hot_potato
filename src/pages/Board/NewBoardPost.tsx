@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './NewBoardPost.css';
-import type { Post, User } from '../../App'; // Import Post and User interfaces from App.tsx
+import '../../styles/pages/NewBoardPost.css';
+import type { Post, User } from '../../types/app';
 
 interface NewBoardPostProps {
   onPageChange: (pageName: string) => void;

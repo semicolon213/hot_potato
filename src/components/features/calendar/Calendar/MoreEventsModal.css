@@ -1,0 +1,51 @@
+.more-events-modal {
+  position: absolute;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  width: 250px;
+}
+
+.more-events-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.more-events-modal-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.more-events-modal-header button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.more-events-list {
+  list-style: none;
+  padding: 10px;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.more-event-item {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 3px;
+  color: #fff;
+  cursor: pointer;
+  transition: filter 0.2s ease-in-out;
+}
+
+.more-event-item:hover {
+    filter: brightness(90%);
+}

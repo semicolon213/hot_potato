@@ -1,0 +1,253 @@
+/* ===== 미니멀리즘 사이드바 ===== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 200px;
+  background: #ffffff;
+  color: var(--text-dark);
+  padding: 0;
+  overflow-y: auto;
+  z-index: 1000;
+  border-right: 1px solid #e2e8f0;
+}
+
+.sidebar-header {
+  height: 60px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.sidebar-header a {
+  text-decoration: none;
+  color: var(--text-dark);
+  display: block;
+  width: 100%;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+}
+
+/* 로고 스타일링 */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.logo-image {
+  width: 120px;
+  object-fit: contain;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.logo-image:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+
+.logo-title {
+  color: #ffffff;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* 메뉴 컨테이너 스타일 */
+.menu-container {
+  padding: 0;
+  margin-top: 10px;
+}
+
+/* 메뉴 섹션 스타일 */
+.menu-section {
+  margin-bottom: 0;
+  padding: 0;
+}
+
+
+/* 메뉴 섹션 제목 스타일 */
+.menu-section-title {
+  font-size: var(--font-size-xs);
+  color: var(--text-medium);
+  margin-bottom: 16px;
+  padding: 0;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  border-radius: var(--border-radius-sm);
+  height: auto;
+  position: relative;
+  margin-bottom: 0;
+  border-bottom: none;
+  gap: 12px;
+  z-index: 1;
+  width: calc(100% - 16px);
+  margin: 0 8px;
+}
+
+.menu-item:hover,
+.menu-item.active:hover,
+.menu-item.menu-item-with-submenu.active:hover {
+  background-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.menu-item:hover .menu-icon,
+.menu-item:hover .menu-text,
+.menu-item:hover .submenu-arrow {
+  color: var(--text-dark);
+}
+
+.menu-item:hover .menu-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* 마지막 메뉴 항목도 하단 테두리 유지 */
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  color: var(--text-dark);
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transform: scale(1.1);
+}
+
+.menu-text {
+  color: var(--text-dark);
+  font-size: var(--font-size-base);
+  line-height: 20px;
+  font-weight: var(--font-weight-normal);
+  flex: 1;
+}
+
+.submenu-arrow {
+  color: var(--text-dark);
+  font-size: var(--font-size-md);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.submenu-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* 하위 메뉴 스타일 */
+.submenu {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: var(--border-radius-sm);
+  padding: 0;
+  display: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  margin-top: 4px;
+}
+
+.submenu-item {
+  padding: 16px 16px;
+  color: var(--text-dark);
+  font-size: var(--font-size-base);
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  border-bottom: none;
+  gap: 8px;
+}
+
+.submenu-bullet {
+  color: #000000;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.submenu-item:hover {
+  background-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.submenu-item:hover .submenu-bullet {
+  color: #000000;
+  transform: scale(1.0);
+}
+
+.submenu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover .submenu {
+  display: block;
+  background-color: #ffffff;
+}
+
+.menu-item.active .submenu {
+  display: block;
+  background-color: #ffffff;
+  z-index: 1001;
+}
+
+.menu-item.active {
+  z-index: 1001;
+}
+
+.menu-item-with-submenu:hover::before {
+  display: block; 
+}
+
+.menu-item-with-submenu::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px; 
+  width: 100%;
+  height: 5px; 
+  background-color: transparent; 
+  z-index: 199; 
+  display: none; 
+}
+
+/* 하위 메뉴가 있는 항목에 화살표 아이콘 추가 */
+.menu-item-with-submenu::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background-image: url('../assets/Icons/down.svg');
+  background-repeat: no-repeat;
+  background-size: contain;
+}

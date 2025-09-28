@@ -1,0 +1,131 @@
+/* 위젯 추가 모달 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: var(--border-radius-lg);
+    width: 85%;
+    max-width: 800px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transform: scale(0.95);
+    animation: modalOpen 0.3s forwards;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+@keyframes modalOpen {
+    to { transform: scale(1); }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.modal-header h2 {
+    color: var(--text-dark);
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: all 0.3s;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.close-modal:hover {
+    color: var(--error);
+    background-color: var(--lightgrey);
+}
+
+.widget-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.widget-option {
+    border: 1px solid var(--border-color);
+    padding: 20px 15px;
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: #ffffff;
+}
+
+.widget-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--lightgrey);
+}
+
+.widget-option.disabled:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border-color);
+}
+
+.widget-option:hover {
+    border-color: var(--primary);
+    background-color: var(--lightgrey);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
+}
+
+.widget-option i {
+    font-size: 36px;
+    margin-bottom: 15px;
+    color: var(--primary);
+    display: inline-block;
+    transition: all 0.3s;
+}
+
+.widget-option:hover i {
+    transform: scale(1.1);
+}
+
+.widget-option h3 {
+    color: var(--text-dark);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.widget-option p {
+    color: var(--text-light);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .widget-options {
+        grid-template-columns: 1fr 1fr;
+    }
+}

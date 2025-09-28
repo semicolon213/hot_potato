@@ -1,0 +1,323 @@
+/* 위젯 그리드 */
+.widget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.widget {
+    background-color: #ffffff;
+    border-radius: var(--border-radius-md);
+    box-shadow: none;
+    padding: 20px;
+    position: relative;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+.widget:hover {
+    border-color: var(--primary);
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.widget-header h3 {
+    color: var(--text-dark);
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.widget-header h3 i {
+    margin-right: 8px;
+    color: var(--primary);
+    font-size: 16px;
+}
+
+/* 위젯 콘텐츠 아이콘 색상 수정 */
+.widget-content i {
+    margin-right: 10px;
+    color: var(--text-medium);
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+}
+
+.widget-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.widget-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dark);
+    font-size: 14px;
+    transition: all 0.2s;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-sm);
+    background-color: transparent;
+}
+
+.widget-btn:hover {
+    color: var(--error);
+    background-color: var(--accent);
+}
+
+/* 위젯 액션 버튼 아이콘 색상 수정 */
+.widget-btn i {
+    color: var(--text-dark);
+}
+
+.widget-content {
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+.widget-content p {
+    margin-bottom: 8px;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border-lighter);
+    transition: all 0.2s;
+}
+
+.widget-content p:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.widget-content p:hover {
+    background-color: var(--accent);
+    padding-left: 8px;
+}
+
+
+/* 특정 위젯 스타일 */
+.widget[data-widget-type="notice"] .widget-content p {
+    position: relative;
+    padding-left: 15px;
+}
+
+.widget[data-widget-type="notice"] .widget-content p::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.widget[data-widget-type="library"] .widget-content p {
+    display: flex;
+    justify-content: space-between;
+}
+
+.widget[data-widget-type="library"] .seat-available {
+    color: var(--success);
+    font-weight: bold;
+}
+
+.widget[data-widget-type="library"] .seat-total {
+    color: var(--text-light);
+    font-size: 0.9em;
+}
+
+.widget[data-widget-type="professor-contact"] input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 10px;
+}
+
+.widget[data-widget-type="professor-contact"] .contact-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    cursor: pointer;
+}
+
+.widget[data-widget-type="professor-contact"] .contact-option:hover {
+    color: var(--primary);
+}
+
+/* 성적 위젯 스타일 */
+.widget[data-widget-type="grades"] .grade-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.widget[data-widget-type="grades"] .grade-bar {
+    height: 10px;
+    background-color: var(--lightgrey);
+    border-radius: var(--border-radius-sm);
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.widget[data-widget-type="grades"] .grade-progress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--success));
+    border-radius: var(--border-radius-sm);
+}
+
+/* 일정 위젯 스타일 */
+.widget[data-widget-type="calendar"] .calendar-day {
+    font-weight: bold;
+    color: var(--primary);
+    margin-bottom: 5px;
+}
+
+.widget[data-widget-type="calendar"] .calendar-event {
+    margin-bottom: 8px;
+    padding-left: 15px;
+    position: relative;
+}
+
+.widget[data-widget-type="calendar"] .calendar-event::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--error);
+}
+
+/* 출석 위젯 스타일 */
+.widget[data-widget-type="attendance"] .attendance-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.widget[data-widget-type="attendance"] .attendance-box {
+    text-align: center;
+    padding: 10px;
+    border-radius: var(--border-radius-md);
+    background-color: var(--lightgrey);
+    flex: 1;
+    margin: 0 5px;
+}
+
+.widget[data-widget-type="attendance"] .attendance-value {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* 과제 위젯 스타일 */
+.widget[data-widget-type="assignments"] .assignment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.widget[data-widget-type="assignments"] .assignment-due {
+    font-size: 12px;
+    color: var(--error);
+    font-weight: bold;
+}
+
+/* 시간표 위젯 스타일 */
+.widget[data-widget-type="timetable"] .timetable-item {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.widget[data-widget-type="timetable"] .timetable-time {
+    font-weight: bold;
+    color: var(--primary);
+    min-width: 80px;
+}
+
+/* 학식 메뉴 위젯 스타일 */
+.widget[data-widget-type="cafeteria"] .menu-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.widget[data-widget-type="cafeteria"] .menu-price {
+    color: var(--error);
+    font-weight: bold;
+}
+
+/* 날씨 위젯 스타일 */
+.widget[data-widget-type="weather"] .weather-today {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.widget[data-widget-type="weather"] .weather-temp {
+    font-size: 28px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.widget[data-widget-type="weather"] .weather-icon {
+    font-size: 40px;
+    margin-right: 15px;
+    color: var(--primary);
+}
+
+.widget[data-widget-type="weather"] .weather-forecast {
+    display: flex;
+    justify-content: space-between;
+}
+
+.widget[data-widget-type="weather"] .forecast-day {
+    text-align: center;
+    font-size: 12px;
+}
+
+/* 버스 정보 위젯 스타일 */
+.widget[data-widget-type="bus"] .bus-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.widget[data-widget-type="bus"] .bus-time {
+    font-weight: bold;
+    color: var(--success);
+}
+
+/* 캠퍼스 맵 위젯 스타일 */
+.widget[data-widget-type="campus-map"] .map-container {
+    height: 200px;
+    background-color: var(--lightgrey);
+    border-radius: var(--border-radius-md);
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    font-weight: bold;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .widget-grid {
+        grid-template-columns: 1fr;
+    }
+}
