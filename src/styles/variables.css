@@ -21,6 +21,7 @@
   --text-light: #666666;                 /* 중간 회색 */
   --menu-bg: #0ea5e9;                    /* 하늘색 메뉴 배경 */
   --table-header-bg: #f8fafc;            /* 연한 회색 테이블 헤더 */
+  --error: #ff3d00;                     /* 구글 레드 */
   --card-shadow: none;
   --card-shadow-hover: none;
   --border-radius-lg: 12px;

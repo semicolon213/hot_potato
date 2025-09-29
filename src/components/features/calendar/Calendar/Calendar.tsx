@@ -476,7 +476,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     <div className="calendar-body-container">
                         <div className="day-wrapper">
                             {weeks.map((week, index) => (
-                                <div className={`calendar-item ${index === 0 ? 'sunday' : ''}`} key={week}>{week}</div>
+                                <div className={`calendar-item ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`} key={week}>{week}</div>
                             ))}
                         </div>
                         <div className="day-wrapper">
