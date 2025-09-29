@@ -10,7 +10,7 @@
   --text-primary: #000000;
   --text-secondary: #000000;
   --text-light: #666666;
-  --bg-primary: #ffffff;
+  --bg-primary: #f8f8f7;
   --bg-secondary: #f8fafc;
   --bg-tertiary: #f1f5f9;
   --border-color: #e2e8f0;
@@ -334,7 +334,7 @@
   width: 100%;
   padding: 0.75rem 1rem;
   background: var(--primary);
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
@@ -359,7 +359,7 @@
   margin-top: 1rem;
   padding: 0.75rem 1rem;
   background: var(--success);
-  color: #ffffff;
+  color: #f8f8f7;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
@@ -381,7 +381,7 @@
   width: 100%;
   padding: 0.875rem 1.25rem;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: var(--radius-md);
   font-size: 1rem;
@@ -408,7 +408,7 @@
   margin-top: 1rem;
   padding: 0.875rem 1rem;
   background: var(--error);
-  color: #ffffff;
+  color: #f8f8f7;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;

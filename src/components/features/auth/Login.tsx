@@ -17,7 +17,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [logoSrc, setLogoSrc] = useState<string>("/logo.png");
+  const [logoSrc, setLogoSrc] = useState<string>("/logo.svg");
   const [logoClickCount, setLogoClickCount] = useState<number>(0);
 
   const {
@@ -47,7 +47,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             alt="Hot Potato Logo"
             className="login-logo"
             onClick={handleLogoClick}
-            onError={() => setLogoSrc("/logo.png")}
+            onError={() => setLogoSrc("/logo.svg")}
             title=""
           />
         </div>

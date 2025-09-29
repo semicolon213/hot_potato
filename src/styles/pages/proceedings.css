@@ -56,7 +56,7 @@
   font-size: 15px;
   font-weight: 500;
   background-color: var(--primary);
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: var(--border-radius-md);
   cursor: pointer;
@@ -72,7 +72,7 @@
   font-size: 15px;
   font-weight: 500;
   background-color: #28a745; /* 초록색 계열 */
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: var(--border-radius-md);
   cursor: pointer;
@@ -235,7 +235,7 @@
   width: 20px;
   left: 2px;
   bottom: 2px;
-  background-color: #ffffff;
+  background-color: #f8f8f7;
   transition: .4s;
   border-radius: 50%;
 }

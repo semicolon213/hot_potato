@@ -17,7 +17,7 @@
 }
 
 .pending-card {
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 1rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 2.5rem 2rem;
@@ -165,7 +165,7 @@
 
 .status-badge.admin {
   background: linear-gradient(135deg, var(--primary, rgb(56, 67, 86)), var(--secondary, rgb(103, 123, 139)));
-  color: #ffffff;
+  color: #f8f8f7;
 }
 
 .status-badge.user {
@@ -209,7 +209,7 @@
   width: 100%;
   padding: 0.875rem 1.25rem;
   background: linear-gradient(135deg, var(--primary, rgb(56, 67, 86)), var(--secondary, rgb(103, 123, 139)));
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: 0.5rem;
   font-size: 1rem;

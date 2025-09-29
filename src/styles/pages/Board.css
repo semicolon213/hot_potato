@@ -47,7 +47,7 @@
 
 .new-post-button {
   background-color: var(--primary);
-  color: #ffffff;
+  color: #f8f8f7;
   padding: 10px 20px;
   border: none;
   border-radius: var(--border-radius-sm);
@@ -63,7 +63,7 @@
 
 .auth-button {
   background-color: var(--primary);
-  color: #ffffff;
+  color: #f8f8f7;
   padding: 10px 20px;
   border: none;
   border-radius: var(--border-radius-sm);
@@ -84,7 +84,7 @@
 }
 
 .post-card {
-  background-color: #ffffff;
+  background-color: #f8f8f7;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   padding: 20px;
@@ -144,7 +144,7 @@
 
 .delete-button {
   background-color: var(--error);
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: var(--border-radius-sm);
   padding: 5px 10px;
@@ -173,7 +173,7 @@
 }
 
 .modal-content {
-  background-color: #ffffff;
+  background-color: #f8f8f7;
   padding: 30px;
   border-radius: var(--border-radius-md);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
@@ -224,7 +224,7 @@
 
 .modal-actions button:first-child {
   background-color: var(--success);
-  color: #ffffff;
+  color: #f8f8f7;
 }
 
 .modal-actions button:first-child:hover {
@@ -234,7 +234,7 @@
 
 .modal-actions button:last-child {
   background-color: var(--text-light);
-  color: #ffffff;
+  color: #f8f8f7;
 }
 
 .modal-actions button:last-child:hover {

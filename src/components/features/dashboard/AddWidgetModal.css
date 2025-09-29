@@ -14,7 +14,7 @@
 }
 
 .modal-content {
-    background-color: #ffffff;
+    background-color: #f8f8f7;
     padding: 30px;
     border-radius: var(--border-radius-lg);
     width: 85%;
@@ -76,7 +76,7 @@
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
-    background-color: #ffffff;
+    background-color: #f8f8f7;
 }
 
 .widget-option.disabled {

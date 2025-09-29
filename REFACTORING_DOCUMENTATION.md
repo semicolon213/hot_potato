@@ -120,7 +120,7 @@ interface ButtonProps {
 ```css
 /* 기본 테마 */
 .theme-default {
-  --bg-primary: #ffffff;
+  --bg-primary: #f8f8f7;
   --bg-secondary: #f8fafc;
   --text-primary: #1f2937;
 }

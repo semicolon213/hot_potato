@@ -5,7 +5,7 @@
   right: 20px;
   width: 60px;
   height: 60px;
-  background: #ffffff;
+  background: #f8f8f7;
   color: #000000;
   border: none;
   border-radius: 12px;
@@ -20,7 +20,7 @@
 }
 
 .chat-floating-button:hover {
-  background: #ffffff;
+  background: #f8f8f7;
   color: #000000;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
@@ -51,7 +51,7 @@
 .chat-window {
   width: 400px;
   height: 500px;
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 16px;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   display: flex;

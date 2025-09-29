@@ -11,7 +11,7 @@
   text-align: center;
   margin-bottom: 40px;
   padding: 30px;
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -40,7 +40,7 @@
   box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
-  color: #ffffff;
+  color: #f8f8f7;
   position: relative;
   overflow: hidden;
 }
@@ -62,7 +62,7 @@
 }
 
 .admin-key-section h3 {
-  color: #ffffff;
+  color: #f8f8f7;
   margin-bottom: 20px;
   font-size: 24px;
   font-weight: 700;
@@ -102,7 +102,7 @@
 
 .send-key-btn {
   background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  color: #f8f8f7;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 12px;
   padding: 16px 24px;
@@ -211,7 +211,7 @@
 
 /* 사용자 섹션 */
 .users-section {
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 20px;
   padding: 30px;
   margin-bottom: 30px;
@@ -396,7 +396,7 @@
 
 .approve-btn {
   background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
@@ -422,7 +422,7 @@
 
 .reject-btn {
   background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: 8px;
   padding: 8px 16px;

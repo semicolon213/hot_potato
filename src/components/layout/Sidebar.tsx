@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
           style={{ textDecoration: "none" }}
         >
           <div className="logo-container">
-            <img src="/logo.png" alt="HP ERP Logo" className="logo-image" />
+            <img src="/logo.svg" alt="HP ERP Logo" className="logo-image" />
           </div>
         </a>
       </div>

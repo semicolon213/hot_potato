@@ -5,7 +5,7 @@
 }
 
 .login-card {
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -57,7 +57,7 @@
   gap: 12px;
   width: 100%;
   padding: 16px 24px;
-  background: #ffffff;
+  background: #f8f8f7;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   font-size: 16px;
@@ -117,7 +117,7 @@
 }
 
 .registration-card {
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -206,7 +206,7 @@
 .verify-btn {
   padding: 12px 20px;
   background: #4285F4;
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -241,7 +241,7 @@
   width: 100%;
   padding: 16px 24px;
   background: #4285F4;
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: 12px;
   font-size: 16px;
@@ -270,7 +270,7 @@
 }
 
 .pending-card {
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -343,7 +343,7 @@
 .logout-btn {
   padding: 12px 24px;
   background: #dc3545;
-  color: #ffffff;
+  color: #f8f8f7;
   border: none;
   border-radius: 8px;
   font-weight: 600;
