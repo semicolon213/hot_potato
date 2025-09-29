@@ -338,14 +338,14 @@
     text-align: left;
 }
 
-.semester-picker-modal input[type="date"] {
+.semester-picker-modal .date-selector-row input[type="date"] {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 0.75em;
 }
 
-.semester-picker-modal button {
+.semester-picker-modal .modal-actions .done-btn {
     margin-top: 10px;
     padding: 8px 16px;
     border: none;
@@ -354,6 +354,23 @@
     color: white;
     cursor: pointer;
     font-size: 0.75em;
+    min-width: 80px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.semester-picker-modal .modal-actions .close-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--grey);
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 0.75em;
+    min-width: 80px;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .add-period-form {
@@ -377,11 +394,57 @@
     margin-top: 0;
 }
 
+.semester-picker-modal .add-period-form button {
+    margin-top: 0;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: white;
+    cursor: pointer;
+    font-size: 0.75em;
+}
+
 .delete-period-btn {
     background-color: transparent;
     color: var(--error);
     border: 1px solid var(--error);
     margin-left: 10px;
+}
+
+.semester-picker-modal .modal-actions .done-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.semester-picker-modal .modal-actions .close-btn:hover {
+    background-color: var(--border-light);
+}
+
+.delete-period-btn {
+    background-color: transparent;
+    color: var(--error);
+    border: 1px solid var(--error);
+    margin-left: 10px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+}
+
+.semester-picker-modal .delete-period-btn {
+    background-color: transparent;
+    color: var(--error);
+    border: 1px solid var(--error);
+    margin-left: 10px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+}
+
+.semester-picker-modal .delete-period-btn:hover {
+    background-color: var(--error);
+    color: white;
 }
 
 .delete-period-btn:hover {

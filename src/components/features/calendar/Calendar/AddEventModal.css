@@ -65,7 +65,7 @@
   margin-top: 10px;
 }
 
-.submit-button, .cancel-button {
+.add-event-modal-overlay .modal-content .modal-actions .submit-button, .add-event-modal-overlay .modal-content .modal-actions .cancel-button {
     padding: 10px 15px;
     border: none;
     border-radius: var(--border-radius-sm);
@@ -73,21 +73,21 @@
     font-size: 16px;
 }
 
-.submit-button {
+.add-event-modal-overlay .modal-content .modal-actions .submit-button {
     background-color: #343a40;
     color: white;
 }
 
-.submit-button:hover {
+.add-event-modal-overlay .modal-content .modal-actions .submit-button:hover {
     background-color: #23272b;
 }
 
-.cancel-button {
+.add-event-modal-overlay .modal-content .modal-actions .cancel-button {
     background-color: var(--lightgrey);
     color: var(--text-dark);
 }
 
-.cancel-button:hover {
+.add-event-modal-overlay .modal-content .modal-actions .cancel-button:hover {
     background-color: var(--border-light);
 }
 

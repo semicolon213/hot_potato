@@ -652,7 +652,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
 
                         <div className="modal-actions">
-                            <button onClick={handleSave}>완료</button>
+                            <button onClick={handleSave} className="done-btn">완료</button>
                             <button onClick={handleCloseWithoutSaving} className="close-btn">닫기</button>
                         </div>
                     </div>
