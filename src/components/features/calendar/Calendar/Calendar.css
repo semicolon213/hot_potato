@@ -53,7 +53,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background-color: #f8f8f7;
+  background-color: white;
   padding: 0 0;
   border-radius: var(--border-radius-lg);
 }
@@ -168,7 +168,7 @@
 
 .event-item.selected {
   background-color: var(--primary);
-  color: #f8f8f7;
+  color: #ffffff;
 }
 
 .calendar-header-top {
