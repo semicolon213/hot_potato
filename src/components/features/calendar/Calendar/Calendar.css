@@ -560,3 +560,38 @@
     border-radius: 4px;
     flex-shrink: 0;
 }
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.search-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-top: 8px;
+    max-width: 250px; /* Match search-container width */
+}
+
+.search-tag {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 13px;
+}
+
+.search-tag button {
+    background: none;
+    border: none;
+    color: white;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1;
+}

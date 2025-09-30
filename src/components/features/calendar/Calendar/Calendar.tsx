@@ -66,7 +66,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
-    const [inputValue, setInputValue] = useState(searchTerm);
+    const [inputValue, setInputValue] = useState('');
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
@@ -162,10 +162,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             clearTimeout(handler);
         };
     }, [inputValue, isSuggestionsVisible, suggestionSource]);
-
-    useEffect(() => {
-        setInputValue(searchTerm);
-    }, [searchTerm]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -608,6 +604,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
+    const handleRemoveTerm = (termToRemove: string) => {
+        const newSearchTerm = searchTerm
+            .split(' ')
+            .filter(t => t !== termToRemove)
+            .join(' ');
+        setSearchTerm(newSearchTerm);
+    };
+
     const formatSuggestionDate = (startDateStr: string, endDateStr: string) => {
         if (!startDateStr) return '';
         const format = (dateStr: string) => {
@@ -639,47 +643,62 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
-                            <i>&#x1F50D;</i>
-                            <input
-                                type="text"
-                                placeholder="일정 검색..."
-                                className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onFocus={() => setIsSuggestionsVisible(true)}
-                                onBlur={() => {
-                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        const terms = inputValue.split(' ').filter(t => t.length > 0);
-                                        const formattedTerms = terms.map(t => t.startsWith('#') ? t : `#${t}`);
-                                        setSearchTerm(formattedTerms.join(' '));
-                                        setSuggestions([]);
-                                    }
-                                }}
-                            />
-                            {isSuggestionsVisible && suggestions.length > 0 && (
-                                <ul className="search-suggestions">
-                                    {suggestions.map((suggestion, index) => (
-                                        <li
-                                            key={index}
-                                            onMouseDown={() => {
-                                                setInputValue(suggestion.title);
-                                                const formattedTerm = suggestion.title.startsWith('#') ? suggestion.title : `#${suggestion.title}`;
-                                                setSearchTerm(formattedTerm);
-                                                setSuggestions([]);
-                                            }}
-                                        >
-                                            <span className="suggestion-title">{suggestion.title}</span>
-                                            <span className="suggestion-date">{formatSuggestionDate(suggestion.startDate, suggestion.endDate)}</span>
-                                            <span className="suggestion-tag">{suggestion.tag}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
+                        <div className="search-wrapper">
+                            <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
+                                <i>&#x1F50D;</i>
+                                <input
+                                    type="text"
+                                    placeholder="일정 검색..."
+                                    className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onFocus={() => setIsSuggestionsVisible(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && inputValue.trim() !== '') {
+                                            e.preventDefault();
+                                            const newTerm = `#${inputValue.trim()}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(newTerm)) {
+                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+                                            }
+                                            setInputValue('');
+                                        }
+                                    }}
+                                />
+                                {isSuggestionsVisible && suggestions.length > 0 && (
+                                    <ul className="search-suggestions">
+                                        {suggestions.map((suggestion, index) => (
+                                            <li
+                                                key={index}
+                                                onMouseDown={() => {
+                                                    const formattedTerm = `#${suggestion.title}`;
+                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                    if (!existingTerms.includes(formattedTerm)) {
+                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                                    }
+                                                    setInputValue('');
+                                                    setSuggestions([]);
+                                                }}
+                                            >
+                                                <span className="suggestion-title">{suggestion.title}</span>
+                                                <span className="suggestion-date">{formatSuggestionDate(suggestion.startDate, suggestion.endDate)}</span>
+                                                <span className="suggestion-tag">{suggestion.tag}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <div className="search-tags-container">
+                                {searchTerm.split(' ').filter(Boolean).map(term => (
+                                    <div key={term} className="search-tag">
+                                        {term}
+                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
