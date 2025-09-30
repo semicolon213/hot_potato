@@ -6,6 +6,7 @@ import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
+import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -66,21 +67,36 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const [inputValue, setInputValue] = useState(searchTerm);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
-    const suggestionKeywords = useMemo(() => {
-        const titles = events.map(event => event.title);
-        const types = Object.values(filterLabels);
-        const combined = [...titles, ...types];
-        return [...new Set(combined)];
-    }, [events, filterLabels]);
+    const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
+
+    useEffect(() => {
+        const loadSuggestions = async () => {
+            const sheetId = await findSpreadsheetById('calendar_student');
+            if (sheetId) {
+                const events = await fetchCalendarEvents(null, sheetId, '시트1');
+                if (events) {
+                    const source = events.map(event => ({
+                        title: event.title,
+                        tag: event.type
+                    }));
+                    const uniqueSource = [...new Map(source.map(item => [item.title, item])).values()];
+                    setSuggestionSource(uniqueSource);
+                }
+            }
+        };
+        loadSuggestions();
+    }, []);
 
     useEffect(() => {
         const handler = setTimeout(() => {
             if (inputValue && isSuggestionsVisible) {
-                const filtered = suggestionKeywords.filter(keyword =>
-                    keyword.toLowerCase().includes(inputValue.toLowerCase())
+                const lowerInputValue = inputValue.toLowerCase();
+                const filtered = suggestionSource.filter(item =>
+                    item.title.toLowerCase().includes(lowerInputValue) ||
+                    (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
                 );
                 setSuggestions(filtered);
             } else {
@@ -91,7 +107,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return () => {
             clearTimeout(handler);
         };
-    }, [inputValue, suggestionKeywords, isSuggestionsVisible]);
+    }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
     useEffect(() => {
         setInputValue(searchTerm);
@@ -580,13 +596,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         <li
                                             key={index}
                                             onMouseDown={() => {
-                                                setInputValue(suggestion);
-                                                const formattedTerm = suggestion.startsWith('#') ? suggestion : `#${suggestion}`;
+                                                setInputValue(suggestion.title);
+                                                const formattedTerm = suggestion.title.startsWith('#') ? suggestion.title : `#${suggestion.title}`;
                                                 setSearchTerm(formattedTerm);
                                                 setSuggestions([]);
                                             }}
                                         >
-                                            {suggestion}
+                                            <span>{suggestion.title}</span>
+                                            <span className="suggestion-tag">{suggestion.tag}</span>
                                         </li>
                                     ))}
                                 </ul>
