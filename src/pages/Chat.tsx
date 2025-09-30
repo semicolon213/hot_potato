@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HiChatBubbleLeftRight, HiXMark } from 'react-icons/hi2';
-import './Chat.css';
+import '../styles/pages/Chat.css';
 
 interface ChatProps {
   onClick?: () => void;
