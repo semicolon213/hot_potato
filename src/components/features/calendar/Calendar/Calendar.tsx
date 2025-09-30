@@ -78,7 +78,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 const sheetId = await findSpreadsheetById('calendar_student');
                 if (sheetId) {
                     const events = await fetchCalendarEvents(null, sheetId, '시트1');
-                    return events ? events.map(e => ({ title: e.title, tag: e.type })) : [];
+                    return events ? events.map(e => ({ 
+                        title: e.title, 
+                        tag: e.type, 
+                        startDate: e.startDate, 
+                        endDate: e.endDate 
+                    })) : [];
                 }
                 return [];
             })();
@@ -92,7 +97,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         'orderBy': 'startTime'
                     });
                     const items = response.result.items || [];
-                    return items.map((item: any) => ({ title: item.summary, tag: '개인 일정' }));
+                    return items.map((item: any) => {
+                        const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                        const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                        return {
+                            title: item.summary,
+                            tag: '개인 일정',
+                            startDate: startDate,
+                            endDate: endDate || startDate
+                        };
+                    });
                 } catch (error) {
                     console.error("Error fetching Google Calendar events:", error);
                     return [];
@@ -574,6 +588,23 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
+    const formatSuggestionDate = (startDateStr: string, endDateStr: string) => {
+        if (!startDateStr) return '';
+        const format = (dateStr: string) => {
+            try {
+                const date = new Date(dateStr);
+                date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                return `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            } catch (e) {
+                return '';
+            }
+        };
+        const start = format(startDateStr);
+        const end = format(endDateStr || startDateStr);
+        if (start === end) return start;
+        return `${start} ~ ${end}`;
+    };
+
     return (
         <>
             <div className="calendar-header-container">
@@ -622,7 +653,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                 setSuggestions([]);
                                             }}
                                         >
-                                            <span>{suggestion.title}</span>
+                                            <span className="suggestion-title">{suggestion.title}</span>
+                                            <span className="suggestion-date">{formatSuggestionDate(suggestion.startDate, suggestion.endDate)}</span>
                                             <span className="suggestion-tag">{suggestion.tag}</span>
                                         </li>
                                     ))}
