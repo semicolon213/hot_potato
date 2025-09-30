@@ -478,6 +478,14 @@ export const saveAcademicScheduleToSheet = async (
 ): Promise<void> => {
     const { semesterStartDate, finalExamsPeriod, midtermExamsPeriod, gradeEntryPeriod, customPeriods } = scheduleData;
 
+    const tagLabels: { [key: string]: string } = {
+        holiday: '휴일/휴강',
+        event: '행사',
+        makeup: '보강',
+        exam: '시험',
+        meeting: '회의',
+    };
+
     const formatDate = (date: Date | null) => {
         if (!date) return '';
         const d = new Date(date);
@@ -494,7 +502,7 @@ export const saveAcademicScheduleToSheet = async (
         return newDate;
     };
 
-    const eventsToSave = [];
+    const eventsToSave: any[] = [];
 
     // 개강일
     eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
@@ -538,14 +546,14 @@ export const saveAcademicScheduleToSheet = async (
         '', // colorId
         '', // startDateTime
         '', // endDateTime
-        event.type || '', // Column I for type
+        tagLabels[event.type] || event.type || '', // Column I for type
     ]);
 
     try {
-        // Clear existing academic events (e.g., rows A2:H100)
+        // Clear existing academic events (e.g., rows A2:I100)
         await (window as any).gapi.client.sheets.spreadsheets.values.clear({
             spreadsheetId: calendarStudentSpreadsheetId,
-            range: `${calendarSheetName}!A2:H100`, // Assuming academic events are within this range
+            range: `${calendarSheetName}!A2:I100`, // Assuming academic events are within this range
         });
 
         // Append new events
