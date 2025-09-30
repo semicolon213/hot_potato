@@ -289,17 +289,19 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           {/* --- 반복 설정 UI 수정 --- */}
           {saveTarget === 'sheet' && (
             <div className="recurrence-section">
-              <div className="recurrence-options-group">
-                {(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'] as RecurrenceFreq[]).map(freq => (
-                  <button
-                    key={freq}
-                    className={`target-button ${recurrenceFreq === freq ? 'active' : ''}`}
-                    onClick={() => setRecurrenceFreq(freq)}
-                  >
-                    {freq === 'NONE' ? '반복 안 함' : freq === 'DAILY' ? '매일' : freq === 'WEEKLY' ? '매주' : '매월'}
-                  </button>
-                ))}
-              </div>
+              <label>
+                반복:
+                <select
+                  value={recurrenceFreq}
+                  onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
+                  className="recurrence-select"
+                >
+                  <option value="NONE">반복 안 함</option>
+                  <option value="DAILY">매일</option>
+                  <option value="WEEKLY">매주</option>
+                  <option value="MONTHLY">매월</option>
+                </select>
+              </label>
 
               {recurrenceFreq !== 'NONE' && (
                 <div className="recurrence-details">

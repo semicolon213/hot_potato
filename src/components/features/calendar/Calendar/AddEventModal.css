@@ -107,10 +107,17 @@
 }
 
 .save-target-group,
-.tag-selection-group,
-.recurrence-options-group {
+.tag-selection-group {
   display: flex;
   gap: 8px;
+}
+
+.recurrence-select {
+  width: fit-content;
+  padding: 8px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid #ccc;
+  background-color: #fff;
 }
 
 .target-button {

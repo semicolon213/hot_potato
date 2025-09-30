@@ -1,14 +1,15 @@
 /* 세부 일정 카드 컨테이너 */
 .event-detail-container {
     position: absolute;
-    background-color: #f8f8f7;
+    background-color: white;
     border-radius: var(--border-radius-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     width: 90%;
     max-width: 480px;
     display: flex;
     flex-direction: column;
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.15s ease-out;
+    z-index: 1002;
 }
 
 
@@ -95,14 +96,3 @@
     }
 }
 
-.event-detail-container {
-    position: absolute;
-    background-color: white;
-    border-radius: var(--border-radius-md);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    width: 90%;
-    max-width: 480px;
-    display: flex;
-    flex-direction: column;
-    animation: fadeIn 0.15s ease-out;
-}

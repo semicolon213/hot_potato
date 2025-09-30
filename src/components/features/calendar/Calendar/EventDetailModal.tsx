@@ -28,19 +28,20 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
     const formatEventDate = (startStr: string, endStr: string) => {
         const startDate = new Date(startStr);
         const endDate = new Date(endStr);
-        const realEndDate = new Date(endDate);
-        realEndDate.setDate(realEndDate.getDate() - 1);
 
-        const startYear = startDate.getFullYear();
-        const startMonth = startDate.getMonth() + 1;
-        const startDay = startDate.getDate();
-
-        if (startDate.toISOString().split('T')[0] === realEndDate.toISOString().split('T')[0]) {
-             return `${startYear}년 ${startMonth}월 ${startDay}일`;
+        // For single-day events
+        if (endDate.getTime() - startDate.getTime() === 0) {
+            const startYear = startDate.getFullYear();
+            const startMonth = startDate.getMonth() + 1;
+            const startDay = startDate.getDate();
+            return `${startYear}년 ${startMonth}월 ${startDay}일`;
         }
 
-        const endMonth = realEndDate.getMonth() + 1;
-        const endDay = realEndDate.getDate();
+        // For multi-day events
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+        const endMonth = endDate.getMonth() + 1;
+        const endDay = endDate.getDate();
 
         if (startMonth === endMonth) {
             return `${startMonth}월 ${startDay}일-${endDay}일`;
