@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
-import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext';
+import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
+import { RRule } from 'rrule';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -313,6 +314,48 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return weeksArr;
     }, [daysInMonth]);
 
+    const expandedEvents = useMemo(() => {
+        const viewStart = new Date(weeksInMonth[0]?.[0]?.date);
+        const viewEnd = new Date(weeksInMonth[weeksInMonth.length - 1]?.[6]?.date);
+        viewEnd.setHours(23, 59, 59, 999); // Ensure it covers the entire last day
+
+        if (isNaN(viewStart.getTime()) || isNaN(viewEnd.getTime())) {
+            return events; // Return raw events if date range is invalid
+        }
+
+        const allEvents: Event[] = [];
+
+        events.forEach(event => {
+            if (event.rrule) {
+                try {
+                    const rule = RRule.fromString(event.rrule);
+                    const occurrences = rule.between(viewStart, viewEnd);
+
+                    occurrences.forEach(occurrenceDate => {
+                        // Adjust for timezone offset before creating new event
+                        const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
+                        const dateStr = adjustedDate.toISOString().split('T')[0];
+                        
+                        allEvents.push({
+                            ...event,
+                            // Create a new unique ID for each occurrence to avoid key conflicts
+                            id: `${event.id}-occurrence-${dateStr}`,
+                            startDate: dateStr,
+                            endDate: dateStr, // Each occurrence is a single-day event in this context
+                        });
+                    });
+                } catch (e) {
+                    console.error("Error parsing RRULE string:", event.rrule, e);
+                    allEvents.push(event); // Push original event if rule parsing fails
+                }
+            } else {
+                allEvents.push(event);
+            }
+        });
+
+        return allEvents;
+    }, [events, weeksInMonth]);
+
     const eventLayouts = useMemo(() => {
         const layouts = new Map<string, (Event | null)[]>();
         weeksInMonth.forEach(week => {
@@ -321,7 +364,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const weekEnd = new Date(week[week.length - 1].date);
             weekEnd.setHours(23, 59, 59, 999);
 
-            const weekEvents = events.filter(e => {
+            const weekEvents = expandedEvents.filter(e => {
                 const eventStart = new Date(e.startDate);
                 const eventEnd = new Date(e.endDate);
                 // 월간 뷰에서는 시간 지정 이벤트를 제외합니다 (종일 이벤트만 표시).
@@ -359,7 +402,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             }
         });
         return layouts;
-    }, [weeksInMonth, events]);
+    }, [weeksInMonth, expandedEvents]);
 
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';

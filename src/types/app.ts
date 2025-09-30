@@ -1,17 +1,17 @@
 // App.tsx에서 사용되는 공통 타입들
 
 export interface Event {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  description?: string;
-  colorId?: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  type?: string;
-  color?: string;
-  isHoliday?: boolean;
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    description?: string;
+    colorId?: string;
+    startDateTime?: string;
+    endDateTime?: string;
+    type?: string;
+    color?: string;
+    rrule?: string; // For recurrence rule
 }
 
 export interface Post {

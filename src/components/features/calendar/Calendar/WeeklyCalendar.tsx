@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
-import useCalendarContext, { type Event } from '../../../../hooks/features/calendar/useCalendarContext';
+import useCalendarContext, { type Event } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './WeeklyCalendar.css';
+import { RRule } from 'rrule';
 
 interface WeeklyCalendarProps {
     selectedWeek: number;
@@ -101,7 +102,60 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
         return days;
     }, [selectedWeek, semesterStartDate]);
 
-    const { layout: allDayLayout, canvasHeight } = useMemo(() => calculateAllDayEventLayout(events, weekDays), [events, weekDays]);
+    const expandedEvents = useMemo(() => {
+        if (weekDays.length === 0) {
+            return events;
+        }
+        const viewStart = new Date(weekDays[0].date);
+        const viewEnd = new Date(weekDays[weekDays.length - 1].date);
+        viewEnd.setHours(23, 59, 59, 999);
+
+        const allEvents: Event[] = [];
+
+        events.forEach(event => {
+            if (event.rrule) {
+                try {
+                    const rule = RRule.fromString(event.rrule);
+                    const occurrences = rule.between(viewStart, viewEnd);
+
+                    occurrences.forEach(occurrenceDate => {
+                        const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
+                        const dateStr = adjustedDate.toISOString().split('T')[0];
+                        
+                        const newEvent: Event = {
+                            ...event,
+                            id: `${event.id}-occurrence-${dateStr}`,
+                            startDate: dateStr,
+                            endDate: dateStr,
+                        };
+
+                        // If the original event was timed, create a timed occurrence
+                        if (event.startDateTime && event.endDateTime) {
+                            const startTime = new Date(event.startDateTime).toTimeString().split(' ')[0];
+                            const endTime = new Date(event.endDateTime).toTimeString().split(' ')[0];
+                            newEvent.startDateTime = `${dateStr}T${startTime}`;
+                            newEvent.endDateTime = `${dateStr}T${endTime}`;
+                        } else {
+                            // Ensure timed properties are null for all-day occurrences
+                            delete newEvent.startDateTime;
+                            delete newEvent.endDateTime;
+                        }
+
+                        allEvents.push(newEvent);
+                    });
+                } catch (e) {
+                    console.error("Error parsing RRULE string:", event.rrule, e);
+                    allEvents.push(event);
+                }
+            } else {
+                allEvents.push(event);
+            }
+        });
+
+        return allEvents;
+    }, [events, weekDays]);
+
+    const { layout: allDayLayout, canvasHeight } = useMemo(() => calculateAllDayEventLayout(expandedEvents, weekDays), [expandedEvents, weekDays]);
 
     useEffect(() => {
         if (weekDays.length > 0) {
@@ -194,7 +248,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                         ))}
                     </div>
                     {weekDays.map((day, index) => {
-                        const timedEvents = events.filter(event => event.startDate === day.date && event.startDateTime);
+                        const timedEvents = expandedEvents.filter(event => event.startDate === day.date && event.startDateTime);
                         return (
                             <div key={day.date} className={`day-column ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
                                 <div className="timed-events-grid">

@@ -383,7 +383,7 @@ export const fetchCalendarEvents = async (
                 // 전체 데이터 가져오기
                 const fullResponse = await (window as any).gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: spreadsheetId,
-                    range: `${calendarSheetName}!A:I`,
+                    range: `${calendarSheetName}!A:J`,
                 });
                 
                 const data = fullResponse.result.values;
@@ -403,6 +403,7 @@ export const fetchCalendarEvents = async (
                             startDateTime: startDateTime,
                             endDateTime: row[7] || '',
                             type: row[8] || '',
+                            rrule: row[9] || '',
                         };
                     });
                 }
@@ -452,6 +453,7 @@ export const addCalendarEvent = async (
             'endDateTime_calendar': eventData.endDateTime,
             'tag_calendar': eventData.type || '',
             'colorId_calendar': (eventData as any).color || '',
+            'recurrence_rule_calendar': (eventData as any).rrule || '',
         };
 
         await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);

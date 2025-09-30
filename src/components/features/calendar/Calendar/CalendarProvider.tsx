@@ -38,6 +38,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   user,
   accessToken,
   sheetEvents,
+  addSheetEvent, // Add missing prop
   updateSheetEvent,
   deleteSheetEvent,
   semesterStartDate,
@@ -561,7 +562,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     searchTerm,
     setSearchTerm,
     filterLabels,
-    addSheetEvent: addEvent,
+    addSheetEvent, // Correctly pass the prop function
     extraWeeks: 0,
     setExtraWeeks: (weeks: number) => {
       console.log('Set extra weeks:', weeks);

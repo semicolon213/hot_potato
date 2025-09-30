@@ -13,15 +13,30 @@
 
 .add-event-modal-overlay .modal-content {
   background: white;
-  padding: 45px 20px 20px;
+  padding: 20px;
+  padding-top: 45px; /* Space for close icon */
   border-radius: var(--border-radius-md);
-  min-width: 380px; /* Reduced size */
-  max-width: 500px; /* Reduced size */
+  width: 420px;
+  max-width: 90vw;
+  max-height: 80vh;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 15px;
+}
+
+.modal-form-content {
+  flex: 1 1 auto;
+  overflow-y: auto; /* Make it scrollable */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  scrollbar-width: none; /* For Firefox */
+}
+
+.modal-form-content::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, Edge */
 }
 
 .close-icon {
@@ -42,6 +57,7 @@
     border-bottom: 1px solid #ccc;
     border-radius: 0;
     padding: 8px 0;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .modal-content label {
@@ -56,13 +72,12 @@
   border: 1px solid #ccc;
 }
 
-
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 10px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .add-event-modal-overlay .modal-content .modal-actions .submit-button, .add-event-modal-overlay .modal-content .modal-actions .cancel-button {
@@ -92,10 +107,10 @@
 }
 
 .save-target-group,
-.tag-selection-group {
+.tag-selection-group,
+.recurrence-options-group {
   display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 8px;
 }
 
 .target-button {
@@ -200,8 +215,35 @@
     padding: 8px;
     border-radius: var(--border-radius-sm);
     border: 1px solid #ccc;
-    min-height: 24px; /* Ensure initial height is respected */
+    min-height: 80px; /* Provide a decent minimum height */
     max-height: 150px; /* Limit growth */
     resize: none; /* Disable manual resizing */
-    overflow-y: auto; /* Show scrollbar when needed */
+    flex-shrink: 0; /* Prevent shrinking */
 }
+
+.recurrence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recurrence-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: var(--border-radius-sm);
+}
+
+.recurrence-details input[type="number"] {
+  width: 60px;
+}
+
+.recurrence-details label {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+

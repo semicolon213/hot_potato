@@ -3,11 +3,14 @@ import { createPortal } from 'react-dom';
 import useCalendarContext, { type Event } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './AddEventModal.css';
 import xIcon from '../../../../assets/Icons/x.svg';
+import { RRule } from 'rrule';
 
 interface AddEventModalProps {
   onClose: () => void;
   eventToEdit?: Event | null;
 }
+
+type RecurrenceFreq = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
   const { addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles } = useCalendarContext();
@@ -26,6 +29,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const [customTag, setCustomTag] = useState('');
   const [customColor, setCustomColor] = useState('#7986CB');
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // --- 반복 일정 관련 state 수정 ---
+  const [recurrenceFreq, setRecurrenceFreq] = useState<RecurrenceFreq>('NONE');
+  const [recurrenceDetails, setRecurrenceDetails] = useState({
+    interval: 1,
+    until: '',
+  });
+  // ---------------------------------
 
   const isEditMode = !!eventToEdit;
 
@@ -72,6 +83,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         setStartTime(eventToEdit.startDateTime.split('T')[1].substring(0, 5));
         setEndTime(eventToEdit.endDateTime.split('T')[1].substring(0, 5));
       }
+
+      // TODO: 편집 모드에서 반복 규칙 로드 로직 추가
     }
   }, [eventToEdit, isEditMode, eventTypes]);
 
@@ -83,7 +96,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
   const handleSave = () => {
     if (title.trim()) {
-      const eventData: Partial<Event> = {
+      const eventData: Partial<Event> & { rrule?: string } = { // rrule 속성 추가
         title: title.trim(),
         description: description.trim(),
       };
@@ -108,6 +121,23 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         eventData.startDate = startDate;
         eventData.endDate = endDate;
       }
+
+      // --- RRULE 생성 로직 수정 ---
+      if (saveTarget === 'sheet' && recurrenceFreq !== 'NONE') {
+        const ruleOptions: Partial<RRule.Options> = {
+          freq: RRule[recurrenceFreq as keyof typeof RRule],
+          interval: recurrenceDetails.interval,
+          dtstart: new Date(startDate),
+        };
+
+        if (recurrenceDetails.until) {
+          ruleOptions.until = new Date(recurrenceDetails.until);
+        }
+
+        const rule = new RRule(ruleOptions);
+        eventData.rrule = rule.toString();
+      }
+      // --------------------------
 
       if (isEditMode && eventToEdit) {
         updateEvent(eventToEdit.id, eventData as Event);
@@ -147,111 +177,153 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     <div className="add-event-modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <img src={xIcon} alt="Close" className="close-icon" onClick={onClose} />
-        <input
-          ref={titleInputRef}
-          type="text"
-          placeholder="제목"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="title-input"
-        />
-        <textarea
-            ref={descriptionRef}
-            placeholder="설명"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="add-event-description"
-            rows={1}
-        />
+        
+        <div className="modal-form-content">
+          <input
+            ref={titleInputRef}
+            type="text"
+            placeholder="제목"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="title-input"
+          />
+          <textarea
+              ref={descriptionRef}
+              placeholder="설명"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="add-event-description"
+              rows={1}
+          />
 
-        {!isEditMode && (
-            <div className="save-target-group">
-              <button
-                className={`target-button ${saveTarget === 'google' ? 'active' : ''}`}
-                onClick={() => setSaveTarget('google')}
-              >
-                개인
-              </button>
-              <button
-                className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`}
-                onClick={() => setSaveTarget('sheet')}
-              >
-                공유
-              </button>
-            </div>
-        )}
+          {!isEditMode && (
+              <div className="save-target-group">
+                <button
+                  className={`target-button ${saveTarget === 'google' ? 'active' : ''}`}
+                  onClick={() => setSaveTarget('google')}
+                >
+                  개인
+                </button>
+                <button
+                  className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`}
+                  onClick={() => setSaveTarget('sheet')}
+                >
+                  공유
+                </button>
+              </div>
+          )}
 
-        {saveTarget === 'sheet' && (
-            <>
-                <div className="tag-selection-group">
-                    {eventTypes.map(type => (
-                        <button
-                            key={type}
-                            className={`target-button ${!isCustomTag && tag === type ? 'active' : ''}`}
-                            onClick={() => { setTag(type); setIsCustomTag(false); }}
-                            style={!isCustomTag && tag === type ? {
-                                backgroundColor: eventTypeStyles[type]?.color || '#343a40',
-                                color: 'white',
-                                borderColor: eventTypeStyles[type]?.color || '#343a40'
-                            } : {}}
-                        >
-                            {tagLabels[type] || type}
-                        </button>
-                    ))}
-                    <button className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
-                </div>
-                {isCustomTag && (
-                    <div className="custom-tag-container">
-                        <input
-                            type="text"
-                            placeholder="태그 이름 입력"
-                            value={customTag}
-                            onChange={(e) => setCustomTag(e.target.value)}
-                            className="custom-tag-input"
-                        />
-                        <div className="custom-color-picker">
-                            <button className="color-display" style={{ backgroundColor: customColor }} onClick={() => setShowColorPicker(!showColorPicker)}></button>
-                            {showColorPicker && (
-                                <div className="color-palette-popup">
-                                    {tenColors.map(c => (
-                                        <div key={c} className="color-swatch-popup" style={{ backgroundColor: c }} onClick={() => { setCustomColor(c); setShowColorPicker(false); }}></div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </>
-        )}
+          {saveTarget === 'sheet' && (
+              <>
+                  <div className="tag-selection-group">
+                      {eventTypes.map(type => (
+                          <button
+                              key={type}
+                              className={`target-button ${!isCustomTag && tag === type ? 'active' : ''}`}
+                              onClick={() => { setTag(type); setIsCustomTag(false); }}
+                              style={!isCustomTag && tag === type ? {
+                                  backgroundColor: eventTypeStyles[type]?.color || '#343a40',
+                                  color: 'white',
+                                  borderColor: eventTypeStyles[type]?.color || '#343a40'
+                              } : {}}
+                          >
+                              {tagLabels[type] || type}
+                          </button>
+                      ))}
+                      <button className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                  </div>
+                  {isCustomTag && (
+                      <div className="custom-tag-container">
+                          <input
+                              type="text"
+                              placeholder="태그 이름 입력"
+                              value={customTag}
+                              onChange={(e) => setCustomTag(e.target.value)}
+                              className="custom-tag-input"
+                          />
+                          <div className="custom-color-picker">
+                              <button className="color-display" style={{ backgroundColor: customColor }} onClick={() => setShowColorPicker(!showColorPicker)}></button>
+                              {showColorPicker && (
+                                  <div className="color-palette-popup">
+                                      {tenColors.map(c => (
+                                          <div key={c} className="color-swatch-popup" style={{ backgroundColor: c }} onClick={() => { setCustomColor(c); setShowColorPicker(false); }}></div>
+                                      ))}
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+                  )}
+              </>
+          )}
 
-        <div className="date-time-container">
-            <div className="date-row">
-                <label>
-                  시작일:
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </label>
-                {!showTime && (
+          <div className="date-time-container">
+              <div className="date-row">
+                  <label>
+                    시작일:
+                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </label>
+                  {!showTime && (
+                    <label>
+                      종료일:
+                      <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    </label>
+                  )}
+                  <button className="time-add-button-inline" onClick={() => setShowTime(!showTime)}>
+                      {showTime ? '시간 제거' : '시간 추가'}
+                  </button>
+              </div>
+              {showTime && (
+                  <div className="time-row">
+                      <label>
+                        시작 시간:
+                        <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                      </label>
+                      <label>
+                        종료 시간:
+                        <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                      </label>
+                  </div>
+              )}
+          </div>
+
+          {/* --- 반복 설정 UI 수정 --- */}
+          {saveTarget === 'sheet' && (
+            <div className="recurrence-section">
+              <div className="recurrence-options-group">
+                {(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'] as RecurrenceFreq[]).map(freq => (
+                  <button
+                    key={freq}
+                    className={`target-button ${recurrenceFreq === freq ? 'active' : ''}`}
+                    onClick={() => setRecurrenceFreq(freq)}
+                  >
+                    {freq === 'NONE' ? '반복 안 함' : freq === 'DAILY' ? '매일' : freq === 'WEEKLY' ? '매주' : '매월'}
+                  </button>
+                ))}
+              </div>
+
+              {recurrenceFreq !== 'NONE' && (
+                <div className="recurrence-details">
+                  <input
+                    type="number"
+                    min="1"
+                    value={recurrenceDetails.interval}
+                    onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
+                  />
+                  <span>{recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}</span>
                   <label>
                     종료일:
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    <input
+                      type="date"
+                      value={recurrenceDetails.until}
+                      onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
+                      min={startDate}
+                    />
                   </label>
-                )}
-                <button className="time-add-button-inline" onClick={() => setShowTime(!showTime)}>
-                    {showTime ? '시간 제거' : '시간 추가'}
-                </button>
-            </div>
-            {showTime && (
-                <div className="time-row">
-                    <label>
-                      시작 시간:
-                      <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-                    </label>
-                    <label>
-                      종료 시간:
-                      <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-                    </label>
                 </div>
-            )}
+              )}
+            </div>
+          )}
+          {/* -------------------------- */}
         </div>
 
         <div className="modal-actions">
