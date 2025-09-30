@@ -502,3 +502,34 @@
         color: var(--text-medium);
         padding-top: 10px;
     }
+
+.search-container {
+    position: relative;
+}
+
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0 0 4px 4px;
+}
+
+.search-suggestions li {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.search-suggestions li:hover {
+    background-color: #f0f0f0;
+}

@@ -66,6 +66,32 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const [inputValue, setInputValue] = useState(searchTerm);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
+
+    const suggestionKeywords = useMemo(() => {
+        const titles = events.map(event => event.title);
+        const types = Object.values(filterLabels);
+        const combined = [...titles, ...types];
+        return [...new Set(combined)];
+    }, [events, filterLabels]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (inputValue && isSuggestionsVisible) {
+                const filtered = suggestionKeywords.filter(keyword =>
+                    keyword.toLowerCase().includes(inputValue.toLowerCase())
+                );
+                setSuggestions(filtered);
+            } else {
+                setSuggestions([]);
+            }
+        }, 300);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [inputValue, suggestionKeywords, isSuggestionsVisible]);
 
     useEffect(() => {
         setInputValue(searchTerm);
@@ -534,15 +560,37 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
+                                onFocus={() => setIsSuggestionsVisible(true)}
+                                onBlur={() => {
+                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                }}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         e.preventDefault();
                                         const terms = inputValue.split(' ').filter(t => t.length > 0);
                                         const formattedTerms = terms.map(t => t.startsWith('#') ? t : `#${t}`);
                                         setSearchTerm(formattedTerms.join(' '));
+                                        setSuggestions([]);
                                     }
                                 }}
                             />
+                            {isSuggestionsVisible && suggestions.length > 0 && (
+                                <ul className="search-suggestions">
+                                    {suggestions.map((suggestion, index) => (
+                                        <li
+                                            key={index}
+                                            onMouseDown={() => {
+                                                setInputValue(suggestion);
+                                                const formattedTerm = suggestion.startsWith('#') ? suggestion : `#${suggestion}`;
+                                                setSearchTerm(formattedTerm);
+                                                setSuggestions([]);
+                                            }}
+                                        >
+                                            {suggestion}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
