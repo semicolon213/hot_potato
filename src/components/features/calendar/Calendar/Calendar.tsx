@@ -78,12 +78,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 const sheetId = await findSpreadsheetById('calendar_student');
                 if (sheetId) {
                     const events = await fetchCalendarEvents(null, sheetId, '시트1');
-                    return events ? events.map(e => ({ 
-                        title: e.title, 
-                        tag: e.type, 
-                        startDate: e.startDate, 
-                        endDate: e.endDate 
-                    })) : [];
+                    return events
+                        ? events
+                            .map(e => ({ 
+                                title: e.title, 
+                                tag: e.type, 
+                                startDate: e.startDate, 
+                                endDate: e.endDate 
+                            }))
+                            .filter(e => e.title)
+                        : [];
                 }
                 return [];
             })();
@@ -97,16 +101,18 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         'orderBy': 'startTime'
                     });
                     const items = response.result.items || [];
-                    return items.map((item: any) => {
-                        const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
-                        const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
-                        return {
-                            title: item.summary,
-                            tag: '개인 일정',
-                            startDate: startDate,
-                            endDate: endDate || startDate
-                        };
-                    });
+                    return items
+                        .map((item: any) => {
+                            const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                            const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                            return {
+                                title: item.summary,
+                                tag: '개인 일정',
+                                startDate: startDate,
+                                endDate: endDate || startDate
+                            };
+                        })
+                        .filter(item => item.title);
                 } catch (error) {
                     console.error("Error fetching Google Calendar events:", error);
                     return [];
@@ -116,9 +122,23 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const [sheetSuggestions, calendarSuggestions] = await Promise.all([sheetPromise, calendarPromise]);
 
             const combinedSource = [...sheetSuggestions, ...calendarSuggestions];
-            const uniqueSource = [...new Map(combinedSource.map(item => [item.title, item])).values()];
 
-            setSuggestionSource(uniqueSource);
+            // 1. Filter out items without a title (already done in promises)
+
+            // 2. Sort by startDate
+            combinedSource.sort((a, b) => {
+                try {
+                    const dateA = new Date(a.startDate).getTime();
+                    const dateB = new Date(b.startDate).getTime();
+                    if (isNaN(dateA)) return 1;  // Push invalid dates to the end
+                    if (isNaN(dateB)) return -1;
+                    return dateA - dateB;
+                } catch (e) {
+                    return 0; // Don't sort if dates are malformed
+                }
+            });
+
+            setSuggestionSource(combinedSource);
         };
 
         loadSuggestions();
