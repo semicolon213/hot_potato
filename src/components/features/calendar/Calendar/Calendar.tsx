@@ -74,19 +74,39 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
     useEffect(() => {
         const loadSuggestions = async () => {
-            const sheetId = await findSpreadsheetById('calendar_student');
-            if (sheetId) {
-                const events = await fetchCalendarEvents(null, sheetId, '시트1');
-                if (events) {
-                    const source = events.map(event => ({
-                        title: event.title,
-                        tag: event.type
-                    }));
-                    const uniqueSource = [...new Map(source.map(item => [item.title, item])).values()];
-                    setSuggestionSource(uniqueSource);
+            const sheetPromise = (async () => {
+                const sheetId = await findSpreadsheetById('calendar_student');
+                if (sheetId) {
+                    const events = await fetchCalendarEvents(null, sheetId, '시트1');
+                    return events ? events.map(e => ({ title: e.title, tag: e.type })) : [];
                 }
-            }
+                return [];
+            })();
+
+            const calendarPromise = (async () => {
+                try {
+                    const response = await (window as any).gapi.client.calendar.events.list({
+                        'calendarId': 'primary',
+                        'maxResults': 250,
+                        'singleEvents': true,
+                        'orderBy': 'startTime'
+                    });
+                    const items = response.result.items || [];
+                    return items.map((item: any) => ({ title: item.summary, tag: '개인 일정' }));
+                } catch (error) {
+                    console.error("Error fetching Google Calendar events:", error);
+                    return [];
+                }
+            })();
+
+            const [sheetSuggestions, calendarSuggestions] = await Promise.all([sheetPromise, calendarPromise]);
+
+            const combinedSource = [...sheetSuggestions, ...calendarSuggestions];
+            const uniqueSource = [...new Map(combinedSource.map(item => [item.title, item])).values()];
+
+            setSuggestionSource(uniqueSource);
         };
+
         loadSuggestions();
     }, []);
 
