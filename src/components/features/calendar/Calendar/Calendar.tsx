@@ -404,6 +404,105 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return layouts;
     }, [weeksInMonth, expandedEvents]);
 
+    const { eventElements, moreButtonElements } = useMemo(() => {
+        const eventElements: React.ReactNode[] = [];
+        const moreButtonElements: React.ReactNode[] = [];
+        const processedEvents = new Set<string>();
+        const MAX_EVENTS = 3;
+
+        const dayHeight = 130;
+        const eventHeight = 22;
+        const dateHeaderHeight = 30;
+
+        weeksInMonth.forEach((week, weekIndex) => {
+            if (!week || week.length === 0) return;
+            week.forEach((day, dayOfWeek) => {
+                if (!day) return;
+                const dayLayout = eventLayouts.get(day.date) || [];
+
+                // Render events
+                dayLayout.slice(0, MAX_EVENTS).forEach((event, laneIndex) => {
+                    if (!event || processedEvents.has(`${event.id}-${day.date}`)) {
+                        return;
+                    }
+
+                    let span = 1;
+                    for (let i = dayOfWeek + 1; i < 7; i++) {
+                        const nextDayLayout = eventLayouts.get(week[i]?.date) || [];
+                        if (nextDayLayout[laneIndex]?.id === event.id) {
+                            span++;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    for (let i = 0; i < span; i++) {
+                        if (week[dayOfWeek + i]) {
+                            processedEvents.add(`${event.id}-${week[dayOfWeek + i].date}`);
+                        }
+                    }
+
+                    const eventStartDate = new Date(event.startDate);
+                    const currentDayDate = new Date(day.date);
+                    const isContinuationLeft = eventStartDate < currentDayDate;
+                    
+                    const eventEndDate = new Date(event.endDate);
+                    const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
+                    const isContinuationRight = eventEndDate > endOfWeekDate;
+
+                    const title = (dayOfWeek === 0 || eventStartDate.toDateString() === currentDayDate.toDateString()) ? event.title : '';
+
+                    eventElements.push(
+                        <div
+                            key={`${event.id}-${day.date}`}
+                            className={`monthly-event-item ${isContinuationLeft ? 'continuation-left' : ''} ${isContinuationRight ? 'continuation-right' : ''}`}
+                            style={{
+                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (laneIndex * eventHeight)}px`,
+                                left: `${(dayOfWeek / 7) * 100}%`,
+                                width: `calc(${(span / 7) * 100}% - 4px)`,
+                                backgroundColor: event.color,
+                                marginLeft: '2px',
+                                marginRight: '2px',
+                            }}
+                            onClick={(e) => handleEventClick(event, e)}
+                        >
+                            <span style={{marginRight: '4px'}}>{event.icon}</span>
+                            {title}
+                        </div>
+                    );
+                });
+
+                // Render "more" button
+                const moreCount = dayLayout.slice(MAX_EVENTS).filter(Boolean).length;
+                if (moreCount > 0) {
+                    const dayEvents = dayLayout.filter((e): e is Event => e !== null);
+                    moreButtonElements.push(
+                        <div
+                            key={`more-${day.date}`}
+                            className="more-events-text"
+                            style={{
+                                position: 'absolute',
+                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (MAX_EVENTS * eventHeight)}px`,
+                                left: `${(dayOfWeek / 7) * 100}%`,
+                                width: `calc(${(1 / 7) * 100}% - 4px)`,
+                                marginLeft: '4px',
+                                cursor: 'pointer',
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoreClick(dayEvents, day.date, e);
+                            }}
+                        >
+                            {moreCount}개 더보기
+                        </div>
+                    );
+                }
+            });
+        });
+
+        return { eventElements, moreButtonElements };
+    }, [eventLayouts, weeksInMonth, handleEventClick, handleMoreClick, selectedEvent]);
+
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';
         const start = new Date(semesterStartDate);
@@ -524,9 +623,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
                         <div className="day-wrapper">
                             {daysInMonth.map((date) => {
-                                const dayLayout = eventLayouts.get(date.date) || [];
-                                const dayEvents = dayLayout.filter((e): e is Event => e !== null);
-
+                                const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
                                 const isSelected = selectedDate.date === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
@@ -542,49 +639,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
-                                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                                        <ul className="event-list">
-                                            {dayLayout.slice(0, 3).map((event, index) => {
-                                                if (!event) {
-                                                    return <li key={index} className="event-item" style={{ visibility: 'hidden' }}>&nbsp;</li>;
-                                                }
-                                                const eventStartDate = new Date(event.startDate);
-                                                const eventEndDate = new Date(event.endDate);
-                                                const currentDate = new Date(date.date);
-                                                const isFirstDayOfEvent = eventStartDate.toDateString() === currentDate.toDateString();
-                                                const isLastDayOfEvent = eventEndDate.toDateString() === currentDate.toDateString();
-                                                let itemClasses = 'event-item';
-                                                if (!isFirstDayOfEvent) itemClasses += ' continuation-left';
-                                                if (!isLastDayOfEvent) itemClasses += ' continuation-right';
-                                                if (selectedEvent && selectedEvent.id === event.id) itemClasses += ' selected';
-
-                                                return (
-                                                    <li key={event.id + date.date} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                        <span style={{marginRight: '4px'}}>{event.icon}</span>
-                                                        {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                        <div className="overflow-event-lines" onClick={(e) => {
-                                            const moreCount = dayLayout.slice(3).filter(Boolean).length;
-                                            if (moreCount > 0) {
-                                                e.stopPropagation();
-                                                handleMoreClick(dayEvents, date.date, e);
-                                            }
-                                        }}>
-                                            {(() => {
-                                                const moreCount = dayLayout.slice(3).filter(Boolean).length;
-                                                if (moreCount > 0) {
-                                                    return <span className="more-events-text">{moreCount}개 더보기</span>;
-                                                }
-                                                return null;
-                                            })()}
-                                        </div>
-                                        </div>
                                     </div>
                                 );
                             })}
+                            {eventElements}
+                            {moreButtonElements}
                         </div>
                     </div>
                 ) : (
