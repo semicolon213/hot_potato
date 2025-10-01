@@ -448,7 +448,7 @@ export const addCalendarEvent = async (
             'title_calendar': eventData.title,
             'startDate_calendar': eventData.startDate,
             'endDate_calendar': eventData.endDate,
-            'description_calendar': eventData.description,
+            'description_calendar': eventData.description || ' ',
             'startDateTime_calendar': eventData.startDateTime,
             'endDateTime_calendar': eventData.endDateTime,
             'tag_calendar': eventData.type || '',
@@ -506,7 +506,7 @@ export const updateCalendarEvent = async (
             eventData.title, // B: title
             eventData.startDate, // C: startDate
             eventData.endDate, // D: endDate
-            eventData.description || '', // E: description
+            eventData.description || ' ', // E: description
             (eventData as any).color || '', // F: color
             eventData.startDateTime || '', // G: startDateTime
             eventData.endDateTime || '', // H: endDateTime
