@@ -45,6 +45,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     interval: 1,
     until: '',
   });
+  const [dateError, setDateError] = useState(false);
 
   const isEditMode = !!eventToEdit;
 
@@ -161,6 +162,16 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setEndDate(startDate);
     }
   }, [showTime, startDate]);
+
+  useEffect(() => {
+    if (!showTime && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      setDateError(start > end);
+    } else {
+      setDateError(false);
+    }
+  }, [startDate, endDate, showTime]);
 
   const filteredAttendees = useMemo(() => {
     const allPeople = [
@@ -330,7 +341,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             <div className="date-time-container">
                 <div className="date-row">
                     <label>시작일: <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label>
-                    {!showTime && (<label>종료일: <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></label>)}
+                    {!showTime && (<label>종료일: <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ backgroundColor: dateError ? '#ffebee' : '' }} /></label>)}
                     <button type="button" className="time-add-button-inline" onClick={() => setShowTime(!showTime)}>{showTime ? '시간 제거' : '시간 추가'}</button>
                 </div>
                 {showTime && (
@@ -343,19 +354,37 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
             {saveTarget === 'sheet' && (
               <div className="recurrence-section">
-                <label>반복:
-                  <select value={recurrenceFreq} onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)} className="recurrence-select">
+                <label>
+                  <select
+                    value={recurrenceFreq}
+                    onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
+                    className="recurrence-select"
+                  >
                     <option value="NONE">반복 안 함</option>
                     <option value="DAILY">매일</option>
                     <option value="WEEKLY">매주</option>
                     <option value="MONTHLY">매월</option>
                   </select>
                 </label>
+
                 {recurrenceFreq !== 'NONE' && (
                   <div className="recurrence-details">
-                    <input type="number" min="1" value={recurrenceDetails.interval} onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })} />
+                    <input
+                      type="number"
+                      min="1"
+                      value={recurrenceDetails.interval}
+                      onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
+                    />
                     <span>{recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}</span>
-                    <label>종료일: <input type="date" value={recurrenceDetails.until} onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })} min={startDate} /></label>
+                    <label>
+                      종료일:
+                      <input
+                        type="date"
+                        value={recurrenceDetails.until}
+                        onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
+                        min={startDate}
+                      />
+                    </label>
                   </div>
                 )}
               </div>
@@ -363,18 +392,19 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             
             {saveTarget === 'sheet' && (
               <div className="attendees-section">
-                <label>참석자:</label>
-                <div className="selected-attendees-list">
-                  {selectedAttendees.map(person => (
-                    <div key={person.no} className="attendee-tag">
-                      <span>{person.name}</span>
-                      <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
-                    </div>
-                  ))}
-                </div>
                 <button type="button" className="add-attendee-btn" onClick={() => setIsAttendeeSearchVisible(!isAttendeeSearchVisible)}>
                   {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
                 </button>
+                {isAttendeeSearchVisible && (
+                  <div className="selected-attendees-list">
+                    {selectedAttendees.map(person => (
+                      <div key={person.no} className="attendee-tag">
+                        <span>{person.name}</span>
+                        <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -408,7 +438,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         </div>
 
         <div className="modal-actions">
-          <button className="submit-button" onClick={handleSave}>{isEditMode ? '수정' : '일정 추가'}</button>
+          <button className="submit-button" onClick={handleSave} disabled={dateError || title.trim() === ''}>{isEditMode ? '수정' : '일정 추가'}</button>
           <button className="cancel-button" onClick={onClose}>취소</button>
         </div>
       </div>

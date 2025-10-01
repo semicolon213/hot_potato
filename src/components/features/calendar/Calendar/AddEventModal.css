@@ -16,7 +16,7 @@
   padding: 20px;
   padding-top: 45px; /* Space for close icon */
   border-radius: var(--border-radius-md);
-  width: 420px; /* Original smaller width */
+  width: 520px; /* Increased base width */
   max-width: 90vw;
   max-height: 80vh;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -28,7 +28,7 @@
 }
 
 .add-event-modal-overlay .modal-content.wide {
-  width: 800px; /* Expanded width */
+  width: 960px; /* Increased expanded width */
 }
 
 .modal-body-two-column {
@@ -77,6 +77,27 @@
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: var(--border-radius-sm);
+}
+
+.attendee-results-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.attendee-results-list li {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.attendee-results-list li:last-child {
+  border-bottom: none;
+}
+
+.attendee-results-list li:hover {
+  background-color: #f8f9fa;
 }
 
 .attendees-section {
@@ -183,6 +204,11 @@
 
 .add-event-modal-overlay .modal-content .modal-actions .submit-button:hover {
     background-color: #23272b;
+}
+
+.add-event-modal-overlay .modal-content .modal-actions .submit-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 
 .add-event-modal-overlay .modal-content .modal-actions .cancel-button {
@@ -318,7 +344,8 @@
 
 .recurrence-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 10px;
 }
 
