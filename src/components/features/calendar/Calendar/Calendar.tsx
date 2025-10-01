@@ -453,8 +453,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         
                         allEvents.push({
                             ...event,
-                            // Create a new unique ID for each occurrence to avoid key conflicts
-                            id: `${event.id}-occurrence-${dateStr}`,
+                            // id: `${event.id}-occurrence-${dateStr}`, // DO NOT MODIFY ID
                             startDate: dateStr,
                             endDate: dateStr, // Each occurrence is a single-day event in this context
                         });

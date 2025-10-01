@@ -124,7 +124,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                         
                         const newEvent: Event = {
                             ...event,
-                            id: `${event.id}-occurrence-${dateStr}`,
+                            // id: `${event.id}-occurrence-${dateStr}`,
                             startDate: dateStr,
                             endDate: dateStr,
                         };
@@ -223,7 +223,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
 
                         return (
                             <div
-                                key={event.id}
+                                key={`${event.id}-${event.startDate}`}
                                 className={itemClasses}
                                 style={{
                                     left: `calc(${left}% + 5px)`,
@@ -255,7 +255,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                                     {hours.map(hour => <div key={hour} className="time-grid-line"></div>)}
                                     {timedEvents.map(event => (
                                         <div
-                                            key={event.id}
+                                            key={`${event.id}-${event.startDate}`}
                                             className="timed-event-item"
                                             style={{ ...getEventPosition(event), backgroundColor: event.color }}
                                             onClick={() => setSelectedEvent(event)}

@@ -15,7 +15,7 @@ interface AddEventModalProps {
 type RecurrenceFreq = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
-  const { addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles } = useCalendarContext();
+  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles } = useCalendarContext();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState('');
@@ -199,6 +199,24 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const handleRemoveAttendee = (personToRemove: Student | Staff) => {
     setSelectedAttendees(selectedAttendees.filter(a => a.no !== personToRemove.no));
   };
+
+  const handleToggleAttendeeSearch = () => {
+    setIsAttendeeSearchVisible(!isAttendeeSearchVisible);
+  };
+
+  // Auto-add current user when opening attendee search for a new event
+  useEffect(() => {
+    if (isAttendeeSearchVisible && !isEditMode && selectedAttendees.length === 0 && (students.length > 0 || staff.length > 0)) {
+        if (user) {
+            const allPeople = [...students, ...staff];
+            const loggedInUserObject = allPeople.find(p => p.no === user.studentId);
+            if (loggedInUserObject) {
+                setSelectedAttendees([loggedInUserObject]);
+            }
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAttendeeSearchVisible, students, staff]);
 
   const handleSave = () => {
     if (title.trim()) {
@@ -392,7 +410,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             
             {saveTarget === 'sheet' && (
               <div className="attendees-section">
-                <button type="button" className="add-attendee-btn" onClick={() => setIsAttendeeSearchVisible(!isAttendeeSearchVisible)}>
+                <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
                   {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
                 </button>
                 {isAttendeeSearchVisible && (

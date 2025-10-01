@@ -209,7 +209,19 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate.getFullYear(), currentDate.getMonth(), refreshKey]);
 
   const events = useMemo(() => {
-    const combinedEvents = [...sheetEvents, ...googleEvents];
+    const visibleSheetEvents = sheetEvents.filter(event => {
+      const attendees = (event as any).attendees;
+      if (!attendees || attendees.trim() === '') {
+        return true; // Public event, visible to all
+      }
+
+      // Private event, visible only to attendees
+      const attendeeIds = attendees.split(',').map((id: string) => id.trim());
+      // Assuming user.studentId holds the unique ID for both students and staff
+      return user ? attendeeIds.includes(user.studentId) : false;
+    });
+
+    const combinedEvents = [...visibleSheetEvents, ...googleEvents];
 
     const sortedEvents = combinedEvents.sort((a, b) => {
         const startDateA = new Date(a.startDate).getTime();
