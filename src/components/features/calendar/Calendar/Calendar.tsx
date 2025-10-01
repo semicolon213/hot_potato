@@ -726,7 +726,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 ))}
                             </div>
                         </div>
-                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (

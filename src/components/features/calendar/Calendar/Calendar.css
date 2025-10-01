@@ -43,6 +43,7 @@
   cursor: pointer;
   color: var(--text-dark);
   padding: 0 8px;
+  flex-shrink: 0;
 }
 
 .arrow-button:hover {
@@ -619,4 +620,9 @@
     background: none !important;
     height: 100% !important;
     padding-left: 5px !important;
+}
+
+.calendar-title h2 {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
