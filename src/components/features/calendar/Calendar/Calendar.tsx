@@ -71,6 +71,26 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
+    const getRecentSearches = (): string[] => {
+        const searches = localStorage.getItem('recentSearchTerms');
+        return searches ? JSON.parse(searches) : [];
+    };
+
+    const addRecentSearch = (term: string) => {
+        let searches = getRecentSearches();
+        searches = searches.filter(s => s !== term);
+        searches.unshift(term);
+        localStorage.setItem('recentSearchTerms', JSON.stringify(searches.slice(0, 10)));
+    };
+
+    useEffect(() => {
+        const terms = searchTerm.split(' ').filter(Boolean);
+        const latestTerm = terms[terms.length - 1];
+        if (latestTerm) {
+            addRecentSearch(latestTerm);
+        }
+    }, [searchTerm]);
+
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
 
     useEffect(() => {
@@ -188,22 +208,37 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     }, [currentDate.year]);
 
     useEffect(() => {
-        const handler = setTimeout(() => {
-            if (inputValue && isSuggestionsVisible) {
+        if (!isSuggestionsVisible) {
+            setSuggestions([]);
+            return;
+        }
+
+        if (inputValue) {
+            // User is typing, so filter based on input
+            const handler = setTimeout(() => {
                 const lowerInputValue = inputValue.toLowerCase();
                 const filtered = suggestionSource.filter(item =>
                     item.title.toLowerCase().includes(lowerInputValue) ||
                     (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
                 );
                 setSuggestions(filtered);
+            }, 300);
+            return () => clearTimeout(handler);
+        } else {
+            // Input is empty, and suggestions are visible, so show recent searches
+            const recentSearches = getRecentSearches().slice(0, 3);
+            if (recentSearches.length > 0) {
+                const historySuggestions = recentSearches.map(term => ({
+                    title: term,
+                    tag: '최근 검색어',
+                    startDate: '',
+                    endDate: ''
+                }));
+                setSuggestions(historySuggestions);
             } else {
-                setSuggestions([]);
+                setSuggestions([]); // No recent searches, show empty
             }
-        }, 300);
-
-        return () => {
-            clearTimeout(handler);
-        };
+        }
     }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
     const handleFilterChange = (filter: string) => {
@@ -700,7 +735,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         setTimeout(() => setIsSuggestionsVisible(false), 150);
                                     }}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && inputValue.trim() !== '') {
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
                                             e.preventDefault();
                                             const newTerm = `#${inputValue.trim()}`;
                                             const existingTerms = searchTerm.split(' ').filter(Boolean);
