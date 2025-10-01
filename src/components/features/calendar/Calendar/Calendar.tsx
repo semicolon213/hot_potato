@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { IoSettingsSharp } from "react-icons/io5";
-import { BiSearchAlt2 } from "react-icons/bi";
+import { BiSearchAlt2, BiCog } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
@@ -81,11 +80,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     const events = await fetchCalendarEvents(null, sheetId, '시트1');
                     return events
                         ? events
-                            .map(e => ({ 
-                                title: e.title, 
-                                tag: e.type, 
-                                startDate: e.startDate, 
-                                endDate: e.endDate 
+                            .map(e => ({
+                                title: e.title,
+                                tag: e.type,
+                                startDate: e.startDate,
+                                endDate: e.endDate
                             }))
                             .filter(e => e.title)
                         : [];
@@ -451,7 +450,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         // Adjust for timezone offset before creating new event
                         const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
                         const dateStr = adjustedDate.toISOString().split('T')[0];
-                        
+
                         allEvents.push({
                             ...event,
                             // id: `${event.id}-occurrence-${dateStr}`, // DO NOT MODIFY ID
@@ -485,6 +484,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 // 월간 뷰에서는 시간 지정 이벤트를 제외합니다 (종일 이벤트만 표시).
                 return !e.startDateTime && eventStart <= weekEnd && eventEnd >= weekStart;
             });
+
+            weekEvents.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
             const lanes: (Date | null)[] = [];
             for (const event of weekEvents) {
@@ -560,7 +561,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     const eventStartDate = new Date(event.startDate);
                     const currentDayDate = new Date(day.date);
                     const isContinuationLeft = eventStartDate < currentDayDate;
-                    
+
                     const eventEndDate = new Date(event.endDate);
                     const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
                     const isContinuationRight = eventEndDate > endOfWeekDate;
@@ -728,7 +729,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
+                            <BiCog onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                         )}
                         <div className="view-switcher">
                             <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
