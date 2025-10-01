@@ -3,6 +3,8 @@
 ## 개요
 Hot Potato Admin Key Management System에서 이메일 암호화 방식을 CONFIG.gs에서 설정할 수 있도록 개선되었습니다.
 
+**중요**: 이메일 암호화는 전체 이메일 주소(사용자명@도메인.확장자)를 통으로 암호화합니다.
+
 ## 설정 방법
 
 ### 1. 기본 설정 (CONFIG.gs)
@@ -18,12 +20,12 @@ const EMAIL_ENCRYPTION_CONFIG = {
   // 다중 레이어 사용 시 사용할 방법들
   LAYER_METHODS: ['ROT13', 'Base64', 'Caesar'],
   
-  // 암호화된 이메일 식별 패턴
+  // 암호화된 이메일 식별 패턴 (전체 이메일 주소 기준)
   IDENTIFICATION_PATTERNS: {
-    ROT13: ['.pbz', '.bet', '.net', '.org', '.gov', '.edu'],
-    Base64: ['==', '='],
+    ROT13: ['.pbz', '.bet', '.net', '.org', '.gov', '.edu', 'grfg', 'hfref', 'nqzva', 'fghqrag'],
+    Base64: ['==', '=', 'dGVzdA', 'dXNlcg', 'YWRtaW4', 'c3R1ZGVudA', 'Z3JmZ0BleGFtcGxlLmNvbQ'],
     Caesar: ['@'],
-    BitShift: ['@'],
+    BitShift: ['{', '}', '|', '~', '^', '`'],
     Substitution: ['@']
   }
 };
@@ -75,51 +77,51 @@ setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar']);
 
 ## 사용 예시
 
-### 1. 기본 사용법
+### 1. 기본 사용법 (전체 이메일 주소 암호화)
 ```javascript
-// 이메일 암호화
+// 이메일 전체 암호화
 const email = 'user@example.com';
 const encrypted = encryptEmail(email);
-console.log(encrypted); // 설정된 방법으로 암호화
+console.log(encrypted); // 설정된 방법으로 전체 이메일 주소 암호화
 
-// 이메일 복호화
+// 이메일 전체 복호화
 const decrypted = decryptEmail(encrypted);
 console.log(decrypted); // 'user@example.com'
 
-// 암호화 여부 확인
+// 암호화 여부 확인 (전체 이메일 주소 기준)
 const isEncrypted = isEncryptedEmail(encrypted);
 console.log(isEncrypted); // true
 ```
 
-### 2. 다양한 암호화 방법 테스트
+### 2. 다양한 암호화 방법 테스트 (전체 이메일 주소)
 ```javascript
-// ROT13 테스트
+// ROT13 테스트 (전체 이메일 주소)
 setEmailEncryptionMethod('ROT13');
 const rot13Encrypted = encryptEmail('test@example.com');
 console.log(rot13Encrypted); // grfg@rknzcyr.pbz
 
-// Base64 테스트
+// Base64 테스트 (전체 이메일 주소)
 setEmailEncryptionMethod('Base64');
 const base64Encrypted = encryptEmail('test@example.com');
 console.log(base64Encrypted); // dGVzdEBleGFtcGxlLmNvbQ==
 
-// Caesar 테스트
+// Caesar 테스트 (전체 이메일 주소)
 setEmailEncryptionMethod('Caesar');
 const caesarEncrypted = encryptEmail('test@example.com');
 console.log(caesarEncrypted); // grfg@rknzcyr.pbz (ROT13과 동일)
 ```
 
-### 3. 다중 레이어 테스트
+### 3. 다중 레이어 테스트 (전체 이메일 주소)
 ```javascript
 // 3단계 암호화 설정
 setEmailEncryptionLayers(3);
 setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar']);
 
 const email = 'admin@hotpotato.org';
-const encrypted = encryptEmail(email);
+const encrypted = encryptEmail(email); // 전체 이메일 주소 암호화
 console.log('암호화:', encrypted);
 
-const decrypted = decryptEmail(encrypted);
+const decrypted = decryptEmail(encrypted); // 전체 이메일 주소 복호화
 console.log('복호화:', decrypted);
 console.log('일치:', email === decrypted); // true
 ```
@@ -289,6 +291,7 @@ console.log('기본 설정:', defaultConfig);
 
 ---
 
-**업데이트 일자**: 2024년 12월  
+**업데이트 일자**: 2025년 10월 1일  
 **버전**: 1.1.0  
-**개발팀**: Hot Potato Team
+**개발팀**: 감자도리    
+**작성자**: 김형균

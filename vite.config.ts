@@ -11,6 +11,26 @@ export default defineConfig({
     middlewareMode: false,
     hmr: {
       overlay: true
+    },
+    proxy: {
+      '/api': {
+        target: process.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec',
+        changeOrigin: true,
+        secure: false,
+        followRedirects: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('🚨 프록시 에러:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('📤 프록시 요청:', req.method, req.url, '→', proxyReq.path);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('📥 프록시 응답:', proxyRes.statusCode, req.url);
+          });
+        },
+      }
     }
   },
   build: {

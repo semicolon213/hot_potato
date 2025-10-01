@@ -80,6 +80,85 @@ export const useAppState = () => {
         setIsLoading(false);
     }, []);
 
+    // 사용자 로그인 시 데이터 자동 로딩
+    useEffect(() => {
+        if (user && user.isApproved && !isGapiReady) {
+            console.log('사용자 로그인 감지 - 데이터 로딩 시작');
+            const initAndFetch = async () => {
+                try {
+                    console.log("로그인 후 Google API 초기화 시작");
+                    await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
+
+                    // Find all spreadsheet IDs
+                    const [
+                        announcementId,
+                        calendarProfessorId,
+                        calendarStudentId,
+                        boardId,
+                        hotPotatoDBId,
+                        studentId
+                    ] = await Promise.all([
+                        findSpreadsheetById('notice_professor'),
+                        findSpreadsheetById('calendar_professor'),
+                        findSpreadsheetById('calendar_student'),
+                        findSpreadsheetById('board_professor'),
+                        findSpreadsheetById('hot_potato_DB'),
+                        findSpreadsheetById('student')
+                    ]);
+
+                    setAnnouncementSpreadsheetId(announcementId);
+                    setCalendarProfessorSpreadsheetId(calendarProfessorId);
+                    setCalendarStudentSpreadsheetId(calendarStudentId);
+                    setBoardSpreadsheetId(boardId);
+                    setHotPotatoDBSpreadsheetId(hotPotatoDBId);
+                    setStudentSpreadsheetId(studentId);
+
+                    // gapi가 초기화된 후 데이터 로드
+                    const fetchInitialData = async (retryCount = 0) => {
+                        try {
+                            const gapi = (window as any).gapi;
+                            if (gapi && gapi.client && gapi.client.sheets && gapi.client.sheets.spreadsheets) {
+                                console.log("✅ 로그인 후 Google API 초기화 완료, 데이터 로드 시작");
+                                setIsGapiReady(true);
+
+                                // Set auth states to true since we know the user is signed in
+                                setIsGoogleAuthenticatedForAnnouncements(true);
+                                setIsGoogleAuthenticatedForBoard(true);
+
+                                console.log("✅ 로그인 후 모든 데이터 로드 완료");
+                            } else {
+                                console.log(`Google API가 아직 초기화되지 않았습니다. 재시도 ${retryCount + 1}/3`);
+                                if (retryCount < 3) {
+                                    setTimeout(() => fetchInitialData(retryCount + 1), 500);
+                                } else {
+                                    console.error("Google API 초기화 최대 재시도 횟수 초과");
+                                }
+                            }
+                        } catch (error) {
+                            console.error("Error during login data fetch", error);
+                            if (retryCount < 2) {
+                                console.log(`데이터 로드 재시도 ${retryCount + 1}/2`);
+                                setTimeout(() => fetchInitialData(retryCount + 1), 1000);
+                            } else {
+                                console.error("데이터 로드 최대 재시도 횟수 초과");
+                            }
+                        }
+                    };
+
+                    fetchInitialData();
+                } catch (error) {
+                    console.error("Error during login gapi load", error);
+                    setTimeout(() => {
+                        console.log("gapi 초기화 재시도");
+                        initAndFetch();
+                    }, 1500);
+                }
+            };
+
+            initAndFetch();
+        }
+    }, [user, isGapiReady]);
+
     // 스프레드시트 ID 찾기 및 초기화
     useEffect(() => {
         const initAndFetch = async () => {

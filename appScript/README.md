@@ -181,7 +181,7 @@ Apps Script는 `doPost(e)` 함수를 통해 POST 요청을 처리합니다.
 ```
 
 #### CORS 설정:
-- **자동 CORS 헤더**: 모든 응답에 CORS 헤더가 자동으로 포함됩니다
+- **웹 앱 배포 시 설정**: Apps Script 웹 앱 배포 시 "액세스 권한"을 "모든 사용자"로 설정
 - **지원하는 메서드**: GET, POST, OPTIONS
 - **허용된 헤더**: Content-Type, Authorization, X-Requested-With
 - **Origin**: 모든 도메인 허용 (*)
@@ -245,6 +245,7 @@ fetch('YOUR_APPS_SCRIPT_URL', {
 - **파일**: `Encryption.gs`
 - **기능**: 20가지 이상의 암호화 방법 지원
 - **특징**: 가역적 암호화만 사용하여 데이터 복원 가능
+- **이메일 암호화**: 전체 이메일 주소를 통으로 암호화 (사용자명@도메인.확장자)
 
 ### 2. 관리자 키 관리
 - **파일**: `KeyManagement.gs`

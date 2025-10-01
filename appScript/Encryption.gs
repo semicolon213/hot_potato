@@ -34,101 +34,195 @@ function generateExtendedMultiLayerKey() {
 
 // 텍스트에 특정 암호화 방법 적용
 function applyEncryption(text, method, key) {
-  switch (method) {
-    case 'Base64':
-      return Utilities.base64Encode(text);
-    case 'Caesar':
-      return caesarCipher(text, 13);
-    case 'ROT13':
-      return rot13(text);
-    case 'BitShift':
-      return bitShift(text, 7);
-    case 'Substitution':
-      return substitutionCipher(text);
-    case 'Padding':
-      return paddingEncrypt(text);
-    case 'MultiEncode':
-      return multiEncode(text);
-    case 'RandomInsert':
-      return randomInsert(text);
-    case 'Transposition':
-      return transpositionCipher(text);
-    case 'Reverse':
-      return reverseCipher(text);
-    case 'Atbash':
-      return atbashCipher(text);
-    case 'Vigenere':
-      return vigenereCipher(text);
-    case 'RailFence':
-      return railFenceCipher(text);
-    case 'Columnar':
-      return columnarCipher(text);
-    case 'Affine':
-      return affineCipher(text);
-    case 'Permutation':
-      return permutationCipher(text);
-    case 'Pattern':
-      return patternCipher(text);
-    case 'Mirror':
-      return mirrorCipher(text);
-    case 'Zigzag':
-      return zigzagCipher(text);
-    case 'Wave':
-      return waveCipher(text);
-    case 'Snake':
-      return snakeCipher(text);
-    default:
+  try {
+    if (!text || typeof text !== 'string') {
+      console.warn('암호화할 텍스트가 유효하지 않습니다:', text);
+      return text || '';
+    }
+
+    let result;
+    switch (method) {
+      case 'Base64':
+        try {
+          const blob = Utilities.newBlob(text).setContentType('text/plain; charset=utf-8');
+          result = Utilities.base64Encode(blob.getBytes());
+        } catch (error) {
+          console.error('Base64 인코딩 오류:', error);
+          result = text;
+        }
+        break;
+      case 'Caesar':
+        result = caesarCipher(text, 13);
+        break;
+      case 'ROT13':
+        result = rot13(text);
+        break;
+      case 'BitShift':
+        result = bitShift(text, 7);
+        break;
+      case 'Substitution':
+        result = substitutionCipher(text);
+        break;
+      case 'Padding':
+        result = paddingEncrypt(text);
+        break;
+      case 'MultiEncode':
+        result = multiEncode(text);
+        break;
+      case 'RandomInsert':
+        result = randomInsert(text);
+        break;
+      case 'Transposition':
+        result = transpositionCipher(text);
+        break;
+      case 'Reverse':
+        result = reverseCipher(text);
+        break;
+      case 'Atbash':
+        result = atbashCipher(text);
+        break;
+      case 'Vigenere':
+        result = vigenereCipher(text);
+        break;
+      case 'RailFence':
+        result = railFenceCipher(text);
+        break;
+      case 'Columnar':
+        result = columnarCipher(text);
+        break;
+      case 'Affine':
+        result = affineCipher(text);
+        break;
+      case 'Permutation':
+        result = permutationCipher(text);
+        break;
+      case 'Pattern':
+        result = patternCipher(text);
+        break;
+      case 'Mirror':
+        result = mirrorCipher(text);
+        break;
+      case 'Zigzag':
+        result = zigzagCipher(text);
+        break;
+      case 'Wave':
+        result = waveCipher(text);
+        break;
+      case 'Snake':
+        result = snakeCipher(text);
+        break;
+      default:
+        console.warn(`알 수 없는 암호화 방법: ${method}`);
+        result = text;
+    }
+    
+    // 결과가 유효하지 않으면 원본 반환
+    if (result === undefined || result === null) {
+      console.warn(`암호화 결과가 유효하지 않음 (${method}):`, result);
       return text;
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`암호화 중 오류 발생 (${method}):`, error);
+    return text;
   }
 }
 
 // 텍스트에 특정 복호화 방법 적용
 function applyDecryption(text, method, key) {
-  switch (method) {
-    case 'Base64':
-      return Utilities.base64Decode(text);
-    case 'Caesar':
-      return caesarDecrypt(text, 13);
-    case 'ROT13':
-      return rot13Decrypt(text);
-    case 'BitShift':
-      return bitShiftDecrypt(text, 7);
-    case 'Substitution':
-      return substitutionDecrypt(text);
-    case 'Padding':
-      return paddingDecrypt(text);
-    case 'MultiEncode':
-      return multiDecode(text);
-    case 'RandomInsert':
-      return randomInsertDecrypt(text);
-    case 'Transposition':
-      return transpositionDecrypt(text);
-    case 'Reverse':
-      return reverseDecrypt(text);
-    case 'Atbash':
-      return atbashDecrypt(text);
-    case 'Vigenere':
-      return vigenereDecrypt(text);
-    case 'RailFence':
-      return railFenceDecrypt(text);
-    case 'Columnar':
-      return columnarDecrypt(text);
-    case 'Affine':
-      return affineDecrypt(text);
-    case 'Permutation':
-      return permutationDecrypt(text);
-    case 'Pattern':
-      return patternDecrypt(text);
-    case 'Mirror':
-      return mirrorDecrypt(text);
-    case 'Zigzag':
-      return zigzagDecrypt(text);
-    case 'Wave':
-      return waveDecrypt(text);
-    case 'Snake':
-      return snakeDecrypt(text);
-    default:
+  try {
+    if (!text || typeof text !== 'string') {
+      console.warn('복호화할 텍스트가 유효하지 않습니다:', text);
+      return text || '';
+    }
+
+    let result;
+    switch (method) {
+      case 'Base64':
+        try {
+          const decoded = Utilities.base64Decode(text);
+          result = Utilities.newBlob(decoded).getDataAsString();
+        } catch (error) {
+          console.error('Base64 복호화 오류:', error);
+          result = text;
+        }
+        break;
+      case 'Caesar':
+        result = caesarDecrypt(text, 13);
+        break;
+      case 'ROT13':
+        result = rot13Decrypt(text);
+        break;
+      case 'BitShift':
+        result = bitShiftDecrypt(text, 7);
+        break;
+      case 'Substitution':
+        result = substitutionDecrypt(text);
+        break;
+      case 'Padding':
+        result = paddingDecrypt(text);
+        break;
+      case 'MultiEncode':
+        result = multiDecode(text);
+        break;
+      case 'RandomInsert':
+        result = randomInsertDecrypt(text);
+        break;
+      case 'Transposition':
+        result = transpositionDecrypt(text);
+        break;
+      case 'Reverse':
+        result = reverseDecrypt(text);
+        break;
+      case 'Atbash':
+        result = atbashDecrypt(text);
+        break;
+      case 'Vigenere':
+        result = vigenereDecrypt(text);
+        break;
+      case 'RailFence':
+        result = railFenceDecrypt(text);
+        break;
+      case 'Columnar':
+        result = columnarDecrypt(text);
+        break;
+      case 'Affine':
+        result = affineDecrypt(text);
+        break;
+      case 'Permutation':
+        result = permutationDecrypt(text);
+        break;
+      case 'Pattern':
+        result = patternDecrypt(text);
+        break;
+      case 'Mirror':
+        result = mirrorDecrypt(text);
+        break;
+      case 'Zigzag':
+        result = zigzagDecrypt(text);
+        break;
+      case 'Wave':
+        result = waveDecrypt(text);
+        break;
+      case 'Snake':
+        result = snakeDecrypt(text);
+        break;
+      default:
+        console.warn(`알 수 없는 복호화 방법: ${method}`);
+        result = text;
+    }
+    
+    // 결과가 유효하지 않으면 원본 반환
+    if (result === undefined || result === null) {
+      console.warn(`복호화 결과가 유효하지 않음 (${method}):`, result);
       return text;
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`복호화 중 오류 발생 (${method}):`, error);
+    return text;
   }
 }
 
@@ -177,6 +271,11 @@ function rot13(text) {
     }
     return char;
   }).join('');
+}
+
+// ROT13 암호화: ROT13은 암호화와 복호화가 동일
+function rot13Encrypt(text) {
+  return rot13(text);
 }
 
 // ROT13 복호화: ROT13은 암호화와 복호화가 동일
@@ -252,13 +351,32 @@ function paddingDecrypt(text) {
 
 // 다중 인코딩: Base64 + 16진수 인코딩
 function multiEncode(text) {
-  return Utilities.base64Encode(text) + '_' + Utilities.base64Encode(text);
+  try {
+    const blob = Utilities.newBlob(text).setContentType('text/plain; charset=utf-8');
+    const encoded = Utilities.base64Encode(blob.getBytes());
+    return encoded + '_' + encoded;
+  } catch (error) {
+    console.error('MultiEncode 인코딩 오류:', error);
+    return text;
+  }
 }
 
 // 다중 인코딩 복호화: Base64 부분만 사용
 function multiDecode(text) {
-  const parts = text.split('_');
-  return Utilities.base64Decode(parts[0]);
+  try {
+    const parts = text.split('_');
+    if (parts.length < 2) {
+      console.warn('MultiDecode: 유효하지 않은 형식:', text);
+      return text;
+    }
+    
+    const base64Part = parts[0];
+    const decoded = Utilities.base64Decode(base64Part);
+    return Utilities.newBlob(decoded).getDataAsString();
+  } catch (error) {
+    console.error('MultiDecode 복호화 오류:', error);
+    return text;
+  }
 }
 
 // 랜덤 삽입: 앞뒤에 짧은 랜덤 문자열 추가

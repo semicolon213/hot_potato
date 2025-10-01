@@ -87,14 +87,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             <div className="input-group">
-              <label htmlFor="name">이름</label>
+              <label htmlFor="name">이름 *</label>
               <input
                 type="text"
                 id="name"
                 value={formData.name}
                 onChange={(e) => updateFormData('name', e.target.value)}
-                disabled
-                className="form-input disabled"
+                placeholder="이름을 입력하세요"
+                className="form-input"
               />
             </div>
 
@@ -157,7 +157,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <button
               type="button"
               onClick={handleRegistration}
-              disabled={loginState.isLoading || !formData.studentId.trim() || (formData.isAdmin && !formData.adminKey.trim())}
+              disabled={loginState.isLoading || !formData.name.trim() || !formData.studentId.trim() || (formData.isAdmin && !formData.adminKey.trim())}
               className="register-btn"
             >
               {loginState.isLoading ? (

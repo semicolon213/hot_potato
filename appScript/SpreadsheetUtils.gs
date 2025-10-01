@@ -108,9 +108,12 @@ function getAllUsers() {
     const cacheKey = 'all_users';
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-      console.log('캐시에서 사용자 데이터 로드');
+      console.log('✅ Apps Script 캐시에서 사용자 데이터 로드 (성능 향상!)');
+      console.log('캐시된 데이터 크기:', JSON.stringify(cachedData).length, 'bytes');
       return cachedData;
     }
+    
+    console.log('❌ 캐시 미스 - 스프레드시트에서 데이터 로드');
     
     const { spreadsheetId, spreadsheet } = findHpMemberSheet();
     
@@ -177,8 +180,10 @@ function getAllUsers() {
       users: allUsers
     };
     
-    // 결과를 캐시에 저장
-    setCachedData(cacheKey, result);
+    // 결과를 캐시에 저장 (5분간 유지)
+    setCachedData(cacheKey, result, 300);
+    console.log('✅ 사용자 데이터를 Apps Script 캐시에 저장 (5분간 유지)');
+    console.log('저장된 데이터 크기:', JSON.stringify(result).length, 'bytes');
     
     return result;
     
@@ -337,13 +342,14 @@ function checkUserRegistrationStatus(email) {
       console.log(`행 ${i} 데이터:`, row);
       
       const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
-      const userEmail = decryptEmail(encryptedUserEmail); // 복호화된 이메일
+      // ROT13으로 복호화하여 비교 (Cloud Run과 동일한 방식)
+      const userEmail = encryptedUserEmail ? rot13Decrypt(encryptedUserEmail) : '';
       const approvalStatus = row[4]; // Approval 컬럼 (E열)
       const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
       const name = row[2]; // name_member 컬럼 (C열)
       
-      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, 복호화된 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
+      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, ROT13 복호화: ${userEmail}, 검색 이메일: ${email}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
 
       if (userEmail === email) {
         const isApproved = approvalStatus === 'O';
@@ -460,7 +466,12 @@ function checkUserApprovalStatus(email) {
 // user 시트에 새로운 사용자 가입 요청 추가
 function addUserRegistrationRequest(userData) {
   try {
-    console.log('addUserRegistrationRequest 호출됨:', userData);
+    console.log('=== addUserRegistrationRequest 시작 ===');
+    console.log('받은 사용자 데이터:', userData);
+    console.log('사용자 이메일:', userData.userEmail);
+    console.log('사용자 이름:', userData.userName);
+    console.log('학번:', userData.studentId);
+    
     const { spreadsheetId, spreadsheet } = findHpMemberSheet();
     
     const sheet = spreadsheet.getSheetByName('user');
@@ -478,28 +489,53 @@ function addUserRegistrationRequest(userData) {
     
     // 해당 학번의 사용자 찾기 (A열: 학번/교번)
     let userRowIndex = -1;
+    console.log('검색할 학번:', userData.studentId);
+    console.log('학번 타입:', typeof userData.studentId);
+    
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const studentId = row[0]; // A열: 학번/교번
+      console.log(`행 ${i} - 시트 학번: "${studentId}" (타입: ${typeof studentId}), 검색 학번: "${userData.studentId}" (타입: ${typeof userData.studentId})`);
       
-      if (studentId === userData.studentId) {
+      if (studentId == userData.studentId) { // == 사용하여 타입 무관 비교
         userRowIndex = i + 1; // 시트 행 번호 (1부터 시작)
+        console.log(`학번 일치! 행 ${userRowIndex}에서 발견`);
         break;
       }
     }
     
+    // 승인 상태와 관리자 상태 변수 선언
+    let approvalStatus = 'X'; // 기본값: 승인 대기
+    let isAdminStatus = 'X'; // 기본값: 일반 사용자
+    
     if (userRowIndex === -1) {
-      throw new Error('해당 학번의 사용자를 찾을 수 없습니다. 학번을 확인해주세요.');
+      // 학번이 일치하는 사용자를 찾을 수 없음
+      throw new Error('해당 학번의 사용자 정보를 찾을 수 없습니다. 학번과 이름을 확인해주세요.');
+    } else {
+      // 기존 사용자 발견 - 학번과 이름이 일치하는지 확인
+      const existingName = data[userRowIndex - 1][2]; // C열: 이름
+      console.log(`기존 사용자 발견 - 학번: ${userData.studentId}, 기존 이름: ${existingName}, 입력된 이름: ${userData.userName}`);
+      
+      if (existingName !== userData.userName) {
+        throw new Error('학번과 이름이 일치하지 않습니다. 학번과 이름을 확인해주세요.');
+      }
+      
+      // D열(google_member)에 이미 이메일이 있는지 확인
+      const existingEmail = data[userRowIndex - 1][3]; // D열: google_member
+      if (existingEmail && existingEmail.trim() !== '') {
+        throw new Error('이미 가입된 사용자입니다.');
+      }
+      
+      // 가입 요청 처리
+      approvalStatus = 'X'; // 승인 대기
+      isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
+      
+      // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
+      // ROT13으로 암호화 (Cloud Run과 동일한 방식)
+      const encryptedEmail = rot13Encrypt(userData.userEmail);
+      sheet.getRange(`D${userRowIndex}:F${userRowIndex}`).setValues([[encryptedEmail, approvalStatus, isAdminStatus]]);
+      console.log(`사용자 가입 요청 완료: ${userData.studentId} (${userData.userEmail}) - 승인 대기: ${approvalStatus}, 관리자: ${isAdminStatus}`);
     }
-    
-    // 기존 사용자 발견 - D열(google_member)에 구글 계정 이메일 추가
-    const approvalStatus = 'X'; // 승인 대기
-    const isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
-    
-    // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
-    // 이메일 주소를 설정된 방법으로 암호화하여 저장
-    const encryptedEmail = encryptEmail(userData.userEmail);
-    sheet.getRange(`D${userRowIndex}:F${userRowIndex}`).setValues([[encryptedEmail, approvalStatus, isAdminStatus]]);
     
     console.log(`사용자 가입 요청 업데이트: ${userData.studentId} (${userData.userEmail}) - 승인: ${approvalStatus}, 관리자: ${isAdminStatus}`);
     
@@ -510,12 +546,49 @@ function addUserRegistrationRequest(userData) {
     
   } catch (error) {
     console.error('사용자 가입 요청 업데이트 실패:', error);
-    throw new Error('가입 요청 처리 중 오류가 발생했습니다.');
+    console.error('오류 상세 정보:', error.message);
+    console.error('오류 스택:', error.stack);
+    throw new Error('가입 요청 처리 중 오류가 발생했습니다: ' + error.message);
+  }
+}
+
+// ===== 데이터 정리 함수 =====
+// 잘못된 Approval 값 정리 (1 -> X)
+function cleanupInvalidApprovalValues() {
+  try {
+    console.log('=== 잘못된 Approval 값 정리 시작 ===');
+    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
+    const sheet = spreadsheet.getSheetByName('user');
+    
+    if (!sheet) {
+      throw new Error('user 시트를 찾을 수 없습니다');
+    }
+    
+    const data = sheet.getRange('A:Z').getValues();
+    let fixedCount = 0;
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const approvalStatus = row[4]; // E열: Approval
+      
+      if (approvalStatus === 1 || approvalStatus === '1') {
+        console.log(`행 ${i + 1}의 잘못된 Approval 값 발견: ${approvalStatus} -> X로 수정`);
+        sheet.getRange(`E${i + 1}`).setValue('X');
+        fixedCount++;
+      }
+    }
+    
+    console.log(`총 ${fixedCount}개의 잘못된 Approval 값을 수정했습니다.`);
+    return { success: true, fixedCount };
+    
+  } catch (error) {
+    console.error('Approval 값 정리 실패:', error);
+    throw error;
   }
 }
 
 // ===== 이메일 암호화/복호화 함수들 =====
-// 설정 기반 이메일 암호화 함수
+// 설정 기반 이메일 암호화 함수 (전체 이메일 주소 통으로 암호화)
 function encryptEmail(email) {
   if (!email || !getConfig('use_email_encryption')) return email;
   
@@ -523,21 +596,21 @@ function encryptEmail(email) {
   let encryptedEmail = email;
   
   if (config.layers === 1) {
-    // 단일 레이어 암호화
+    // 단일 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
     encryptedEmail = applyEncryption(email, config.method, '');
   } else {
-    // 다중 레이어 암호화
+    // 다중 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
     for (let i = 0; i < config.layers; i++) {
       const method = config.layerMethods[i % config.layerMethods.length];
       encryptedEmail = applyEncryption(encryptedEmail, method, '');
     }
   }
   
-  console.log(`이메일 암호화 완료: ${email} -> ${encryptedEmail.substring(0, 20)}...`);
+  console.log(`이메일 전체 암호화 완료: ${email} -> ${encryptedEmail.substring(0, 20)}...`);
   return encryptedEmail;
 }
 
-// 설정 기반 이메일 복호화 함수
+// 설정 기반 이메일 복호화 함수 (전체 이메일 주소 통으로 복호화)
 function decryptEmail(encryptedEmail) {
   if (!encryptedEmail || !getConfig('use_email_encryption')) return encryptedEmail;
   
@@ -545,39 +618,91 @@ function decryptEmail(encryptedEmail) {
   let decryptedEmail = encryptedEmail;
   
   if (config.layers === 1) {
-    // 단일 레이어 복호화
+    // 단일 레이어 복호화 - 전체 이메일 주소를 통으로 복호화
     decryptedEmail = applyDecryption(encryptedEmail, config.method, '');
   } else {
-    // 다중 레이어 복호화 (역순으로 적용)
+    // 다중 레이어 복호화 (역순으로 적용) - 전체 이메일 주소를 통으로 복호화
     for (let i = config.layers - 1; i >= 0; i--) {
       const method = config.layerMethods[i % config.layerMethods.length];
       decryptedEmail = applyDecryption(decryptedEmail, method, '');
     }
   }
   
-  console.log(`이메일 복호화 완료: ${encryptedEmail.substring(0, 20)}... -> ${decryptedEmail}`);
+  console.log(`이메일 전체 복호화 완료: ${encryptedEmail.substring(0, 20)}... -> ${decryptedEmail}`);
   return decryptedEmail;
 }
 
-// 이메일이 이미 암호화되었는지 확인하는 함수
+// 이메일이 이미 암호화되었는지 확인하는 함수 (전체 이메일 주소 기준)
 function isEncryptedEmail(email) {
-  if (!email || !email.includes('@')) return false;
+  if (!email) return false;
   
   const config = getCurrentEmailEncryptionConfig();
-  const patterns = config.identificationPatterns[config.method] || [];
   
-  // 설정된 패턴으로 암호화된 이메일인지 확인
-  return patterns.some(pattern => email.includes(pattern));
+  // 다중 레이어인 경우 모든 레이어 방법의 패턴을 확인
+  let isEncrypted = false;
+  
+  if (config.layers === 1) {
+    // 단일 레이어인 경우 기존 로직 사용
+    const patterns = config.identificationPatterns[config.method] || [];
+    isEncrypted = checkPatternsForMethod(email, config.method, patterns);
+  } else {
+    // 다중 레이어인 경우 모든 레이어 방법의 패턴을 확인
+    for (const method of config.layerMethods) {
+      const patterns = config.identificationPatterns[method] || [];
+      if (checkPatternsForMethod(email, method, patterns)) {
+        isEncrypted = true;
+        break;
+      }
+    }
+  }
+  
+  // 디버깅을 위한 로그
+  console.log(`이메일 전체 검사: ${email}, 방법: ${config.method}, 레이어: ${config.layers}, 암호화됨: ${isEncrypted}`);
+  
+  return isEncrypted;
+}
+
+// 특정 방법에 대한 패턴 확인 함수
+function checkPatternsForMethod(email, method, patterns) {
+  if (method === 'ROT13') {
+    // ROT13의 경우 도메인 확장자 패턴만 확인 (.pbz, .bet 등)
+    const domainPatterns = patterns.filter(pattern => pattern.startsWith('.'));
+    return domainPatterns.some(pattern => email.includes(pattern));
+  } else if (method === 'Base64') {
+    // Base64의 경우 패딩 패턴만 확인 (==, =)
+    const paddingPatterns = patterns.filter(pattern => pattern === '==' || pattern === '=');
+    return paddingPatterns.some(pattern => email.includes(pattern));
+  } else if (method === 'BitShift') {
+    // BitShift의 경우 특수 문자 패턴만 확인
+    const specialCharPatterns = patterns.filter(pattern => ['{', '}', '|', '~', '^', '`'].includes(pattern));
+    return specialCharPatterns.some(pattern => email.includes(pattern));
+  } else if (method === 'Caesar' || method === 'Substitution') {
+    // Caesar, Substitution의 경우 @ 기호는 유지되지만, 
+    // 암호화된 이메일은 일반적인 이메일 패턴과 다름
+    const domainPattern = /@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
+    const match = email.match(domainPattern);
+    if (match) {
+      const domain = match[1];
+      // 일반적인 도메인 확장자가 아닌 경우 암호화된 것으로 간주
+      const commonExtensions = ['.com', '.org', '.net', '.edu', '.gov', '.co.kr', '.kr'];
+      return !commonExtensions.some(ext => domain.endsWith(ext));
+    } else {
+      return false;
+    }
+  } else {
+    // 기타 방법들의 경우 패턴 매칭
+    return patterns.some(pattern => email.includes(pattern));
+  }
 }
 
 // ===== 기존 ROT13 함수들 (하위 호환성 유지) =====
-// ROT13 암호화 함수
+// ROT13 암호화 함수 (전체 이메일 주소 통으로 암호화)
 function rot13Encrypt(text) {
   if (!text) return text;
   return rot13(text);
 }
 
-// ROT13 복호화 함수 (ROT13은 암호화와 복호화가 동일)
+// ROT13 복호화 함수 (ROT13은 암호화와 복호화가 동일, 전체 이메일 주소 통으로 복호화)
 function rot13Decrypt(text) {
   if (!text) return text;
   return rot13(text);

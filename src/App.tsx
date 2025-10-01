@@ -107,11 +107,14 @@ const App: React.FC = () => {
 
   // 로그인 처리
   const handleLogin = (userData: any) => {
+    console.log('로그인 처리 시작:', userData);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     if (userData.accessToken) {
       localStorage.setItem('googleAccessToken', userData.accessToken);
+      setGoogleAccessToken(userData.accessToken);
     }
+    console.log('✅ 로그인 완료 - 데이터 로딩은 useAppState에서 자동 처리됩니다');
   };
 
   // 로그아웃 처리

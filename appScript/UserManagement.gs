@@ -4,6 +4,106 @@
  * Hot Potato Admin Key Management System
  */
 
+// ===== 메인 엔트리 포인트 함수들 =====
+
+// POST 요청 메인 처리 함수
+function doPostAuthInternal(req) {
+  try {
+    console.log('=== doPostAuthInternal 시작 ===');
+    console.log('요청 데이터:', req);
+    
+    const action = req.action || req.path || '';
+    console.log('요청 액션:', action);
+    
+    let result;
+    
+    switch (action) {
+      case 'getPendingUsers':
+        result = handleGetPendingUsers();
+        break;
+        
+      case 'approveUser':
+        result = handleApproveUser(req.studentId || req.id);
+        break;
+        
+      case 'rejectUser':
+        result = handleRejectUser(req.studentId || req.id);
+        break;
+        
+      case 'verifyAdminKey':
+        result = handleVerifyAdminKey(req.adminKey);
+        break;
+        
+      case 'sendAdminKeyEmail':
+        result = handleSendAdminKeyEmail(req.userEmail);
+        break;
+        
+      case 'submitRegistrationRequest':
+        result = handleSubmitRegistrationRequest(req);
+        break;
+        
+      case 'checkApprovalStatus':
+        result = handleCheckApprovalStatus(req.email);
+        break;
+        
+      case 'checkRegistrationStatus':
+        result = handleCheckRegistrationStatus(req.email);
+        break;
+        
+      default:
+        result = {
+          success: false,
+          message: '지원하지 않는 액션입니다: ' + action
+        };
+    }
+    
+    console.log('처리 결과:', result);
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    console.error('doPostAuthInternal 오류:', error);
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: '서버 오류: ' + error.message,
+        error: error.message,
+        stack: error.stack
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// GET 요청 메인 처리 함수
+function doGetAuthInternal(e) {
+  try {
+    console.log('=== doGetAuthInternal 시작 ===');
+    console.log('GET 요청:', e);
+    
+    const systemInfo = {
+      success: true,
+      message: 'Hot Potato Admin Key Management System',
+      version: '1.0.0',
+      status: 'running',
+      timestamp: new Date().toISOString()
+    };
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(systemInfo))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    console.error('doGetAuthInternal 오류:', error);
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'GET 처리 오류: ' + error.message 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 // ===== 사용자 관리 핸들러 함수들 =====
 
 // 모든 사용자 목록 가져오기 핸들러
@@ -120,10 +220,36 @@ function handleCheckRegistrationStatus(email) {
 // 가입 요청 제출 핸들러
 function handleSubmitRegistrationRequest(userData) {
   try {
-    const { userEmail, userName, studentId, isAdminVerified } = userData;
+    console.log('받은 사용자 데이터:', userData);
+    
+    // 프론트엔드에서 보내는 필드명과 Apps Script에서 기대하는 필드명 매핑
+    const userEmail = userData.userEmail || userData.email;
+    const userName = userData.userName || userData.name;
+    const studentId = userData.studentId;
+    const isAdminRequested = userData.isAdminVerified || userData.isAdmin || false;
+    const adminKey = userData.adminKey || '';
+
+    console.log('매핑된 데이터:', { userEmail, userName, studentId, isAdminRequested, adminKey });
 
     if (!userEmail || !userName || !studentId) {
       throw new Error('필수 정보가 누락되었습니다.');
+    }
+
+    // 관리자로 가입하려는 경우 관리자 키 검증
+    let isAdminVerified = false;
+    if (isAdminRequested) {
+      if (!adminKey) {
+        throw new Error('관리자로 가입하려면 관리자 키를 입력해주세요.');
+      }
+      
+      // 관리자 키 검증
+      const adminKeyResult = handleVerifyAdminKey(adminKey);
+      if (!adminKeyResult.success) {
+        throw new Error('관리자 키가 올바르지 않습니다.');
+      }
+      
+      isAdminVerified = true;
+      console.log('관리자 키 검증 성공');
     }
 
     // 이메일 형식 검증
@@ -148,6 +274,38 @@ function handleSubmitRegistrationRequest(userData) {
   } catch (error) {
     console.error('가입 요청 제출 실패:', error);
     throw error;
+  }
+}
+
+// ===== 관리자 키 검증 함수 =====
+
+// 관리자 키 검증 핸들러
+function handleVerifyAdminKey(adminKey) {
+  try {
+    console.log('관리자 키 검증 요청:', adminKey ? adminKey.substring(0, 10) + '...' : '없음');
+    
+    if (!adminKey || !adminKey.trim()) {
+      return {
+        success: false,
+        message: '관리자 키를 입력해주세요.'
+      };
+    }
+    
+    // KeyManagement.gs의 verifyAdminKey 함수 호출
+    const result = verifyAdminKey(adminKey.trim());
+    
+    return {
+      success: result.isValid,
+      message: result.message,
+      verificationMethod: result.verificationMethod
+    };
+    
+  } catch (error) {
+    console.error('관리자 키 검증 핸들러 오류:', error);
+    return {
+      success: false,
+      message: '관리자 키 검증 중 오류가 발생했습니다: ' + error.message
+    };
   }
 }
 
@@ -200,7 +358,7 @@ function migrateExistingEmails() {
   }
 }
 
-// 설정 기반 이메일 암호화/복호화 테스트 함수
+// 설정 기반 이메일 암호화/복호화 테스트 함수 (전체 이메일 주소)
 function testEmailEncryption() {
   const testEmails = [
     'test@example.com',
@@ -209,7 +367,7 @@ function testEmailEncryption() {
     'student@university.edu'
   ];
   
-  console.log('=== 이메일 암호화/복호화 테스트 ===');
+  console.log('=== 이메일 전체 암호화/복호화 테스트 ===');
   
   const config = getCurrentEmailEncryptionConfig();
   console.log('현재 이메일 암호화 설정:', config);
@@ -244,7 +402,7 @@ function testEmailEncryption() {
   };
 }
 
-// ROT13 암호화/복호화 테스트 함수 (하위 호환성 유지)
+// ROT13 암호화/복호화 테스트 함수 (전체 이메일 주소, 하위 호환성 유지)
 function testRot13Encryption() {
   const testEmails = [
     'test@example.com',
@@ -305,4 +463,104 @@ function testDecryption() {
   console.log('=== 복호화 테스트 완료 ===');
   
   return decryptedKey;
+}
+
+// ===== 사용자 상태 확인 함수들 =====
+// 사용자 승인 상태 확인
+function checkUserApprovalStatus(email) {
+  try {
+    console.log(`사용자 승인 상태 확인: ${email}`);
+    
+    const { spreadsheet } = findHpMemberSheet();
+    const sheet = spreadsheet.getSheetByName('user');
+    
+    if (!sheet) {
+      throw new Error('user 시트를 찾을 수 없습니다');
+    }
+    
+    const data = sheet.getRange('A:Z').getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const userEmail = row[3]; // google_member 컬럼
+      
+      if (userEmail && decryptEmail(userEmail) === email) {
+        const approvalStatus = row[4]; // Approval 컬럼
+        const isAdmin = row[5]; // is_admin 컬럼
+        
+        return {
+          success: true,
+          email: email,
+          approvalStatus: approvalStatus,
+          isAdmin: isAdmin === 'O' || isAdmin === 1,
+          message: '사용자 승인 상태 확인 완료'
+        };
+      }
+    }
+    
+    return {
+      success: false,
+      email: email,
+      message: '사용자를 찾을 수 없습니다'
+    };
+    
+  } catch (error) {
+    console.error('사용자 승인 상태 확인 실패:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: '사용자 승인 상태 확인 중 오류가 발생했습니다'
+    };
+  }
+}
+
+// 사용자 등록 상태 확인
+function checkUserRegistrationStatus(email) {
+  try {
+    console.log(`사용자 등록 상태 확인: ${email}`);
+    
+    const { spreadsheet } = findHpMemberSheet();
+    const sheet = spreadsheet.getSheetByName('user');
+    
+    if (!sheet) {
+      throw new Error('user 시트를 찾을 수 없습니다');
+    }
+    
+    const data = sheet.getRange('A:Z').getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const userEmail = row[3]; // google_member 컬럼
+      
+      if (userEmail && decryptEmail(userEmail) === email) {
+        const noMember = row[0]; // no_member 컬럼
+        const active = row[1]; // active 컬럼
+        const name = row[2]; // name_member 컬럼
+        
+        return {
+          success: true,
+          email: email,
+          isRegistered: !!noMember && !!name,
+          isActive: active === 1,
+          memberNumber: noMember,
+          name: name,
+          message: '사용자 등록 상태 확인 완료'
+        };
+      }
+    }
+    
+    return {
+      success: false,
+      email: email,
+      message: '사용자를 찾을 수 없습니다'
+    };
+    
+  } catch (error) {
+    console.error('사용자 등록 상태 확인 실패:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: '사용자 등록 상태 확인 중 오류가 발생했습니다'
+    };
+  }
 }
