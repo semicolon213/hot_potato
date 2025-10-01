@@ -76,12 +76,26 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     useEffect(() => {
         const loadSuggestions = async () => {
             await initializeGoogleAPIOnce(null);
+            
+            const year = currentDate.year;
+            const timeMin = new Date(year, 0, 1).toISOString();
+            const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
+
             const sheetPromise = (async () => {
                 const sheetId = await findSpreadsheetById('calendar_student');
                 if (sheetId) {
                     const events = await fetchCalendarEvents(null, sheetId, '시트1');
                     return events
                         ? events
+                            .filter(e => {
+                                if (typeof e.startDate === 'string' && e.startDate.includes('-')) {
+                                    const eventYear = parseInt(e.startDate.split('-')[0], 10);
+                                    if (!isNaN(eventYear)) {
+                                        return eventYear === year;
+                                    }
+                                }
+                                return false;
+                            })
                             .map(e => ({ 
                                 title: e.title, 
                                 tag: e.type, 
@@ -100,7 +114,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         'calendarId': 'primary',
                         'maxResults': 250,
                         'singleEvents': true,
-                        'orderBy': 'startTime'
+                        'orderBy': 'startTime',
+                        timeMin,
+                        timeMax
                     });
                     const items = response.result.items || [];
                     return items
@@ -128,7 +144,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         'calendarId': holidayCalendarId,
                         'maxResults': 50,
                         'singleEvents': true,
-                        'orderBy': 'startTime'
+                        'orderBy': 'startTime',
+                        timeMin,
+                        timeMax
                     });
                     const items = response.result.items || [];
                     return items.map((item: any) => {
@@ -167,7 +185,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         };
 
         loadSuggestions();
-    }, []);
+    }, [currentDate.year]);
 
     useEffect(() => {
         const handler = setTimeout(() => {
