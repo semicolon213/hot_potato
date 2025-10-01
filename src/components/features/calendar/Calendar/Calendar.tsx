@@ -702,6 +702,18 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                     if (!existingTerms.includes(formattedTerm)) {
                                                         setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                     }
+
+                                                    if (suggestion.startDate) {
+                                                        try {
+                                                            const targetDate = new Date(suggestion.startDate);
+                                                            if (!isNaN(targetDate.getTime())) {
+                                                                goToDate(targetDate);
+                                                            }
+                                                        } catch (e) {
+                                                            console.error("Failed to parse date from suggestion:", suggestion.startDate, e);
+                                                        }
+                                                    }
+
                                                     setInputValue('');
                                                     setSuggestions([]);
                                                 }}
