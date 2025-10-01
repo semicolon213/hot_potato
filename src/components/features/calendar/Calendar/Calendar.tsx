@@ -119,22 +119,45 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 }
             })();
 
-            const [sheetSuggestions, calendarSuggestions] = await Promise.all([sheetPromise, calendarPromise]);
+            const holidayPromise = (async () => {
+                try {
+                    const holidayCalendarId = 'ko.south_korea#holiday@group.v.calendar.google.com';
+                    const response = await (window as any).gapi.client.calendar.events.list({
+                        'calendarId': holidayCalendarId,
+                        'maxResults': 50,
+                        'singleEvents': true,
+                        'orderBy': 'startTime'
+                    });
+                    const items = response.result.items || [];
+                    return items.map((item: any) => {
+                        const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                        const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                        return {
+                            title: item.summary,
+                            tag: '공휴일',
+                            startDate: startDate,
+                            endDate: endDate || startDate
+                        };
+                    }).filter(item => item.title);
+                } catch (error) {
+                    console.error("Error fetching holiday calendar events:", error);
+                    return [];
+                }
+            })();
 
-            const combinedSource = [...sheetSuggestions, ...calendarSuggestions];
+            const [sheetSuggestions, calendarSuggestions, holidaySuggestions] = await Promise.all([sheetPromise, calendarPromise, holidayPromise]);
 
-            // 1. Filter out items without a title (already done in promises)
+            const combinedSource = [...sheetSuggestions, ...calendarSuggestions, ...holidaySuggestions];
 
-            // 2. Sort by startDate
             combinedSource.sort((a, b) => {
                 try {
                     const dateA = new Date(a.startDate).getTime();
                     const dateB = new Date(b.startDate).getTime();
-                    if (isNaN(dateA)) return 1;  // Push invalid dates to the end
+                    if (isNaN(dateA)) return 1;
                     if (isNaN(dateB)) return -1;
                     return dateA - dateB;
                 } catch (e) {
-                    return 0; // Don't sort if dates are malformed
+                    return 0;
                 }
             });
 
