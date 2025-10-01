@@ -6,6 +6,7 @@ import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
+import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -65,11 +66,125 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
-    const [inputValue, setInputValue] = useState(searchTerm);
+    const [inputValue, setInputValue] = useState('');
+    const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
+    const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
+
+    const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
 
     useEffect(() => {
-        setInputValue(searchTerm);
-    }, [searchTerm]);
+        const loadSuggestions = async () => {
+            const sheetPromise = (async () => {
+                const sheetId = await findSpreadsheetById('calendar_student');
+                if (sheetId) {
+                    const events = await fetchCalendarEvents(null, sheetId, '시트1');
+                    return events
+                        ? events
+                            .map(e => ({ 
+                                title: e.title, 
+                                tag: e.type, 
+                                startDate: e.startDate, 
+                                endDate: e.endDate 
+                            }))
+                            .filter(e => e.title)
+                        : [];
+                }
+                return [];
+            })();
+
+            const calendarPromise = (async () => {
+                try {
+                    const response = await (window as any).gapi.client.calendar.events.list({
+                        'calendarId': 'primary',
+                        'maxResults': 250,
+                        'singleEvents': true,
+                        'orderBy': 'startTime'
+                    });
+                    const items = response.result.items || [];
+                    return items
+                        .map((item: any) => {
+                            const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                            const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                            return {
+                                title: item.summary,
+                                tag: '개인 일정',
+                                startDate: startDate,
+                                endDate: endDate || startDate
+                            };
+                        })
+                        .filter(item => item.title);
+                } catch (error) {
+                    console.error("Error fetching Google Calendar events:", error);
+                    return [];
+                }
+            })();
+
+            const holidayPromise = (async () => {
+                try {
+                    const holidayCalendarId = 'ko.south_korea#holiday@group.v.calendar.google.com';
+                    const response = await (window as any).gapi.client.calendar.events.list({
+                        'calendarId': holidayCalendarId,
+                        'maxResults': 50,
+                        'singleEvents': true,
+                        'orderBy': 'startTime'
+                    });
+                    const items = response.result.items || [];
+                    return items.map((item: any) => {
+                        const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                        const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                        return {
+                            title: item.summary,
+                            tag: '공휴일',
+                            startDate: startDate,
+                            endDate: endDate || startDate
+                        };
+                    }).filter(item => item.title);
+                } catch (error) {
+                    console.error("Error fetching holiday calendar events:", error);
+                    return [];
+                }
+            })();
+
+            const [sheetSuggestions, calendarSuggestions, holidaySuggestions] = await Promise.all([sheetPromise, calendarPromise, holidayPromise]);
+
+            const combinedSource = [...sheetSuggestions, ...calendarSuggestions, ...holidaySuggestions];
+
+            combinedSource.sort((a, b) => {
+                try {
+                    const dateA = new Date(a.startDate).getTime();
+                    const dateB = new Date(b.startDate).getTime();
+                    if (isNaN(dateA)) return 1;
+                    if (isNaN(dateB)) return -1;
+                    return dateA - dateB;
+                } catch (e) {
+                    return 0;
+                }
+            });
+
+            setSuggestionSource(combinedSource);
+        };
+
+        loadSuggestions();
+    }, []);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (inputValue && isSuggestionsVisible) {
+                const lowerInputValue = inputValue.toLowerCase();
+                const filtered = suggestionSource.filter(item =>
+                    item.title.toLowerCase().includes(lowerInputValue) ||
+                    (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
+                );
+                setSuggestions(filtered);
+            } else {
+                setSuggestions([]);
+            }
+        }, 300);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -512,6 +627,31 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
+    const handleRemoveTerm = (termToRemove: string) => {
+        const newSearchTerm = searchTerm
+            .split(' ')
+            .filter(t => t !== termToRemove)
+            .join(' ');
+        setSearchTerm(newSearchTerm);
+    };
+
+    const formatSuggestionDate = (startDateStr: string, endDateStr: string) => {
+        if (!startDateStr) return '';
+        const format = (dateStr: string) => {
+            try {
+                const date = new Date(dateStr);
+                date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                return `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            } catch (e) {
+                return '';
+            }
+        };
+        const start = format(startDateStr);
+        const end = format(endDateStr || startDateStr);
+        if (start === end) return start;
+        return `${start} ~ ${end}`;
+    };
+
     return (
         <>
             <div className="calendar-header-container">
@@ -526,23 +666,62 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
-                            <i>&#x1F50D;</i>
-                            <input
-                                type="text"
-                                placeholder="일정 검색..."
-                                className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        const terms = inputValue.split(' ').filter(t => t.length > 0);
-                                        const formattedTerms = terms.map(t => t.startsWith('#') ? t : `#${t}`);
-                                        setSearchTerm(formattedTerms.join(' '));
-                                    }
-                                }}
-                            />
+                        <div className="search-wrapper">
+                            <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
+                                <i>&#x1F50D;</i>
+                                <input
+                                    type="text"
+                                    placeholder="일정 검색..."
+                                    className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onFocus={() => setIsSuggestionsVisible(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && inputValue.trim() !== '') {
+                                            e.preventDefault();
+                                            const newTerm = `#${inputValue.trim()}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(newTerm)) {
+                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+                                            }
+                                            setInputValue('');
+                                        }
+                                    }}
+                                />
+                                {isSuggestionsVisible && suggestions.length > 0 && (
+                                    <ul className="search-suggestions">
+                                        {suggestions.map((suggestion, index) => (
+                                            <li
+                                                key={index}
+                                                onMouseDown={() => {
+                                                    const formattedTerm = `#${suggestion.title}`;
+                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                    if (!existingTerms.includes(formattedTerm)) {
+                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                                    }
+                                                    setInputValue('');
+                                                    setSuggestions([]);
+                                                }}
+                                            >
+                                                <span className="suggestion-title">{suggestion.title}</span>
+                                                <span className="suggestion-date">{formatSuggestionDate(suggestion.startDate, suggestion.endDate)}</span>
+                                                <span className="suggestion-tag">{suggestion.tag}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <div className="search-tags-container">
+                                {searchTerm.split(' ').filter(Boolean).map(term => (
+                                    <div key={term} className="search-tag">
+                                        {term}
+                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
