@@ -29,11 +29,11 @@ appScript/
 
 ## 📊 마이그레이션 통계
 - **총 파일 수**: 9개
-- **총 코드 크기**: 약 120KB
-- **총 함수 수**: 50+ 개
-- **암호화 방법**: 20+ 개
+- **총 코드 크기**: 약 200KB+
+- **총 함수 수**: 80+ 개
+- **암호화 방법**: 23개 (Base64, Caesar, ROT13, BitShift, Substitution, Padding, MultiEncode, RandomInsert, Transposition, Reverse, Atbash, Vigenere, RailFence, Columnar, Affine, Permutation, Pattern, Mirror, Zigzag, Wave, Snake)
 - **API 엔드포인트**: 20+ 개
-- **테스트 함수**: 20+ 개
+- **테스트 함수**: 30+ 개
 
 ## 주요 변경사항
 
@@ -63,15 +63,33 @@ appScript/
 
 ## 새로운 기능: 이메일 암호화 설정
 
-### 1. 설정 가능한 암호화 방법
+### 1. 설정 가능한 암호화 방법 (23가지)
 - **ROT13**: 기본값, 간단한 문자 치환
 - **Base64**: Base64 인코딩
 - **Caesar**: 시저 암호 (13자리 이동)
 - **BitShift**: 비트 시프트
 - **Substitution**: 치환 암호
+- **Padding**: 패딩 기반 암호화
+- **MultiEncode**: 다중 인코딩
+- **RandomInsert**: 랜덤 삽입
+- **Transposition**: 전치 암호
+- **Reverse**: 역순 암호
+- **Atbash**: 아트바시 암호
+- **Vigenere**: 비제네르 암호
+- **RailFence**: 레일펜스 암호
+- **Columnar**: 컬럼 암호
+- **Affine**: 아핀 암호
+- **Permutation**: 순열 암호
+- **Pattern**: 패턴 암호
+- **Mirror**: 미러 암호
+- **Zigzag**: 지그재그 암호
+- **Wave**: 웨이브 암호
+- **Snake**: 스네이크 암호
 
-### 2. 다중 레이어 암호화
-여러 암호화 방법을 순차적으로 적용하여 보안성 향상
+### 2. 다중 레이어 암호화 (5-15단계)
+- **최소 레이어**: 5개
+- **최대 레이어**: 15개
+- 여러 암호화 방법을 순차적으로 적용하여 보안성 향상
 
 ### 3. 동적 설정 변경
 런타임에 암호화 방법을 변경할 수 있어 유연성 제공
@@ -159,16 +177,19 @@ Apps Script는 `doPost(e)` 함수를 통해 POST 요청을 처리합니다.
 
 #### 테스트 액션들:
 - `testRot13Encryption`: ROT13 암호화 테스트 (하위 호환성)
-- `testEmailEncryption`: 이메일 암호화 설정 테스트 (NEW!)
+- `testEmailEncryption`: 이메일 암호화 설정 테스트
 - `testDecryption`: 복호화 테스트
-- `testEncryption`: 암호화/복호화 기능 테스트 (NEW!)
-- `testAdminKey`: 관리자 키 생성 및 검증 테스트 (NEW!)
-- `testSpreadsheetIntegration`: 스프레드시트 연동 테스트 (NEW!)
-- `testUserManagement`: 사용자 관리 기능 테스트 (NEW!)
-- `testEmailSending`: 이메일 발송 기능 테스트 (NEW!)
-- `testConfigManagement`: 설정 관리 기능 테스트 (NEW!)
-- `testAPIEndpoints`: API 엔드포인트 테스트 (NEW!)
-- `testAllAppScript`: 전체 App Script 기능 테스트 (NEW!)
+- `testEncryption`: 암호화/복호화 기능 테스트
+- `testAdminKey`: 관리자 키 생성 및 검증 테스트
+- `testSpreadsheetIntegration`: 스프레드시트 연동 테스트
+- `testUserManagement`: 사용자 관리 기능 테스트
+- `testEmailSending`: 이메일 발송 기능 테스트
+- `testConfigManagement`: 설정 관리 기능 테스트
+- `testAPIEndpoints`: API 엔드포인트 테스트
+- `testAllAppScript`: 전체 App Script 기능 테스트
+- `testCORSSettings`: CORS 설정 테스트
+- `testSystemInfo`: 시스템 정보 테스트
+- `testCache`: 캐시 기능 테스트
 
 #### 요청 형식:
 ```json
@@ -243,9 +264,10 @@ fetch('YOUR_APPS_SCRIPT_URL', {
 
 ### 1. 암호화/복호화 시스템
 - **파일**: `Encryption.gs`
-- **기능**: 20가지 이상의 암호화 방법 지원
+- **기능**: 23가지 암호화 방법 지원
 - **특징**: 가역적 암호화만 사용하여 데이터 복원 가능
 - **이메일 암호화**: 전체 이메일 주소를 통으로 암호화 (사용자명@도메인.확장자)
+- **다중 레이어**: 5-15단계 암호화 레이어 지원
 
 ### 2. 관리자 키 관리
 - **파일**: `KeyManagement.gs`
@@ -272,9 +294,19 @@ fetch('YOUR_APPS_SCRIPT_URL', {
 ### 5. 테스트 시스템
 - **파일**: `Test.gs`
 - **기능**:
-  - 암호화/복호화 테스트
+  - 암호화/복호화 테스트 (30+ 개 테스트 함수)
   - 성능 테스트
   - 통합 테스트
+  - 이메일 암호화 설정 테스트
+  - 관리자 키 생성 테스트
+  - 스프레드시트 연동 테스트
+  - 사용자 관리 테스트
+  - 이메일 발송 테스트
+  - 설정 관리 테스트
+  - API 엔드포인트 테스트
+  - CORS 설정 테스트
+  - 시스템 정보 테스트
+  - 캐시 기능 테스트
 
 ## 사용 방법
 
@@ -285,11 +317,14 @@ runSimpleTest();
 runReversibilityTest();
 runAllTests();
 
-// 이메일 암호화 설정 테스트 (NEW!)
+// 이메일 암호화 설정 테스트
 runEmailEncryptionConfigTest();
 
-// 전체 App Script 기능 테스트 (NEW!)
+// 전체 App Script 기능 테스트
 runAllAppScriptTests();
+
+// 캐시 기능 테스트
+testCache();
 ```
 
 ### 2. 개별 기능 테스트 실행
@@ -323,6 +358,9 @@ testConfigManagement();
 
 // API 엔드포인트 테스트
 testAPIEndpoints();
+
+// 캐시 기능 테스트
+testCache();
 ```
 
 ### 3. 특정 테스트 실행
@@ -359,7 +397,7 @@ handleApproveUser('학번');
 handleRejectUser('학번');
 ```
 
-### 6. 이메일 암호화 설정 (NEW!)
+### 6. 이메일 암호화 설정
 ```javascript
 // 이메일 암호화 방법 설정
 setEmailEncryptionMethod('Base64');
@@ -382,7 +420,7 @@ console.log(validation);
 testEmailEncryption();
 ```
 
-### 7. App Script 기능 테스트 (NEW!)
+### 7. App Script 기능 테스트
 ```javascript
 // 개별 기능 테스트
 testEncryptionDecryptionFunctions();     // 암호화/복호화 기능
@@ -392,6 +430,7 @@ testUserManagement();                    // 사용자 관리
 testEmailSending();                      // 이메일 발송
 testConfigManagement();                  // 설정 관리
 testAPIEndpoints();                      // API 엔드포인트
+testCache();                             // 캐시 기능
 
 // 전체 기능 테스트
 runAllAppScriptTests();                  // 모든 기능 통합 테스트
@@ -404,6 +443,7 @@ runSpecificTest('userManagement');       // 사용자 관리 테스트
 runSpecificTest('emailSending');         // 이메일 발송 테스트
 runSpecificTest('configManagement');     // 설정 관리 테스트
 runSpecificTest('apiEndpoints');         // API 엔드포인트 테스트
+runSpecificTest('cache');                // 캐시 기능 테스트
 runSpecificTest('allAppScript');         // 전체 기능 테스트
 ```
 

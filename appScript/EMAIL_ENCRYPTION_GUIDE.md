@@ -54,7 +54,7 @@ console.log(validation);
 resetEmailEncryptionConfig();
 ```
 
-## 지원하는 암호화 방법
+## 지원하는 암호화 방법 (23가지)
 
 ### 1. 단일 암호화 방법
 - **ROT13**: 기본값, 간단한 문자 치환
@@ -62,17 +62,39 @@ resetEmailEncryptionConfig();
 - **Caesar**: 시저 암호 (13자리 이동)
 - **BitShift**: 비트 시프트
 - **Substitution**: 치환 암호
+- **Padding**: 패딩 기반 암호화
+- **MultiEncode**: 다중 인코딩
+- **RandomInsert**: 랜덤 삽입
+- **Transposition**: 전치 암호
+- **Reverse**: 역순 암호
+- **Atbash**: 아트바시 암호
+- **Vigenere**: 비제네르 암호
+- **RailFence**: 레일펜스 암호
+- **Columnar**: 컬럼 암호
+- **Affine**: 아핀 암호
+- **Permutation**: 순열 암호
+- **Pattern**: 패턴 암호
+- **Mirror**: 미러 암호
+- **Zigzag**: 지그재그 암호
+- **Wave**: 웨이브 암호
+- **Snake**: 스네이크 암호
 
-### 2. 다중 레이어 암호화
-여러 암호화 방법을 순차적으로 적용하여 보안성 향상
+### 2. 다중 레이어 암호화 (5-15단계)
+- **최소 레이어**: 5개
+- **최대 레이어**: 15개
+- 여러 암호화 방법을 순차적으로 적용하여 보안성 향상
 
 ```javascript
-// 3단계 암호화 설정
-setEmailEncryptionLayers(3);
-setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar']);
+// 5단계 암호화 설정 (최소)
+setEmailEncryptionLayers(5);
+setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution']);
 
-// 암호화 순서: ROT13 -> Base64 -> Caesar
-// 복호화 순서: Caesar -> Base64 -> ROT13 (역순)
+// 15단계 암호화 설정 (최대)
+setEmailEncryptionLayers(15);
+setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution', 'Padding', 'MultiEncode', 'RandomInsert', 'Transposition', 'Reverse', 'Atbash', 'Vigenere', 'RailFence', 'Columnar', 'Affine']);
+
+// 암호화 순서: 설정된 순서대로 적용
+// 복호화 순서: 역순으로 적용
 ```
 
 ## 사용 예시
@@ -113,9 +135,9 @@ console.log(caesarEncrypted); // grfg@rknzcyr.pbz (ROT13과 동일)
 
 ### 3. 다중 레이어 테스트 (전체 이메일 주소)
 ```javascript
-// 3단계 암호화 설정
-setEmailEncryptionLayers(3);
-setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar']);
+// 5단계 암호화 설정 (최소)
+setEmailEncryptionLayers(5);
+setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution']);
 
 const email = 'admin@hotpotato.org';
 const encrypted = encryptEmail(email); // 전체 이메일 주소 암호화
@@ -220,11 +242,11 @@ console.log('테스트 결과:', testResult);
 
 ### 2. 다중 레이어로 업그레이드
 ```javascript
-// 1. 레이어 수 설정
-setEmailEncryptionLayers(2);
+// 1. 레이어 수 설정 (5-15개)
+setEmailEncryptionLayers(5);
 
 // 2. 레이어 방법들 설정
-setEmailEncryptionLayerMethods(['ROT13', 'Base64']);
+setEmailEncryptionLayerMethods(['ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution']);
 
 // 3. 설정 검증
 const validation = validateEmailEncryptionConfig();
@@ -244,8 +266,9 @@ if (validation.isValid) {
 
 ### 2. 성능 고려사항
 - 다중 레이어 사용 시 암호화/복호화 시간 증가
-- 레이어 수는 5개 이하 권장
+- 레이어 수는 5-15개 범위 내에서 설정
 - 대량 데이터 처리 시 성능 테스트 권장
+- 최대 15개 레이어까지 지원하지만 성능을 고려하여 적절히 설정
 
 ### 3. 보안 고려사항
 - 암호화 방법은 정기적으로 변경 권장
