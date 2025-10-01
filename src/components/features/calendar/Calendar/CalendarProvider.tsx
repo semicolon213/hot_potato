@@ -425,7 +425,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   };
 
   const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
-    if (eventId.startsWith('cal-')) {
+    if (eventId.includes('-cal-')) { // ID format check updated for consistency
       updateSheetEvent(eventId, event);
     } else {
       updateGoogleEvent(eventId, event);

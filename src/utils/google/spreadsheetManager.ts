@@ -8,7 +8,7 @@
 
 import { appendRow } from 'papyrus-db';
 import { updateSheetCell } from './googleSheetUtils';
-import type { Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 
 /**
@@ -454,6 +454,7 @@ export const addCalendarEvent = async (
             'tag_calendar': eventData.type || '',
             'colorId_calendar': (eventData as any).color || '',
             'recurrence_rule_calendar': (eventData as any).rrule || '',
+            'attendees_calendar': (eventData as any).attendees || '' // NEW
         };
 
         await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);
@@ -461,6 +462,130 @@ export const addCalendarEvent = async (
     } catch (error) {
         console.error('Error saving calendar event to Google Sheet:', error);
         throw error;
+    }
+};
+
+export const updateCalendarEvent = async (
+    spreadsheetId: string,
+    sheetName: string,
+    eventId: string,
+    eventData: Omit<Event, 'id'>
+): Promise<void> => {
+    try {
+        // 1. Find the row index for the eventId
+        const idColumnRange = `${sheetName}!A:A`;
+        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: idColumnRange,
+        });
+
+        const ids = response.result.values;
+        if (!ids) {
+            throw new Error(`Could not find any IDs in sheet ${sheetName}.`);
+        }
+
+        const sheetEventId = eventId.substring(spreadsheetId.length + 1);
+        let rowIndex = ids.findIndex((row: string[]) => row[0] === sheetEventId);
+
+        // Fallback for older ID format that might not be composite
+        if (rowIndex === -1) {
+            rowIndex = ids.findIndex((row: string[]) => row[0] === eventId);
+        }
+
+        if (rowIndex === -1) {
+            throw new Error(`Event with ID ${eventId} (or derived ID ${sheetEventId}) not found in sheet.`);
+        }
+        
+        const targetRow = rowIndex + 1;
+
+        const finalSheetEventId = ids[rowIndex][0];
+
+        // 2. Prepare the new row data in the correct order
+        const newRowData = [
+            finalSheetEventId, // A: id
+            eventData.title, // B: title
+            eventData.startDate, // C: startDate
+            eventData.endDate, // D: endDate
+            eventData.description || '', // E: description
+            (eventData as any).color || '', // F: color
+            eventData.startDateTime || '', // G: startDateTime
+            eventData.endDateTime || '', // H: endDateTime
+            eventData.type || '', // I: type
+            (eventData as any).rrule || '', // J: rrule
+            (eventData as any).attendees || '' // K: attendees
+        ];
+
+        // 3. Update the row
+        const updateRange = `${sheetName}!A${targetRow}:K${targetRow}`;
+        await (window as any).gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: updateRange,
+            valueInputOption: 'RAW',
+            resource: {
+                values: [newRowData],
+            },
+        });
+
+        console.log(`Event ${finalSheetEventId} updated successfully in row ${targetRow}.`);
+
+    } catch (error) {
+        console.error('Error updating calendar event in Google Sheet:', error);
+        throw error;
+    }
+};
+
+export const fetchStudents = async (spreadsheetId: string, sheetName: string): Promise<Student[]> => {
+    try {
+        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!A:G`,
+        });
+
+        const data = response.result.values;
+        if (data && data.length > 1) {
+            const students: Student[] = data.slice(1).map((row: string[]) => ({
+                no: row[0] || '',
+                name: row[1] || '',
+                address: row[2] || '',
+                phone_num: row[3] || '',
+                grade: row[4] || '',
+                state: row[5] || '',
+                council: row[6] || '',
+            }));
+            return students;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error fetching students from Google Sheet:', error);
+        return [];
+    }
+};
+
+export const fetchStaff = async (spreadsheetId: string, sheetName: string): Promise<Staff[]> => {
+    try {
+        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: `${sheetName}!A:H`,
+        });
+
+        const data = response.result.values;
+        if (data && data.length > 1) {
+            const staff: Staff[] = data.slice(1).map((row: string[]) => ({
+                no: row[0] || '',
+                pos: row[1] || '',
+                name: row[2] || '',
+                tel: row[3] || '',
+                phone: row[4] || '',
+                email: row[5] || '',
+                date: row[6] || '',
+                note: row[7] || '',
+            }));
+            return staff;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error fetching staff from Google Sheet:', error);
+        return [];
     }
 };
 
