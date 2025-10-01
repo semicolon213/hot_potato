@@ -7,6 +7,7 @@ import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
 import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
+import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -74,6 +75,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
     useEffect(() => {
         const loadSuggestions = async () => {
+            await initializeGoogleAPIOnce(null);
             const sheetPromise = (async () => {
                 const sheetId = await findSpreadsheetById('calendar_student');
                 if (sheetId) {
