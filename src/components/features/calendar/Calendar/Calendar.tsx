@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
+import { BiSearchAlt2 } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
@@ -666,12 +667,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
                         <div className="search-wrapper">
-                            <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
-                                <i>&#x1F50D;</i>
+                            <div className="search-container" style={{ height: '35px', width: '250px' }}>
+                                <BiSearchAlt2 color="black" />
                                 <input
                                     type="text"
                                     placeholder="일정 검색..."
-                                    className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
+                                    className={"calendar-search-input"}
+                                    style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
                                     onFocus={() => setIsSuggestionsVisible(true)}

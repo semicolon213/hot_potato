@@ -455,56 +455,10 @@
     margin-left: 10px;
     padding: 8px 16px;
     border-radius: 8px;
-    font-size: 0.75em;
-    cursor: pointer;
-}
-
-.semester-picker-modal .delete-period-btn {
-    background-color: transparent;
-    color: var(--error);
-    border: 1px solid var(--error);
-    margin-left: 10px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 0.75em;
-    cursor: pointer;
-}
-
-.semester-picker-modal .delete-period-btn:hover {
-    background-color: var(--error);
-    color: white;
-}
-
-.delete-period-btn:hover {
-    background-color: var(--error);
-    color: white;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.modal-actions .close-btn {
-    background-color: var(--grey);
-    color: var(--text-dark);
-}
-.overflow-event-lines {
-    flex-grow: 1;
-    margin-top: 4px;
-    padding-left: 5px;
-    cursor: pointer;
-}
-
-    .more-events-text {
-        font-size: 12px;
-        color: var(--text-medium);
-        padding-top: 10px;
-    }
-
-.search-container {
+    font-.search-container {
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
 .search-suggestions {
@@ -572,7 +526,7 @@
     flex-wrap: wrap;
     gap: 5px;
     padding-top: 8px;
-    max-width: 250px; /* Match search-container width */
+    width: 250px; /* Match search-container width */
 }
 
 .search-tag {
@@ -595,3 +549,5 @@
     padding: 0;
     line-height: 1;
 }
+
+
