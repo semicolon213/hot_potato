@@ -8,6 +8,7 @@ import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
 import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
+import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -71,10 +72,36 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
+    const getRecentSearches = (): string[] => {
+        const searches = localStorage.getItem('recentSearchTerms');
+        return searches ? JSON.parse(searches) : [];
+    };
+
+    const addRecentSearch = (term: string) => {
+        let searches = getRecentSearches();
+        searches = searches.filter(s => s !== term);
+        searches.unshift(term);
+        localStorage.setItem('recentSearchTerms', JSON.stringify(searches.slice(0, 10)));
+    };
+
+    useEffect(() => {
+        const terms = searchTerm.split(' ').filter(Boolean);
+        const latestTerm = terms[terms.length - 1];
+        if (latestTerm) {
+            addRecentSearch(latestTerm);
+        }
+    }, [searchTerm]);
+
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
 
     useEffect(() => {
         const loadSuggestions = async () => {
+            await initializeGoogleAPIOnce(null);
+
+            const year = currentDate.year;
+            const timeMin = new Date(year, 0, 1).toISOString();
+            const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
+
             const sheetPromise = (async () => {
                 const sheetId = await findSpreadsheetById('calendar_student');
                 if (sheetId) {
@@ -85,8 +112,17 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 title: e.title,
                                 tag: e.type,
                                 startDate: e.startDate,
-                                endDate: e.endDate
+                                endDate: e.endDate,
                             }))
+                            .filter(e => {
+                                if (typeof e.startDate === 'string' && e.startDate.includes('-')) {
+                                    const eventYear = parseInt(e.startDate.split('-')[0], 10);
+                                    if (!isNaN(eventYear)) {
+                                        return eventYear === year;
+                                    }
+                                }
+                                return false;
+                            })
                             .filter(e => e.title)
                         : [];
                 }
@@ -99,7 +135,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         'calendarId': 'primary',
                         'maxResults': 250,
                         'singleEvents': true,
-                        'orderBy': 'startTime'
+                        'orderBy': 'startTime',
+                        timeMin,
+                        timeMax
                     });
                     const items = response.result.items || [];
                     return items
@@ -127,7 +165,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         'calendarId': holidayCalendarId,
                         'maxResults': 50,
                         'singleEvents': true,
-                        'orderBy': 'startTime'
+                        'orderBy': 'startTime',
+                        timeMin,
+                        timeMax
                     });
                     const items = response.result.items || [];
                     return items.map((item: any) => {
@@ -166,25 +206,40 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         };
 
         loadSuggestions();
-    }, []);
+    }, [currentDate.year]);
 
     useEffect(() => {
-        const handler = setTimeout(() => {
-            if (inputValue && isSuggestionsVisible) {
+        if (!isSuggestionsVisible) {
+            setSuggestions([]);
+            return;
+        }
+
+        if (inputValue) {
+            // User is typing, so filter based on input
+            const handler = setTimeout(() => {
                 const lowerInputValue = inputValue.toLowerCase();
                 const filtered = suggestionSource.filter(item =>
                     item.title.toLowerCase().includes(lowerInputValue) ||
                     (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
                 );
                 setSuggestions(filtered);
+            }, 300);
+            return () => clearTimeout(handler);
+        } else {
+            // Input is empty, and suggestions are visible, so show recent searches
+            const recentSearches = getRecentSearches().slice(0, 3);
+            if (recentSearches.length > 0) {
+                const historySuggestions = recentSearches.map(term => ({
+                    title: term,
+                    tag: '최근 검색어',
+                    startDate: '',
+                    endDate: ''
+                }));
+                setSuggestions(historySuggestions);
             } else {
-                setSuggestions([]);
+                setSuggestions([]); // No recent searches, show empty
             }
-        }, 300);
-
-        return () => {
-            clearTimeout(handler);
-        };
+        }
     }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
     const handleFilterChange = (filter: string) => {
@@ -451,10 +506,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         // Adjust for timezone offset before creating new event
                         const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
                         const dateStr = adjustedDate.toISOString().split('T')[0];
-
+                        
                         allEvents.push({
                             ...event,
-                            // id: `${event.id}-occurrence-${dateStr}`, // DO NOT MODIFY ID
+                            // Create a new unique ID for each occurrence to avoid key conflicts
+                            id: `${event.id}-occurrence-${dateStr}`,
                             startDate: dateStr,
                             endDate: dateStr, // Each occurrence is a single-day event in this context
                         });
@@ -485,8 +541,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 // 월간 뷰에서는 시간 지정 이벤트를 제외합니다 (종일 이벤트만 표시).
                 return !e.startDateTime && eventStart <= weekEnd && eventEnd >= weekStart;
             });
-
-            weekEvents.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
             const lanes: (Date | null)[] = [];
             for (const event of weekEvents) {
@@ -562,7 +616,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     const eventStartDate = new Date(event.startDate);
                     const currentDayDate = new Date(day.date);
                     const isContinuationLeft = eventStartDate < currentDayDate;
-
+                    
                     const eventEndDate = new Date(event.endDate);
                     const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
                     const isContinuationRight = eventEndDate > endOfWeekDate;
@@ -683,7 +737,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         setTimeout(() => setIsSuggestionsVisible(false), 150);
                                     }}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && inputValue.trim() !== '') {
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
                                             e.preventDefault();
                                             const newTerm = `#${inputValue.trim()}`;
                                             const existingTerms = searchTerm.split(' ').filter(Boolean);
@@ -705,6 +759,18 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                     if (!existingTerms.includes(formattedTerm)) {
                                                         setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                     }
+
+                                                    if (suggestion.startDate) {
+                                                        try {
+                                                            const targetDate = new Date(suggestion.startDate);
+                                                            if (!isNaN(targetDate.getTime())) {
+                                                                goToDate(targetDate);
+                                                            }
+                                                        } catch (e) {
+                                                            console.error("Failed to parse date from suggestion:", suggestion.startDate, e);
+                                                        }
+                                                    }
+
                                                     setInputValue('');
                                                     setSuggestions([]);
                                                 }}
@@ -726,7 +792,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 ))}
                             </div>
                         </div>
-
+                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
