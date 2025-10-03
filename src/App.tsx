@@ -17,9 +17,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './components/features/auth/Login';
 import PendingApproval from './components/features/auth/PendingApproval';
 import { useAppState } from './hooks/core/useAppState';
-import { 
-  addPost, 
-  addAnnouncement, 
+import {
+  addPost,
+  addAnnouncement,
   addCalendarEvent,
   addTemplate,
   deleteTemplate,
@@ -29,12 +29,12 @@ import {
   deleteTag,
   updateTag,
   saveAcademicScheduleToSheet,
-  fetchPosts,
-  fetchAnnouncements,
-  fetchTemplates,
-  fetchCalendarEvents
-} from './utils/google/spreadsheetManager';
-import type { Post, Event, DateRange, CustomPeriod } from './types/app';
+    fetchPosts,
+    fetchAnnouncements,
+    fetchTemplates,
+    fetchCalendarEvents,
+    updateCalendarEvent
+  } from './utils/google/spreadsheetManager';import type { Post, Event, DateRange, CustomPeriod } from './types/app';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -49,14 +49,14 @@ const App: React.FC = () => {
     user,
     setUser,
     isLoading,
-    
+
     // Page state
     currentPage,
     setCurrentPage,
     googleAccessToken,
     searchTerm,
     setSearchTerm,
-    
+
     // Template state
     customTemplates,
     setCustomTemplates,
@@ -64,21 +64,21 @@ const App: React.FC = () => {
     tags,
     setTags,
     documentTemplateSheetId,
-    
+
     // Board state
     posts,
     setPosts,
     isGoogleAuthenticatedForBoard,
     isBoardLoading,
     boardSpreadsheetId,
-    
+
     // Announcements state
     announcements,
     setAnnouncements,
     isGoogleAuthenticatedForAnnouncements,
     isAnnouncementsLoading,
     announcementSpreadsheetId,
-    
+
     // Calendar state
     calendarEvents,
     setCalendarEvents,
@@ -94,11 +94,11 @@ const App: React.FC = () => {
     setCustomPeriods,
     calendarProfessorSpreadsheetId,
     calendarStudentSpreadsheetId,
-    
+
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
-    
+
     // Constants
     boardSheetName,
     announcementSheetName,
@@ -202,8 +202,23 @@ const App: React.FC = () => {
 
   // 캘린더 이벤트 업데이트 핸들러
   const handleUpdateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
-    console.log("Updating event", eventId, eventData);
-    console.log("일정 수정 기능은 아직 구현되지 않았습니다.");
+    const targetSpreadsheetId = calendarStudentSpreadsheetId || calendarProfessorSpreadsheetId;
+    if (!targetSpreadsheetId) {
+      console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
+      return;
+    }
+    try {
+      await updateCalendarEvent(targetSpreadsheetId, calendarSheetName, eventId, eventData);
+      // 캘린더 이벤트 목록 새로고침
+      const updatedEvents = await fetchCalendarEvents(
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarSheetName
+      );
+      setCalendarEvents(updatedEvents);
+    } catch (error) {
+      console.error('Error updating calendar event:', error);
+    }
   };
 
   // 캘린더 이벤트 삭제 핸들러
@@ -434,13 +449,13 @@ const App: React.FC = () => {
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header 
-            onPageChange={handlePageChange} 
-            userInfo={user} 
-            onLogout={handleLogout} 
-            searchTerm={searchTerm} 
-            onSearchChange={handleSearch} 
-            onSearchSubmit={handleSearchSubmit} 
+          <Header
+            onPageChange={handlePageChange}
+            userInfo={user}
+            onLogout={handleLogout}
+            searchTerm={searchTerm}
+            onSearchChange={handleSearch}
+            onSearchSubmit={handleSearchSubmit}
           />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             <PageRenderer

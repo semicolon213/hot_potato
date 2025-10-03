@@ -78,7 +78,8 @@ export const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string |
                 gapi.client.gmail &&
                 gapi.client.gmail.users &&
                 gapi.client.docs &&
-                gapi.client.docs.documents;
+                gapi.client.docs.documents &&
+                gapi.client.calendar;
 
             if (isClientInitialized) {
                 console.log("Google API가 이미 초기화되어 있습니다.");
@@ -131,7 +132,8 @@ export const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string |
                                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
                                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
                                 'https://gmail.googleapis.com/$discovery/rest?version=v1',
-                                'https://docs.googleapis.com/$discovery/rest?version=v1'
+                                'https://docs.googleapis.com/$discovery/rest?version=v1',
+                                'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
                             ],
                             scope: [
                                 'https://www.googleapis.com/auth/calendar.events',
@@ -152,7 +154,8 @@ export const initializeGoogleAPIOnce = async (hotPotatoDBSpreadsheetId: string |
                                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
                                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
                                 'https://gmail.googleapis.com/$discovery/rest?version=v1',
-                                'https://docs.googleapis.com/$discovery/rest?version=v1'
+                                'https://docs.googleapis.com/$discovery/rest?version=v1',
+                                'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
                             ],
                             scope: [
                                 'https://www.googleapis.com/auth/calendar.events',

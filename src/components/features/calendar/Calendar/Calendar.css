@@ -43,6 +43,7 @@
   cursor: pointer;
   color: var(--text-dark);
   padding: 0 8px;
+  flex-shrink: 0;
 }
 
 .arrow-button:hover {
@@ -53,15 +54,44 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background-color: #f8f8f7;
+  background-color: white;
   padding: 0 0;
   border-radius: var(--border-radius-lg);
+  min-width: 800px;
 }
 
 .day-wrapper {
   display: grid;
   grid-template-columns: repeat(7, minmax(60px, 1fr));
   grid-row-gap: 10px;
+  position: relative; /* For absolute event positioning */
+}
+
+.monthly-event-item {
+    position: absolute;
+    color: white;
+    padding: 0 5px;
+    border-radius: var(--border-radius-sm);
+    font-size: 12px;
+    cursor: pointer;
+    box-sizing: border-box;
+    z-index: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.monthly-event-item.continuation-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.monthly-event-item.continuation-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .calendar-item {
@@ -72,6 +102,10 @@
 
 .calendar-item.sunday {
   color: var(--error);
+}
+
+.calendar-item.saturday {
+  color: var(--primary);
 }
 
 .day {
@@ -95,13 +129,6 @@
   background-color: var(--accent); /* 연한 파란색으로 변경 */
   color: var(--text-dark); /* 기본 텍스트 색상 */
 }
-
-.day.holiday .day-number {
-    color: var(--error) !important;
-    font-weight: bold;
-}
-
-
 
 .day.not-current-month {
   color: var(--text-light);
@@ -168,7 +195,7 @@
 
 .event-item.selected {
   background-color: var(--primary);
-  color: #f8f8f7;
+  color: #ffffff;
 }
 
 .calendar-header-top {
@@ -206,6 +233,8 @@
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .view-switcher .separator {
@@ -244,6 +273,8 @@
   font-size: 14px; /* from .new-tab */
   font-weight: 500;
   transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .filter-tag:hover {
@@ -341,14 +372,14 @@
     text-align: left;
 }
 
-.semester-picker-modal input[type="date"] {
+.semester-picker-modal .date-selector-row input[type="date"] {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 0.75em;
 }
 
-.semester-picker-modal button {
+.semester-picker-modal .modal-actions .done-btn {
     margin-top: 10px;
     padding: 8px 16px;
     border: none;
@@ -357,6 +388,23 @@
     color: white;
     cursor: pointer;
     font-size: 0.75em;
+    min-width: 80px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.semester-picker-modal .modal-actions .close-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--grey);
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 0.75em;
+    min-width: 80px;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .add-period-form {
@@ -380,11 +428,57 @@
     margin-top: 0;
 }
 
+.semester-picker-modal .add-period-form button {
+    margin-top: 0;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: white;
+    cursor: pointer;
+    font-size: 0.75em;
+}
+
 .delete-period-btn {
     background-color: transparent;
     color: var(--error);
     border: 1px solid var(--error);
     margin-left: 10px;
+}
+
+.semester-picker-modal .modal-actions .done-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.semester-picker-modal .modal-actions .close-btn:hover {
+    background-color: var(--border-light);
+}
+
+.delete-period-btn {
+    background-color: transparent;
+    color: var(--error);
+    border: 1px solid var(--error);
+    margin-left: 10px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+}
+
+.semester-picker-modal .delete-period-btn {
+    background-color: transparent;
+    color: var(--error);
+    border: 1px solid var(--error);
+    margin-left: 10px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+}
+
+.semester-picker-modal .delete-period-btn:hover {
+    background-color: var(--error);
+    color: white;
 }
 
 .delete-period-btn:hover {
@@ -409,7 +503,126 @@
     cursor: pointer;
 }
 
-.more-events-text {
+    .more-events-text {
+        font-size: 12px;
+        color: var(--text-medium);
+        padding-top: 10px;
+    }
+
+.search-container {
+    position: relative;
+}
+
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0 0 4px 4px;
+}
+
+.search-suggestions li {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-suggestions li:hover {
+    background-color: #f0f0f0;
+}
+
+.suggestion-title {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.suggestion-date {
     font-size: 12px;
-    color: var(--text-medium);
+    color: #333;
+    flex-shrink: 0;
+}
+
+.suggestion-tag {
+    font-size: 12px;
+    color: #666;
+    background-color: #eee;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.search-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-top: 8px;
+    width: 250px; /* Match search-container width */
+}
+
+.search-tag {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 13px;
+}
+
+.search-tag button {
+    background: none;
+    border: none;
+    color: white;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1;
+}
+
+.calendar-header-container .search-container {
+    display: flex !important;
+    align-items: center !important;
+    background: none !important;
+    border: none !important;
+    height: 35px !important;
+    width: 250px !important;
+}
+
+.calendar-search-input,
+.calendar-search-input:focus {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background: none !important;
+    height: 100% !important;
+    padding-left: 5px !important;
+}
+
+.calendar-title h2 {
+    flex-shrink: 0;
+    white-space: nowrap;
 }

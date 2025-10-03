@@ -1,17 +1,18 @@
 // App.tsx에서 사용되는 공통 타입들
 
 export interface Event {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  description?: string;
-  colorId?: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  type?: string;
-  color?: string;
-  isHoliday?: boolean;
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    description?: string;
+    colorId?: string;
+    startDateTime?: string;
+    endDateTime?: string;
+    type?: string;
+    color?: string;
+    rrule?: string; // For recurrence rule
+    attendees?: string; // For attendees
 }
 
 export interface Post {
@@ -69,4 +70,25 @@ export interface CustomPeriod {
   id: string;
   name: string;
   period: DateRange;
+}
+
+export interface Student {
+  no: string;
+  name: string;
+  address: string;
+  phone_num: string;
+  grade: string;
+  state: string;
+  council: string;
+}
+
+export interface Staff {
+  no: string;
+  pos: string;
+  name: string;
+  tel: string;
+  phone: string;
+  email: string;
+  date: string;
+  note: string;
 }
