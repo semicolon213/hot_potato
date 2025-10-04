@@ -32,7 +32,7 @@ jobs:
       continue-on-error: true
       
     - name: Security audit
-      run: npm run audit
+      run: npm audit --audit-level high
       continue-on-error: true
 
   # 테스트 실행
@@ -61,12 +61,23 @@ jobs:
       env:
         VITE_GOOGLE_CLIENT_ID: test-client-id
         VITE_APP_SCRIPT_URL: test-app-script-url
+        VITE_GOOGLE_API_KEY: test-api-key
         VITE_HOT_POTATO_DB_SPREADSHEET_NAME: hot_potato_DB
         VITE_BOARD_SPREADSHEET_NAME: board_professor
         VITE_ANNOUNCEMENT_SPREADSHEET_NAME: notice_professor
         VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME: calendar_professor
         VITE_CALENDAR_STUDENT_SPREADSHEET_NAME: calendar_student
         VITE_STUDENT_SPREADSHEET_NAME: student
+        VITE_BOARD_SHEET_NAME: 시트1
+        VITE_ANNOUNCEMENT_SHEET_NAME: 시트1
+        VITE_CALENDAR_SHEET_NAME: 시트1
+        VITE_DOCUMENT_TEMPLATE_SHEET_NAME: document_template
+        VITE_STUDENT_SHEET_NAME: info
+        VITE_STUDENT_ISSUE_SHEET_NAME: std_issue
+        VITE_STAFF_SHEET_NAME: 시트1
+        VITE_DASHBOARD_SHEET_NAME: user_custom
+        VITE_PAPYRUS_DB_URL: 
+        VITE_PAPYRUS_DB_API_KEY: test-api-key
       
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -98,12 +109,23 @@ jobs:
       env:
         VITE_GOOGLE_CLIENT_ID: test-client-id
         VITE_APP_SCRIPT_URL: test-app-script-url
+        VITE_GOOGLE_API_KEY: test-api-key
         VITE_HOT_POTATO_DB_SPREADSHEET_NAME: hot_potato_DB
         VITE_BOARD_SPREADSHEET_NAME: board_professor
         VITE_ANNOUNCEMENT_SPREADSHEET_NAME: notice_professor
         VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME: calendar_professor
         VITE_CALENDAR_STUDENT_SPREADSHEET_NAME: calendar_student
         VITE_STUDENT_SPREADSHEET_NAME: student
+        VITE_BOARD_SHEET_NAME: 시트1
+        VITE_ANNOUNCEMENT_SHEET_NAME: 시트1
+        VITE_CALENDAR_SHEET_NAME: 시트1
+        VITE_DOCUMENT_TEMPLATE_SHEET_NAME: document_template
+        VITE_STUDENT_SHEET_NAME: info
+        VITE_STUDENT_ISSUE_SHEET_NAME: std_issue
+        VITE_STAFF_SHEET_NAME: 시트1
+        VITE_DASHBOARD_SHEET_NAME: user_custom
+        VITE_PAPYRUS_DB_URL: 
+        VITE_PAPYRUS_DB_API_KEY: test-api-key
         
     - name: Check bundle size
       run: npm run bundle-size
