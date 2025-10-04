@@ -169,10 +169,15 @@ export const useAppState = () => {
                     console.log("✅ 로그인 후 Papyrus DB 연결 완료");
                 } catch (error) {
                     console.error("Error during login initialization", error);
+                    console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
+                    
                     // Google API 초기화 실패해도 계속 진행
-                    setIsGapiReady(true);
-                    setIsGoogleAuthenticatedForAnnouncements(true);
-                    setIsGoogleAuthenticatedForBoard(true);
+                    setIsGapiReady(false); // 실제 상태 반영
+                    setIsGoogleAuthenticatedForAnnouncements(false);
+                    setIsGoogleAuthenticatedForBoard(false);
+                    
+                    // 사용자에게 알림
+                    console.log("⚠️ 일부 Google 서비스가 제한될 수 있습니다.");
                 }
             };
             

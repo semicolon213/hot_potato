@@ -84,15 +84,15 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
 
             await waitForGapi();
 
-            // 원래 방식으로 되돌리기 - gapi.load('client')만 사용
-            await new Promise<void>((resolve, reject) => {
+            // 구형 방식: gapi.load('client:auth2') 사용
+            await new Promise<void>((resolve) => {
                 console.log("Google API Client Library 초기화 중...");
                 
-                (window as any).gapi.load('client', async () => {
+                (window as any).gapi.load('client:auth2', async () => {
                     try {
                         console.log("gapi.load 완료, client.init 시작...");
                         
-                        // 원래 방식: 최소한의 설정만 사용
+                        // 구형 방식: auth2와 함께 초기화
                         await gapi.client.init({
                             clientId: GOOGLE_CLIENT_ID,
                             discoveryDocs: [
@@ -107,11 +107,17 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                         
                         console.log('gapi.client.init 호출 완료');
 
-                        // 저장된 토큰이 있으면 복원 시도 (원래 방식)
+                        // 저장된 토큰이 있으면 복원 시도
                         const savedToken = localStorage.getItem('googleAccessToken');
                         if (savedToken) {
                             console.log("저장된 토큰 발견:", savedToken);
-                            // gapi.client.setToken은 사용할 수 없으므로 스킵
+                            try {
+                                // 토큰을 gapi client에 직접 설정
+                                (window as any).gapi.client.setToken({ access_token: savedToken });
+                                console.log("✅ 토큰이 gapi client에 설정되었습니다.");
+                            } catch (tokenError) {
+                                console.warn("토큰 설정 실패:", tokenError);
+                            }
                         }
 
                         console.log("Google API Client Library 초기화 성공!");
@@ -123,9 +129,14 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                             message: (error as any).message,
                             code: (error as any).code,
                             status: (error as any).status,
+                            details: (error as any).details,
                             response: (error as any).response?.data
                         });
-                        reject(error);
+                        
+                        // 초기화 실패해도 앱이 계속 작동하도록 설정
+                        console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
+                        isGoogleAPIInitialized = false;
+                        resolve(); // reject 대신 resolve로 변경
                     }
                 });
             });

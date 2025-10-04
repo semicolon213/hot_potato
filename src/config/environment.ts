@@ -59,9 +59,14 @@ export const validateEnvironmentVariables = (): boolean => {
   const missingVars = requiredVars.filter(varName => !ENV_CONFIG[varName as keyof typeof ENV_CONFIG]);
   
   if (missingVars.length > 0) {
-    console.error('Missing required environment variables:', missingVars);
+    console.error('❌ 필수 환경변수가 설정되지 않았습니다:', missingVars);
+    console.error('현재 설정된 환경변수:', {
+      GOOGLE_CLIENT_ID: ENV_CONFIG.GOOGLE_CLIENT_ID ? '설정됨' : '설정되지 않음',
+      APP_SCRIPT_URL: ENV_CONFIG.APP_SCRIPT_URL ? '설정됨' : '설정되지 않음'
+    });
     return false;
   }
   
+  console.log('✅ 모든 필수 환경변수가 설정되었습니다.');
   return true;
 };

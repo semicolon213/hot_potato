@@ -9,6 +9,16 @@
 import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { ENV_CONFIG } from '../../config/environment';
+
+// papyrus-db에 Google API 인증 설정
+const setupPapyrusAuth = () => {
+  if ((window as any).gapi && (window as any).gapi.client) {
+    // papyrus-db가 gapi.client를 사용하도록 설정
+    (window as any).papyrusAuth = {
+      client: (window as any).gapi.client
+    };
+  }
+};
 import type { Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 
@@ -33,12 +43,29 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
             return null;
         }
 
+        // Google API 인증 상태 확인 (더 안전한 방법)
+        const token = localStorage.getItem('googleAccessToken');
+        if (!token) {
+            console.warn(`Google API 인증 토큰이 없습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
+            return null;
+        }
+
+        // 토큰을 gapi client에 설정
+        try {
+            (window as any).gapi.client.setToken({ access_token: token });
+            console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
+        } catch (tokenError) {
+            console.warn(`토큰 설정 실패:`, tokenError);
+        }
+
         // Google API가 준비될 때까지 대기
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 3; // 재시도 횟수 줄임
         
         while (attempts < maxAttempts) {
             try {
+                console.log(`스프레드시트 '${name}' 검색 중... (시도 ${attempts + 1}/${maxAttempts})`);
+                
                 const response = await (window as any).gapi.client.drive.files.list({
                     q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
                     fields: 'files(id, name)'
@@ -46,19 +73,23 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
                 
                 if (response.result.files && response.result.files.length > 0) {
                     const fileId = response.result.files[0].id;
-                    console.log(`Found '${name}' spreadsheet with ID:`, fileId);
+                    console.log(`✅ 스프레드시트 '${name}' 발견, ID:`, fileId);
                     return fileId;
                 } else {
-                    console.warn(`Could not find spreadsheet with name '${name}'`);
+                    console.warn(`❌ 이름이 '${name}'인 스프레드시트를 찾을 수 없습니다.`);
                     return null;
                 }
             } catch (apiError) {
                 attempts++;
+                console.error(`API 호출 실패 (${attempts}/${maxAttempts}):`, apiError);
+                
                 if (attempts >= maxAttempts) {
-                    throw apiError;
+                    console.error(`❌ 스프레드시트 '${name}' 검색 실패:`, apiError);
+                    return null; // throw 대신 null 반환
                 }
-                console.log(`API 호출 실패, 재시도 중... (${attempts}/${maxAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 재시도 전 잠시 대기
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
         }
         
@@ -83,13 +114,56 @@ export const initializeSpreadsheetIds = async (): Promise<{
     console.log('스프레드시트 ID 초기화 시작...');
     
     try {
+        // Google API 인증 상태 확인 (더 안전한 방법)
+        const token = localStorage.getItem('googleAccessToken');
+        if (!token) {
+            console.warn('Google API 인증 토큰이 없습니다. 스프레드시트 ID 초기화를 건너뜁니다.');
+            return {
+                announcementSpreadsheetId: null,
+                calendarProfessorSpreadsheetId: null,
+                calendarStudentSpreadsheetId: null,
+                boardSpreadsheetId: null,
+                hotPotatoDBSpreadsheetId: null,
+                studentSpreadsheetId: null
+            };
+        }
+
+        // 토큰을 gapi client에 설정
+        try {
+            (window as any).gapi.client.setToken({ access_token: token });
+            console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
+        } catch (tokenError) {
+            console.warn(`토큰 설정 실패:`, tokenError);
+        }
+
         // 순차적으로 스프레드시트 ID 찾기 (안정성을 위해)
+        console.log('📋 스프레드시트 검색 시작...');
+        console.log('검색할 스프레드시트 이름들:', {
+            announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
+            calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
+            board: ENV_CONFIG.BOARD_SPREADSHEET_NAME,
+            hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
+            student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
+        });
+        
         const announcementId = await findSpreadsheetById(ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME);
+        console.log('📢 공지사항 스프레드시트 ID:', announcementId);
+        
         const calendarProfessorId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME);
+        console.log('📅 교수 캘린더 스프레드시트 ID:', calendarProfessorId);
+        
         const calendarStudentId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME);
+        console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
+        
         const boardId = await findSpreadsheetById(ENV_CONFIG.BOARD_SPREADSHEET_NAME);
+        console.log('📋 게시판 스프레드시트 ID:', boardId);
+        
         const hotPotatoDBId = await findSpreadsheetById(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
+        console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
+        
         const studentId = await findSpreadsheetById(ENV_CONFIG.STUDENT_SPREADSHEET_NAME);
+        console.log('👥 학생 스프레드시트 ID:', studentId);
 
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
@@ -116,7 +190,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             studentSpreadsheetId: studentId
         };
     } catch (error) {
-        console.error('스프레드시트 ID 초기화 중 오류:', error);
+        console.error('❌ 스프레드시트 ID 초기화 중 오류:', error);
+        console.warn('⚠️ 일부 기능이 제한될 수 있습니다.');
         return {
             announcementSpreadsheetId: null,
             calendarProfessorSpreadsheetId: null,
@@ -135,7 +210,10 @@ export const fetchPosts = async (): Promise<Post[]> => {
       console.warn('Board spreadsheet ID not found');
       return [];
     }
-
+    
+    // papyrus-db 인증 설정
+    setupPapyrusAuth();
+    
     console.log(`Fetching posts from spreadsheet: ${boardSpreadsheetId}, sheet: ${ENV_CONFIG.BOARD_SHEET_NAME}`);
     const data = await getSheetData(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME);
     console.log('Posts data received:', data);
