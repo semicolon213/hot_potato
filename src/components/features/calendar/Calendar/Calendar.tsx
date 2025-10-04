@@ -2,64 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
 import { BiSearchAlt2 } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
-
-// DateInfo 타입 정의
-interface DateInfo {
-    date: string;
-    dayIndexOfWeek: number;
-}
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
+import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
-
-// Google Calendar API 타입 정의
-interface GoogleCalendarEvent {
-    id: string;
-    summary: string;
-    start?: {
-        date?: string;
-        dateTime?: string;
-    };
-    end?: {
-        date?: string;
-        dateTime?: string;
-    };
-    description?: string;
-    location?: string;
-}
-
-interface GoogleCalendarResponse {
-    result: {
-        items: GoogleCalendarEvent[];
-    };
-}
-
-// GAPI 타입 정의
-interface GapiClient {
-    calendar: {
-        events: {
-            list: (params: {
-                calendarId: string;
-                maxResults: number;
-                singleEvents: boolean;
-                orderBy: string;
-                timeMin: string;
-                timeMax: string;
-            }) => Promise<GoogleCalendarResponse>;
-        };
-    };
-}
-
-declare global {
-    interface Window {
-        gapi: {
-            client: GapiClient;
-        };
-    }
-}
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -141,7 +90,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         if (latestTerm) {
             addRecentSearch(latestTerm);
         }
-    }, [searchTerm, addRecentSearch]);
+    }, [searchTerm]);
 
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
 
@@ -149,18 +98,40 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         const loadSuggestions = async () => {
             await initializeGoogleAPIOnce(null);
 
-            const year = Number(currentDate.year);
+            const year = currentDate.year;
             const timeMin = new Date(year, 0, 1).toISOString();
             const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
 
             const sheetPromise = (async () => {
-                // 캘린더 이벤트는 이미 상위 컴포넌트에서 로드됨
+                const sheetId = await findSpreadsheetById('calendar_student');
+                if (sheetId) {
+                    const events = await fetchCalendarEvents(null, sheetId, '시트1');
+                    return events
+                      ? events
+                        .map(e => ({
+                            title: e.title,
+                            tag: e.type,
+                            startDate: e.startDate,
+                            endDate: e.endDate,
+                        }))
+                        .filter(e => {
+                            if (typeof e.startDate === 'string' && e.startDate.includes('-')) {
+                                const eventYear = parseInt(e.startDate.split('-')[0], 10);
+                                if (!isNaN(eventYear)) {
+                                    return eventYear === year;
+                                }
+                            }
+                            return false;
+                        })
+                        .filter(e => e.title)
+                      : [];
+                }
                 return [];
             })();
 
             const calendarPromise = (async () => {
                 try {
-                    const response = await window.gapi.client.calendar.events.list({
+                    const response = await (window as any).gapi.client.calendar.events.list({
                         'calendarId': 'primary',
                         'maxResults': 250,
                         'singleEvents': true,
@@ -170,17 +141,17 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     });
                     const items = response.result.items || [];
                     return items
-                        .map((item: GoogleCalendarEvent) => {
-                            const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
-                            const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
-                            return {
-                                title: item.summary,
-                                tag: '개인 일정',
-                                startDate: startDate,
-                                endDate: endDate || startDate
-                            };
-                        })
-                        .filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
+                      .map((item: any) => {
+                          const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                          const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                          return {
+                              title: item.summary,
+                              tag: '개인 일정',
+                              startDate: startDate,
+                              endDate: endDate || startDate
+                          };
+                      })
+                      .filter(item => item.title);
                 } catch (error) {
                     console.error("Error fetching Google Calendar events:", error);
                     return [];
@@ -190,7 +161,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const holidayPromise = (async () => {
                 try {
                     const holidayCalendarId = 'ko.south_korea#holiday@group.v.calendar.google.com';
-                    const response = await window.gapi.client.calendar.events.list({
+                    const response = await (window as any).gapi.client.calendar.events.list({
                         'calendarId': holidayCalendarId,
                         'maxResults': 50,
                         'singleEvents': true,
@@ -199,7 +170,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         timeMax
                     });
                     const items = response.result.items || [];
-                    return items.map((item: GoogleCalendarEvent) => {
+                    return items.map((item: any) => {
                         const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
                         const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
                         return {
@@ -208,7 +179,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             startDate: startDate,
                             endDate: endDate || startDate
                         };
-                    }).filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
+                    }).filter(item => item.title);
                 } catch (error) {
                     console.error("Error fetching holiday calendar events:", error);
                     return [];
@@ -248,8 +219,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const handler = setTimeout(() => {
                 const lowerInputValue = inputValue.toLowerCase();
                 const filtered = suggestionSource.filter(item =>
-                    item.title.toLowerCase().includes(lowerInputValue) ||
-                    (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
+                  item.title.toLowerCase().includes(lowerInputValue) ||
+                  (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
                 );
                 setSuggestions(filtered);
             }, 300);
@@ -279,10 +250,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         }
 
         const newFilters = activeFilters.includes('all')
-            ? [filter] // If 'all' is selected, start a new selection
-            : activeFilters.includes(filter)
-                ? activeFilters.filter(f => f !== filter) // Deselect if already selected
-                : [...activeFilters, filter]; // Add to selection
+          ? [filter] // If 'all' is selected, start a new selection
+          : activeFilters.includes(filter)
+            ? activeFilters.filter(f => f !== filter) // Deselect if already selected
+            : [...activeFilters, filter]; // Add to selection
 
         // If all filters are deselected, select 'all' again and navigate home
         if (newFilters.length === 0) {
@@ -308,9 +279,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const newMidtermStart = new Date(midtermEvent.startDate);
             const newMidtermEnd = new Date(midtermEvent.endDate);
             if (
-                !isNaN(newMidtermStart.getTime()) &&
-                !isNaN(newMidtermEnd.getTime()) &&
-                (midtermExamsPeriod.start?.getTime() !== newMidtermStart.getTime() || midtermExamsPeriod.end?.getTime() !== newMidtermEnd.getTime())
+              !isNaN(newMidtermStart.getTime()) &&
+              !isNaN(newMidtermEnd.getTime()) &&
+              (midtermExamsPeriod.start?.getTime() !== newMidtermStart.getTime() || midtermExamsPeriod.end?.getTime() !== newMidtermEnd.getTime())
             ) {
                 setMidtermExamsPeriod({ start: newMidtermStart, end: newMidtermEnd });
             }
@@ -321,9 +292,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const newFinalStart = new Date(finalEvent.startDate);
             const newFinalEnd = new Date(finalEvent.endDate);
             if (
-                !isNaN(newFinalStart.getTime()) &&
-                !isNaN(newFinalEnd.getTime()) &&
-                (finalExamsPeriod.start?.getTime() !== newFinalStart.getTime() || finalExamsPeriod.end?.getTime() !== newFinalEnd.getTime())
+              !isNaN(newFinalStart.getTime()) &&
+              !isNaN(newFinalEnd.getTime()) &&
+              (finalExamsPeriod.start?.getTime() !== newFinalStart.getTime() || finalExamsPeriod.end?.getTime() !== newFinalEnd.getTime())
             ) {
                 setFinalExamsPeriod({ start: newFinalStart, end: newFinalEnd });
             }
@@ -506,7 +477,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     const weeksInMonth = useMemo(() => {
-        const weeksArr: DateInfo[][] = [];
+        const weeksArr: any[][] = [];
         if (!daysInMonth) return [];
         for (let i = 0; i < daysInMonth.length; i += 7) {
             weeksArr.push(daysInMonth.slice(i, i + 7));
@@ -535,7 +506,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         // Adjust for timezone offset before creating new event
                         const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
                         const dateStr = adjustedDate.toISOString().split('T')[0];
-                        
+
                         allEvents.push({
                             ...event,
                             // Create a new unique ID for each occurrence to avoid key conflicts
@@ -645,7 +616,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     const eventStartDate = new Date(event.startDate);
                     const currentDayDate = new Date(day.date);
                     const isContinuationLeft = eventStartDate < currentDayDate;
-                    
+
                     const eventEndDate = new Date(event.endDate);
                     const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
                     const isContinuationRight = eventEndDate > endOfWeekDate;
@@ -653,22 +624,22 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     const title = (dayOfWeek === 0 || eventStartDate.toDateString() === currentDayDate.toDateString()) ? event.title : '';
 
                     eventElements.push(
-                        <div
-                            key={`${event.id}-${day.date}`}
-                            className={`monthly-event-item ${isContinuationLeft ? 'continuation-left' : ''} ${isContinuationRight ? 'continuation-right' : ''}`}
-                            style={{
-                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (laneIndex * eventHeight)}px`,
-                                left: `${(dayOfWeek / 7) * 100}%`,
-                                width: `calc(${(span / 7) * 100}% - 4px)`,
-                                backgroundColor: event.color,
-                                marginLeft: '2px',
-                                marginRight: '2px',
-                            }}
-                            onClick={(e) => handleEventClick(event, e)}
-                        >
-                            <span style={{marginRight: '4px'}}>{event.icon}</span>
-                            {title}
-                        </div>
+                      <div
+                        key={`${event.id}-${day.date}`}
+                        className={`monthly-event-item ${isContinuationLeft ? 'continuation-left' : ''} ${isContinuationRight ? 'continuation-right' : ''}`}
+                        style={{
+                            top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (laneIndex * eventHeight)}px`,
+                            left: `${(dayOfWeek / 7) * 100}%`,
+                            width: `calc(${(span / 7) * 100}% - 4px)`,
+                            backgroundColor: event.color,
+                            marginLeft: '2px',
+                            marginRight: '2px',
+                        }}
+                        onClick={(e) => handleEventClick(event, e)}
+                      >
+                          <span style={{marginRight: '4px'}}>{event.icon}</span>
+                          {title}
+                      </div>
                     );
                 });
 
@@ -677,24 +648,24 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 if (moreCount > 0) {
                     const dayEvents = dayLayout.filter((e): e is Event => e !== null);
                     moreButtonElements.push(
-                        <div
-                            key={`more-${day.date}`}
-                            className="more-events-text"
-                            style={{
-                                position: 'absolute',
-                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (MAX_EVENTS * eventHeight)}px`,
-                                left: `${(dayOfWeek / 7) * 100}%`,
-                                width: `calc(${(1 / 7) * 100}% - 4px)`,
-                                marginLeft: '4px',
-                                cursor: 'pointer',
-                            }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleMoreClick(dayEvents, day.date, e);
-                            }}
-                        >
-                            {moreCount}개 더보기
-                        </div>
+                      <div
+                        key={`more-${day.date}`}
+                        className="more-events-text"
+                        style={{
+                            position: 'absolute',
+                            top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (MAX_EVENTS * eventHeight)}px`,
+                            left: `${(dayOfWeek / 7) * 100}%`,
+                            width: `calc(${(1 / 7) * 100}% - 4px)`,
+                            marginLeft: '4px',
+                            cursor: 'pointer',
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoreClick(dayEvents, day.date, e);
+                        }}
+                      >
+                          {moreCount}개 더보기
+                      </div>
                     );
                 }
             });
@@ -714,305 +685,330 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
     const handleRemoveTerm = (termToRemove: string) => {
         const newSearchTerm = searchTerm
-            .split(' ')
-            .filter(t => t !== termToRemove)
-            .join(' ');
+          .split(' ')
+          .filter(t => t !== termToRemove)
+          .join(' ');
         setSearchTerm(newSearchTerm);
     };
 
+    const formatSuggestionDate = (startDateStr: string, endDateStr: string) => {
+        if (!startDateStr) return '';
+        const format = (dateStr: string) => {
+            try {
+                const date = new Date(dateStr);
+                date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                return `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            } catch (e) {
+                return '';
+            }
+        };
+        const start = format(startDateStr);
+        const end = format(endDateStr || startDateStr);
+        if (start === end) return start;
+        return `${start} ~ ${end}`;
+    };
 
     return (
-        <>
-            <div className="calendar-header-container">
-                <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
-                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                        <h2>
-                            {viewMode === 'monthly' ? (
-                                `${currentDate.year}년 ${currentDate.month}월`
-                            ) : (
-                                `${selectedWeek}주차`
-                            )}
-                        </h2>
-                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                        <div className="search-wrapper">
-                            <div className="search-container" style={{ height: '35px', width: '250px' }}>
-                                <BiSearchAlt2 color="black" />
-                                <input
-                                    type="text"
-                                    placeholder="일정 검색..."
-                                    className={"calendar-search-input"}
-                                    style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
-                                    value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
-                                    onFocus={() => setIsSuggestionsVisible(true)}
-                                    onBlur={() => {
-                                        setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
-                                            e.preventDefault();
-                                            const newTerm = `#${inputValue.trim()}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(newTerm)) {
-                                                setSearchTerm([...existingTerms, newTerm].join(' '));
-                                            }
-                                            setInputValue('');
+      <>
+          <div className="calendar-header-container">
+              <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
+                      <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
+                      <h2>
+                          {viewMode === 'monthly' ? (
+                            `${currentDate.year}년 ${currentDate.month}월`
+                          ) : (
+                            `${selectedWeek}주차`
+                          )}
+                      </h2>
+                      <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                      <div className="search-wrapper">
+                          <div className="search-container" style={{ height: '35px', width: '250px' }}>
+                              <BiSearchAlt2 color="black" />
+                              <input
+                                type="text"
+                                placeholder="일정 검색..."
+                                className={"calendar-search-input"}
+                                style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onFocus={() => setIsSuggestionsVisible(true)}
+                                onBlur={() => {
+                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
+                                        e.preventDefault();
+                                        const newTerm = `#${inputValue.trim()}`;
+                                        const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                        if (!existingTerms.includes(newTerm)) {
+                                            setSearchTerm([...existingTerms, newTerm].join(' '));
                                         }
-                                    }}
-                                />
-                                {isSuggestionsVisible && suggestions.length > 0 && (
-                                    <ul className="search-suggestions">
-                                        {suggestions.map((suggestion, index) => (
-                                            <li
-                                                key={index}
-                                                onMouseDown={() => {
-                                                    const formattedTerm = `#${suggestion.title}`;
-                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                    if (!existingTerms.includes(formattedTerm)) {
-                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                        setInputValue('');
+                                    }
+                                }}
+                              />
+                              {isSuggestionsVisible && suggestions.length > 0 && (
+                                <ul className="search-suggestions">
+                                    {suggestions.map((suggestion, index) => (
+                                      <li
+                                        key={index}
+                                        onMouseDown={() => {
+                                            const formattedTerm = `#${suggestion.title}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(formattedTerm)) {
+                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                            }
+
+                                            if (suggestion.startDate) {
+                                                try {
+                                                    const targetDate = new Date(suggestion.startDate);
+                                                    if (!isNaN(targetDate.getTime())) {
+                                                        goToDate(targetDate);
                                                     }
+                                                } catch (e) {
+                                                    console.error("Failed to parse date from suggestion:", suggestion.startDate, e);
+                                                }
+                                            }
 
-                                                    // 날짜 네비게이션은 제거됨 (suggestion에 날짜 정보 없음)
+                                            setInputValue('');
+                                            setSuggestions([]);
+                                        }}
+                                      >
+                                          <span className="suggestion-title">{suggestion.title}</span>
+                                          <span className="suggestion-date">{formatSuggestionDate(suggestion.startDate, suggestion.endDate)}</span>
+                                          <span className="suggestion-tag">{suggestion.tag}</span>
+                                      </li>
+                                    ))}
+                                </ul>
+                              )}
+                          </div>
+                          <div className="search-tags-container">
+                              {searchTerm.split(' ').filter(Boolean).map(term => (
+                                <div key={term} className="search-tag">
+                                    {term}
+                                    <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                </div>
+                              ))}
+                          </div>
+                      </div>
+                      {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                  </div>
+                  <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      {user && user.isAdmin && (
+                        <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
+                      )}
+                      <div className="view-switcher">
+                          <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
+                          <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
+                      </div>
+                      <div className="view-switcher">
+                          <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
+                          <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
+                      </div>
+                      <div className="filter-tags-container">
+                          {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
+                            <button
+                              key={filter}
+                              className={`filter-tag ${activeFilters.includes(filter) ? 'active' : ''}`}
+                              onClick={() => handleFilterChange(filter)}
+                            >
+                                {filterLabels[filter] || filter}
+                            </button>
+                          ))}
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                              <button
+                                className={`filter-tag ${activeFilters.includes('midterm_exam') || activeFilters.includes('final_exam') ? 'active' : ''}`}
+                                onClick={() => setIsExamDropdownOpen(!isExamDropdownOpen)}
+                              >
+                                  시험
+                              </button>
+                              {isExamDropdownOpen && (
+                                <div style={{
+                                    position: 'absolute',
+                                    backgroundColor: '#f9f9f9',
+                                    minWidth: '120px',
+                                    boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                                    zIndex: 1,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ddd',
+                                }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={activeFilters.includes('midterm_exam')}
+                                          onChange={() => handleFilterChange('midterm_exam')}
+                                          style={{ marginRight: '8px' }}
+                                        />
+                                        중간고사
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={activeFilters.includes('final_exam')}
+                                          onChange={() => handleFilterChange('final_exam')}
+                                          style={{ marginRight: '8px' }}
+                                        />
+                                        기말고사
+                                    </label>
+                                </div>
+                              )}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          {calendarViewMode === 'calendar' ? (
+            viewMode === 'monthly' ? (
+              <div className="calendar-body-container">
+                  <div className="day-wrapper">
+                      {weeks.map((week, index) => (
+                        <div className={`calendar-item ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`} key={week}>{week}</div>
+                      ))}
+                  </div>
+                  <div className="day-wrapper">
+                      {daysInMonth.map((date) => {
+                          const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
+                          const isSelected = selectedDate.date === date.date;
+                          const isSunday = date.dayIndexOfWeek === 0;
+                          const isSaturday = date.dayIndexOfWeek === 6;
+                          const isCurrentMonth = currentDate.month === date.month;
+                          const isHoliday = dayEvents.some(e => e.isHoliday);
 
-                                                    setInputValue('');
-                                                    setSuggestions([]);
-                                                }}
-                                            >
-                                                <span className="suggestion-title">{suggestion.title}</span>
-                                                <span className="suggestion-date">{suggestion.tag}</span>
-                                                <span className="suggestion-tag">{suggestion.tag}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
+                          return (
+                            <div
+                              onClick={() => {
+                                  selectedDate.selectDate(new Date(date.date));
+                                  onAddEvent();
+                              }}
+                              className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
+                              key={date.date}>
+                                <span className="day-number">{date.day}</span>
                             </div>
-                            <div className="search-tags-container">
-                                {searchTerm.split(' ').filter(Boolean).map(term => (
-                                    <div key={term} className="search-tag">
-                                        {term}
-                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                          );
+                      })}
+                      {eventElements}
+                      {moreButtonElements}
+                  </div>
+              </div>
+            ) : (
+              <WeeklyCalendar selectedWeek={selectedWeek} />
+            )
+          ) : (
+            <ScheduleView />
+          )}
+          {moreEventsModal.isOpen && (
+            <MoreEventsModal
+              events={moreEventsModal.events}
+              date={moreEventsModal.date}
+              onClose={() => setMoreEventsModal({ ...moreEventsModal, isOpen: false })}
+              position={moreEventsModal.position}
+              onSelectEvent={(event, e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  onSelectEvent(event, rect); // Call the parent's onSelectEvent
+                  setMoreEventsModal({ ...moreEventsModal, isOpen: false });
+              }}
+            />
+          )}
+          {isSemesterPickerOpen && (
+            <div className="semester-picker-overlay" onClick={handleCloseWithoutSaving}>
+                <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="date-selector-row">
+                        <label htmlFor="semester-start-date">개강일</label>
+                        <input
+                          id="semester-start-date"
+                          type="date"
+                          value={formatDateForInput(semesterStartDate)}
+                          onChange={(e) => handleDateChange(setSemesterStartDate, e.target.value)}
+                        />
                     </div>
-                    <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        {user && user.isAdmin && (
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
-                        )}
-                        <div className="view-switcher">
-                            <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
-                            <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
+                    <div className="date-selector-row">
+                        <label>중간고사</label>
+                        <input
+                          type="date"
+                          value={formatDateForInput(midtermExamsPeriod.start)}
+                          onChange={(e) => handleMidtermExamsPeriodChange('start', e.target.value)}
+                        />
+                        <span>~</span>
+                        <input
+                          type="date"
+                          value={formatDateForInput(midtermExamsPeriod.end)}
+                          onChange={(e) => handleMidtermExamsPeriodChange('end', e.target.value)}
+                        />
+                    </div>
+                    <div className="date-selector-row">
+                        <label>기말고사</label>
+                        <input
+                          type="date"
+                          value={formatDateForInput(finalExamsPeriod.start)}
+                          onChange={(e) => handleFinalExamsPeriodChange('start', e.target.value)}
+                        />
+                        <span>~</span>
+                        <input
+                          type="date"
+                          value={formatDateForInput(finalExamsPeriod.end)}
+                          onChange={(e) => handleFinalExamsPeriodChange('end', e.target.value)}
+                        />
+                    </div>
+                    <div className="date-selector-row">
+                        <label>성적입력 및 강의평가</label>
+                        <input
+                          type="date"
+                          value={formatDateForInput(gradeEntryPeriod.start)}
+                          onChange={(e) => handleGradeEntryPeriodChange('start', e.target.value)}
+                        />
+                        <span>~</span>
+                        <input
+                          type="date"
+                          value={formatDateForInput(gradeEntryPeriod.end)}
+                          onChange={(e) => handleGradeEntryPeriodChange('end', e.target.value)}
+                        />
+                    </div>
+
+                    {customPeriods.map(p => (
+                      <div key={p.id} className="date-selector-row">
+                          <label>{p.name}</label>
+                          <input
+                            type="date"
+                            value={formatDateForInput(p.period.start)}
+                            onChange={(e) => handleCustomPeriodChange(p.id, 'start', e.target.value)}
+                          />
+                          <span>~</span>
+                          <input
+                            type="date"
+                            value={formatDateForInput(p.period.end)}
+                            onChange={(e) => handleCustomPeriodChange(p.id, 'end', e.target.value)}
+                          />
+                          <button onClick={() => handleDeleteCustomPeriod(p.id)} className="delete-period-btn">삭제</button>
+                      </div>
+                    ))}
+
+                    <div className="add-period-form" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                              type="text"
+                              placeholder="항목 이름"
+                              value={newPeriodName}
+                              onChange={(e) => setNewPeriodName(e.target.value)}
+                            />
+                            <button onClick={handleAddCustomPeriod}>추가</button>
                         </div>
-                        <div className="view-switcher">
-                            <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
-                            <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
+                        <div style={{ position: 'absolute', right: 0 }}>
+                            <button onClick={handleAddMakeupPeriod}>보강</button>
                         </div>
-                        <div className="filter-tags-container">
-                            {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
-                                <button
-                                    key={filter}
-                                    className={`filter-tag ${activeFilters.includes(filter) ? 'active' : ''}`}
-                                    onClick={() => handleFilterChange(filter)}
-                                >
-                                    {filterLabels[filter] || filter}
-                                </button>
-                            ))}
-                            <div style={{ position: 'relative', display: 'inline-block' }}>
-                                <button
-                                    className={`filter-tag ${activeFilters.includes('midterm_exam') || activeFilters.includes('final_exam') ? 'active' : ''}`}
-                                    onClick={() => setIsExamDropdownOpen(!isExamDropdownOpen)}
-                                >
-                                    시험
-                                </button>
-                                {isExamDropdownOpen && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        backgroundColor: '#f9f9f9',
-                                        minWidth: '120px',
-                                        boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
-                                        zIndex: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        padding: '8px',
-                                        borderRadius: '4px',
-                                        border: '1px solid #ddd',
-                                    }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={activeFilters.includes('midterm_exam')}
-                                                onChange={() => handleFilterChange('midterm_exam')}
-                                                style={{ marginRight: '8px' }}
-                                            />
-                                            중간고사
-                                        </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={activeFilters.includes('final_exam')}
-                                                onChange={() => handleFilterChange('final_exam')}
-                                                style={{ marginRight: '8px' }}
-                                            />
-                                            기말고사
-                                        </label>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                    </div>
+
+                    <div className="modal-actions">
+                        <button onClick={handleSave} className="done-btn">완료</button>
+                        <button onClick={handleCloseWithoutSaving} className="close-btn">닫기</button>
                     </div>
                 </div>
             </div>
-            {calendarViewMode === 'calendar' ? (
-                viewMode === 'monthly' ? (
-                    <div className="calendar-body-container">
-                        <div className="day-wrapper">
-                            {weeks.map((week, index) => (
-                                <div className={`calendar-item ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`} key={week}>{week}</div>
-                            ))}
-                        </div>
-                        <div className="day-wrapper">
-                            {daysInMonth.map((date) => {
-                                const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
-                                const isSelected = selectedDate.date === date.date;
-                                const isSunday = date.dayIndexOfWeek === 0;
-                                const isSaturday = date.dayIndexOfWeek === 6;
-                                const isCurrentMonth = currentDate.month === date.month;
-                                const isHoliday = dayEvents.some(e => e.isHoliday);
-
-                                return (
-                                    <div
-                                        onClick={() => {
-                                            selectedDate.selectDate(new Date(date.date));
-                                            onAddEvent();
-                                        }}
-                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
-                                        key={date.date}>
-                                        <span className="day-number">{date.day}</span>
-                                    </div>
-                                );
-                            })}
-                            {eventElements}
-                            {moreButtonElements}
-                        </div>
-                    </div>
-                ) : (
-                    <WeeklyCalendar selectedWeek={selectedWeek} />
-                )
-            ) : (
-                <ScheduleView />
-            )}
-            {moreEventsModal.isOpen && (
-                <MoreEventsModal
-                    events={moreEventsModal.events}
-                    date={moreEventsModal.date}
-                    onClose={() => setMoreEventsModal({ ...moreEventsModal, isOpen: false })}
-                    position={moreEventsModal.position}
-                    onSelectEvent={(event, e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        onSelectEvent(event, rect); // Call the parent's onSelectEvent
-                        setMoreEventsModal({ ...moreEventsModal, isOpen: false });
-                    }}
-                />
-            )}
-            {isSemesterPickerOpen && (
-                <div className="semester-picker-overlay" onClick={handleCloseWithoutSaving}>
-                    <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="date-selector-row">
-                            <label htmlFor="semester-start-date">개강일</label>
-                            <input
-                                id="semester-start-date"
-                                type="date"
-                                value={formatDateForInput(semesterStartDate)}
-                                onChange={(e) => handleDateChange(setSemesterStartDate, e.target.value)}
-                            />
-                        </div>
-                        <div className="date-selector-row">
-                            <label>중간고사</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(midtermExamsPeriod.start)}
-                                onChange={(e) => handleMidtermExamsPeriodChange('start', e.target.value)}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(midtermExamsPeriod.end)}
-                                onChange={(e) => handleMidtermExamsPeriodChange('end', e.target.value)}
-                            />
-                        </div>
-                        <div className="date-selector-row">
-                            <label>기말고사</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(finalExamsPeriod.start)}
-                                onChange={(e) => handleFinalExamsPeriodChange('start', e.target.value)}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(finalExamsPeriod.end)}
-                                onChange={(e) => handleFinalExamsPeriodChange('end', e.target.value)}
-                            />
-                        </div>
-                        <div className="date-selector-row">
-                            <label>성적입력 및 강의평가</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(gradeEntryPeriod.start)}
-                                onChange={(e) => handleGradeEntryPeriodChange('start', e.target.value)}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(gradeEntryPeriod.end)}
-                                onChange={(e) => handleGradeEntryPeriodChange('end', e.target.value)}
-                            />
-                        </div>
-
-                        {customPeriods.map(p => (
-                            <div key={p.id} className="date-selector-row">
-                                <label>{p.name}</label>
-                                <input
-                                    type="date"
-                                    value={formatDateForInput(p.period.start)}
-                                    onChange={(e) => handleCustomPeriodChange(p.id, 'start', e.target.value)}
-                                />
-                                <span>~</span>
-                                <input
-                                    type="date"
-                                    value={formatDateForInput(p.period.end)}
-                                    onChange={(e) => handleCustomPeriodChange(p.id, 'end', e.target.value)}
-                                />
-                                <button onClick={() => handleDeleteCustomPeriod(p.id)} className="delete-period-btn">삭제</button>
-                            </div>
-                        ))}
-
-                        <div className="add-period-form" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input
-                                    type="text"
-                                    placeholder="항목 이름"
-                                    value={newPeriodName}
-                                    onChange={(e) => setNewPeriodName(e.target.value)}
-                                />
-                                <button onClick={handleAddCustomPeriod}>추가</button>
-                            </div>
-                            <div style={{ position: 'absolute', right: 0 }}>
-                                <button onClick={handleAddMakeupPeriod}>보강</button>
-                            </div>
-                        </div>
-
-                        <div className="modal-actions">
-                            <button onClick={handleSave} className="done-btn">완료</button>
-                            <button onClick={handleCloseWithoutSaving} className="close-btn">닫기</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
+          )}
+      </>
     );
 };
 
