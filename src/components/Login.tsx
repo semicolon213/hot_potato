@@ -4,8 +4,16 @@ import { apiClient } from '../utils/api/apiClient';
 import { ENV_CONFIG } from '../../config/environment';
 import './Login.css';
 
+interface UserData {
+  email: string;
+  name: string;
+  picture?: string;
+  sub: string;
+  studentId?: string;
+}
+
 interface LoginProps {
-  onLogin: (userData: any) => void;
+  onLogin: (userData: UserData) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {

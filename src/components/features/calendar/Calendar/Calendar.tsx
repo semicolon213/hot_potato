@@ -2,12 +2,64 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
 import { BiSearchAlt2 } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
+
+// DateInfo 타입 정의
+interface DateInfo {
+    date: string;
+    dayIndexOfWeek: number;
+}
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
+
+// Google Calendar API 타입 정의
+interface GoogleCalendarEvent {
+    id: string;
+    summary: string;
+    start?: {
+        date?: string;
+        dateTime?: string;
+    };
+    end?: {
+        date?: string;
+        dateTime?: string;
+    };
+    description?: string;
+    location?: string;
+}
+
+interface GoogleCalendarResponse {
+    result: {
+        items: GoogleCalendarEvent[];
+    };
+}
+
+// GAPI 타입 정의
+interface GapiClient {
+    calendar: {
+        events: {
+            list: (params: {
+                calendarId: string;
+                maxResults: number;
+                singleEvents: boolean;
+                orderBy: string;
+                timeMin: string;
+                timeMax: string;
+            }) => Promise<GoogleCalendarResponse>;
+        };
+    };
+}
+
+declare global {
+    interface Window {
+        gapi: {
+            client: GapiClient;
+        };
+    }
+}
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -89,7 +141,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         if (latestTerm) {
             addRecentSearch(latestTerm);
         }
-    }, [searchTerm]);
+    }, [searchTerm, addRecentSearch]);
 
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
 
@@ -108,7 +160,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
             const calendarPromise = (async () => {
                 try {
-                    const response = await (window as any).gapi.client.calendar.events.list({
+                    const response = await window.gapi.client.calendar.events.list({
                         'calendarId': 'primary',
                         'maxResults': 250,
                         'singleEvents': true,
@@ -118,7 +170,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     });
                     const items = response.result.items || [];
                     return items
-                        .map((item: any) => {
+                        .map((item: GoogleCalendarEvent) => {
                             const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
                             const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
                             return {
@@ -128,7 +180,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 endDate: endDate || startDate
                             };
                         })
-                        .filter((item: any) => item.title);
+                        .filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
                 } catch (error) {
                     console.error("Error fetching Google Calendar events:", error);
                     return [];
@@ -138,7 +190,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const holidayPromise = (async () => {
                 try {
                     const holidayCalendarId = 'ko.south_korea#holiday@group.v.calendar.google.com';
-                    const response = await (window as any).gapi.client.calendar.events.list({
+                    const response = await window.gapi.client.calendar.events.list({
                         'calendarId': holidayCalendarId,
                         'maxResults': 50,
                         'singleEvents': true,
@@ -147,7 +199,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         timeMax
                     });
                     const items = response.result.items || [];
-                    return items.map((item: any) => {
+                    return items.map((item: GoogleCalendarEvent) => {
                         const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
                         const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
                         return {
@@ -156,7 +208,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             startDate: startDate,
                             endDate: endDate || startDate
                         };
-                    }).filter((item: any) => item.title);
+                    }).filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
                 } catch (error) {
                     console.error("Error fetching holiday calendar events:", error);
                     return [];
@@ -454,7 +506,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     const weeksInMonth = useMemo(() => {
-        const weeksArr: any[][] = [];
+        const weeksArr: DateInfo[][] = [];
         if (!daysInMonth) return [];
         for (let i = 0; i < daysInMonth.length; i += 7) {
             weeksArr.push(daysInMonth.slice(i, i + 7));

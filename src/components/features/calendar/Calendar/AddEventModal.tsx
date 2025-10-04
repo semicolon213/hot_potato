@@ -142,7 +142,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   // Pre-populate selected attendees in edit mode once data is loaded
   useEffect(() => {
     if (isEditMode && eventToEdit && (students.length > 0 || staff.length > 0)) {
-        const attendeeIds = (eventToEdit as any).attendees?.split(',').filter(Boolean) || [];
+        const attendeeIds = (eventToEdit as Event & { attendees?: string }).attendees?.split(',').filter(Boolean) || [];
         if (attendeeIds.length > 0) {
             const allPeople = [...students, ...staff];
             const preselected = allPeople.filter(p => attendeeIds.includes('no_student' in p ? p.no_student : p.no));
@@ -243,7 +243,12 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       }
 
       if (saveTarget === 'sheet' && recurrenceFreq !== 'NONE') {
-        const ruleOptions: any = {
+        const ruleOptions: {
+            freq: number;
+            interval: number;
+            dtstart: Date;
+            until?: Date;
+        } = {
           freq: recurrenceFreq === 'DAILY' ? 3 : recurrenceFreq === 'WEEKLY' ? 2 : recurrenceFreq === 'MONTHLY' ? 1 : 0,
           interval: recurrenceDetails.interval,
           dtstart: new Date(startDate),

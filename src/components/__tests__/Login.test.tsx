@@ -8,7 +8,7 @@ const mockOnError = jest.fn();
 
 jest.mock('@react-oauth/google', () => ({
   GoogleOAuthProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="google-provider">{children}</div>,
-  GoogleLogin: ({ onSuccess, onError }: { onSuccess: (response: any) => void; onError: () => void }) => {
+  GoogleLogin: ({ onSuccess, onError }: { onSuccess: (response: { credential: string }) => void; onError: () => void }) => {
     // Store the callbacks for testing
     mockOnSuccess.mockImplementation(onSuccess);
     mockOnError.mockImplementation(onError);
