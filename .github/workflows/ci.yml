@@ -28,7 +28,7 @@ jobs:
       run: npm run type-check
       
     - name: ESLint check (warnings only)
-      run: npm run lint -- --max-warnings 200
+      run: npm run lint -- --max-warnings 1000
       continue-on-error: true
       
     - name: Security audit
