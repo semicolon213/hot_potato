@@ -22,7 +22,7 @@ interface WidgetData {
   props: Record<string, any>;
 }
 
-import { ENV_CONFIG } from '../../../config/environment';
+import { ENV_CONFIG } from '@/config/environment';
 
 const SHEET_NAME = ENV_CONFIG.DASHBOARD_SHEET_NAME;
 const RANGE = `${SHEET_NAME}!B2`;

@@ -17,7 +17,7 @@ jest.mock('papyrus-db/dist/sheets/delete', () => ({
 }));
 
 // Mock environment module
-jest.mock('../../config/environment', () => ({
+jest.mock('@/config/environment', () => ({
   ENV_CONFIG: {
     BOARD_SHEET_NAME: '시트1',
     ANNOUNCEMENT_SHEET_NAME: '시트1',

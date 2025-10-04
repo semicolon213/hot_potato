@@ -8,7 +8,7 @@
 
 import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
-import { ENV_CONFIG } from '../../config/environment';
+import { ENV_CONFIG } from '@/config/environment';
 
 // papyrus-db에 Google API 인증 설정
 const setupPapyrusAuth = () => {

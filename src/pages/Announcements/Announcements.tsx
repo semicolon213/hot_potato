@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/pages/Announcements.css';
 import type { Post } from '../../types/app';
 import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
-import { ENV_CONFIG } from '../../config/environment';
+import { ENV_CONFIG } from '@/config/environment';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
