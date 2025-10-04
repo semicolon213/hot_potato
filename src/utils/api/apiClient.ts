@@ -214,7 +214,7 @@ export class ApiClient {
       return { success: true, status: response.status, data: text };
     } catch (error) {
       console.error('연결 테스트 실패:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as Error).message };
     }
   }
 }

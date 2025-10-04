@@ -36,8 +36,20 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        manualChunks: {
+          // React 관련 라이브러리
+          'react-vendor': ['react', 'react-dom'],
+          // Google API 관련
+          'google-vendor': ['gapi-script'],
+          // Papyrus DB
+          'papyrus-vendor': ['papyrus-db'],
+          // 기타 유틸리티
+          'utils-vendor': ['rrule']
+        }
       }
-    }
+    },
+    // 청크 크기 경고 임계값 조정 (선택사항)
+    chunkSizeWarningLimit: 1000
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')

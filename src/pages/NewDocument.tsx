@@ -62,8 +62,8 @@ export default function NewDocument({
 
     // 즐겨찾기 로직 추가
     const handleToggleFavorite = useCallback((toggledTemplate: Template) => {
-        const favoriteCount = customTemplateItems.filter(t => t.favorites_tag).length;
-        const isCurrentlyFavorite = !!toggledTemplate.favorites_tag;
+        const favoriteCount = customTemplateItems.filter(t => t.favoritesTag).length;
+        const isCurrentlyFavorite = !!toggledTemplate.favoritesTag;
 
         if (!isCurrentlyFavorite && favoriteCount >= 3) {
             alert("즐겨찾기는 최대 3개까지 추가할 수 있습니다.");

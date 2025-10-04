@@ -77,15 +77,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             isApproved: true,
             accessToken: accessToken
           });
-        } else if (result.isRegistered && !result.isApproved) {
+        } else if (response.data?.isRegistered && !response.data?.isApproved) {
           // 승인 대기 중 - 승인 대기 화면으로
           console.log('승인 대기 중인 사용자');
           alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
           onLogin({
             email: email,
             name: name,
-            studentId: result.studentId || '',
-            isAdmin: result.isAdmin || false,
+            studentId: response.data?.studentId || '',
+            isAdmin: response.data?.isAdmin || false,
             isApproved: false
           });
         } else {

@@ -1,5 +1,15 @@
-// App.tsx에서 사용되는 공통 타입들
+/**
+ * @file app.ts
+ * @brief 애플리케이션 공통 타입 정의
+ * @details 애플리케이션 전반에서 사용되는 공통 타입들을 정의합니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
 
+/**
+ * @brief 이벤트 데이터 타입 정의
+ * @details 캘린더 이벤트의 정보를 담는 인터페이스입니다.
+ */
 export interface Event {
     id: string;
     title: string;
@@ -15,6 +25,10 @@ export interface Event {
     attendees?: string; // For attendees
 }
 
+/**
+ * @brief 게시글 데이터 타입 정의
+ * @details 게시판과 공지사항에서 사용되는 게시글 정보를 담는 인터페이스입니다.
+ */
 export interface Post {
   id: string;
   title: string;
@@ -73,7 +87,7 @@ export interface CustomPeriod {
 }
 
 export interface Student {
-  no: string;
+  no_student: string;
   name: string;
   address: string;
   phone_num: string;

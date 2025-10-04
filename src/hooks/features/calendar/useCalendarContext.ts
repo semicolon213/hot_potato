@@ -1,12 +1,28 @@
+/**
+ * @file useCalendarContext.ts
+ * @brief 캘린더 컨텍스트 훅
+ * @details 캘린더 관련 상태와 이벤트 관리를 위한 React Context를 제공합니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import { createContext, useContext } from "react";
 import { type User } from "../../../types/app";
 
+/**
+ * @brief 날짜 정보 타입 정의
+ * @details 년, 월, 일 정보를 담는 인터페이스입니다.
+ */
 interface DateInfo {
     year: string;
     month: string;
     day: string;
 }
 
+/**
+ * @brief 이벤트 데이터 타입 정의
+ * @details 캘린더에 표시되는 이벤트의 정보를 담는 인터페이스입니다.
+ */
 export interface Event {
     id: string;
     startDate: string;
@@ -20,6 +36,8 @@ export interface Event {
     isHoliday?: boolean;
     type?: string;
     icon?: string;
+    rrule?: string; // For recurrence rule
+    attendees?: string; // For attendees
 }
 
 export type DateRange = { start: Date | null; end: Date | null };

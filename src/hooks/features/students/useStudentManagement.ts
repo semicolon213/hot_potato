@@ -1,5 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+/**
+ * @file useStudentManagement.ts
+ * @brief 학생 관리 훅
+ * @details 학생 목록, 검색, 필터링, 정렬 기능을 관리하는 커스텀 훅입니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
 
+import { useState, useEffect, useMemo } from 'react';
+import { fetchStudents as fetchStudentsFromPapyrus } from '../../../utils/database/papyrusManager';
+
+/**
+ * @brief 학생 데이터 타입 정의
+ * @details 학생의 기본 정보를 담는 인터페이스입니다.
+ */
 interface Student {
   no_student: string;
   name: string;
@@ -9,15 +22,29 @@ interface Student {
   council: string;
 }
 
+/**
+ * @brief 학생회 직책 정보 타입 정의
+ * @details 학생회에서의 연도별 직책 정보를 담는 인터페이스입니다.
+ */
 interface CouncilPosition {
   year: string;
   position: string;
 }
 
+/**
+ * @brief 학생회 정보가 포함된 학생 데이터 타입 정의
+ * @details 기본 학생 정보에 학생회 직책 정보가 추가된 확장 인터페이스입니다.
+ */
 export interface StudentWithCouncil extends Student {
   parsedCouncil: CouncilPosition[];
 }
 
+/**
+ * @brief 학생 관리 커스텀 훅
+ * @details 학생 목록을 가져오고, 검색, 필터링, 정렬 기능을 제공합니다.
+ * @param {string | null} studentSpreadsheetId - 학생 데이터가 있는 스프레드시트 ID
+ * @returns {Object} 학생 관리 관련 상태와 핸들러 함수들
+ */
 export const useStudentManagement = (studentSpreadsheetId: string | null) => {
   const [students, setStudents] = useState<StudentWithCouncil[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,50 +83,39 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     });
   };
 
-  // Google Sheets에서 학생 데이터 가져오기
+  // Papyrus DB에서 학생 데이터 가져오기
   const fetchStudents = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Google Sheets API를 사용하여 student 스프레드시트에서 데이터 가져오기
-      if (typeof window !== 'undefined' && (window as any).gapi && studentSpreadsheetId) {
-        // 먼저 시트 목록을 확인해보기
-        const spreadsheet = await (window as any).gapi.client.sheets.spreadsheets.get({
-          spreadsheetId: studentSpreadsheetId
+      console.log('학생 데이터 가져오기 시작...');
+      console.log('studentSpreadsheetId:', studentSpreadsheetId);
+      const studentsData = await fetchStudentsFromPapyrus(studentSpreadsheetId!);
+      console.log('Papyrus DB에서 받은 학생 데이터:', studentsData);
+      
+      if (studentsData && studentsData.length > 0) {
+        const studentData: StudentWithCouncil[] = studentsData.map((student: any) => {
+          const studentObj: Student = {
+            no_student: student.no_student || '',
+            name: student.name || '',
+            address: student.address || '',
+            grade: student.grade || '',
+            state: student.state || '',
+            council: student.council || ''
+          };
+
+          return {
+            ...studentObj,
+            parsedCouncil: parseCouncil(studentObj.council)
+          };
         });
-        
-        const sheets = spreadsheet.result.sheets;
-        console.log('사용 가능한 시트들:', sheets.map((sheet: any) => sheet.properties.title));
-        
-        // 첫 번째 시트 사용
-        const firstSheetName = sheets[0].properties.title;
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: studentSpreadsheetId,
-          range: `'${firstSheetName}'!A:F`, // 첫 번째 시트의 A부터 F열까지
-        });
 
-        const values = response.result.values;
-        if (values && values.length > 1) {
-          // 첫 번째 행은 헤더이므로 제외
-          const studentData: StudentWithCouncil[] = values.slice(1).map((row: any[]) => {
-            const student: Student = {
-              no_student: row[0] || '',
-              name: row[1] || '',
-              address: row[2] || '',
-              grade: row[3] || '',
-              state: row[4] || '',
-              council: row[5] || ''
-            };
-
-            return {
-              ...student,
-              parsedCouncil: parseCouncil(student.council)
-            };
-          });
-
-          setStudents(studentData);
-        }
+        setStudents(studentData);
+        console.log(`학생 ${studentData.length}명 데이터 로드 완료`);
+      } else {
+        console.log('학생 데이터가 없습니다.');
+        setStudents([]);
       }
     } catch (err) {
       console.error('학생 데이터 가져오기 실패:', err);
@@ -108,6 +124,16 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
       setIsLoading(false);
     }
   };
+
+  // 컴포넌트 마운트 시 학생 데이터 로드
+  useEffect(() => {
+    if (studentSpreadsheetId) {
+      console.log('useStudentManagement: studentSpreadsheetId가 있으므로 학생 데이터 로드 시작');
+      fetchStudents();
+    } else {
+      console.log('useStudentManagement: studentSpreadsheetId가 없음');
+    }
+  }, [studentSpreadsheetId]);
 
   // 년도별 학생회 데이터 가져오기
   const getCouncilByYear = (year: string) => {

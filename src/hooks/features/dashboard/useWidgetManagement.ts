@@ -22,7 +22,9 @@ interface WidgetData {
   props: Record<string, any>;
 }
 
-const SHEET_NAME = 'user_custom';
+import { ENV_CONFIG } from '../../../config/environment';
+
+const SHEET_NAME = ENV_CONFIG.DASHBOARD_SHEET_NAME;
 const RANGE = `${SHEET_NAME}!B2`;
 
 // Google API 초기화는 App.tsx에서 중앙화되어 처리됨

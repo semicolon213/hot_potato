@@ -35,6 +35,7 @@ interface LoginResponse {
   studentId?: string;
   isAdmin?: boolean;
   error?: string;
+  approvalStatus?: string;
 }
 
 // API 함수 - 기존 authApi 사용
@@ -286,7 +287,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
         console.error('상세 오류 정보:', {
           message: result.message,
           error: result.error,
-          stack: result.stack
+          stack: (result as any).stack
         });
         
         // 더 자세한 오류 메시지 표시

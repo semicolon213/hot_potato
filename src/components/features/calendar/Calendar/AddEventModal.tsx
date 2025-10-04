@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import useCalendarContext, { type Event } from '../../../../hooks/features/calendar/useCalendarContext.ts';
-import { findSpreadsheetById, fetchStudents, fetchStaff } from '../../../../utils/google/spreadsheetManager';
 import type { Student, Staff } from '../../../../types/app';
 import './AddEventModal.css';
 import xIcon from '../../../../assets/Icons/x.svg';
@@ -34,8 +33,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   
   // Attendee States
   const [isAttendeeSearchVisible, setIsAttendeeSearchVisible] = useState(false);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [students] = useState<Student[]>([]);
+  const [staff] = useState<Staff[]>([]);
   const [attendeeSearchTerm, setAttendeeSearchTerm] = useState('');
   const [isLoadingAttendees, setIsLoadingAttendees] = useState(false);
   const [selectedAttendees, setSelectedAttendees] = useState<(Student | Staff)[]>([]);
@@ -99,10 +98,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             const rule = new RRule(options);
             const ruleOptions = rule.options;
             let freq: RecurrenceFreq = 'NONE';
-            if (ruleOptions.freq === RRule.DAILY) freq = 'DAILY';
-            if (ruleOptions.freq === RRule.WEEKLY) freq = 'WEEKLY';
-            if (ruleOptions.freq === RRule.MONTHLY) freq = 'MONTHLY';
-            if (ruleOptions.freq === RRule.YEARLY) freq = 'YEARLY';
+            if (ruleOptions.freq === 3) freq = 'DAILY'; // RRule.DAILY = 3
+            if (ruleOptions.freq === 2) freq = 'WEEKLY'; // RRule.WEEKLY = 2
+            if (ruleOptions.freq === 1) freq = 'MONTHLY'; // RRule.MONTHLY = 1
+            if (ruleOptions.freq === 0) freq = 'YEARLY'; // RRule.YEARLY = 0
             setRecurrenceFreq(freq);
             setRecurrenceDetails({
                 interval: ruleOptions.interval || 1,
@@ -128,12 +127,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       const fetchData = async () => {
         setIsLoadingAttendees(true);
         try {
-            const studentSheetId = await findSpreadsheetById('student');
-            const staffSheetId = await findSpreadsheetById('staff');
-            const studentData = studentSheetId ? await fetchStudents(studentSheetId, 'info') : [];
-            const staffData = staffSheetId ? await fetchStaff(staffSheetId, 'info') : [];
-            setStudents(studentData);
-            setStaff(staffData);
+            // 학생 및 교직원 데이터는 이미 상위 컴포넌트에서 로드됨
+            // 필요시 여기서 추가 로딩 로직 구현
         } catch (error) {
             console.error("Error fetching attendee data:", error);
         } finally {
@@ -150,7 +145,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         const attendeeIds = (eventToEdit as any).attendees?.split(',').filter(Boolean) || [];
         if (attendeeIds.length > 0) {
             const allPeople = [...students, ...staff];
-            const preselected = allPeople.filter(p => attendeeIds.includes(p.no));
+            const preselected = allPeople.filter(p => attendeeIds.includes('no_student' in p ? p.no_student : p.no));
             setSelectedAttendees(preselected);
         }
     }
@@ -190,14 +185,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   }, [attendeeSearchTerm, students, staff]);
 
   const handleSelectAttendee = (person: Student | Staff) => {
-    if (!selectedAttendees.some(a => a.no === person.no)) {
+    if (!selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no))) {
         setSelectedAttendees([...selectedAttendees, person]);
     }
     setAttendeeSearchTerm('');
   };
 
   const handleRemoveAttendee = (personToRemove: Student | Staff) => {
-    setSelectedAttendees(selectedAttendees.filter(a => a.no !== personToRemove.no));
+    setSelectedAttendees(selectedAttendees.filter(a => ('no_student' in a ? a.no_student : a.no) !== ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no)));
   };
 
   const handleToggleAttendeeSearch = () => {
@@ -209,7 +204,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     if (isAttendeeSearchVisible && !isEditMode && selectedAttendees.length === 0 && (students.length > 0 || staff.length > 0)) {
         if (user) {
             const allPeople = [...students, ...staff];
-            const loggedInUserObject = allPeople.find(p => p.no === user.studentId);
+            const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === user.studentId);
             if (loggedInUserObject) {
                 setSelectedAttendees([loggedInUserObject]);
             }
@@ -232,7 +227,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           } else {
               eventData.type = tag;
           }
-          eventData.attendees = selectedAttendees.map(a => a.no).join(',');
+          eventData.attendees = selectedAttendees.map(a => 'no_student' in a ? a.no_student : a.no).join(',');
       } else {
           eventData.colorId = '9';
       }
@@ -248,8 +243,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       }
 
       if (saveTarget === 'sheet' && recurrenceFreq !== 'NONE') {
-        const ruleOptions: Partial<RRule.Options> = {
-          freq: RRule[recurrenceFreq as keyof typeof RRule],
+        const ruleOptions: any = {
+          freq: recurrenceFreq === 'DAILY' ? 3 : recurrenceFreq === 'WEEKLY' ? 2 : recurrenceFreq === 'MONTHLY' ? 1 : 0,
           interval: recurrenceDetails.interval,
           dtstart: new Date(startDate),
         };
@@ -416,7 +411,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                 {isAttendeeSearchVisible && (
                   <div className="selected-attendees-list">
                     {selectedAttendees.map(person => (
-                      <div key={person.no} className="attendee-tag">
+                      <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
                         <span>{person.name}</span>
                         <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
                       </div>
@@ -442,7 +437,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                 filteredAttendees.length > 0 ? (
                   <ul>
                     {filteredAttendees.map(person => (
-                      <li key={`${person.type}-${person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
+                      <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
                         {person.name} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
                       </li>
                     ))}

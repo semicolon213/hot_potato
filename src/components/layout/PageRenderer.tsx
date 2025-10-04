@@ -24,7 +24,7 @@ import Board from '../../pages/Board/Board';
 import NewBoardPost from '../../pages/Board/NewBoardPost';
 import AnnouncementsPage from '../../pages/Announcements/Announcements';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
-import Proceedings from '../../pages/proceedings';
+import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
 
 interface PageRendererProps {

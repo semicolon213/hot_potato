@@ -1,3 +1,11 @@
+/**
+ * @file useTemplateUI.ts
+ * @brief 템플릿 UI 관리 훅
+ * @details 템플릿 목록, 검색, 필터링, CRUD 작업을 관리하는 커스텀 훅입니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import { useMemo, useCallback } from "react";
 import {
     copyGoogleDocument,
@@ -7,19 +15,27 @@ import {
     getSheetData,
     appendSheetData
 } from "../../../utils/google/googleSheetUtils";
+import { ENV_CONFIG } from "../../../config/environment";
 
-// 1. 템플릿 데이터의 타입 정의
+/**
+ * @brief 템플릿 데이터 타입 정의
+ * @details Google Sheets와 연동되는 템플릿 데이터의 구조를 정의합니다.
+ */
 export interface Template {
     rowIndex?: number;      // Google Sheet row index, optional for initial templates
     type: string;          // 템플릿 종류 (예: meeting, finance 등)
     title: string;         // 템플릿 제목
     description: string;   // 템플릿 설명
     tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
-    parttitle?: string;    // For filtering
+    partTitle?: string;    // For filtering
     documentId?: string;   // Google Doc ID
-    favorites_tag?: string; // 즐겨찾기 태그
+    favoritesTag?: string; // 즐겨찾기 태그
 }
 
+/**
+ * @brief 기본 템플릿 목록
+ * @details 시스템에서 제공하는 기본 템플릿들의 배열입니다.
+ */
 export const defaultTemplates: Template[] = [
     { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" },
     { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
@@ -29,12 +45,27 @@ export const defaultTemplates: Template[] = [
     { type: "fee_deposit_list", title: "학회비 입금자 명단", description: "학회비 입금자 명단 확인용 템플릿", tag: "재정" },
 ];
 
-export const defaultTemplateTags = [...new Set(defaultTemplates.map(t => t.tag))];
+/**
+ * @brief 기본 템플릿 태그 목록
+ * @details 기본 템플릿에서 추출한 고유한 태그들의 배열입니다.
+ */
+export const defaultTemplateTags = [...new Set(defaultTemplates.map(template => template.tag))];
 
-// 2. 초기 템플릿 데이터 배열
+/**
+ * @brief 초기 템플릿 데이터 배열
+ * @details 빈 배열로 초기화되는 템플릿 데이터입니다.
+ */
 export const initialTemplates: Template[] = [];
 
-// 3. 템플릿 관련 상태와 로직을 관리하는 커스텀 훅
+/**
+ * @brief 템플릿 UI 관리 커스텀 훅
+ * @details 템플릿 목록, 검색, 필터링, CRUD 작업을 관리하는 커스텀 훅입니다.
+ * @param {Template[]} templates - 템플릿 목록
+ * @param {Function} onPageChange - 페이지 변경 핸들러
+ * @param {string} searchTerm - 검색어
+ * @param {string} activeTab - 활성 탭
+ * @returns {Object} 템플릿 관련 상태와 핸들러 함수들
+ */
 export function useTemplateUI(
     templates: Template[], 
     onPageChange: (pageName: string) => void,
@@ -48,12 +79,12 @@ export function useTemplateUI(
         let result = templates;
 
         // 1) 탭(카테고리) 필터링
-        if (activeTab !== "전체") result = result.filter((t) => t.tag === activeTab);
+        if (activeTab !== "전체") result = result.filter((template) => template.tag === activeTab);
 
         // 2) 검색어 필터링
         if (searchTerm.trim())
             result = result.filter(
-                (t) => t.title.includes(searchTerm) || t.description.includes(searchTerm)
+                (template) => template.title.includes(searchTerm) || template.description.includes(searchTerm)
             );
 
         return result;
@@ -70,7 +101,7 @@ export function useTemplateUI(
                 case 'adjunct':
                 case 'student':
                 default:
-                    return 'hot_potato_DB';
+                    return ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
             }
         };
 

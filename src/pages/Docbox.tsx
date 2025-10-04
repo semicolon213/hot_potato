@@ -3,6 +3,7 @@ import "../styles/pages/Docbox.css";
 import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds, updateLastModifiedInSheetByDocId } from "../utils/google/googleSheetUtils";
 import { addRecentDocument } from "../utils/helpers/localStorageUtils";
 import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
+import { ENV_CONFIG } from "../config/environment";
 
 interface Document {
   id: string;
@@ -32,7 +33,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
-    const SPREADSHEET_NAME = 'hot_potato_DB';
+    const SPREADSHEET_NAME = ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
     const DOC_SHEET_NAME = 'documents';
 
     const fetchAndSyncDocuments = async () => {
@@ -223,7 +224,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
 
     if (window.confirm(`선택된 ${selectedDocs.length}개의 문서를 정말 삭제하시겠습니까?`)) {
       try {
-        const SPREADSHEET_NAME = 'hot_potato_DB';
+        const SPREADSHEET_NAME = ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
         const DOC_SHEET_NAME = 'documents';
         const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
         if (!sheetId) {

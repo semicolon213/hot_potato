@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/pages/Board.css';
 import type { Post } from '../../types/app';
 import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
+import { ENV_CONFIG } from '../../config/environment';
 
 interface BoardProps {
   onPageChange: (pageName: string) => void;
@@ -33,7 +34,7 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, isAuthenticated, boa
 
         const rowIndexToDelete = (posts.length - 1) - postIndex + 1;
 
-        await deleteSheetRow(boardSpreadsheetId, '시트1', rowIndexToDelete);
+        await deleteSheetRow(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, rowIndexToDelete);
         alert('게시글이 삭제되었습니다.');
         window.location.reload();
       } catch (error) {

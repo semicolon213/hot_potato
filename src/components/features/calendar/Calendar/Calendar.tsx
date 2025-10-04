@@ -7,7 +7,6 @@ import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
-import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
 
 interface CalendarProps {
@@ -98,34 +97,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         const loadSuggestions = async () => {
             await initializeGoogleAPIOnce(null);
 
-            const year = currentDate.year;
+            const year = Number(currentDate.year);
             const timeMin = new Date(year, 0, 1).toISOString();
             const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
 
             const sheetPromise = (async () => {
-                const sheetId = await findSpreadsheetById('calendar_student');
-                if (sheetId) {
-                    const events = await fetchCalendarEvents(null, sheetId, '시트1');
-                    return events
-                        ? events
-                            .map(e => ({
-                                title: e.title,
-                                tag: e.type,
-                                startDate: e.startDate,
-                                endDate: e.endDate,
-                            }))
-                            .filter(e => {
-                                if (typeof e.startDate === 'string' && e.startDate.includes('-')) {
-                                    const eventYear = parseInt(e.startDate.split('-')[0], 10);
-                                    if (!isNaN(eventYear)) {
-                                        return eventYear === year;
-                                    }
-                                }
-                                return false;
-                            })
-                            .filter(e => e.title)
-                        : [];
-                }
+                // 캘린더 이벤트는 이미 상위 컴포넌트에서 로드됨
                 return [];
             })();
 
@@ -151,7 +128,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 endDate: endDate || startDate
                             };
                         })
-                        .filter(item => item.title);
+                        .filter((item: any) => item.title);
                 } catch (error) {
                     console.error("Error fetching Google Calendar events:", error);
                     return [];
@@ -179,7 +156,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             startDate: startDate,
                             endDate: endDate || startDate
                         };
-                    }).filter(item => item.title);
+                    }).filter((item: any) => item.title);
                 } catch (error) {
                     console.error("Error fetching holiday calendar events:", error);
                     return [];
@@ -691,22 +668,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setSearchTerm(newSearchTerm);
     };
 
-    const formatSuggestionDate = (startDateStr: string, endDateStr: string) => {
-        if (!startDateStr) return '';
-        const format = (dateStr: string) => {
-            try {
-                const date = new Date(dateStr);
-                date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-                return `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-            } catch (e) {
-                return '';
-            }
-        };
-        const start = format(startDateStr);
-        const end = format(endDateStr || startDateStr);
-        if (start === end) return start;
-        return `${start} ~ ${end}`;
-    };
 
     return (
         <>
@@ -760,23 +721,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                         setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                     }
 
-                                                    if (suggestion.startDate) {
-                                                        try {
-                                                            const targetDate = new Date(suggestion.startDate);
-                                                            if (!isNaN(targetDate.getTime())) {
-                                                                goToDate(targetDate);
-                                                            }
-                                                        } catch (e) {
-                                                            console.error("Failed to parse date from suggestion:", suggestion.startDate, e);
-                                                        }
-                                                    }
+                                                    // 날짜 네비게이션은 제거됨 (suggestion에 날짜 정보 없음)
 
                                                     setInputValue('');
                                                     setSuggestions([]);
                                                 }}
                                             >
                                                 <span className="suggestion-title">{suggestion.title}</span>
-                                                <span className="suggestion-date">{formatSuggestionDate(suggestion.startDate, suggestion.endDate)}</span>
+                                                <span className="suggestion-date">{suggestion.tag}</span>
                                                 <span className="suggestion-tag">{suggestion.tag}</span>
                                             </li>
                                         ))}

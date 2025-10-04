@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getSheetData, appendSheetData } from '../../utils/google/googleSheetUtils';
+import { fetchStudentIssues, addStudentIssue } from '../../utils/database/papyrusManager';
+import { getSheetData } from 'papyrus-db';
 import './StudentDetailModal.css';
 
 interface Student {
@@ -72,27 +73,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   }, [student, isOpen]);
 
   const loadStudentIssues = async () => {
-    if (!student || !studentSpreadsheetId) return;
+    if (!student) return;
 
     setIsLoading(true);
     try {
-      const data = await getSheetData(studentSpreadsheetId, 'std_issue', 'A:E');
-      
-      if (data && data.length > 1) {
-        const studentIssues: StudentIssue[] = data.slice(1)
-          .filter(row => row[0] === student.no_student)
-          .map((row, index) => ({
-            id: `issue_${index}`,
-            no_member: row[0] || '',
-            date_issue: row[1] || '',
-            type_issue: row[2] || '',
-            level_issue: row[3] || '',
-            content_issue: row[4] || ''
-          }));
-        setIssues(studentIssues);
-      } else {
-        setIssues([]);
-      }
+      const studentIssues = await fetchStudentIssues(student.no_student);
+      setIssues(studentIssues);
     } catch (error) {
       console.error('특이사항 로드 실패:', error);
     } finally {
@@ -112,9 +98,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       const sheets = spreadsheet.result.sheets;
       const firstSheetName = sheets[0].properties.title;
       
-      const data = await getSheetData(studentSpreadsheetId, firstSheetName, 'A:F');
-      if (data && data.length > 1) {
-        const rowIndex = data.findIndex(row => row[0] === student?.no_student);
+      const data = await getSheetData(studentSpreadsheetId, firstSheetName);
+      if (data && data.values && data.values.length > 1) {
+        const rowIndex = data.values.findIndex((row: any) => row[0] === student?.no_student);
         if (rowIndex !== -1) {
           const range = `${firstSheetName}!A${rowIndex + 1}:F${rowIndex + 1}`;
           await gapi.client.sheets.spreadsheets.values.update({
@@ -149,23 +135,22 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   const handleAddIssue = async () => {
-    if (!newIssue.content_issue.trim() || !studentSpreadsheetId) return;
+    if (!newIssue.content_issue.trim()) return;
 
     try {
-      const issueData = [
-        newIssue.no_member,
-        newIssue.date_issue || new Date().toISOString().split('T')[0],
-        newIssue.type_issue,
-        newIssue.level_issue,
-        newIssue.content_issue
-      ];
+      const issueData = {
+        no_member: newIssue.no_member,
+        date_issue: newIssue.date_issue || new Date().toISOString().split('T')[0],
+        type_issue: newIssue.type_issue,
+        level_issue: newIssue.level_issue,
+        content_issue: newIssue.content_issue
+      };
 
-      await appendSheetData(studentSpreadsheetId, 'std_issue', [issueData]);
+      await addStudentIssue(issueData);
       
       const newIssueWithId: StudentIssue = {
-        ...newIssue,
-        id: `issue_${Date.now()}`,
-        date_issue: newIssue.date_issue || new Date().toISOString().split('T')[0]
+        ...issueData,
+        id: `issue_${Date.now()}`
       };
       setIssues(prev => [...prev, newIssueWithId]);
       

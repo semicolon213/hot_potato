@@ -1,3 +1,11 @@
+/**
+ * @file Sidebar.tsx
+ * @brief 사이드바 컴포넌트
+ * @details 애플리케이션의 네비게이션을 담당하는 사이드바 컴포넌트입니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import React, { useState } from "react";
 import "./Sidebar.css";
 import { 
@@ -10,6 +18,10 @@ import {
 } from "react-icons/bi";
 import { SiGoogle } from "react-icons/si";
 
+/**
+ * @brief 사이드바 Props 타입 정의
+ * @details 사이드바 컴포넌트에 전달되는 props의 타입을 정의합니다.
+ */
 interface SidebarProps {
   onPageChange: (pageName: string) => void;
   user?: {
@@ -18,6 +30,12 @@ interface SidebarProps {
   currentPage?: string;
 }
 
+/**
+ * @brief 사이드바 컴포넌트
+ * @details 애플리케이션의 네비게이션 메뉴를 렌더링하는 사이드바 컴포넌트입니다.
+ * @param {SidebarProps} props - 컴포넌트 props
+ * @returns {JSX.Element} 렌더링된 사이드바 컴포넌트
+ */
 const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
