@@ -29,6 +29,29 @@ global.localStorage = localStorageMock;
 // Mock fetch
 global.fetch = jest.fn();
 
+// Mock import.meta for Jest
+Object.defineProperty(global, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_GOOGLE_CLIENT_ID: 'test-client-id',
+        VITE_APP_SCRIPT_URL: 'https://script.google.com/macros/s/test/exec',
+        VITE_GOOGLE_API_KEY: 'test-api-key',
+        DEV: false,
+        PROD: true,
+        MODE: 'test'
+      }
+    }
+  },
+  writable: true,
+});
+
+// Mock environment variables for compatibility
+process.env.VITE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/test/exec';
+process.env.VITE_GOOGLE_CLIENT_ID = 'test-client-id';
+process.env.VITE_GOOGLE_API_KEY = 'test-api-key';
+process.env.NODE_ENV = 'test';
+
 // Mock Google API
 Object.defineProperty(window, 'gapi', {
   value: {

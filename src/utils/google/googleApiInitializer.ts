@@ -6,7 +6,9 @@
  * @date 2024
  */
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+import { ENV_CONFIG } from '../../config/environment';
+
+const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
 // 중앙화된 Google API 초기화 상태 관리
 let isGoogleAPIInitialized = false;

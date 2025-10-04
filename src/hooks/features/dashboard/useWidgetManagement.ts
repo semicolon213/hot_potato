@@ -196,8 +196,8 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => 
       }
       
       // Google API Key 설정 (공개 시트 접근용)
-      if (import.meta.env.VITE_GOOGLE_API_KEY) {
-        gapi.client.setApiKey(import.meta.env.VITE_GOOGLE_API_KEY);
+      if (ENV_CONFIG.PAPYRUS_DB_API_KEY) {
+        gapi.client.setApiKey(ENV_CONFIG.PAPYRUS_DB_API_KEY);
         console.log("Google API Key 설정 완료");
       }
       

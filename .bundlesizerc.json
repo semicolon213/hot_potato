@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "path": "./dist/assets/index-*.js",
+      "maxSize": "500 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/react-vendor-*.js",
+      "maxSize": "50 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/google-vendor-*.js",
+      "maxSize": "100 kB",
+      "compression": "gzip"
+    }
+  ]
+}

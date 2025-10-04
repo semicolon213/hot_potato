@@ -24,7 +24,7 @@ export class ApiClient {
 
   constructor() {
     // CSP 문제 해결을 위해 Vite 프록시 사용
-    const isDev = import.meta.env.DEV;
+    const isDev = typeof window !== 'undefined' && import.meta && import.meta.env ? import.meta.env.DEV : false;
     this.baseUrl = isDev ? '/api' : API_CONFIG.APP_SCRIPT_URL;
     this.defaultTimeout = API_CONFIG.TIMEOUT;
     this.defaultRetries = API_CONFIG.MAX_RETRIES;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { apiClient } from '../utils/api/apiClient';
+import { ENV_CONFIG } from '../../config/environment';
 import './Login.css';
 
 interface LoginProps {
@@ -115,7 +116,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsLoading(true);
       setError('');
 
-      const response = await fetch(import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec', {
+      const response = await fetch(ENV_CONFIG.APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +179,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       console.log('회원가입 요청:', signupData);
 
       // 실제 서버로 회원가입 요청 전송
-      const response = await fetch(import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec', {
+      const response = await fetch(ENV_CONFIG.APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

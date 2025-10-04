@@ -159,14 +159,23 @@ export const useAppState = () => {
                     console.log("로그인 후 Google API 초기화 시작");
                     await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
                     
-                    // 스프레드시트 ID들 초기화
-                    await initializeSpreadsheetIds();
+                    // 스프레드시트 ID들 초기화 및 상태 업데이트
+                    const spreadsheetIds = await initializeSpreadsheetIds();
+                    
+                    // 스프레드시트 ID들 상태 업데이트
+                    setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
+                    setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
+                    setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
+                    setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
+                    setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
+                    setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
                     
                     setIsGapiReady(true);
                     setIsGoogleAuthenticatedForAnnouncements(true);
                     setIsGoogleAuthenticatedForBoard(true);
                     
                     console.log("✅ 로그인 후 Papyrus DB 연결 완료");
+                    console.log("스프레드시트 ID들:", spreadsheetIds);
                 } catch (error) {
                     console.error("Error during login initialization", error);
                     console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
@@ -187,12 +196,14 @@ export const useAppState = () => {
 
     // 데이터 로드 useEffect들
     useEffect(() => {
-        if (isGapiReady) {
+        if (isGapiReady && boardSpreadsheetId) {
             const loadPosts = async () => {
                 setIsBoardLoading(true);
                 try {
+                    console.log('게시글 데이터 로딩 시작...');
                     const postsData = await fetchPosts();
                     setPosts(postsData);
+                    console.log('게시글 데이터 로딩 완료:', postsData.length, '개');
                 } catch (error) {
                     console.error('Error loading posts:', error);
                 } finally {
@@ -201,15 +212,17 @@ export const useAppState = () => {
             };
             loadPosts();
         }
-    }, [isGapiReady]);
+    }, [isGapiReady, boardSpreadsheetId]);
 
     useEffect(() => {
-        if (isGapiReady) {
+        if (isGapiReady && announcementSpreadsheetId) {
             const loadAnnouncements = async () => {
                 setIsAnnouncementsLoading(true);
                 try {
+                    console.log('공지사항 데이터 로딩 시작...');
                     const announcementsData = await fetchAnnouncements();
                     setAnnouncements(announcementsData);
+                    console.log('공지사항 데이터 로딩 완료:', announcementsData.length, '개');
                 } catch (error) {
                     console.error('Error loading announcements:', error);
                 } finally {
@@ -218,15 +231,17 @@ export const useAppState = () => {
             };
             loadAnnouncements();
         }
-    }, [isGapiReady]);
+    }, [isGapiReady, announcementSpreadsheetId]);
 
     useEffect(() => {
-        if (isGapiReady) {
+        if (isGapiReady && (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId)) {
             const loadCalendarEvents = async () => {
                 setIsCalendarLoading(true);
                 try {
+                    console.log('캘린더 데이터 로딩 시작...');
                     const events = await fetchCalendarEvents();
                     setCalendarEvents(events);
+                    console.log('캘린더 데이터 로딩 완료:', events.length, '개');
                 } catch (error) {
                     console.error('Error loading calendar events:', error);
                 } finally {
@@ -235,12 +250,13 @@ export const useAppState = () => {
             };
             loadCalendarEvents();
         }
-    }, [isGapiReady]);
+    }, [isGapiReady, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
 
     useEffect(() => {
-        if (isGapiReady) {
+        if (isGapiReady && hotPotatoDBSpreadsheetId) {
             const fetchTemplateData = async () => {
                 try {
+                    console.log('템플릿 데이터 로딩 시작...');
                     const [templates, tags] = await Promise.all([
                         fetchTemplates(),
                         fetchTags()
@@ -248,6 +264,7 @@ export const useAppState = () => {
                     
                     setCustomTemplates(templates);
                     setTags(tags);
+                    console.log('템플릿 데이터 로딩 완료:', templates.length, '개');
                 } catch (error) {
                     console.error("Error during template data fetch", error);
                 } finally {
@@ -256,7 +273,7 @@ export const useAppState = () => {
             };
             fetchTemplateData();
         }
-    }, [isGapiReady]);
+    }, [isGapiReady, hotPotatoDBSpreadsheetId]);
 
     return {
         // User state

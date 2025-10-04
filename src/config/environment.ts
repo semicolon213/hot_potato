@@ -10,34 +10,47 @@
  * @brief 환경변수 설정 객체
  * @details 모든 환경변수를 타입 안전하게 관리합니다.
  */
+// 환경변수 접근 함수 (테스트 환경과 실제 환경 모두 지원)
+const getEnvVar = (key: string, defaultValue: string = ''): string => {
+  // Jest 테스트 환경에서는 process.env 사용
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    return process.env[key] || defaultValue;
+  }
+  // 실제 애플리케이션에서는 import.meta.env 사용
+  if (typeof window !== 'undefined' && import.meta && import.meta.env) {
+    return import.meta.env[key] || defaultValue;
+  }
+  return defaultValue;
+};
+
 export const ENV_CONFIG = {
   // Google API 설정
-  GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+  GOOGLE_CLIENT_ID: getEnvVar('VITE_GOOGLE_CLIENT_ID'),
   
   // Apps Script URL
-  APP_SCRIPT_URL: import.meta.env.VITE_APP_SCRIPT_URL || '',
+  APP_SCRIPT_URL: getEnvVar('VITE_APP_SCRIPT_URL'),
   
   // 스프레드시트 이름들 (ID는 동적으로 가져옴)
-  HOT_POTATO_DB_SPREADSHEET_NAME: import.meta.env.VITE_HOT_POTATO_DB_SPREADSHEET_NAME || 'hot_potato_DB',
-  BOARD_SPREADSHEET_NAME: import.meta.env.VITE_BOARD_SPREADSHEET_NAME || 'board_professor',
-  ANNOUNCEMENT_SPREADSHEET_NAME: import.meta.env.VITE_ANNOUNCEMENT_SPREADSHEET_NAME || 'notice_professor',
-  CALENDAR_PROFESSOR_SPREADSHEET_NAME: import.meta.env.VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME || 'calendar_professor',
-  CALENDAR_STUDENT_SPREADSHEET_NAME: import.meta.env.VITE_CALENDAR_STUDENT_SPREADSHEET_NAME || 'calendar_student',
-  STUDENT_SPREADSHEET_NAME: import.meta.env.VITE_STUDENT_SPREADSHEET_NAME || 'student',
+  HOT_POTATO_DB_SPREADSHEET_NAME: getEnvVar('VITE_HOT_POTATO_DB_SPREADSHEET_NAME', 'hot_potato_DB'),
+  BOARD_SPREADSHEET_NAME: getEnvVar('VITE_BOARD_SPREADSHEET_NAME', 'board_professor'),
+  ANNOUNCEMENT_SPREADSHEET_NAME: getEnvVar('VITE_ANNOUNCEMENT_SPREADSHEET_NAME', 'notice_professor'),
+  CALENDAR_PROFESSOR_SPREADSHEET_NAME: getEnvVar('VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME', 'calendar_professor'),
+  CALENDAR_STUDENT_SPREADSHEET_NAME: getEnvVar('VITE_CALENDAR_STUDENT_SPREADSHEET_NAME', 'calendar_student'),
+  STUDENT_SPREADSHEET_NAME: getEnvVar('VITE_STUDENT_SPREADSHEET_NAME', 'student'),
   
   // 시트 이름들 (원래 코드와 동일하게 수정)
-  BOARD_SHEET_NAME: import.meta.env.VITE_BOARD_SHEET_NAME || '시트1',
-  ANNOUNCEMENT_SHEET_NAME: import.meta.env.VITE_ANNOUNCEMENT_SHEET_NAME || '시트1',
-  CALENDAR_SHEET_NAME: import.meta.env.VITE_CALENDAR_SHEET_NAME || '시트1',
-  DOCUMENT_TEMPLATE_SHEET_NAME: import.meta.env.VITE_DOCUMENT_TEMPLATE_SHEET_NAME || 'document_template',
-  STUDENT_SHEET_NAME: import.meta.env.VITE_STUDENT_SHEET_NAME || 'info',
-  STUDENT_ISSUE_SHEET_NAME: import.meta.env.VITE_STUDENT_ISSUE_SHEET_NAME || 'std_issue',
-  STAFF_SHEET_NAME: import.meta.env.VITE_STAFF_SHEET_NAME || '시트1',
-  DASHBOARD_SHEET_NAME: import.meta.env.VITE_DASHBOARD_SHEET_NAME || 'user_custom',
+  BOARD_SHEET_NAME: getEnvVar('VITE_BOARD_SHEET_NAME', '시트1'),
+  ANNOUNCEMENT_SHEET_NAME: getEnvVar('VITE_ANNOUNCEMENT_SHEET_NAME', '시트1'),
+  CALENDAR_SHEET_NAME: getEnvVar('VITE_CALENDAR_SHEET_NAME', '시트1'),
+  DOCUMENT_TEMPLATE_SHEET_NAME: getEnvVar('VITE_DOCUMENT_TEMPLATE_SHEET_NAME', 'document_template'),
+  STUDENT_SHEET_NAME: getEnvVar('VITE_STUDENT_SHEET_NAME', 'info'),
+  STUDENT_ISSUE_SHEET_NAME: getEnvVar('VITE_STUDENT_ISSUE_SHEET_NAME', 'std_issue'),
+  STAFF_SHEET_NAME: getEnvVar('VITE_STAFF_SHEET_NAME', '시트1'),
+  DASHBOARD_SHEET_NAME: getEnvVar('VITE_DASHBOARD_SHEET_NAME', 'user_custom'),
   
   // Papyrus DB 설정
-  PAPYRUS_DB_URL: import.meta.env.VITE_PAPYRUS_DB_URL || '',
-  PAPYRUS_DB_API_KEY: import.meta.env.VITE_PAPYRUS_DB_API_KEY || '',
+  PAPYRUS_DB_URL: getEnvVar('VITE_PAPYRUS_DB_URL'),
+  PAPYRUS_DB_API_KEY: getEnvVar('VITE_PAPYRUS_DB_API_KEY'),
 } as const;
 
 /**
