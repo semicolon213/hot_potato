@@ -22,7 +22,7 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --legacy-peer-deps
       
     - name: TypeScript type check
       run: npm run type-check
@@ -54,7 +54,7 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --legacy-peer-deps
       
     - name: Run tests with coverage
       run: npm run test:ci
@@ -102,7 +102,7 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --legacy-peer-deps
         
     - name: Build application
       run: npm run build
