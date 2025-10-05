@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { apiClient } from '../utils/api/apiClient';
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../config/environment';
 import './Login.css';
 
 interface UserData {
   email: string;
   name: string;
   picture?: string;
-  sub?: string;
+  sub: string;
   studentId?: string;
-  isAdmin?: boolean;
-  isApproved?: boolean;
-  accessToken?: string;
 }
 
 interface LoginProps {

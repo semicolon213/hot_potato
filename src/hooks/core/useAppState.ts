@@ -18,7 +18,7 @@ import {
     fetchTags,
     fetchCalendarEvents 
 } from '../../utils/database/papyrusManager';
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../config/environment';
 
 /**
  * @brief 전역 애플리케이션 상태 관리 훅

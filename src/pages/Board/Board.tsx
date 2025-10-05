@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/pages/Board.css';
 import type { Post } from '../../types/app';
 import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../config/environment';
 
 interface BoardProps {
   onPageChange: (pageName: string) => void;

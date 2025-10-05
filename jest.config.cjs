@@ -4,15 +4,10 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^@/config/(.*)$': '<rootDir>/src/config/$1',
-    '^@/components/(.*)$': '<rootDir>/src/components/$1',
-    '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
-    '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
-    '^@/pages/(.*)$': '<rootDir>/src/pages/$1',
-    '^@/types/(.*)$': '<rootDir>/src/types/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/src/__mocks__/fileMock.js',
-    '^@/config/environment$': '<rootDir>/src/config/__mocks__/environment.ts'
+    '^../../config/environment$': '<rootDir>/src/config/__mocks__/environment.ts',
+    '^../config/environment$': '<rootDir>/src/config/__mocks__/environment.ts'
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {

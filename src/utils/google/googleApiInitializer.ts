@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import { ENV_CONFIG } from '@/config/environment';
+import { ENV_CONFIG } from '../../config/environment';
 
 const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 

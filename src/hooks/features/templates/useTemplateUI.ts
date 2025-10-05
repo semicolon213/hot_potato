@@ -15,7 +15,7 @@ import {
     getSheetData,
     appendSheetData
 } from "../../../utils/google/googleSheetUtils";
-import { ENV_CONFIG } from "@/config/environment";
+import { ENV_CONFIG } from "../../../config/environment";
 
 /**
  * @brief 템플릿 데이터 타입 정의

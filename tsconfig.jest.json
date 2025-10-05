@@ -1,23 +1,13 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "module": "esnext",
+    "module": "es2020",
     "target": "ES2020",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "verbatimModuleSyntax": false,
-    "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@/config/*": ["src/config/*"],
-      "@/components/*": ["src/components/*"],
-      "@/utils/*": ["src/utils/*"],
-      "@/hooks/*": ["src/hooks/*"],
-      "@/pages/*": ["src/pages/*"],
-      "@/types/*": ["src/types/*"]
-    }
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*",
