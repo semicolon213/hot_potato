@@ -18,6 +18,15 @@ import {
 } from "react-icons/bi";
 import { SiGoogle } from "react-icons/si";
 
+// React 19 호환성을 위한 타입 단언
+const MessageIcon = BiMessageSquareDetail as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const FileIcon = BiFileBlank as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const CalendarIcon = BiCalendar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const UserIcon = BiUser as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const ShieldIcon = BiShield as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const ChevronIcon = BiChevronDown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const GoogleIcon = SiGoogle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
 /**
  * @brief 사이드바 Props 타입 정의
  * @details 사이드바 컴포넌트에 전달되는 props의 타입을 정의합니다.
@@ -68,9 +77,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""} ${currentPage === 'board' ? 'active' : ''}`}
             onClick={() => handleMenuClick("board", true)}
           >
-            <BiMessageSquareDetail className="menu-icon" />
+            <MessageIcon className="menu-icon" />
             <div className="menu-text">게시판</div>
-            <BiChevronDown className={`submenu-arrow ${activeMenu === "board" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "board" ? "rotated" : ""}`} />
             {activeMenu === "board" && (
               <div className="submenu">
                 <div
@@ -95,9 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "document" ? "active" : ""}`}
             onClick={() => handleMenuClick("document", true)}
           >
-            <BiFileBlank className="menu-icon" />
+            <FileIcon className="menu-icon" />
             <div className="menu-text">문서</div>
-            <BiChevronDown className={`submenu-arrow ${activeMenu === "document" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "document" ? "rotated" : ""}`} />
             {activeMenu === "document" && (
               <div className="submenu">
                 <div
@@ -129,9 +138,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "schedule" ? "active" : ""}`}
             onClick={() => handleMenuClick("schedule", true)}
           >
-            <BiCalendar className="menu-icon" />
+            <CalendarIcon className="menu-icon" />
             <div className="menu-text">일정</div>
-            <BiChevronDown className={`submenu-arrow ${activeMenu === "schedule" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "schedule" ? "rotated" : ""}`} />
             {activeMenu === "schedule" && (
               <div className="submenu">
                 <div
@@ -156,9 +165,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "personnel" ? "active" : ""}`}
             onClick={() => handleMenuClick("personnel", true)}
           >
-            <BiUser className="menu-icon" />
+            <UserIcon className="menu-icon" />
             <div className="menu-text">학생 및 교직원</div>
-            <BiChevronDown className={`submenu-arrow ${activeMenu === "personnel" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "personnel" ? "rotated" : ""}`} />
             {activeMenu === "personnel" && (
               <div className="submenu">
                 <div
@@ -188,9 +197,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "googleService" ? "active" : ""}`}
             onClick={() => handleMenuClick("googleService", true)}
           >
-            <SiGoogle className="menu-icon" />
+            <GoogleIcon className="menu-icon" />
             <div className="menu-text">구글서비스</div>
-            <BiChevronDown className={`submenu-arrow ${activeMenu === "googleService" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "googleService" ? "rotated" : ""}`} />
             {activeMenu === "googleService" && (
               <div className="submenu">
                 <div className="submenu-item" onClick={() => onPageChange("google_appscript")}>
@@ -235,7 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
               className={`menu-item ${currentPage === 'admin' ? 'active' : ''}`}
               onClick={() => handleMenuClick("admin")}
             >
-              <BiShield className="menu-icon" />
+              <ShieldIcon className="menu-icon" />
               <div className="menu-text">관리자 패널</div>
             </div>
           </div>

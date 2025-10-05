@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { apiClient } from '../utils/api/apiClient';
-import { ENV_CONFIG } from '../../config/environment';
+import { ENV_CONFIG } from '../config/environment';
+import type { User } from '../types/app';
 import './Login.css';
 
-interface UserData {
-  email: string;
-  name: string;
-  picture?: string;
-  sub: string;
-  studentId?: string;
-}
-
 interface LoginProps {
-  onLogin: (userData: UserData) => void;
+  onLogin: (userData: User) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {

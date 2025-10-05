@@ -8,6 +8,9 @@ import {
 } from "../../assets/Icons";
 import { BiSolidBell } from "react-icons/bi";
 
+// React 19 호환성을 위한 타입 단언
+const BellIcon = BiSolidBell as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
 import { useAuthStore } from "../../hooks/features/auth/useAuthStore";
 
 // Define the structure of the user profile object
@@ -147,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout, searc
               onClick={handleNotificationClick}
               data-oid="gglwxgo"
           >
-            <BiSolidBell className="icon" />
+            <BellIcon className="icon" />
 
             <div className="notification-dot" data-oid="99.ajod"></div>
 

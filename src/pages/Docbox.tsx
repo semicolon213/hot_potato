@@ -360,7 +360,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         </div>
         <div className="doc-actions">
           <button className="btn-print" onClick={handleShare}>
-            <BiShareAlt color="black" size={14} />
+            <BiShareAlt color="black" style={{ fontSize: '14px' }} />
             공유
           </button>
           <button className="btn-delete" onClick={handleDelete}>
