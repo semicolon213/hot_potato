@@ -397,9 +397,16 @@
 }
 
 .filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 20px;
+  align-items: end;
+}
+
+.filter-row .filter-group {
+  flex: 0 0 auto;
+  min-width: 200px;
+  max-width: 300px;
 }
 
 .filter-group {
@@ -657,7 +664,13 @@
   }
 
   .filter-row {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+  
+  .filter-row .filter-group {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
   }
 
   .action-buttons {

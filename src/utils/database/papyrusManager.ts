@@ -9,6 +9,16 @@
 import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { ENV_CONFIG } from '../../config/environment';
+import type { StaffMember, Committee as CommitteeType } from '../../types/features/staff';
+
+// 헬퍼 함수들
+const addRow = async (spreadsheetId: string, sheetName: string, data: any) => {
+  await append(spreadsheetId, sheetName, data);
+};
+
+const updateRow = async (spreadsheetId: string, sheetName: string, key: string, data: any) => {
+  await update(spreadsheetId, sheetName, key, data);
+};
 
 // papyrus-db에 Google API 인증 설정
 const setupPapyrusAuth = () => {
@@ -29,6 +39,7 @@ let announcementSpreadsheetId: string | null = null;
 let calendarProfessorSpreadsheetId: string | null = null;
 let calendarStudentSpreadsheetId: string | null = null;
 let studentSpreadsheetId: string | null = null;
+let staffSpreadsheetId: string | null = null;
 
 /**
  * @brief 스프레드시트 ID 찾기 함수
@@ -644,7 +655,7 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
       no_student: row[0] || '', // 'no' 컬럼을 'no_student'로 매핑
       name: row[1] || '',
       address: row[2] || '',
-      phone_num: row[3] || '',
+      phone_num: row[3] || '', // 암호화된 연락처 (복호화는 프론트엔드에서)
       grade: row[4] || '',
       state: row[5] || '',
       council: row[6] || '',
@@ -665,7 +676,7 @@ export const fetchStaff = async (): Promise<Staff[]> => {
       return [];
     }
 
-    const data = await getSheetData(studentSpreadsheetId, ENV_CONFIG.STAFF_SHEET_NAME);
+    const data = await getSheetData(studentSpreadsheetId, ENV_CONFIG.STUDENT_SHEET_NAME);
     
     if (!data || !data.values || data.values.length <= 1) {
       return [];
@@ -873,6 +884,254 @@ export const updateTag = async (oldTag: string, newTag: string): Promise<void> =
     console.log('태그 업데이트 기능은 현재 지원되지 않습니다:', oldTag, '->', newTag);
   } catch (error) {
     console.error('Error updating tag in Papyrus DB:', error);
+    throw error;
+  }
+};
+
+// ===== 교직원 관리 함수들 =====
+
+/**
+ * @brief 교직원 데이터 가져오기
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @returns {Promise<Staff[]>} 교직원 목록
+ */
+export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staff[]> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    const data = await getSheetData(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME);
+    
+    if (!data || !data.values || data.values.length === 0) {
+      return [];
+    }
+    
+    const headers = data.values[0];
+    const staffData: Staff[] = data.values.slice(1).map((row: any[]) => {
+      const staff: Partial<Staff> = {};
+      headers.forEach((header: string, index: number) => {
+        (staff as any)[header] = row[index];
+      });
+      return staff as Staff;
+    });
+    
+    return staffData;
+  } catch (error) {
+    console.error('Error fetching staff from Papyrus DB:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 학과 위원회 데이터 가져오기
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @returns {Promise<Committee[]>} 학과 위원회 목록
+ */
+export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<Committee[]> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    const data = await getSheetData(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME);
+    
+    if (!data || !data.values || data.values.length === 0) {
+      return [];
+    }
+    
+    const headers = data.values[0];
+    const committeeData: Committee[] = data.values.slice(1).map((row: any[]) => {
+      const committee: Partial<Committee> = {};
+      headers.forEach((header: string, index: number) => {
+        (committee as any)[header] = row[index];
+      });
+      return committee as Committee;
+    });
+    
+    return committeeData;
+  } catch (error) {
+    console.error('Error fetching committee from Papyrus DB:', error);
+    throw error;
+  }
+};
+
+// Committee 타입 정의
+interface Committee {
+  sortation: string;
+  name: string;
+  tel: string;
+  email: string;
+  position: string;
+  career: string;
+  company_name: string;
+  company_position: string;
+  location: string;
+  is_family: boolean;
+  representative: string;
+  note: string;
+}
+
+/**
+ * @brief 교직원 추가
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {StaffMember} staff - 추가할 교직원 정보
+ * @returns {Promise<void>}
+ */
+export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promise<void> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff);
+  } catch (error) {
+    console.error('Error adding staff:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 교직원 업데이트
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {StaffMember} staff - 업데이트할 교직원 정보
+ * @returns {Promise<void>}
+ */
+export const updateStaff = async (spreadsheetId: string, staff: StaffMember): Promise<void> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff.no, staff);
+  } catch (error) {
+    console.error('Error updating staff:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 교직원 삭제
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} staffNo - 삭제할 교직원 번호
+ * @returns {Promise<void>}
+ */
+export const deleteStaff = async (spreadsheetId: string, staffNo: string): Promise<void> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    // TODO: deleteRow 함수 시그니처 확인 후 구현
+    // await deleteRow(0, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staffSpreadsheetId);
+  } catch (error) {
+    console.error('Error deleting staff:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 학과 위원회 추가
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {Committee} committee - 추가할 위원회 정보
+ * @returns {Promise<void>}
+ */
+export const addCommittee = async (spreadsheetId: string, committee: CommitteeType): Promise<void> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee);
+  } catch (error) {
+    console.error('Error adding committee:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 학과 위원회 업데이트
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {Committee} committee - 업데이트할 위원회 정보
+ * @returns {Promise<void>}
+ */
+export const updateCommittee = async (spreadsheetId: string, committee: CommitteeType): Promise<void> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee.name, committee);
+  } catch (error) {
+    console.error('Error updating committee:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 학과 위원회 삭제
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} committeeName - 삭제할 위원회 이름
+ * @returns {Promise<void>}
+ */
+export const deleteCommittee = async (spreadsheetId: string, committeeName: string): Promise<void> => {
+  try {
+    setupPapyrusAuth();
+    
+    if (!staffSpreadsheetId) {
+      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    }
+    
+    if (!staffSpreadsheetId) {
+      throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+    }
+    
+    // TODO: deleteRow 함수 시그니처 확인 후 구현
+    // await deleteRow(0, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, staffSpreadsheetId);
+  } catch (error) {
+    console.error('Error deleting committee:', error);
     throw error;
   }
 };

@@ -14,6 +14,29 @@ function doPost(e) {
     const req = parseRequest(e);
     console.log('파싱된 요청:', req);
     
+    // 암복호화 액션 직접 처리
+    if (req.action === 'encryptEmail') {
+      const encrypted = encryptEmail(req.data);
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, data: encrypted }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'decryptEmail') {
+      const decrypted = decryptEmail(req.data);
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, data: decrypted }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 인증 관련 액션 처리
+    if (req.action === 'checkApprovalStatus') {
+      console.log('사용자 승인 상태 확인 요청:', req.email);
+      const result = callUserManagementPost(req);
+      console.log('사용자 승인 상태 확인 응답:', result);
+      return result;
+    }
+    
     // UserManagement.gs의 doPostAuthInternal 함수 호출
     const result = callUserManagementPost(req);
     console.log('UserManagement.gs 응답:', result);
@@ -144,8 +167,93 @@ function getDeploymentInfo() {
       'parseRequest',
       'doPostAuthInternal',
       'doGetAuthInternal',
-      'testMain'
+      'testMain',
+      'encryptEmail',
+      'decryptEmail',
+      'checkApprovalStatus'
     ],
-    dependencies: ['UserManagement.gs']
+    dependencies: ['UserManagement.gs', 'SpreadsheetUtils.gs', 'Encryption.gs', 'CONFIG.gs']
   };
 }
+
+// ===== 이메일/연락처 암복호화 함수들 =====
+
+/**
+ * 이메일/연락처 암호화
+ */
+function encryptEmail(email) {
+  try {
+    console.log('이메일/연락처 암호화 요청:', email);
+    
+    if (!email || typeof email !== 'string') {
+      console.warn('암호화할 이메일/연락처가 유효하지 않습니다:', email);
+      return email || '';
+    }
+    
+    if (!getConfig('use_email_encryption')) {
+      console.log('이메일 암호화가 비활성화되어 있습니다.');
+      return email;
+    }
+    
+    const config = getCurrentEmailEncryptionConfig();
+    let encryptedEmail = email;
+    
+    if (config.layers === 1) {
+      // 단일 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
+      encryptedEmail = applyEncryption(email, config.method, '');
+    } else {
+      // 다중 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
+      for (let i = 0; i < config.layers; i++) {
+        const method = config.layerMethods[i % config.layerMethods.length];
+        encryptedEmail = applyEncryption(encryptedEmail, method, '');
+      }
+    }
+    
+    console.log(`이메일 전체 암호화 완료: ${email} -> ${encryptedEmail.substring(0, 20)}...`);
+    return encryptedEmail;
+  } catch (error) {
+    console.error('이메일/연락처 암호화 오류:', error);
+    return email || '';
+  }
+}
+
+/**
+ * 이메일/연락처 복호화
+ */
+function decryptEmail(encryptedEmail) {
+  try {
+    console.log('이메일/연락처 복호화 요청:', encryptedEmail);
+    
+    if (!encryptedEmail || typeof encryptedEmail !== 'string') {
+      console.warn('복호화할 이메일/연락처가 유효하지 않습니다:', encryptedEmail);
+      return encryptedEmail || '';
+    }
+    
+    if (!getConfig('use_email_encryption')) {
+      console.log('이메일 암호화가 비활성화되어 있습니다.');
+      return encryptedEmail;
+    }
+    
+    const config = getCurrentEmailEncryptionConfig();
+    let decryptedEmail = encryptedEmail;
+    
+    if (config.layers === 1) {
+      // 단일 레이어 복호화 - 전체 이메일 주소를 통으로 복호화
+      decryptedEmail = applyDecryption(encryptedEmail, config.method, '');
+    } else {
+      // 다중 레이어 복호화 (역순으로 적용) - 전체 이메일 주소를 통으로 복호화
+      for (let i = config.layers - 1; i >= 0; i--) {
+        const method = config.layerMethods[i % config.layerMethods.length];
+        decryptedEmail = applyDecryption(decryptedEmail, method, '');
+      }
+    }
+    
+    console.log(`이메일 전체 복호화 완료: ${encryptedEmail.substring(0, 20)}... -> ${decryptedEmail}`);
+    return decryptedEmail;
+  } catch (error) {
+    console.error('이메일/연락처 복호화 오류:', error);
+    return encryptedEmail || '';
+  }
+}
+
+// ===== 간단한 암복호화 함수들 (이메일 암호화 로직 재사용) =====

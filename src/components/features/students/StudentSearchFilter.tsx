@@ -19,9 +19,11 @@ interface StudentSearchFilterProps {
   onSearchChange: (term: string) => void;
   showFilters: boolean;
   onToggleFilters: () => void;
-  filters: Filters;
-  onFiltersChange: (filters: Filters) => void;
-  filterOptions: FilterOptions;
+  filters: any; // 더 유연한 타입으로 변경
+  onFiltersChange: (filters: any) => void; // 더 유연한 타입으로 변경
+  filterOptions: any; // 더 유연한 타입으로 변경
+  isStaffMode?: boolean; // 교직원 모드 추가
+  activeTab?: 'staff' | 'committee'; // 활성 탭 추가
 }
 
 const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
@@ -31,7 +33,9 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
   onToggleFilters,
   filters,
   onFiltersChange,
-  filterOptions
+  filterOptions,
+  isStaffMode = false,
+  activeTab = 'staff'
 }) => {
   const hasActiveFilters = filters.grade || filters.state || filters.council;
 
@@ -42,7 +46,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
           <span className="search-icon">🔍</span>
           <input
             type="text"
-            placeholder="이름, 학번, 주소, 직책으로 검색..."
+            placeholder={isStaffMode ? "이름, 교번, 구분으로 검색..." : "이름, 학번, 주소, 직책으로 검색..."}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="search-input"
@@ -80,46 +84,82 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
         <div className="filters-panel">
           <div className="filter-row">
             <div className="filter-group">
-              <label>🎓 학년</label>
+              <label>{isStaffMode ? '👔 구분' : '🎓 학년'}</label>
               <select
                 value={filters.grade}
                 onChange={(e) => onFiltersChange({ ...filters, grade: e.target.value })}
                 className="filter-select"
               >
-                <option value="">전체 학년</option>
-                {filterOptions.grades.map(grade => (
+                <option value="">{isStaffMode ? '전체 구분' : '전체 학년'}</option>
+                {filterOptions.grades?.map(grade => (
                   <option key={grade} value={grade}>{grade}</option>
-                ))}
+                )) || []}
               </select>
             </div>
 
-            <div className="filter-group">
-              <label>📊 상태</label>
-              <select
-                value={filters.state}
-                onChange={(e) => onFiltersChange({ ...filters, state: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">전체 상태</option>
-                {filterOptions.states.map(state => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-            </div>
+            {!isStaffMode && (
+              <div className="filter-group">
+                <label>📊 상태</label>
+                <select
+                  value={filters.state}
+                  onChange={(e) => onFiltersChange({ ...filters, state: e.target.value })}
+                  className="filter-select"
+                >
+                  <option value="">전체 상태</option>
+                  {filterOptions.states?.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  )) || []}
+                </select>
+              </div>
+            )}
 
-            <div className="filter-group">
-              <label>👑 학생회 직책</label>
-              <select
-                value={filters.council}
-                onChange={(e) => onFiltersChange({ ...filters, council: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">전체 직책</option>
-                {filterOptions.councilPositions.map(position => (
-                  <option key={position} value={position}>{position}</option>
-                ))}
-              </select>
-            </div>
+            {!isStaffMode && (
+              <div className="filter-group">
+                <label>👑 학생회 직책</label>
+                <select
+                  value={filters.council}
+                  onChange={(e) => onFiltersChange({ ...filters, council: e.target.value })}
+                  className="filter-select"
+                >
+                  <option value="">전체 직책</option>
+                  {filterOptions.councilPositions?.map(position => (
+                    <option key={position} value={position}>{position}</option>
+                  )) || []}
+                </select>
+              </div>
+            )}
+
+            {isStaffMode && activeTab === 'committee' && (
+              <div className="filter-group">
+                <label>📊 위원회 종류</label>
+                <select
+                  value={filters.state}
+                  onChange={(e) => onFiltersChange({ ...filters, state: e.target.value })}
+                  className="filter-select"
+                >
+                  <option value="">전체 위원회</option>
+                  {filterOptions.states?.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  )) || []}
+                </select>
+              </div>
+            )}
+
+            {isStaffMode && activeTab === 'committee' && (
+              <div className="filter-group">
+                <label>👥 직책</label>
+                <select
+                  value={filters.council}
+                  onChange={(e) => onFiltersChange({ ...filters, council: e.target.value })}
+                  className="filter-select"
+                >
+                  <option value="">전체 직책</option>
+                  {filterOptions.councilPositions?.map(position => (
+                    <option key={position} value={position}>{position}</option>
+                  )) || []}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       )}

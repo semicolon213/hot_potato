@@ -42,6 +42,9 @@ interface LoginResponse {
 const checkUserStatus = async (email: string): Promise<LoginResponse> => {
   // checkApprovalStatus 함수가 authApi에 없으므로 직접 구현
   try {
+    console.log('사용자 상태 확인 요청:', email);
+    
+    // Vite 프록시 사용
     const response = await fetch('/api', {
       method: 'POST',
       headers: {
@@ -53,11 +56,14 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       })
     });
 
+    console.log('API 응답 상태:', response.status);
+    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('사용자 등록 상태 확인 응답:', data);
     return data;
   } catch (error) {
     console.error('사용자 상태 확인 실패:', error);

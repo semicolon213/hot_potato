@@ -8,24 +8,7 @@
 
 import React from 'react';
 import DocumentList from '../documents/DocumentList';
-
-interface Student {
-  no_student: string;
-  name: string;
-  address: string;
-  grade: string;
-  state: string;
-  council: string;
-}
-
-interface CouncilPosition {
-  year: string;
-  position: string;
-}
-
-interface StudentWithCouncil extends Student {
-  parsedCouncil: CouncilPosition[];
-}
+import type { StudentWithCouncil } from '../../../types/features/students/student';
 
 interface Column {
   key: string;
@@ -45,6 +28,7 @@ interface StudentListProps {
   sortConfig: SortConfig | null;
   onSort: (key: string) => void;
   onStudentDoubleClick: (student: StudentWithCouncil) => void;
+  isStaffMode?: boolean; // 교직원 모드 추가
 }
 
 const StudentList: React.FC<StudentListProps> = ({
@@ -52,7 +36,8 @@ const StudentList: React.FC<StudentListProps> = ({
   columns,
   sortConfig,
   onSort,
-  onStudentDoubleClick
+  onStudentDoubleClick,
+  isStaffMode = false
 }) => {
   const enhancedColumns = columns.map(col => ({
     ...col,
@@ -74,7 +59,7 @@ const StudentList: React.FC<StudentListProps> = ({
       columns={enhancedColumns}
       data={students}
       onPageChange={() => {}} // 빈 함수로 전달
-      title={`학생 목록 (${students.length}명)`}
+      title={isStaffMode ? `교직원 목록 (${students.length}명)` : `학생 목록 (${students.length}명)`}
       sortConfig={sortConfig}
       onSort={onSort}
       showViewAll={false}

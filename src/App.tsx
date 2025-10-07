@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import PageRenderer from "./components/layout/PageRenderer";
@@ -122,6 +122,27 @@ const App: React.FC = () => {
       window.google.accounts.id.disableAutoSelect();
     }
   };
+
+  // Electron 이벤트 처리 (자동 로그아웃)
+  useEffect(() => {
+    // Electron 환경에서만 실행
+    if (window.electronAPI) {
+      const handleAppBeforeQuit = () => {
+        console.log('앱 종료 감지 - 자동 로그아웃 실행');
+        handleLogout();
+      };
+
+      // Electron 이벤트 리스너 등록
+      window.electronAPI.onAppBeforeQuit(handleAppBeforeQuit);
+
+      // 컴포넌트 언마운트 시 리스너 제거
+      return () => {
+        if (window.electronAPI && window.electronAPI.removeAppBeforeQuitListener) {
+          window.electronAPI.removeAppBeforeQuitListener(handleAppBeforeQuit);
+        }
+      };
+    }
+  }, []);
 
   // 페이지 전환 처리
   const handlePageChange = (pageName: string) => {

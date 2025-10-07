@@ -14,7 +14,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: process.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec',
+        target: process.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwlgk6IgxezP9RpLT3Jn6Lv2JmuW1ZjTdrnx5-IyiC3MJDSv-xGb8vz1h9H0TCU9JyY/exec',
         changeOrigin: true,
         secure: false,
         followRedirects: true,

@@ -36,13 +36,14 @@ function createWindow() {
     minHeight: 600,
       webPreferences: {
         nodeIntegration: false,
-        contextIsolation: false, // CSP 우회를 위해 비활성화
+        contextIsolation: true, // 보안을 위해 활성화
         enableRemoteModule: false,
         webSecurity: false, // 웹 보안 완전 비활성화
         allowRunningInsecureContent: true,
         backgroundThrottling: false,
         webviewTag: true,
         experimentalFeatures: true, // 실험적 기능 활성화
+        preload: path.join(__dirname, 'preload.js'), // preload script 추가
         additionalArguments: [
           '--disable-web-security', 
           '--disable-features=VizDisplayCompositor',
@@ -61,6 +62,17 @@ function createWindow() {
       : path.join(__dirname, '../public/logo.png')), // 플랫폼별 아이콘
     titleBarStyle: 'default',
     show: false // 윈도우가 준비될 때까지 숨김
+  });
+
+  // 창 닫기 이벤트 처리
+  mainWindow.on('close', (event) => {
+    // 로그아웃 신호 전송
+    mainWindow.webContents.send('app-before-quit');
+    
+    // 잠시 대기 후 창 닫기 (로그아웃 처리 시간 확보)
+    setTimeout(() => {
+      mainWindow.destroy();
+    }, 100);
   });
 
   // 윈도우가 준비되면 표시
@@ -264,6 +276,22 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// 앱 종료 전 로그아웃 처리
+app.on('before-quit', (event) => {
+  // 모든 윈도우에 로그아웃 신호 전송
+  const windows = BrowserWindow.getAllWindows();
+  windows.forEach(window => {
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('app-before-quit');
+    }
+  });
+  
+  // 잠시 대기 후 앱 종료 (로그아웃 처리 시간 확보)
+  setTimeout(() => {
+    app.exit(0);
+  }, 100);
 });
 
 // 보안: 새 윈도우 생성 방지 (Google OAuth 제외)

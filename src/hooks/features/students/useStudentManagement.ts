@@ -8,36 +8,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { fetchStudents as fetchStudentsFromPapyrus } from '../../../utils/database/papyrusManager';
-
-/**
- * @brief 학생 데이터 타입 정의
- * @details 학생의 기본 정보를 담는 인터페이스입니다.
- */
-interface Student {
-  no_student: string;
-  name: string;
-  address: string;
-  grade: string;
-  state: string;
-  council: string;
-}
-
-/**
- * @brief 학생회 직책 정보 타입 정의
- * @details 학생회에서의 연도별 직책 정보를 담는 인터페이스입니다.
- */
-interface CouncilPosition {
-  year: string;
-  position: string;
-}
-
-/**
- * @brief 학생회 정보가 포함된 학생 데이터 타입 정의
- * @details 기본 학생 정보에 학생회 직책 정보가 추가된 확장 인터페이스입니다.
- */
-export interface StudentWithCouncil extends Student {
-  parsedCouncil: CouncilPosition[];
-}
+import type { Student, StudentWithCouncil, CouncilPosition } from '../../../types/features/students/student';
 
 /**
  * @brief 학생 관리 커스텀 훅
@@ -100,6 +71,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
             no_student: student.no_student || '',
             name: student.name || '',
             address: student.address || '',
+            phone_num: student.phone_num || '',
             grade: student.grade || '',
             state: student.state || '',
             council: student.council || ''
@@ -157,11 +129,12 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
 
   // 학생 목록 컬럼 정의
   const studentColumns = [
-    { key: 'no_student' as const, header: '학번', width: '15%' },
-    { key: 'name' as const, header: '이름', width: '15%' },
-    { key: 'address' as const, header: '주소', width: '25%' },
-    { key: 'grade' as const, header: '학년', width: '10%' },
-    { key: 'state' as const, header: '상태', width: '10%' },
+    { key: 'no_student' as const, header: '학번', width: '12%' },
+    { key: 'name' as const, header: '이름', width: '12%' },
+    { key: 'address' as const, header: '주소', width: '20%' },
+    { key: 'phone_num' as const, header: '연락처', width: '15%' },
+    { key: 'grade' as const, header: '학년', width: '8%' },
+    { key: 'state' as const, header: '상태', width: '8%' },
     { 
       key: 'council' as const, 
       header: '학생회', 
@@ -323,9 +296,10 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
               no_student: values[0] || '',
               name: values[1] || '',
               address: values[2] || '',
-              grade: values[3] || '',
-              state: values[4] || '',
-              council: values[5] || ''
+              phone_num: values[3] || '',
+              grade: values[4] || '',
+              state: values[5] || '',
+              council: values[6] || ''
             };
 
             // 중복 검증 (학번 기준)
