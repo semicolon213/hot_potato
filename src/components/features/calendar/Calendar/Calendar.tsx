@@ -120,7 +120,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const [inputValue, setInputValue] = useState('');
-    const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
+    const [suggestions, setSuggestions] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
     const getRecentSearches = (): string[] => {
@@ -143,7 +143,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         }
     }, [searchTerm, addRecentSearch]);
 
-    const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
+    const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
 
     useEffect(() => {
         const loadSuggestions = async () => {
@@ -780,7 +780,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                 }}
                                             >
                                                 <span className="suggestion-title">{suggestion.title}</span>
-                                                <span className="suggestion-date">{suggestion.tag}</span>
+                                                <span className="suggestion-date">{suggestion.startDate ? suggestion.startDate.substring(5).replace('-', '월 ') + '일' : ''}</span>
                                                 <span className="suggestion-tag">{suggestion.tag}</span>
                                             </li>
                                         ))}
