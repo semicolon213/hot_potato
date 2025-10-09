@@ -96,7 +96,8 @@ const App: React.FC = () => {
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
-    calendarStudentSpreadsheetId
+    calendarStudentSpreadsheetId,
+    calendarProfessorSpreadsheetId
   } = useAppState();
 
   // 로그인 처리
@@ -227,13 +228,17 @@ const App: React.FC = () => {
     gradeEntryPeriod: DateRange;
     customPeriods: CustomPeriod[];
   }) => {
-    if (!calendarStudentSpreadsheetId) {
-      alert('학생 캘린더가 설정되지 않아 저장할 수 없습니다.');
-      console.error('Error saving academic schedule: calendarStudentSpreadsheetId is null or undefined.');
+    const spreadsheetIds = [calendarStudentSpreadsheetId, calendarProfessorSpreadsheetId].filter(Boolean);
+
+    if (spreadsheetIds.length === 0) {
+      alert('캘린더가 설정되지 않아 저장할 수 없습니다.');
+      console.error('Error saving academic schedule: No calendar spreadsheet IDs are set.');
       return;
     }
     try {
-      await saveAcademicScheduleToSheet(scheduleData, calendarStudentSpreadsheetId);
+      for (const id of spreadsheetIds) {
+        await saveAcademicScheduleToSheet(scheduleData, id as string);
+      }
       alert('학사일정이 성공적으로 저장되었습니다.');
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
