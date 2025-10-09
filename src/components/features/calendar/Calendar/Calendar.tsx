@@ -466,37 +466,42 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     const handleSave = async () => {
-        // Validate custom periods before saving
-        for (const p of customPeriods) {
-            if (!p.period.start || !p.period.end) {
-                alert(`'${p.name}' 기간의 시작일과 종료일을 모두 설정해주세요.`);
-                return;
+        try {
+            // Validate custom periods before saving
+            for (const p of customPeriods) {
+                if (!p.period.start || !p.period.end) {
+                    alert(`'${p.name}' 기간의 시작일과 종료일을 모두 설정해주세요.`);
+                    return;
+                }
             }
-        }
 
-        // Validate all periods before saving
-        const allPeriods = [
-            { name: '기말고사', period: finalExamsPeriod },
-            { name: '성적입력 및 강의평가', period: gradeEntryPeriod },
-            ...customPeriods.map(p => ({ name: p.name, period: p.period }))
-        ];
+            // Validate all periods before saving
+            const allPeriods = [
+                { name: '기말고사', period: finalExamsPeriod },
+                { name: '성적입력 및 강의평가', period: gradeEntryPeriod },
+                ...customPeriods.map(p => ({ name: p.name, period: p.period }))
+            ];
 
-        for (const item of allPeriods) {
-            const { start, end } = item.period;
-            if (start && end && start > end) {
-                alert(`'${item.name}' 기간의 종료일은 시작일보다 빠를 수 없습니다.`);
-                return; // Stop saving
+            for (const item of allPeriods) {
+                const { start, end } = item.period;
+                if (start && end && start > end) {
+                    alert(`'${item.name}' 기간의 종료일은 시작일보다 빠를 수 없습니다.`);
+                    return; // Stop saving
+                }
             }
-        }
 
-        await onSave({
-            semesterStartDate,
-            finalExamsPeriod,
-            midtermExamsPeriod,
-            gradeEntryPeriod,
-            customPeriods
-        });
-        setIsSemesterPickerOpen(false);
+            await onSave({
+                semesterStartDate,
+                finalExamsPeriod,
+                midtermExamsPeriod,
+                gradeEntryPeriod,
+                customPeriods
+            });
+            setIsSemesterPickerOpen(false);
+        } catch (error) {
+            console.error("학사일정 저장 중 오류 발생:", error);
+            alert("학사일정 저장 중 오류가 발생했습니다. 자세한 내용은 콘솔을 확인해주세요.");
+        }
     };
 
     const handleCloseWithoutSaving = () => {

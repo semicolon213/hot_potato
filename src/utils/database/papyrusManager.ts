@@ -833,20 +833,27 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
     // 기존 학사일정 이벤트 삭제 (papyrus-db에서는 직접 삭제 기능이 제한적이므로 스킵)
     console.log('학사일정 이벤트 저장 시작:', eventsToSave.length, '개');
 
+    // Get current data to calculate next ID
+    const data = await getSheetData(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+    let lastRow = data && data.values ? data.values.length : 0;
+
     // 새로운 이벤트들 생성
     for (const event of eventsToSave) {
+      const newEventId = `cal-${lastRow + 1}`;
+      lastRow++; // Increment for the next event in the loop
+
       await append(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [[
-        event.title,
-        event.startDate,
-        event.endDate,
-        '',
-        '',
-        '',
-        '',
-        (event.type && tagLabels[event.type]) || event.type || '',
-        '',
-        '',
-        ''
+        newEventId, // Column A: id
+        event.title, // Column B: title
+        event.startDate, // Column C: startDate
+        event.endDate, // Column D: endDate
+        '', // Column E: description
+        '', // Column F: colorId
+        '', // Column G: startDateTime
+        '', // Column H: endDateTime
+        (event.type && tagLabels[event.type]) || event.type || '', // Column I: type
+        '', // Column J: rrule
+        ''  // Column K: attendees
       ]]);
     }
 
