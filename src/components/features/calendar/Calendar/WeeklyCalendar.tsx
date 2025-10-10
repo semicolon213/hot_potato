@@ -110,7 +110,8 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEven
         const totalHeight = rect.height;
         const hour = Math.floor((clickY / totalHeight) * 24);
 
-        const clickedDate = new Date(day.date);
+        const parts = day.date.split('-').map(Number);
+        const clickedDate = new Date(parts[0], parts[1] - 1, parts[2]);
         clickedDate.setHours(hour, 0, 0, 0);
 
         selectedDate.selectDate(clickedDate);

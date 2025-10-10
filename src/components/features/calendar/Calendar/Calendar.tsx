@@ -13,6 +13,7 @@ import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiIniti
 interface CalendarProps {
     onAddEvent: () => void;
     onSelectEvent: (event: Event, rect: DOMRect) => void;
+    onMoreClick: (events: Event[], date: string, e: React.MouseEvent) => void;
     viewMode: 'monthly' | 'weekly';
     setViewMode: (mode: 'monthly' | 'weekly') => void;
     selectedWeek: number;
@@ -26,7 +27,7 @@ interface CalendarProps {
     }) => Promise<void>;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreClick, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
 
     const {
         dispatch,
@@ -56,13 +57,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
-
-    const [moreEventsModal, setMoreEventsModal] = useState<{
-        isOpen: boolean;
-        events: Event[];
-        date: string;
-        position: { top: number; left: number };
-    }>({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
     const [newPeriodName, setNewPeriodName] = useState("");
@@ -325,25 +319,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         }
     }, [activeFilters, midtermExamsPeriod, finalExamsPeriod]);
 
-    const handleMoreClick = (dayEvents: Event[], date: string, e: React.MouseEvent) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const modalWidth = 250;
-        const modalHeight = 200;
-        const { innerWidth, innerHeight } = window;
-        let { top, left } = rect;
-        if (left + modalWidth > innerWidth) {
-            left = innerWidth - modalWidth - 20;
-        }
-        if (top + modalHeight > innerHeight) {
-            top = innerHeight - modalHeight - 60;
-        }
-        setMoreEventsModal({
-            isOpen: true,
-            events: dayEvents,
-            date: date,
-            position: { top, left },
-        });
-    };
+
 
     const handleEventClick = (event: Event, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -661,7 +637,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleMoreClick(dayEvents, day.date, e);
+                                onMoreClick(dayEvents, day.date, e);
                             }}
                         >
                             {moreCount}개 더보기
@@ -672,7 +648,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         });
 
         return { eventElements, moreButtonElements };
-    }, [eventLayouts, weeksInMonth, handleEventClick, handleMoreClick, selectedEvent]);
+    }, [eventLayouts, weeksInMonth, handleEventClick, onMoreClick, selectedEvent]);
 
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';
@@ -886,7 +862,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 return (
                                     <div
                                         onClick={() => {
-                                            selectedDate.selectDate(new Date(date.date));
+                                            const parts = date.date.split('-').map(Number);
+                                            const clickedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                                            selectedDate.selectDate(clickedDate);
                                             onAddEvent();
                                         }}
                                         className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
@@ -905,19 +883,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             ) : (
                 <ScheduleView />
             )}
-            {moreEventsModal.isOpen && (
-                <MoreEventsModal
-                    events={moreEventsModal.events}
-                    date={moreEventsModal.date}
-                    onClose={() => setMoreEventsModal({ ...moreEventsModal, isOpen: false })}
-                    position={moreEventsModal.position}
-                    onSelectEvent={(event, e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        onSelectEvent(event, rect); // Call the parent's onSelectEvent
-                        setMoreEventsModal({ ...moreEventsModal, isOpen: false });
-                    }}
-                />
-            )}
+
             {isSemesterPickerOpen && (
                 <div className="semester-picker-overlay" onClick={handleCloseWithoutSaving}>
                     <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>
