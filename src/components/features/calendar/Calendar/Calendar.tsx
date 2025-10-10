@@ -119,6 +119,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
+    const [inputValue, setInputValue] = useState('');
     
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
@@ -135,13 +136,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         localStorage.setItem('recentSearchTerms', JSON.stringify(searches.slice(0, 10)));
     };
 
-    useEffect(() => {
-        const terms = searchTerm.split(' ').filter(Boolean);
-        const latestTerm = terms[terms.length - 1];
-        if (latestTerm) {
-            addRecentSearch(latestTerm);
-        }
-    }, [searchTerm, addRecentSearch]);
+    
 
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
 
@@ -174,13 +169,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             return;
         }
 
-        if (searchTerm) {
+        if (inputValue) {
             // User is typing, so filter based on input
             const handler = setTimeout(() => {
-                const lowerSearchTerm = searchTerm.toLowerCase();
+                const lowerInputValue = inputValue.toLowerCase();
                 const filtered = suggestionSource.filter(item =>
-                    item.title.toLowerCase().includes(lowerSearchTerm) ||
-                    (item.tag && item.tag.toLowerCase().includes(lowerSearchTerm))
+                    item.title.toLowerCase().includes(lowerInputValue) ||
+                    (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
                 );
                 setSuggestions(filtered);
             }, 300);
@@ -200,7 +195,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 setSuggestions([]); // No recent searches, show empty
             }
         }
-    }, [searchTerm, isSuggestionsVisible, suggestionSource]);
+    }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -651,7 +646,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
-    
+    const handleRemoveTerm = (termToRemove: string) => {
+        const newSearchTerm = searchTerm
+            .split(' ')
+            .filter(t => t !== termToRemove)
+            .join(' ');
+        setSearchTerm(newSearchTerm);
+    };
 
 
     return (
@@ -676,11 +677,23 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     placeholder="일정 검색..."
                                     className={"calendar-search-input"}
                                     style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
                                     onFocus={() => setIsSuggestionsVisible(true)}
                                     onBlur={() => {
                                         setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
+                                            e.preventDefault();
+                                            addRecentSearch(inputValue.trim());
+                                            const newTerm = `#${inputValue.trim()}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(newTerm)) {
+                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+                                            }
+                                            setInputValue('');
+                                        }
                                     }}
                                 />
                                 {isSuggestionsVisible && suggestions.length > 0 && (
@@ -689,7 +702,15 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                             <li
                                                 key={index}
                                                 onMouseDown={() => {
-                                                    setSearchTerm(suggestion.title);
+                                                    const formattedTerm = `#${suggestion.title}`;
+                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                    if (!existingTerms.includes(formattedTerm)) {
+                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                                    }
+
+                                                    // 날짜 네비게이션은 제거됨 (suggestion에 날짜 정보 없음)
+
+                                                    setInputValue('');
                                                     setSuggestions([]);
                                                 }}
                                             >
@@ -700,6 +721,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         ))}
                                     </ul>
                                 )}
+                            </div>
+                            <div className="search-tags-container">
+                                {searchTerm.split(' ').filter(Boolean).map(term => (
+                                    <div key={term} className="search-tag">
+                                        {term}
+                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                    </div>
+                                ))}
                             </div>
                             
                         </div>

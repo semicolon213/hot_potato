@@ -254,15 +254,14 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     const eventsToDisplay = searchTerm
       ? sortedEvents.filter(event => {
           // For debugging: Log the data being processed
-          console.log(`[Search Debug] Event: "${event.title}", Type: "${event.type}", SearchTerm: "${searchTerm}"`);
+          // console.log(`[Search Debug] Event: "${event.title}", Type: "${event.type}", SearchTerm: "${searchTerm}"`);
 
           const queries = searchTerm.toLowerCase().split(' ').filter(q => q.startsWith('#'));
 
           if (queries.length === 0) {
             const lowercasedSearchTerm = searchTerm.toLowerCase();
             const titleMatch = event.title.toLowerCase().includes(lowercasedSearchTerm);
-            const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
-            const typeMatch = typeLabel && typeLabel.includes(lowercasedSearchTerm);
+            const typeMatch = event.type && event.type.toLowerCase().includes(lowercasedSearchTerm);
             const isGooglePersonalEvent = !event.isHoliday && !event.type;
             const personalMatch = isGooglePersonalEvent && ('개인일정'.includes(lowercasedSearchTerm) || '개인'.includes(lowercasedSearchTerm));
             return titleMatch || typeMatch || personalMatch;
@@ -273,13 +272,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             if (cleanQuery === '') return true;
 
             const titleMatch = event.title.toLowerCase().includes(cleanQuery);
-            const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
-            const typeMatch = typeLabel && typeLabel.includes(cleanQuery);
+            const typeMatch = event.type && event.type.toLowerCase().includes(cleanQuery);
             const isGooglePersonalEvent = !event.isHoliday && !event.type;
             const personalMatch = isGooglePersonalEvent && ('개인일정'.includes(cleanQuery) || '개인'.includes(cleanQuery));
 
             // For debugging: Log matching results for each query
-            console.log(`  - Query: "${cleanQuery}", TitleMatch: ${titleMatch}, TypeMatch: ${typeMatch}, PersonalMatch: ${personalMatch}`);
+            // console.log(`  - Query: "${cleanQuery}", TitleMatch: ${titleMatch}, TypeMatch: ${typeMatch}, PersonalMatch: ${personalMatch}`);
 
             return titleMatch || typeMatch || personalMatch;
           });
