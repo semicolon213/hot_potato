@@ -353,7 +353,7 @@
     flex-direction: column;
     gap: 20px;
     align-items: center;
-    min-width: 600px;
+    min-width: 700px;
 }
 
 .date-selector-row {
@@ -377,6 +377,15 @@
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 0.75em;
+}
+
+.semester-picker-modal .date-selector-row .tag-input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.75em;
+    margin-left: 10px;
+    width: 100px;
 }
 
 .semester-picker-modal .modal-actions .done-btn {

@@ -842,7 +842,7 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
   // Custom periods
   customPeriods.forEach(p => {
     if (p.period.start && p.period.end) {
-      eventsToSave.push({ id: `custom-${slugify(p.name)}`, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: '공용일정' });
+      eventsToSave.push({ id: `custom-${slugify(p.name)}`, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: p.type || '공용일정' });
     }
   });
 

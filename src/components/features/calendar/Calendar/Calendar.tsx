@@ -344,6 +344,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         }
     };
 
+    const handleCustomPeriodTagChange = (id: string, value: string) => {
+        const updatedPeriods = customPeriods.map(p => {
+            if (p.id === id) {
+                return { ...p, type: value };
+            }
+            return p;
+        });
+        setCustomPeriods(updatedPeriods);
+    };
+
 
     const handleCustomPeriodChange = (id: string, part: 'start' | 'end', value: string) => {
         if (!value) return;
@@ -937,6 +947,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     type="date"
                                     value={formatDateForInput(p.period.end)}
                                     onChange={(e) => handleCustomPeriodChange(p.id, 'end', e.target.value)}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="태그"
+                                    className="tag-input"
+                                    value={p.type || ''}
+                                    onChange={(e) => handleCustomPeriodTagChange(p.id, e.target.value)}
                                 />
                                 <button onClick={() => handleDeleteCustomPeriod(p.id)} className="delete-period-btn">삭제</button>
                             </div>

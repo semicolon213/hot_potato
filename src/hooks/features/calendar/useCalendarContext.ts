@@ -41,7 +41,12 @@ export interface Event {
 }
 
 export type DateRange = { start: Date | null; end: Date | null };
-export type CustomPeriod = { id: string; name: string; period: DateRange };
+export interface CustomPeriod {
+  id: string;
+  name: string;
+  period: DateRange;
+  type?: string;
+}
 
 interface CalendarContextType {
     currentDate: DateInfo;
