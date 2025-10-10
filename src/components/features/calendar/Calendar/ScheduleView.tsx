@@ -49,7 +49,7 @@ const ScheduleView: React.FC = () => {
                         }
 
                         return (
-                            <li key={event.id} className="schedule-item" onClick={() => setSelectedEvent(event)}>
+                            <li key={event.id} className="schedule-item" onClick={(e) => { setSelectedEvent(event, { top: e.clientY, left: e.clientX }); }}>
                                 <div className="schedule-item-tag" style={{ backgroundColor: event.color }}>
                                     {event.type || '개인일정'}
                                 </div>

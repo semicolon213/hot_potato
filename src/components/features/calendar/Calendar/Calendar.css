@@ -1,70 +1,70 @@
 .calendar-header-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .year-display {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--text-dark);
-  margin-bottom: 8px;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--text-dark);
+    margin-bottom: 8px;
 }
 
 .month-navigation {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .month-controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .month-display {
-  font-size: 20px;
-  color: var(--text-medium);
+    font-size: 20px;
+    color: var(--text-medium);
 }
 
 .arrow-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--text-dark);
-  padding: 0 8px;
-  flex-shrink: 0;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-dark);
+    padding: 0 8px;
+    flex-shrink: 0;
 }
 
 .arrow-button:hover {
-  color: var(--primary);
+    color: var(--primary);
 }
 
 .calendar-body-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: white;
-  padding: 0 0;
-  border-radius: var(--border-radius-lg);
-  min-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: white;
+    padding: 0 0;
+    border-radius: var(--border-radius-lg);
+    min-width: 800px;
 }
 
 .day-wrapper {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(60px, 1fr));
-  grid-row-gap: 10px;
-  position: relative; /* For absolute event positioning */
+    display: grid;
+    grid-template-columns: repeat(7, minmax(60px, 1fr));
+    grid-row-gap: 10px;
+    position: relative; /* For absolute event positioning */
 }
 
 .monthly-event-item {
@@ -95,80 +95,79 @@
 }
 
 .calendar-item {
-  display: flex;
-  justify-content: center;
-  font-size: 16px;
+    display: flex;
+    justify-content: center;
+    font-size: 16px;
 }
 
 .calendar-item.sunday {
-  color: var(--error);
+    color: var(--error);
 }
 
 .calendar-item.saturday {
-  color: var(--primary);
+    color: var(--primary);
 }
 
 .day {
-  border: 1px solid var(--border-color);
-  height: 130px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  cursor: pointer;
-  position: relative;
+    border: 1px solid var(--border-color);
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    cursor: pointer;
+    position: relative;
 }
 
 .day-number {
-  font-size: 12px;
-  font-weight: bold;
-  margin-bottom: 4px;
-  padding: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    padding: 4px;
 }
 
 .day.selected {
-  background-color: var(--accent); /* 연한 파란색으로 변경 */
-  color: var(--text-dark); /* 기본 텍스트 색상 */
+    background-color: var(--accent); /* 연한 파란색으로 변경 */
+    color: var(--text-dark); /* 기본 텍스트 색상 */
 }
 
 .day.not-current-month {
-  color: var(--text-light);
-  background-color: var(--lightgrey);
+    color: var(--text-light);
+    background-color: var(--lightgrey);
 }
 
 .day.sunday .day-number {
-  color: var(--error);
+    color: var(--error);
 }
 
 .day.saturday .day-number {
-  color: var(--primary);
+    color: var(--primary);
 }
-
 
 
 .event-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  overflow-y: auto; /* 이벤트가 많을 경우 스크롤 */
-  flex-shrink: 0; /* 남은 공간을 모두 차지하도록 설정 */
-  padding-bottom: 5px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    overflow-y: auto; /* 이벤트가 많을 경우 스크롤 */
+    flex-shrink: 0; /* 남은 공간을 모두 차지하도록 설정 */
+    padding-bottom: 5px;
 }
 
 .event-item {
-  font-size: 12px;
-  border-radius: var(--border-radius-sm);
-  margin-bottom: 2px;
-  padding: 0 5px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  margin-left: 5px;
-  margin-right: 5px;
-  display: flex;
-  align-items: center;
-  height: 20px;
-  color: white; /* 글자색 흰색으로 변경 */
+    font-size: 12px;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 2px;
+    padding: 0 5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-left: 5px;
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+    height: 20px;
+    color: white; /* 글자색 흰색으로 변경 */
 }
 
 .more-button {
@@ -194,13 +193,13 @@
 }
 
 .event-item.selected {
-  background-color: var(--primary);
-  color: #ffffff;
+    background-color: var(--primary);
+    color: #ffffff;
 }
 
 .calendar-header-top {
   display: flex;
-  justify-content: space-between; /* This will push year to the left and the new container to the right */
+  gap: 20px; /* Adjust as needed */
   width: 100%;
   align-items: center;
 }
@@ -211,30 +210,31 @@
   gap: 20px; /* Adjust as needed */
   position: relative;
   right: 50px;
+  margin-left: auto; /* Push to the right */
 }
 
 .view-switcher {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-md);
-  background-color: #f8f9fa;
-  padding: 4px;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius-md);
+    background-color: #f8f9fa;
+    padding: 4px;
 }
 
 .view-switcher button {
-  padding: 5px 15px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  background-color: #f8f8f7;
-  background-color: transparent;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  white-space: nowrap;
+    padding: 5px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    background-color: #f8f8f7;
+    background-color: transparent;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .view-switcher .separator {
@@ -243,10 +243,10 @@
 }
 
 .view-switcher button.active {
-  background-color: #d1c9c9;
-  color: var(--text-dark);
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    background-color: #d1c9c9;
+    color: var(--text-dark);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .view-switcher button:hover:not(.active) {
@@ -254,82 +254,82 @@
 }
 
 .filter-tags-container {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-md);
-  background-color: #f8f9fa;
-  padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius-md);
+    background-color: #f8f9fa;
+    padding: 4px;
 }
 
 .filter-tag {
-  padding: 6px 12px;
-  border: 1px solid transparent;
-  border-radius: var(--border-radius-sm);
-  background-color: transparent;
-  color: #6b7280; /* from .new-tab */
-  cursor: pointer;
-  font-size: 14px; /* from .new-tab */
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-  flex-shrink: 0;
-  white-space: nowrap;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-sm);
+    background-color: transparent;
+    color: #6b7280; /* from .new-tab */
+    cursor: pointer;
+    font-size: 14px; /* from .new-tab */
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .filter-tag:hover {
-  color: #4b5563; /* from .new-tab:hover */
-  background-color: #f8f9fa;
+    color: #4b5563; /* from .new-tab:hover */
+    background-color: #f8f9fa;
 }
 
 .filter-tag.active {
-  background-color: #d1c9c9;
-  color: var(--text-dark);
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    background-color: #d1c9c9;
+    color: var(--text-dark);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .week-navigation {
-  width: 100%;
-  overflow-x: auto;
-  padding-bottom: 10px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 10px;
 }
 
 .week-navigation-buttons {
-  display: flex;
-  gap: 5px;
-  padding: 5px 0;
+    display: flex;
+    gap: 5px;
+    padding: 5px 0;
 }
 
 .week-navigation button {
-  padding: 5px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  background-color: #f8f8f7;
-  white-space: nowrap;
+    padding: 5px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    background-color: #f8f8f7;
+    white-space: nowrap;
 }
 
 .week-navigation button.active {
-  background-color: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+    background-color: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
 }
 
 .semester-start-date {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .semester-start-date label {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 .semester-start-date input[type="date"] {
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: var(--border-radius-sm);
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius-sm);
 }
 
 .semester-picker-overlay {
@@ -505,6 +505,7 @@
     background-color: var(--grey);
     color: var(--text-dark);
 }
+
 .overflow-event-lines {
     flex-grow: 1;
     margin-top: 4px;
@@ -512,11 +513,11 @@
     cursor: pointer;
 }
 
-    .more-events-text {
-        font-size: 12px;
-        color: var(--text-medium);
-        padding-top: 10px;
-    }
+.more-events-text {
+    font-size: 12px;
+    color: var(--text-medium);
+    padding-top: 10px;
+}
 
 .search-container {
     position: relative;
@@ -536,7 +537,7 @@
     z-index: 1000;
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     border-radius: 0 0 4px 4px;
 }
 
@@ -611,13 +612,14 @@
     line-height: 1;
 }
 
-.calendar-header-container .search-container {
+#calendar-search-container {
     display: flex !important;
     align-items: center !important;
     background: none !important;
-    border: none !important;
-    height: 35px !important;
+    border: 1px solid #ccc !important;
+    min-height: 35px !important;
     width: 250px !important;
+    border-radius: 4px;
 }
 
 .calendar-search-input,

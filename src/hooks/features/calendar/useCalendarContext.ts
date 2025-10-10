@@ -65,7 +65,7 @@ interface CalendarContextType {
     addEvent: (event: Event) => void;
     deleteEvent: (id: string) => void;
     selectedEvent: Event | null;
-    setSelectedEvent: (event: Event | null) => void;
+    setSelectedEvent: (event: Event | null, position?: { top: number; left: number }) => void;
     semesterStartDate: Date;
     setSemesterStartDate: (date: Date) => void;
     finalExamsPeriod: DateRange;

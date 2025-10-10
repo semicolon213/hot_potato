@@ -684,7 +684,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="search-wrapper">
-                        <div className="search-container" style={{ height: '35px', width: '250px' }}>
+                        <div id="calendar-search-container" className="search-container" style={{ width: '250px' }}>
                             <BiSearchAlt2 color="black" />
                             <input
                                 type="text"

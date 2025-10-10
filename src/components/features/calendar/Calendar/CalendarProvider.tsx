@@ -56,6 +56,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [googleEvents, setGoogleEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEventPosition, setSelectedEventPosition] = useState<{ top: number; left: number } | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
   const [eventColors, setEventColors] = useState<any>({});
@@ -565,7 +566,11 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     updateEvent,
     deleteEvent,
     selectedEvent,
-    setSelectedEvent,
+    setSelectedEvent: (event: Event | null, position?: { top: number; left: number }) => {
+      setSelectedEvent(event);
+      setSelectedEventPosition(position);
+    },
+    selectedEventPosition,
     semesterStartDate,
     setSemesterStartDate,
     finalExamsPeriod,

@@ -44,7 +44,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 }) => Promise<void> }> = ({onSaveAcademicSchedule}) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
-    const {selectedEvent, setSelectedEvent, deleteEvent} = useCalendarContext();
+    const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition} = useCalendarContext();
     const [modalPosition, setModalPosition] = useState({top: 0, left: 0});
 
     const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
@@ -123,7 +123,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
                     onClose={() => { setSelectedEvent(null); setModalPosition({ top: 0, left: 0 }); }}
                     onDelete={deleteEvent}
                     onEdit={handleEdit}
-                    position={modalPosition}
+                    position={selectedEventPosition || modalPosition}
                 />
             )}
         </>
