@@ -51,7 +51,7 @@ const ScheduleView: React.FC = () => {
                         return (
                             <li key={event.id} className="schedule-item">
                                 <div className="schedule-item-tag" style={{ backgroundColor: event.color }}>
-                                    {filterLabels[event.type || ''] || '일반'}
+                                    {event.type || '개인일정'}
                                 </div>
                                 <div className="schedule-item-content">
                                     <div className="schedule-item-date">{formatDate(event.startDate)}</div>
