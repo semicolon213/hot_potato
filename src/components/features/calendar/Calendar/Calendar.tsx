@@ -680,7 +680,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         start.setDate(start.getDate() + (weekNum - 1) * 7);
         const end = new Date(start);
         end.setDate(end.getDate() + 6);
-        return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
+        return `${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
     const handleRemoveTerm = (termToRemove: string) => {
@@ -714,11 +714,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                        <h2>
+                        <h2 style={{textAlign: 'center', flexGrow: 1}}>
                             {viewMode === 'monthly' ? (
                                 `${currentDate.year}년 ${currentDate.month}월`
                             ) : (
-                                `${selectedWeek}주차`
+                                <>
+                                    {`${selectedWeek}주차`}
+                                    <span style={{fontSize: '14px', color: 'var(--text-medium)', display: 'block', marginTop: '4px'}}>
+                                        {getWeekDatesText(selectedWeek)}
+                                    </span>
+                                </>
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
@@ -792,7 +797,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 ))}
                             </div>
                         </div>
-                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                        
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
@@ -895,7 +900,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
                     </div>
                 ) : (
-                    <WeeklyCalendar selectedWeek={selectedWeek} onAddEvent={onAddEvent} />
+                    <WeeklyCalendar selectedWeek={selectedWeek} onAddEvent={onAddEvent} onSelectEvent={onSelectEvent} />
                 )
             ) : (
                 <ScheduleView />

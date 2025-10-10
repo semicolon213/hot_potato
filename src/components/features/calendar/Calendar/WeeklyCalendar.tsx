@@ -6,6 +6,7 @@ import { RRule } from 'rrule';
 interface WeeklyCalendarProps {
     selectedWeek: number;
     onAddEvent: () => void;
+    onSelectEvent: (event: Event, rect: DOMRect) => void;
 }
 
 // Helper function to calculate event layout
@@ -78,7 +79,7 @@ const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[
 };
 
 
-const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEvent }) => {
+const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEvent, onSelectEvent }) => {
     const { events, setSelectedEvent, dispatch, currentDate, semesterStartDate, selectedDate } = useCalendarContext();
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
@@ -245,7 +246,10 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEven
                                     top: `${top}px`,
                                     backgroundColor: event.color,
                                 }}
-                                onClick={() => setSelectedEvent(event)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectEvent(event, e.currentTarget.getBoundingClientRect());
+                                }}
                             >
                                 <span className="event-title">{event.icon} {event.title}</span>
                             </div>
@@ -274,7 +278,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEven
                                             style={{ ...getEventPosition(event), backgroundColor: event.color }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setSelectedEvent(event);
+                                                onSelectEvent(event, e.currentTarget.getBoundingClientRect());
                                             }}
                                         >
                                             <span className="event-title">{event.title}</span>
