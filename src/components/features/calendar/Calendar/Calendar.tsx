@@ -13,6 +13,7 @@ import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import { RRule } from 'rrule';
+import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
 
 // Google Calendar API 타입 정의
@@ -64,6 +65,7 @@ declare global {
 interface CalendarProps {
     onAddEvent: () => void;
     onSelectEvent: (event: Event, rect: DOMRect) => void;
+    onMoreClick: (events: Event[], date: string, e: React.MouseEvent) => void;
     viewMode: 'monthly' | 'weekly';
     setViewMode: (mode: 'monthly' | 'weekly') => void;
     selectedWeek: number;
@@ -77,7 +79,7 @@ interface CalendarProps {
     }) => Promise<void>;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreClick, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
 
     const {
         dispatch,
@@ -120,8 +122,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const [inputValue, setInputValue] = useState('');
-    
-    const [suggestions, setSuggestions] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
+    const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
     const getRecentSearches = (): string[] => {
@@ -136,7 +137,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         localStorage.setItem('recentSearchTerms', JSON.stringify(searches.slice(0, 10)));
     };
 
-    
+
 
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
 
@@ -281,26 +282,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             }
         }
     }, [activeFilters, midtermExamsPeriod, finalExamsPeriod]);
-
-    const handleMoreClick = (dayEvents: Event[], date: string, e: React.MouseEvent) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const modalWidth = 250;
-        const modalHeight = 200;
-        const { innerWidth, innerHeight } = window;
-        let { top, left } = rect;
-        if (left + modalWidth > innerWidth) {
-            left = innerWidth - modalWidth - 20;
-        }
-        if (top + modalHeight > innerHeight) {
-            top = innerHeight - modalHeight - 60;
-        }
-        setMoreEventsModal({
-            isOpen: true,
-            events: dayEvents,
-            date: date,
-            position: { top, left },
-        });
-    };
 
     const handleEventClick = (event: Event, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -634,7 +615,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleMoreClick(dayEvents, day.date, e);
+                                onMoreClick(dayEvents, day.date, e);
                             }}
                         >
                             {moreCount}개 더보기
@@ -645,7 +626,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         });
 
         return { eventElements, moreButtonElements };
-    }, [eventLayouts, weeksInMonth, handleEventClick, handleMoreClick, selectedEvent]);
+    }, [eventLayouts, weeksInMonth, handleEventClick, onMoreClick, selectedEvent]);
 
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';
@@ -653,7 +634,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         start.setDate(start.getDate() + (weekNum - 1) * 7);
         const end = new Date(start);
         end.setDate(end.getDate() + 6);
-        return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
+        return `${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
     const handleRemoveTerm = (termToRemove: string) => {
@@ -671,16 +652,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                        <h2>
+                        <h2 style={{textAlign: 'center', flexGrow: 1}}>
                             {viewMode === 'monthly' ? (
                                 `${currentDate.year}년 ${currentDate.month}월`
                             ) : (
-                                `${selectedWeek}주차`
+                                <>
+                                    {`${selectedWeek}주차`}
+                                    <span style={{fontSize: '14px', color: 'var(--text-medium)', display: 'block', marginTop: '4px'}}>
+                                        {getWeekDatesText(selectedWeek)}
+                                    </span>
+                                </>
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                    
-                        
+
+
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="search-wrapper">
@@ -760,7 +746,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 </div>
                             ))}
                         </div>
-                        
+
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
@@ -840,7 +826,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         <div className="day-wrapper">
                             {daysInMonth.map((date) => {
                                 const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
-                                const isSelected = selectedDate.date === date.date;
+                                const isSelected = selectedDate.date.toISOString().split('T')[0] === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
@@ -849,7 +835,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                 return (
                                     <div
                                         onClick={() => {
-                                            selectedDate.selectDate(new Date(date.date));
+                                            const parts = date.date.split('-').map(Number);
+                                            const clickedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                                            selectedDate.selectDate(clickedDate);
                                             onAddEvent();
                                         }}
                                         className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
@@ -863,24 +851,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
                     </div>
                 ) : (
-                    <WeeklyCalendar selectedWeek={selectedWeek} />
+                    <WeeklyCalendar selectedWeek={selectedWeek} onAddEvent={onAddEvent} onSelectEvent={onSelectEvent} />
                 )
             ) : (
                 <ScheduleView />
             )}
-            {moreEventsModal.isOpen && (
-                <MoreEventsModal
-                    events={moreEventsModal.events}
-                    date={moreEventsModal.date}
-                    onClose={() => setMoreEventsModal({ ...moreEventsModal, isOpen: false })}
-                    position={moreEventsModal.position}
-                    onSelectEvent={(event, e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        onSelectEvent(event, rect); // Call the parent's onSelectEvent
-                        setMoreEventsModal({ ...moreEventsModal, isOpen: false });
-                    }}
-                />
-            )}
+
             {isSemesterPickerOpen && (
                 <div className="semester-picker-overlay" onClick={handleCloseWithoutSaving}>
                     <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>

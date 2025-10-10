@@ -19,8 +19,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState(selectedDate.date);
-  const [endDate, setEndDate] = useState(selectedDate.date);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [showTime, setShowTime] = useState(false);
   const [startTime, setStartTime] = useState('00:00');
   const [endTime, setEndTime] = useState('00:00');
@@ -115,7 +115,28 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         setRecurrenceFreq('NONE');
       }
     } else {
-      // Reset for Add Mode
+      // Add Mode: Initialize based on selectedDate
+      const initialDate = selectedDate.date;
+      setStartDate(initialDate.toISOString().split('T')[0]);
+      setEndDate(initialDate.toISOString().split('T')[0]);
+
+      if (initialDate.getHours() !== 0 || initialDate.getMinutes() !== 0 || initialDate.getSeconds() !== 0) {
+        setShowTime(true);
+        const startHours = initialDate.getHours().toString().padStart(2, '0');
+        const startMinutes = initialDate.getMinutes().toString().padStart(2, '0');
+        setStartTime(`${startHours}:${startMinutes}`);
+
+        const oneHourLater = new Date(initialDate.getTime() + 60 * 60 * 1000);
+        const endHours = oneHourLater.getHours().toString().padStart(2, '0');
+        const endMinutes = oneHourLater.getMinutes().toString().padStart(2, '0');
+        setEndTime(`${endHours}:${endMinutes}`);
+      } else {
+        // Reset time for all-day events from monthly view
+        setShowTime(false);
+        setStartTime('00:00');
+        setEndTime('00:00');
+      }
+
       setSaveTarget('google');
       setSelectedAttendees([]);
     }

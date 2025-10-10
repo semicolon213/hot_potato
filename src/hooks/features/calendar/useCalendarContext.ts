@@ -58,7 +58,7 @@ interface CalendarContextType {
         handleNextMonth: () => void;
     };
     selectedDate: {
-        date: string;
+        date: Date;
         selectDate: (date: Date) => void;
     };
     events: Event[];
