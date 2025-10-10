@@ -687,12 +687,26 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
                                             e.preventDefault();
                                             addRecentSearch(inputValue.trim());
-                                            const newTerm = `#${inputValue.trim()}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(newTerm)) {
-                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+
+                                            if (suggestions.length > 0) {
+                                                const bestMatch = suggestions[0];
+                                                if (bestMatch.startDate) {
+                                                    goToDate(new Date(bestMatch.startDate));
+                                                }
+                                                const formattedTerm = `#${bestMatch.title}`;
+                                                const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                if (!existingTerms.includes(formattedTerm)) {
+                                                    setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                                }
+                                            } else {
+                                                const newTerm = `#${inputValue.trim()}`;
+                                                const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                if (!existingTerms.includes(newTerm)) {
+                                                    setSearchTerm([...existingTerms, newTerm].join(' '));
+                                                }
                                             }
                                             setInputValue('');
+                                            setSuggestions([]);
                                         }
                                     }}
                                 />
@@ -708,7 +722,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                                         setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                     }
 
-                                                    // 날짜 네비게이션은 제거됨 (suggestion에 날짜 정보 없음)
+                                                    if (suggestion.startDate) {
+                                                        goToDate(new Date(suggestion.startDate));
+                                                    }
 
                                                     setInputValue('');
                                                     setSuggestions([]);
