@@ -124,12 +124,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
       setIsFetchingGoogleEvents(true);
       try {
         const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const firstDayOfMonth = new Date(year, month, 1 - 7);
-        const lastDayOfMonth = new Date(year, month + 1, 7);
-
-        const timeMin = firstDayOfMonth.toISOString();
-        const timeMax = lastDayOfMonth.toISOString();
+        const timeMin = new Date(year, 0, 1).toISOString();
+        const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
 
         const primaryCalendarUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&fields=items(id,summary,start,end,description,colorId)`;
         const holidayCalendarUrl = `https://www.googleapis.com/calendar/v3/calendars/ko.south_korea%23holiday%40group.v.calendar.google.com/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&fields=items(id,summary,start,end,description,colorId)`;
@@ -206,7 +202,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     };
 
     fetchGoogleEvents();
-  }, [accessToken, currentDate.getFullYear(), currentDate.getMonth(), refreshKey]);
+  }, [accessToken, currentDate.getFullYear(), refreshKey]);
 
   const events = useMemo(() => {
     const visibleSheetEvents = sheetEvents.filter(event => {
