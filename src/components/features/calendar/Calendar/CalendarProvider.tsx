@@ -249,15 +249,47 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         return durationB - durationA;
     });
 
-    const filteredByTags = activeFilters.includes('all')
+    // If a search term is provided, filter all events by search.
+    // Otherwise, filter events by the active tags.
+    const eventsToDisplay = searchTerm
+      ? sortedEvents.filter(event => {
+          // For debugging: Log the data being processed
+          console.log(`[Search Debug] Event: "${event.title}", Type: "${event.type}", SearchTerm: "${searchTerm}"`);
+
+          const queries = searchTerm.toLowerCase().split(' ').filter(q => q.startsWith('#'));
+
+          if (queries.length === 0) {
+            const lowercasedSearchTerm = searchTerm.toLowerCase();
+            const titleMatch = event.title.toLowerCase().includes(lowercasedSearchTerm);
+            const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
+            const typeMatch = typeLabel && typeLabel.includes(lowercasedSearchTerm);
+            const isGooglePersonalEvent = !event.isHoliday && !event.type;
+            const personalMatch = isGooglePersonalEvent && ('개인일정'.includes(lowercasedSearchTerm) || '개인'.includes(lowercasedSearchTerm));
+            return titleMatch || typeMatch || personalMatch;
+          }
+
+          return queries.every(query => {
+            const cleanQuery = query.substring(1);
+            if (cleanQuery === '') return true;
+
+            const titleMatch = event.title.toLowerCase().includes(cleanQuery);
+            const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
+            const typeMatch = typeLabel && typeLabel.includes(cleanQuery);
+            const isGooglePersonalEvent = !event.isHoliday && !event.type;
+            const personalMatch = isGooglePersonalEvent && ('개인일정'.includes(cleanQuery) || '개인'.includes(cleanQuery));
+
+            // For debugging: Log matching results for each query
+            console.log(`  - Query: "${cleanQuery}", TitleMatch: ${titleMatch}, TypeMatch: ${typeMatch}, PersonalMatch: ${personalMatch}`);
+
+            return titleMatch || typeMatch || personalMatch;
+          });
+        })
+      : activeFilters.includes('all')
         ? sortedEvents
         : sortedEvents.filter(event => {
             const eventType = event.type || '';
             const eventTitle = event.title || '';
-
-            // Start with false, and turn true if any active filter matches.
             let isVisible = false;
-
             for (const filter of activeFilters) {
                 switch (filter) {
                     case 'holiday':
@@ -270,38 +302,15 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                         if (eventType === 'exam' && eventTitle === '기말고사') isVisible = true;
                         break;
                     default:
-                        // For all other filters ('event', 'meeting', etc.)
                         if (eventType === filter) isVisible = true;
                         break;
                 }
-                if (isVisible) break; // Found a match, no need to check other filters
+                if (isVisible) break;
             }
             return isVisible;
         });
 
-    const filteredBySearch = searchTerm
-        ? filteredByTags.filter(event => {
-            const queries = searchTerm.toLowerCase().split(' ').filter(q => q.startsWith('#'));
-            
-            if (queries.length === 0) {
-                // If there are no hashtag queries, just do a simple text search on the whole term
-                return event.title.toLowerCase().includes(searchTerm.toLowerCase());
-            }
-
-            // Event must match ALL hashtag queries
-            return queries.every(query => {
-                const cleanQuery = query.substring(1);
-                if (cleanQuery === '') return true;
-
-                const title = event.title.toLowerCase();
-                const typeLabel = (filterLabels[event.type || ''] || '').toLowerCase();
-
-                return title.includes(cleanQuery) || typeLabel.includes(cleanQuery);
-            });
-          })
-        : filteredByTags;
-
-    return filteredBySearch
+    return eventsToDisplay
       .map(event => {
         let color;
         if (event.color) { // Custom color from sheet

@@ -119,7 +119,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
-    const [inputValue, setInputValue] = useState('');
+    
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
@@ -146,96 +146,27 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
 
     useEffect(() => {
-        const loadSuggestions = async () => {
-            await initializeGoogleAPIOnce(null);
+        const suggestionItems = events.map(event => ({
+            title: event.title,
+            tag: event.type || (event.isHoliday ? '공휴일' : '개인 일정'),
+            startDate: event.startDate,
+            endDate: event.endDate,
+        }));
 
-            const year = Number(currentDate.year);
-            const timeMin = new Date(year, 0, 1).toISOString();
-            const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
+        suggestionItems.sort((a, b) => {
+            try {
+                const dateA = new Date(a.startDate).getTime();
+                const dateB = new Date(b.startDate).getTime();
+                if (isNaN(dateA)) return 1;
+                if (isNaN(dateB)) return -1;
+                return dateA - dateB;
+            } catch (e) {
+                return 0;
+            }
+        });
 
-            const sheetPromise = (async () => {
-                // 캘린더 이벤트는 이미 상위 컴포넌트에서 로드됨
-                return [];
-            })();
-
-            const calendarPromise = (async () => {
-                try {
-                    const response = await window.gapi.client.calendar.events.list({
-                        'calendarId': 'primary',
-                        'maxResults': 250,
-                        'singleEvents': true,
-                        'orderBy': 'startTime',
-                        timeMin,
-                        timeMax
-                    });
-                    const items = response.result.items || [];
-                    return items
-                        .map((item: GoogleCalendarEvent) => {
-                            const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
-                            const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
-                            return {
-                                title: item.summary,
-                                tag: '개인 일정',
-                                startDate: startDate,
-                                endDate: endDate || startDate
-                            };
-                        })
-                        .filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
-                } catch (error) {
-                    console.error("Error fetching Google Calendar events:", error);
-                    return [];
-                }
-            })();
-
-            const holidayPromise = (async () => {
-                try {
-                    const holidayCalendarId = 'ko.south_korea#holiday@group.v.calendar.google.com';
-                    const response = await window.gapi.client.calendar.events.list({
-                        'calendarId': holidayCalendarId,
-                        'maxResults': 50,
-                        'singleEvents': true,
-                        'orderBy': 'startTime',
-                        timeMin,
-                        timeMax
-                    });
-                    const items = response.result.items || [];
-                    return items.map((item: GoogleCalendarEvent) => {
-                        const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
-                        const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
-                        return {
-                            title: item.summary,
-                            tag: '공휴일',
-                            startDate: startDate,
-                            endDate: endDate || startDate
-                        };
-                    }).filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
-                } catch (error) {
-                    console.error("Error fetching holiday calendar events:", error);
-                    return [];
-                }
-            })();
-
-            const [sheetSuggestions, calendarSuggestions, holidaySuggestions] = await Promise.all([sheetPromise, calendarPromise, holidayPromise]);
-
-            const combinedSource = [...sheetSuggestions, ...calendarSuggestions, ...holidaySuggestions];
-
-            combinedSource.sort((a, b) => {
-                try {
-                    const dateA = new Date(a.startDate).getTime();
-                    const dateB = new Date(b.startDate).getTime();
-                    if (isNaN(dateA)) return 1;
-                    if (isNaN(dateB)) return -1;
-                    return dateA - dateB;
-                } catch (e) {
-                    return 0;
-                }
-            });
-
-            setSuggestionSource(combinedSource);
-        };
-
-        loadSuggestions();
-    }, [currentDate.year]);
+        setSuggestionSource(suggestionItems);
+    }, [events, filterLabels]);
 
     useEffect(() => {
         if (!isSuggestionsVisible) {
@@ -243,13 +174,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             return;
         }
 
-        if (inputValue) {
+        if (searchTerm) {
             // User is typing, so filter based on input
             const handler = setTimeout(() => {
-                const lowerInputValue = inputValue.toLowerCase();
+                const lowerSearchTerm = searchTerm.toLowerCase();
                 const filtered = suggestionSource.filter(item =>
-                    item.title.toLowerCase().includes(lowerInputValue) ||
-                    (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
+                    item.title.toLowerCase().includes(lowerSearchTerm) ||
+                    (item.tag && item.tag.toLowerCase().includes(lowerSearchTerm))
                 );
                 setSuggestions(filtered);
             }, 300);
@@ -269,7 +200,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 setSuggestions([]); // No recent searches, show empty
             }
         }
-    }, [inputValue, isSuggestionsVisible, suggestionSource]);
+    }, [searchTerm, isSuggestionsVisible, suggestionSource]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -720,13 +651,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
-    const handleRemoveTerm = (termToRemove: string) => {
-        const newSearchTerm = searchTerm
-            .split(' ')
-            .filter(t => t !== termToRemove)
-            .join(' ');
-        setSearchTerm(newSearchTerm);
-    };
+    
 
 
     return (
@@ -751,22 +676,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     placeholder="일정 검색..."
                                     className={"calendar-search-input"}
                                     style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
-                                    value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                     onFocus={() => setIsSuggestionsVisible(true)}
                                     onBlur={() => {
                                         setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
-                                            e.preventDefault();
-                                            const newTerm = `#${inputValue.trim()}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(newTerm)) {
-                                                setSearchTerm([...existingTerms, newTerm].join(' '));
-                                            }
-                                            setInputValue('');
-                                        }
                                     }}
                                 />
                                 {isSuggestionsVisible && suggestions.length > 0 && (
@@ -775,15 +689,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                             <li
                                                 key={index}
                                                 onMouseDown={() => {
-                                                    const formattedTerm = `#${suggestion.title}`;
-                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                    if (!existingTerms.includes(formattedTerm)) {
-                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                    }
-
-                                                    // 날짜 네비게이션은 제거됨 (suggestion에 날짜 정보 없음)
-
-                                                    setInputValue('');
+                                                    setSearchTerm(suggestion.title);
                                                     setSuggestions([]);
                                                 }}
                                             >
@@ -795,14 +701,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                     </ul>
                                 )}
                             </div>
-                            <div className="search-tags-container">
-                                {searchTerm.split(' ').filter(Boolean).map(term => (
-                                    <div key={term} className="search-tag">
-                                        {term}
-                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
-                                    </div>
-                                ))}
-                            </div>
+                            
                         </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
