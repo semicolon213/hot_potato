@@ -814,15 +814,15 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
   }> = [];
 
   // 개강일
-  eventsToSave.push({ id: 'semester-start', title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
+  eventsToSave.push({ id: 'semester-start', title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate), type: '공용일정' });
 
   // 수업일수 events
   const classDay30 = addInclusiveDays(semesterStartDate, 30);
   const classDay60 = addInclusiveDays(semesterStartDate, 60);
   const classDay90 = addInclusiveDays(semesterStartDate, 90);
-  eventsToSave.push({ id: 'class-day-30', title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30) });
-  eventsToSave.push({ id: 'class-day-60', title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60) });
-  eventsToSave.push({ id: 'class-day-90', title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90) });
+  eventsToSave.push({ id: 'class-day-30', title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30), type: '공용일정' });
+  eventsToSave.push({ id: 'class-day-60', title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60), type: '공용일정' });
+  eventsToSave.push({ id: 'class-day-90', title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90), type: '공용일정' });
 
   // 중간고사
   if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
@@ -836,13 +836,13 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
 
   // 성적입력 및 강의평가
   if (gradeEntryPeriod.start && gradeEntryPeriod.end) {
-    eventsToSave.push({ id: 'grade-entry', title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end) });
+    eventsToSave.push({ id: 'grade-entry', title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end), type: '공용일정' });
   }
 
   // Custom periods
   customPeriods.forEach(p => {
     if (p.period.start && p.period.end) {
-      eventsToSave.push({ id: `custom-${slugify(p.name)}`, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end) });
+      eventsToSave.push({ id: `custom-${slugify(p.name)}`, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: '공용일정' });
     }
   });
 
