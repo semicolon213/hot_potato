@@ -294,6 +294,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     useEffect(() => {
+        if (isSemesterPickerOpen) return;
+
         const semesterStartEvent = events.find(event => event.title === '개강일');
 
         if (semesterStartEvent && semesterStartEvent.startDate) {
@@ -328,7 +330,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                 setFinalExamsPeriod({ start: newFinalStart, end: newFinalEnd });
             }
         }
-    }, [events, midtermExamsPeriod, finalExamsPeriod]);
+    }, [events, midtermExamsPeriod, finalExamsPeriod, isSemesterPickerOpen]);
 
     useEffect(() => {
         const isMidtermChecked = activeFilters.includes('midterm_exam');
@@ -477,6 +479,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
 
             // Validate all periods before saving
             const allPeriods = [
+                { name: '중간고사', period: midtermExamsPeriod },
                 { name: '기말고사', period: finalExamsPeriod },
                 { name: '성적입력 및 강의평가', period: gradeEntryPeriod },
                 ...customPeriods.map(p => ({ name: p.name, period: p.period }))

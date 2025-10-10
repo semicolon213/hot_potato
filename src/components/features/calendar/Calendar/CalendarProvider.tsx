@@ -223,7 +223,18 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
     const combinedEvents = [...visibleSheetEvents, ...googleEvents];
 
-    const sortedEvents = combinedEvents.sort((a, b) => {
+    const uniqueEvents = combinedEvents.filter(
+      (event, index, self) =>
+        index ===
+        self.findIndex(
+          (e) =>
+            e.title === event.title &&
+            e.startDate === event.startDate &&
+            e.endDate === event.endDate
+        )
+    );
+
+    const sortedEvents = uniqueEvents.sort((a, b) => {
         const startDateA = new Date(a.startDate).getTime();
         const startDateB = new Date(b.startDate).getTime();
 
