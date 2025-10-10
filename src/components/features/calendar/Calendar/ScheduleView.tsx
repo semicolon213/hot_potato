@@ -3,7 +3,7 @@ import useCalendarContext from '../../../../hooks/features/calendar/useCalendarC
 import './ScheduleView.css';
 
 const ScheduleView: React.FC = () => {
-    const { events, isFetchingGoogleEvents, filterLabels } = useCalendarContext();
+    const { events, isFetchingGoogleEvents, filterLabels, setSelectedEvent } = useCalendarContext();
 
     const today = new Date();
     const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
@@ -49,7 +49,7 @@ const ScheduleView: React.FC = () => {
                         }
 
                         return (
-                            <li key={event.id} className="schedule-item">
+                            <li key={event.id} className="schedule-item" onClick={() => setSelectedEvent(event)}>
                                 <div className="schedule-item-tag" style={{ backgroundColor: event.color }}>
                                     {event.type || '개인일정'}
                                 </div>

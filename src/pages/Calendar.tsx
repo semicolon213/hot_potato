@@ -120,7 +120,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
             {selectedEvent && (
                 <EventDetailModal
                     event={selectedEvent}
-                    onClose={() => setSelectedEvent(null)}
+                    onClose={() => { setSelectedEvent(null); setModalPosition({ top: 0, left: 0 }); }}
                     onDelete={deleteEvent}
                     onEdit={handleEdit}
                     position={modalPosition}

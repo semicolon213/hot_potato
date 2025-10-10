@@ -679,86 +679,88 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                        <div className="search-wrapper">
-                            <div className="search-container" style={{ height: '35px', width: '250px' }}>
-                                <BiSearchAlt2 color="black" />
-                                <input
-                                    type="text"
-                                    placeholder="일정 검색..."
-                                    className={"calendar-search-input"}
-                                    style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
-                                    value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
-                                    onFocus={() => setIsSuggestionsVisible(true)}
-                                    onBlur={() => {
-                                        setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
-                                            e.preventDefault();
-                                            addRecentSearch(inputValue.trim());
+                    
+                        
+                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                    </div>
+                    <div className="search-wrapper">
+                        <div className="search-container" style={{ height: '35px', width: '250px' }}>
+                            <BiSearchAlt2 color="black" />
+                            <input
+                                type="text"
+                                placeholder="일정 검색..."
+                                className={"calendar-search-input"}
+                                style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onFocus={() => setIsSuggestionsVisible(true)}
+                                onBlur={() => {
+                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
+                                        e.preventDefault();
+                                        addRecentSearch(inputValue.trim());
 
-                                            if (suggestions.length > 0) {
-                                                const bestMatch = suggestions[0];
-                                                if (bestMatch.startDate) {
-                                                    goToDate(new Date(bestMatch.startDate));
-                                                }
-                                                const formattedTerm = `#${bestMatch.title}`;
+                                        if (suggestions.length > 0) {
+                                            const bestMatch = suggestions[0];
+                                            if (bestMatch.startDate) {
+                                                goToDate(new Date(bestMatch.startDate));
+                                            }
+                                            const formattedTerm = `#${bestMatch.title}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(formattedTerm)) {
+                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                            }
+                                        } else {
+                                            const newTerm = `#${inputValue.trim()}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(newTerm)) {
+                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+                                            }
+                                        }
+                                        setInputValue('');
+                                        setSuggestions([]);
+                                    }
+                                }}
+                            />
+                            {isSuggestionsVisible && suggestions.length > 0 && (
+                                <ul className="search-suggestions">
+                                    {suggestions.map((suggestion, index) => (
+                                        <li
+                                            key={index}
+                                            onMouseDown={() => {
+                                                const formattedTerm = `#${suggestion.title}`;
                                                 const existingTerms = searchTerm.split(' ').filter(Boolean);
                                                 if (!existingTerms.includes(formattedTerm)) {
                                                     setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                 }
-                                            } else {
-                                                const newTerm = `#${inputValue.trim()}`;
-                                                const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                if (!existingTerms.includes(newTerm)) {
-                                                    setSearchTerm([...existingTerms, newTerm].join(' '));
+
+                                                if (suggestion.startDate) {
+                                                    goToDate(new Date(suggestion.startDate));
                                                 }
-                                            }
-                                            setInputValue('');
-                                            setSuggestions([]);
-                                        }
-                                    }}
-                                />
-                                {isSuggestionsVisible && suggestions.length > 0 && (
-                                    <ul className="search-suggestions">
-                                        {suggestions.map((suggestion, index) => (
-                                            <li
-                                                key={index}
-                                                onMouseDown={() => {
-                                                    const formattedTerm = `#${suggestion.title}`;
-                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                    if (!existingTerms.includes(formattedTerm)) {
-                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                    }
 
-                                                    if (suggestion.startDate) {
-                                                        goToDate(new Date(suggestion.startDate));
-                                                    }
-
-                                                    setInputValue('');
-                                                    setSuggestions([]);
-                                                }}
-                                            >
-                                                <span className="suggestion-title">{suggestion.title}</span>
-                                                <span className="suggestion-date">{suggestion.startDate ? suggestion.startDate.substring(5).replace('-', '월 ') + '일' : ''}</span>
-                                                <span className="suggestion-tag">{suggestion.tag}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                            <div className="search-tags-container">
-                                {searchTerm.split(' ').filter(Boolean).map(term => (
-                                    <div key={term} className="search-tag">
-                                        {term}
-                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
-                                    </div>
-                                ))}
-                            </div>
-                            
+                                                setInputValue('');
+                                                setSuggestions([]);
+                                            }}
+                                        >
+                                            <span className="suggestion-title">{suggestion.title}</span>
+                                            <span className="suggestion-date">{suggestion.startDate ? suggestion.startDate.substring(5).replace('-', '월 ') + '일' : ''}</span>
+                                            <span className="suggestion-tag">{suggestion.tag}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
-                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
+                        <div className="search-tags-container">
+                            {searchTerm.split(' ').filter(Boolean).map(term => (
+                                <div key={term} className="search-tag">
+                                    {term}
+                                    <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                </div>
+                            ))}
+                        </div>
+                        
                     </div>
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {user && user.isAdmin && (
