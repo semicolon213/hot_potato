@@ -862,6 +862,30 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
       }
     });
 
+    // 이벤트 삭제, 업데이트, 추가 로직
+    const newEventIds = new Set(eventsToSave.map(e => e.id));
+    const rowsToDelete: number[] = [];
+
+    // 삭제할 행 식별 (학사일정 관련 이벤트만 대상으로 함)
+    existingEventsMap.forEach((rowIndex, id) => {
+      const isAcademicEvent = id.startsWith('semester-') || id.startsWith('class-day-') || id.startsWith('midterm-') || id.startsWith('final-') || id.startsWith('grade-') || id.startsWith('custom-');
+      if (isAcademicEvent && !newEventIds.has(id)) {
+        rowsToDelete.push(rowIndex);
+      }
+    });
+
+    // 행을 삭제하는 대신 내용을 지워서 삭제 효과를 냄
+    if (rowsToDelete.length > 0) {
+      console.log(`Clearing ${rowsToDelete.length} academic schedule event rows that no longer exist.`);
+      for (const rowIndex of rowsToDelete) {
+        const range = `${ENV_CONFIG.CALENDAR_SHEET_NAME}!A${rowIndex}:K${rowIndex}`;
+        await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+          spreadsheetId: calendarSpreadsheetId,
+          range: range,
+        });
+      }
+    }
+
     // 새로운 이벤트들 생성 또는 업데이트
     for (const event of eventsToSave) {
       const rowIndex = existingEventsMap.get(event.id);
