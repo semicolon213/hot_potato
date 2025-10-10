@@ -872,7 +872,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         <div className="day-wrapper">
                             {daysInMonth.map((date) => {
                                 const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
-                                const isSelected = selectedDate.date === date.date;
+                                const isSelected = selectedDate.date.toISOString().split('T')[0] === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
@@ -895,7 +895,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
                     </div>
                 ) : (
-                    <WeeklyCalendar selectedWeek={selectedWeek} />
+                    <WeeklyCalendar selectedWeek={selectedWeek} onAddEvent={onAddEvent} />
                 )
             ) : (
                 <ScheduleView />

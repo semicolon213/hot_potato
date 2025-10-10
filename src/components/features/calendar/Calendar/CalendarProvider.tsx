@@ -543,7 +543,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         handleNextMonth,
       },
     selectedDate: {
-      date: formatDate(selectedDate),
+      date: selectedDate, // Pass the full Date object
       selectDate,
     },
     events,

@@ -5,6 +5,7 @@ import { RRule } from 'rrule';
 
 interface WeeklyCalendarProps {
     selectedWeek: number;
+    onAddEvent: () => void;
 }
 
 // Helper function to calculate event layout
@@ -77,8 +78,8 @@ const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[
 };
 
 
-const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
-    const { events, setSelectedEvent, dispatch, currentDate, semesterStartDate } = useCalendarContext();
+const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEvent }) => {
+    const { events, setSelectedEvent, dispatch, currentDate, semesterStartDate, selectedDate } = useCalendarContext();
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
@@ -102,6 +103,19 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
         return days;
     }, [selectedWeek, semesterStartDate]);
 
+    const handleTimeSlotClick = (day: { date: string }, e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickY = e.clientY - rect.top;
+        const totalHeight = rect.height;
+        const hour = Math.floor((clickY / totalHeight) * 24);
+
+        const clickedDate = new Date(day.date);
+        clickedDate.setHours(hour, 0, 0, 0);
+
+        selectedDate.selectDate(clickedDate);
+        onAddEvent();
+    };
+    
     const expandedEvents = useMemo(() => {
         if (weekDays.length === 0) {
             return events;
@@ -251,14 +265,17 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                         const timedEvents = expandedEvents.filter(event => event.startDate === day.date && event.startDateTime);
                         return (
                             <div key={day.date} className={`day-column ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
-                                <div className="timed-events-grid">
+                                <div className="timed-events-grid" onClick={(e) => handleTimeSlotClick(day, e)}>
                                     {hours.map(hour => <div key={hour} className="time-grid-line"></div>)}
                                     {timedEvents.map(event => (
                                         <div
                                             key={`${event.id}-${event.startDate}`}
                                             className="timed-event-item"
                                             style={{ ...getEventPosition(event), backgroundColor: event.color }}
-                                            onClick={() => setSelectedEvent(event)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedEvent(event);
+                                            }}
                                         >
                                             <span className="event-title">{event.title}</span>
                                         </div>
