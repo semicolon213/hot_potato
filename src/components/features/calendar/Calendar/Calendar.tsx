@@ -460,29 +460,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         setGradeEntryPeriod({ ...gradeEntryPeriod, [part]: newDate });
     };
 
-    const handleDeleteCustomPeriod = async (id: string) => {
+    const handleDeleteCustomPeriod = (id: string) => {
         if (window.confirm('이 항목을 정말로 삭제하시겠습니까?')) {
             const updatedPeriods = customPeriods.filter(p => p.id !== id);
-
-            // Optimistically update the UI
             setCustomPeriods(updatedPeriods);
-
-            try {
-                // Persist the changes to the backend
-                await onSave({
-                    semesterStartDate,
-                    finalExamsPeriod,
-                    midtermExamsPeriod,
-                    gradeEntryPeriod,
-                    customPeriods: updatedPeriods,
-                });
-                // Optional: Show a success toast/notification here
-            } catch (error) {
-                console.error("삭제 중 오류 발생:", error);
-                alert("삭제 중 오류가 발생했습니다. 페이지를 새로고침 해주세요.");
-                // Revert the optimistic update on failure
-                setCustomPeriods(customPeriods);
-            }
         }
     };
 
