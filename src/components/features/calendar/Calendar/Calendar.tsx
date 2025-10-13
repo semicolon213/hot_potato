@@ -666,8 +666,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
 
-
-                        {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
                     <div className="search-wrapper">
                         <div id="calendar-search-container" className="search-container" style={{ width: '250px' }}>
