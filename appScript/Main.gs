@@ -45,6 +45,36 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    // 문서 생성 액션 처리
+    if (req.action === 'createDocument') {
+      console.log('📄 문서 생성 요청 받음:', req);
+      const result = handleCreateDocument(req);
+      console.log('📄 문서 생성 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 문서 목록 조회 액션 처리
+    if (req.action === 'getDocuments') {
+      console.log('📄 문서 목록 조회 요청 받음:', req);
+      const result = handleGetDocuments(req);
+      console.log('📄 문서 목록 조회 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 문서 삭제 액션 처리
+    if (req.action === 'deleteDocuments') {
+      console.log('🗑️ 문서 삭제 요청 받음:', req);
+      const result = handleDeleteDocuments(req);
+      console.log('🗑️ 문서 삭제 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     
     // 사용자 인증 관련 액션들
     if (req.action === 'checkUserStatus') {
@@ -294,8 +324,8 @@ function testPhoneEncryptionSimple() {
 // ===== 배포 정보 =====
 function getDeploymentInfo() {
   return {
-    version: '1.14.0',
-    description: '메인 엔트리 포인트 - 통합 사용자 인증 + Base64 암호화 + 올바른 시트 사용',
+    version: '1.15.0',
+    description: '메인 엔트리 포인트 - 통합 사용자 인증 + Base64 암호화 + 문서 관리 시스템',
     functions: [
       'doPost',
       'doGet', 
@@ -308,9 +338,12 @@ function getDeploymentInfo() {
       'encryptEmailMain', // Encryption.gs에서 정의
       'decryptEmailMain', // Encryption.gs에서 정의
       'verifyAdminKeyData',
-      'checkApprovalStatus'
+      'checkApprovalStatus',
+      'handleCreateDocument', // DocumentManagement.gs에서 정의
+      'handleGetDocuments', // DocumentManagement.gs에서 정의
+      'handleDeleteDocuments' // DocumentManagement.gs에서 정의
     ],
-    dependencies: ['UserManagement.gs', 'SpreadsheetUtils.gs', 'Encryption.gs', 'CONFIG.gs', 'KeyManagement.gs']
+    dependencies: ['UserManagement.gs', 'SpreadsheetUtils.gs', 'Encryption.gs', 'CONFIG.gs', 'KeyManagement.gs', 'DocumentManagement.gs']
   };
 }
 
@@ -341,6 +374,8 @@ function verifyAdminKeyData(adminKey) {
   }
 }
 
+
+// ===== 문서 관련 함수들은 DocumentManagement.gs로 이동됨 =====
 
 // ===== 이메일/연락처 암복호화 함수들 =====
 // Encryption.gs의 encryptEmailMain, decryptEmailMain 함수를 사용합니다.

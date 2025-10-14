@@ -16,6 +16,7 @@ import {
     appendSheetData
 } from "../../../utils/google/googleSheetUtils";
 import { ENV_CONFIG } from "../../../config/environment";
+import { apiClient } from "../../../utils/api/apiClient";
 
 /**
  * @brief 템플릿 데이터 타입 정의
@@ -92,25 +93,11 @@ export function useTemplateUI(
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
     const onUseTemplate = useCallback(async (type: string, title: string, role: string) => {
+        console.log('📄 템플릿 사용 시작:', { type, title, role });
         
-        const getSpreadsheetNameByRole = (role: string): string => {
-            switch (role) {
-                case 'professor': return '교수용_DB';
-                case 'assistant': return '조교용_DB';
-                case 'executive': return '집행부용_DB';
-                case 'adjunct':
-                case 'student':
-                default:
-                    return ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
-            }
-        };
-
-        const SPREADSHEET_NAME = getSpreadsheetNameByRole(role);
-        const DOC_SHEET_NAME = 'documents';
-
         const isDefault = defaultTemplates.some(t => t.type === type);
 
-        // Default templates with specific URLs
+        // Default templates with specific URLs - 기존 방식 유지
         const defaultTemplateUrls: { [key: string]: string } = {
             "empty": "https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0",
             "meeting": "https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku",
@@ -120,171 +107,54 @@ export function useTemplateUI(
             "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
         };
 
+        // 기본 템플릿의 경우 기존 방식 사용 (URL 복사)
         if (defaultTemplateUrls[type]) {
             window.open(defaultTemplateUrls[type].replace('/edit', '/copy'), '_blank');
             return;
         }
 
+        // URL인 경우 직접 열기
         if (type.startsWith('http')) {
             window.open(type, '_blank');
             return;
         }
 
-        // "내 템플릿" 로직
-        if (!isDefault) {
-            const storageKey = `template_doc_id_${title}`;
-            const documentId = localStorage.getItem(storageKey);
+        // 사용자 정보 가져오기
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        const creatorEmail = userInfo.email || '';
 
-            if (documentId) {
-                const newTitle = `[사본] ${title}`;
-                const copiedDocument = await copyGoogleDocument(documentId, newTitle);
-
-                if (copiedDocument) {
-                    const spreadsheetId = await getSheetIdByName(SPREADSHEET_NAME);
-                    if (!spreadsheetId) return;
-
-                    const sheetExists = await checkSheetExists(spreadsheetId, DOC_SHEET_NAME);
-                    if (!sheetExists) {
-                        await createNewSheet(spreadsheetId, DOC_SHEET_NAME);
-                        const header = [['document_id', 'document_number', 'title', 'author', 'created_at', 'last_modified', 'approval_date', 'status', 'url', 'permission']];
-                        await appendSheetData(spreadsheetId, DOC_SHEET_NAME, header);
-                    }
-                    
-                    const today = new Date();
-                    const datePrefix = today.getFullYear().toString() + 
-                                     ('0' + (today.getMonth() + 1)).slice(-2) + 
-                                     ('0' + today.getDate()).slice(-2);
-
-                    const docData = await getSheetData(spreadsheetId, DOC_SHEET_NAME, 'B:B');
-                    const todayDocs = docData ? docData.filter(row => row[0] && row[0].startsWith(datePrefix)) : [];
-                    const newSeq = ('000' + (todayDocs.length + 1)).slice(-3);
-                    const newDocNumber = `${datePrefix}-${newSeq}`;
-
-                    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-                    const newRow = [
-                        copiedDocument.id,
-                        newDocNumber,
-                        newTitle,
-                        userInfo.name || '알 수 없음',
-                        today.toISOString(),
-                        new Date().toLocaleDateString('ko-KR'),
-                        '',
-                        '진행중',
-                        copiedDocument.webViewLink,
-                        role, // Save the selected role
-                    ];
-
-                    await appendSheetData(spreadsheetId, DOC_SHEET_NAME, [newRow]);
-                    
-                    window.open(copiedDocument.webViewLink, '_blank');
-                }
-                return;
-            }
+        if (!creatorEmail) {
+            alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+            return;
         }
 
-        // Creation logic (for first use or if the previous doc was deleted)
         try {
-            const gapi = (window as any).gapi;
+            // API를 통한 문서 생성
+            console.log('📄 API를 통한 문서 생성 시도:', { title, type, creatorEmail, role });
             
-            console.log('Google Docs API 사용 시도 - gapi 상태:', {
-              'gapi': !!gapi,
-              'gapi.client': !!gapi?.client,
-              'gapi.client.docs': !!gapi?.client?.docs,
-              'gapi.client.docs.documents': !!gapi?.client?.docs?.documents
-            });
-            
-            // Google Docs API가 실제로 사용 가능한지 테스트
-            let docsApiAvailable = false;
-            try {
-                // API 객체가 존재하고 create 메서드가 있는지 확인
-                if (gapi.client && gapi.client.docs && gapi.client.docs.documents && 
-                    typeof gapi.client.docs.documents.create === 'function') {
-                    docsApiAvailable = true;
-                    console.log('Google Docs API 사용 가능 확인됨');
-                } else {
-                    console.warn('Google Docs API 객체는 존재하지만 create 메서드가 없습니다.');
-                    
-                    // 잠시 대기 후 다시 시도 (타이밍 문제 해결)
-                    console.log('1초 후 Google Docs API 재확인 시도...');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    // 재확인
-                    if (gapi.client && gapi.client.docs && gapi.client.docs.documents && 
-                        typeof gapi.client.docs.documents.create === 'function') {
-                        docsApiAvailable = true;
-                        console.log('Google Docs API 재확인 성공 - 사용 가능');
-                    } else {
-                        console.warn('Google Docs API 재확인 실패 - 여전히 사용할 수 없습니다.');
-                    }
-                }
-            } catch (error) {
-                console.warn('Google Docs API 사용 가능성 테스트 실패:', error);
-            }
-            
-            // Google Docs API가 로드되지 않았거나 사용할 수 없는 경우
-            if (!docsApiAvailable) {
-                console.warn('Google Docs API가 사용할 수 없습니다. Google Drive API를 사용합니다.');
-                
-                // Google Drive API를 사용하여 문서 생성 (fallback)
-                if (!gapi.client.drive || !gapi.client.drive.files) {
-                    console.error('Google Drive API도 로드되지 않았습니다.');
-                    alert('Google API를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
-                    return;
-                }
-                
-                console.log('Google Drive API를 사용하여 문서 생성 시도...');
-                
-                // Google Drive API로 새 문서 생성
-                const response = await gapi.client.drive.files.create({
-                    resource: {
-                        name: title,
-                        mimeType: 'application/vnd.google-apps.document'
-                    }
-                });
-                
-                const docId = response.result.id;
-                console.log(`Created document '${title}' with ID: ${docId} (via Drive API)`);
-                
-                let docUrl;
-                if (!isDefault) {
-                    const storageKey = `template_doc_id_${title}`;
-                    localStorage.setItem(storageKey, docId);
-                    docUrl = `https://docs.google.com/document/d/${docId}/edit`;
-                } else {
-                    docUrl = `https://docs.google.com/document/d/${docId}/edit`;
-                }
-                window.open(docUrl, '_blank');
-                return;
-            }
-            
-            console.log('Google Docs API로 문서 생성 시도...');
-            const response = await gapi.client.docs.documents.create({
+            const result = await apiClient.createDocument({
                 title: title,
+                templateType: type,
+                creatorEmail: creatorEmail,
+                editors: [], // 필요시 편집자 추가
+                role: role
             });
 
-            const docId = response.result.documentId;
-            console.log(`Created document '${title}' with ID: ${docId} (via Docs API)`);
-
-            let docUrl;
-            if (!isDefault) {
-                const storageKey = `template_doc_id_${title}`;
-                localStorage.setItem(storageKey, docId);
-                // Open with /edit the FIRST time so the user can create the template
-                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+            if (result.success && result.data) {
+                console.log('📄 문서 생성 성공:', result.data);
+                
+                // 생성된 문서 열기
+                window.open(result.data.documentUrl, '_blank');
+                
+                // 성공 메시지
+                alert('문서가 성공적으로 생성되었습니다!');
             } else {
-                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+                console.error('📄 문서 생성 실패:', result);
+                alert('문서 생성에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
             }
-            window.open(docUrl, '_blank');
-
         } catch (error) {
-            console.error('Error creating Google Doc:', error);
-            
-            // 403 Forbidden 오류인 경우 스코프 문제일 가능성이 높음
-            if ((error as any).status === 403 || ((error as any).result && (error as any).result.error && (error as any).result.error.code === 403)) {
-                alert('Google Docs API 사용 권한이 없습니다. 로그아웃 후 다시 로그인해주세요.');
-            } else {
-                alert('Google Docs에서 문서를 생성하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
-            }
+            console.error('📄 문서 생성 오류:', error);
+            alert('문서 생성 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
         }
     }, [onPageChange]);
 
