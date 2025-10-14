@@ -36,54 +36,117 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
 
-  // 암호화된 데이터 복호화
+  // 암호화된 데이터 복호화 (통합 App Script API 사용)
   const decryptData = useCallback(async (dataList: any[]) => {
     try {
-      // App Script URL이 없으면 원본 데이터 반환
-      if (!import.meta.env.VITE_APP_SCRIPT_URL) {
-        console.warn('App Script URL이 설정되지 않았습니다. 암호화되지 않은 데이터를 사용합니다.');
-        return dataList;
-      }
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
 
-      const response = await fetch(`${import.meta.env.VITE_APP_SCRIPT_URL}?action=decryptStaffData`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ staffList: dataList })
-      });
+      // 각 교직원의 전화번호와 이메일을 개별적으로 복호화
+      const decryptedList = await Promise.all(
+        dataList.map(async (staff) => {
+          const decryptedStaff = { ...staff };
+          
+          // 전화번호 복호화
+          if (staff.tel && staff.tel.trim() !== '') {
+            try {
+              const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'decryptEmail', data: staff.tel })
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                  decryptedStaff.tel = result.data;
+                }
+              }
+            } catch (error) {
+              console.warn('전화번호 복호화 실패:', error);
+            }
+          }
+          
+          // 이메일 복호화
+          if (staff.email && staff.email.trim() !== '') {
+            try {
+              const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'decryptEmail', data: staff.email })
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                  decryptedStaff.email = result.data;
+                }
+              }
+            } catch (error) {
+              console.warn('이메일 복호화 실패:', error);
+            }
+          }
+          
+          return decryptedStaff;
+        })
+      );
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.success ? data.decryptedStaffList : dataList;
+      return decryptedList;
     } catch (error) {
       console.warn('데이터 복호화 실패, 원본 데이터를 사용합니다:', error);
       return dataList;
     }
   }, []);
 
-  // 데이터 암호화
+  // 데이터 암호화 (통합 App Script API 사용)
   const encryptData = useCallback(async (dataItem: any) => {
     try {
-      // App Script URL이 없으면 원본 데이터 반환
-      if (!import.meta.env.VITE_APP_SCRIPT_URL) {
-        console.warn('App Script URL이 설정되지 않았습니다. 암호화되지 않은 데이터를 사용합니다.');
-        return dataItem;
-      }
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
 
-      const response = await fetch(`${import.meta.env.VITE_APP_SCRIPT_URL}?action=encryptStaffData`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ staff: dataItem })
-      });
+      const encryptedStaff = { ...dataItem };
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // 전화번호 암호화
+      if (dataItem.tel && dataItem.tel.trim() !== '') {
+        try {
+          const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'encryptEmail', data: dataItem.tel })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              encryptedStaff.tel = result.data;
+            }
+          }
+        } catch (error) {
+          console.warn('전화번호 암호화 실패:', error);
+        }
       }
       
-      const data = await response.json();
-      return data.success ? data.encryptedStaff : dataItem;
+      // 이메일 암호화
+      if (dataItem.email && dataItem.email.trim() !== '') {
+        try {
+          const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'encryptEmail', data: dataItem.email })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              encryptedStaff.email = result.data;
+            }
+          }
+        } catch (error) {
+          console.warn('이메일 암호화 실패:', error);
+        }
+      }
+      
+      return encryptedStaff;
     } catch (error) {
       console.warn('데이터 암호화 실패, 원본 데이터를 사용합니다:', error);
       return dataItem;

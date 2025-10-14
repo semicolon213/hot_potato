@@ -214,6 +214,7 @@ function handleDailyKeyUpdate() {
 }
 
 // ===== 이메일 템플릿 생성 함수 =====
+// adminKey는 암호화된 상태로 전달됩니다
 function generateEmailTemplate(userEmail, adminKey) {
   const emailContent = `
 <!DOCTYPE html>
@@ -414,22 +415,22 @@ function handleSendAdminKeyEmail(userEmail) {
     console.log('관리자 키 조회 성공');
     console.log('복호화된 키:', decryptedKey.substring(0, 20) + '...');
     
-    // 이메일 템플릿 생성
+    // 이메일 템플릿 생성 (암호화된 키 사용)
     let emailTemplate;
     try {
-      emailTemplate = generateEmailTemplate(userEmail, decryptedKey);
+      emailTemplate = generateEmailTemplate(userEmail, encryptedKey);
       console.log('이메일 템플릿 생성 완료');
     } catch (templateError) {
       console.error('이메일 템플릿 생성 실패:', templateError);
       throw new Error('이메일 템플릿 생성에 실패했습니다: ' + templateError.message);
     }
     
-    // 복호화된 키와 이메일 템플릿을 반환
+    // 암호화된 키와 이메일 템플릿을 반환
     return {
       success: true,
       message: '관리자 키를 성공적으로 조회했습니다',
       userEmail,
-      adminKey: decryptedKey,
+      adminKey: encryptedKey, // 암호화된 키 반환
       encryptedKey: encryptedKey,
       layersUsed: layersUsed,
       emailTemplate: emailTemplate

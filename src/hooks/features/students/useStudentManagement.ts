@@ -54,6 +54,51 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     });
   };
 
+  // 전화번호 복호화 함수
+  const decryptPhone = async (encryptedPhone: string): Promise<string> => {
+    if (!encryptedPhone || encryptedPhone.trim() === '') {
+      return encryptedPhone;
+    }
+
+    // 이미 복호화된 전화번호인지 확인 (010-XXXX-XXXX 형식)
+    if (/^010-\d{4}-\d{4}$/.test(encryptedPhone)) {
+      return encryptedPhone;
+    }
+
+    try {
+      // 개발 환경에서는 프록시 사용, 프로덕션에서는 직접 URL 사용
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+      
+      const requestBody = {
+        action: 'decryptEmail',
+        data: encryptedPhone
+      };
+
+      console.log('전화번호 복호화 요청:', { baseUrl, requestBody });
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('전화번호 복호화 성공:', result);
+        return result.success ? result.data : encryptedPhone;
+      } else {
+        console.error('전화번호 복호화 응답 실패:', response.status, response.statusText);
+        return encryptedPhone;
+      }
+    } catch (error) {
+      console.error('전화번호 복호화 실패:', error);
+      return encryptedPhone;
+    }
+  };
+
   // Papyrus DB에서 학생 데이터 가져오기
   const fetchStudents = async () => {
     setIsLoading(true);
@@ -66,25 +111,30 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
       console.log('Papyrus DB에서 받은 학생 데이터:', studentsData);
       
       if (studentsData && studentsData.length > 0) {
-        const studentData: StudentWithCouncil[] = studentsData.map((student: any) => {
-          const studentObj: Student = {
-            no_student: student.no_student || '',
-            name: student.name || '',
-            address: student.address || '',
-            phone_num: student.phone_num || '',
-            grade: student.grade || '',
-            state: student.state || '',
-            council: student.council || ''
-          };
+        // 전화번호 복호화 처리
+        const studentData: StudentWithCouncil[] = await Promise.all(
+          studentsData.map(async (student: any) => {
+            const decryptedPhone = await decryptPhone(student.phone_num || '');
+            
+            const studentObj: Student = {
+              no_student: student.no_student || '',
+              name: student.name || '',
+              address: student.address || '',
+              phone_num: decryptedPhone,
+              grade: student.grade || '',
+              state: student.state || '',
+              council: student.council || ''
+            };
 
-          return {
-            ...studentObj,
-            parsedCouncil: parseCouncil(studentObj.council)
-          };
-        });
+            return {
+              ...studentObj,
+              parsedCouncil: parseCouncil(studentObj.council)
+            };
+          })
+        );
 
         setStudents(studentData);
-        console.log(`학생 ${studentData.length}명 데이터 로드 완료`);
+        console.log(`학생 ${studentData.length}명 데이터 로드 완료 (전화번호 복호화 완료)`);
       } else {
         console.log('학생 데이터가 없습니다.');
         setStudents([]);

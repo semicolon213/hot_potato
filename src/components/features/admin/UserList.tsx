@@ -24,8 +24,18 @@ const UserList: React.FC<UserListProps> = ({
   onApproveUser,
   onRejectUser
 }) => {
+  console.log('=== UserList 렌더링 ===');
+  console.log('받은 users 배열:', users);
+  console.log('users 배열 길이:', users?.length || 0);
+  
   const pendingUsers = users?.filter(user => !user.isApproved) || [];
   const approvedUsers = users?.filter(user => user.isApproved) || [];
+  
+  console.log('승인 대기 사용자 수:', pendingUsers.length);
+  console.log('승인 대기 사용자 목록:', pendingUsers.map(u => ({ id: u.id, name: u.name, isApproved: u.isApproved })));
+  
+  console.log('승인된 사용자 수:', approvedUsers.length);
+  console.log('승인된 사용자 목록:', approvedUsers.map(u => ({ id: u.id, name: u.name, isApproved: u.isApproved })));
 
   return (
     <>

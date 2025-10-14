@@ -38,6 +38,10 @@ function doPostAuthInternal(req) {
         result = handleSendAdminKeyEmail(req.userEmail);
         break;
         
+      case 'clearUserCache':
+        result = handleClearUserCache();
+        break;
+        
       case 'submitRegistrationRequest':
         result = handleSubmitRegistrationRequest(req);
         break;
@@ -106,11 +110,30 @@ function doGetAuthInternal(e) {
 
 // ===== 사용자 관리 핸들러 함수들 =====
 
+// 사용자 캐시 무효화 핸들러
+function handleClearUserCache() {
+  try {
+    console.log('사용자 캐시 무효화 요청');
+    invalidateCache('all_users');
+    
+    return {
+      success: true,
+      message: '사용자 캐시가 무효화되었습니다.'
+    };
+    
+  } catch (error) {
+    console.error('캐시 무효화 실패:', error);
+    throw error;
+  }
+}
+
 // 모든 사용자 목록 가져오기 핸들러
 function handleGetPendingUsers() {
   try {
-    console.log('handleGetPendingUsers 호출됨');
+    console.log('=== handleGetPendingUsers 호출됨 ===');
     const result = getAllUsers();
+    console.log('getAllUsers 결과:', result);
+    console.log('반환할 사용자 수:', result.users ? result.users.length : 0);
     
     return {
       success: true,
@@ -339,7 +362,7 @@ function migrateExistingEmails() {
       
       // 이메일이 있고, 이미 암호화되지 않은 경우 (암호화된 이메일은 @ 앞에 특정 패턴이 있음)
       if (userEmail && userEmail.trim() !== '' && !isEncryptedEmail(userEmail)) {
-        const encryptedEmail = rot13Encrypt(userEmail);
+        const encryptedEmail = encryptEmailMain(userEmail);
         
         // D열(google_member) 업데이트
         sheet.getRange(`D${i + 1}`).setValue(encryptedEmail);
@@ -413,7 +436,7 @@ function testRot13Encryption() {
   
   const results = testEmails.map(email => {
     const encrypted = rot13Encrypt(email);
-    const decrypted = rot13Decrypt(encrypted);
+    const decrypted = decryptEmailMain(encrypted);
     return {
       original: email,
       encrypted: encrypted,
@@ -484,7 +507,7 @@ function checkUserApprovalStatus(email) {
       const row = data[i];
       const userEmail = row[3]; // google_member 컬럼
       
-      if (userEmail && decryptEmail(userEmail) === email) {
+      if (userEmail && decryptEmailMain(userEmail) === email) {
         const approvalStatus = row[4]; // Approval 컬럼
         const isAdmin = row[5]; // is_admin 컬럼
         
@@ -532,17 +555,42 @@ function checkUserRegistrationStatus(email) {
       const row = data[i];
       const userEmail = row[3]; // google_member 컬럼
       
-      if (userEmail && decryptEmail(userEmail) === email) {
+      if (userEmail && decryptEmailMain(userEmail) === email) {
         const noMember = row[0]; // no_member 컬럼
         const active = row[1]; // active 컬럼
         const name = row[2]; // name_member 컬럼
+        const approvalStatus = row[4]; // Approval 컬럼
+        const isAdminStatus = row[5]; // is_admin 컬럼
+        
+        // 승인 상태 판단
+        let isApproved = false;
+        let approvalStatusText = 'not_requested';
+        
+        if (approvalStatus === '') {
+          // 빈칸: 승인요청 안한 사용자
+          approvalStatusText = 'not_requested';
+        } else if (approvalStatus === 'X') {
+          // X: 가입승인 대기
+          approvalStatusText = 'pending';
+        } else if (approvalStatus === 'O') {
+          // O: 가입승인된 사용자
+          isApproved = true;
+          approvalStatusText = 'approved';
+        }
+        
+        // 관리자 여부 판단
+        const isAdmin = isAdminStatus === 'O';
         
         return {
           success: true,
           email: email,
           isRegistered: !!noMember && !!name,
           isActive: active === 1,
+          isApproved: isApproved,
+          approvalStatus: approvalStatusText,
+          isAdmin: isAdmin,
           memberNumber: noMember,
+          studentId: noMember,
           name: name,
           message: '사용자 등록 상태 확인 완료'
         };

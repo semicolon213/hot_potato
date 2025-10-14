@@ -37,6 +37,31 @@
     // 키 만료 시간 (24시간)
     const KEY_EXPIRY_HOURS = 24;
 
+    // ===== 사용자 관리 설정 =====
+    // 사용자 시트 컬럼 설정
+    const USER_SHEET_COLUMNS = {
+    EMAIL: 0,           // A열 - 이메일
+    APPROVAL_STATUS: 1, // B열 - 승인상태
+    IS_ADMIN: 2,        // C열 - 관리자여부
+    STUDENT_ID: 3,      // D열 - 학생번호
+    REGISTERED_AT: 4    // E열 - 등록일시
+    };
+    
+    // 사용자 시트 헤더
+    const USER_SHEET_HEADERS = ['이메일', '승인상태', '관리자여부', '학생번호', '등록일시'];
+    
+    // 승인 상태 상수
+    const APPROVAL_STATUS = {
+    PENDING: 'X',  // 대기
+    APPROVED: 'O'  // 승인
+    };
+    
+    // 관리자 여부 상수
+    const ADMIN_STATUS = {
+    NO: 'X',  // 일반 사용자
+    YES: 'O'  // 관리자
+    };
+
     // ===== 이메일 설정 =====
     // 이메일 암호화 사용 여부
     const USE_EMAIL_ENCRYPTION = true;
@@ -70,18 +95,7 @@
     };
 
     // ===== 사용자 관리 설정 =====
-    // 승인 상태 값
-    const APPROVAL_STATUS = {
-    PENDING: 'X',
-    APPROVED: 'O',
-    REJECTED: ''
-    };
-
-    // 관리자 상태 값
-    const ADMIN_STATUS = {
-    ADMIN: 'O',
-    USER: 'X'
-    };
+    // (이미 위에서 정의됨)
 
     // ===== API 설정 =====
     // 지원하는 액션들
@@ -91,6 +105,7 @@
     'rejectUser',
     'verifyAdminKey',
     'sendAdminKeyEmail',
+    'clearUserCache',
     'submitRegistrationRequest',
     'checkApprovalStatus',
     'checkRegistrationStatus',
@@ -122,7 +137,7 @@
 
     // ===== 성능 설정 =====
     // 캐시 만료 시간 (분)
-    const CACHE_EXPIRY_MINUTES = 5; // 5분으로 단축하여 더 자주 업데이트
+    const CACHE_EXPIRY_MINUTES = 1; // 1분으로 단축하여 실시간성 향상
 
     // 배치 처리 크기
     const BATCH_SIZE = 100;
@@ -150,6 +165,8 @@
         'email_config': EMAIL_CONFIG,
         'approval_status': APPROVAL_STATUS,
         'admin_status': ADMIN_STATUS,
+        'user_sheet_columns': USER_SHEET_COLUMNS,
+        'user_sheet_headers': USER_SHEET_HEADERS,
         'supported_actions': SUPPORTED_ACTIONS,
         'log_levels': LOG_LEVELS,
         'enable_logging': ENABLE_LOGGING,

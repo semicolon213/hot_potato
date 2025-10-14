@@ -13,7 +13,7 @@ interface AdminUser {
 }
 
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
-import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser } from '../../../utils/api/adminApi';
+import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
 import type { ApiResponse } from '../../../config/api';
 
@@ -29,8 +29,11 @@ export const useAdminPanel = () => {
   // 사용자 목록 가져오기
   const loadUsers = async () => {
     try {
+      console.log('loadUsers 함수 시작');
       setIsLoading(true);
+      console.log('fetchPendingUsers 호출 중...');
       const result = await fetchPendingUsers() as ApiResponse<{ users: AdminUser[] }>;
+      console.log('fetchPendingUsers 응답:', result);
       
       if (result.success && Array.isArray(result.users)) {
         console.log('=== 사용자 목록 받음 ===');
@@ -42,7 +45,9 @@ export const useAdminPanel = () => {
           email: user.email,
           isApproved: user.isApproved
         })));
+        console.log('setUsers 호출 전 현재 users 상태:', users);
         setUsers(result.users);
+        console.log('setUsers 호출 완료');
       } else {
         setUsers([]);
         setMessage('사용자 목록을 가져오는데 실패했습니다.');
@@ -70,21 +75,38 @@ export const useAdminPanel = () => {
       if (result.success) {
         setMessage('사용자가 승인되었습니다.');
         
-        // 승인된 사용자가 현재 로그인한 사용자인지 확인
+        // 즉시 로컬 상태 업데이트 (UI 즉시 반영)
         const approvedUser = users.find(u => u.id === userId);
-        if (approvedUser && approvedUser.email === user?.email) {
+        if (approvedUser) {
+          console.log('승인된 사용자 찾음:', approvedUser);
+          
+          // 로컬 users 상태에서 해당 사용자의 isApproved를 true로 업데이트
+          setUsers(prevUsers => 
+            prevUsers.map(u => 
+              u.id === userId 
+                ? { ...u, isApproved: true, approvalDate: new Date().toISOString().split('T')[0] }
+                : u
+            )
+          );
+          
           // 현재 로그인한 사용자가 승인된 경우 상태 업데이트
-          const updatedUser = {
-            ...user,
-            isApproved: true,
-            isAdmin: approvedUser.isAdmin
-          };
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+          if (approvedUser.email === user?.email) {
+            const updatedUser = {
+              ...user,
+              isApproved: true,
+              isAdmin: approvedUser.isAdmin
+            };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }
         }
         
-        // 목록 새로고침
-        loadUsers();
+        // 캐시 무효화 후 목록 새로고침 (백그라운드에서 최신 데이터 동기화)
+        console.log('캐시 무효화 시작...');
+        await clearUserCache();
+        console.log('캐시 무효화 완료, 사용자 목록 새로고침 시작...');
+        await loadUsers();
+        console.log('사용자 목록 새로고침 완료');
       } else {
         setMessage(result.error || '사용자 승인에 실패했습니다.');
       }
@@ -110,8 +132,22 @@ export const useAdminPanel = () => {
       
       if (result.success) {
         setMessage('사용자가 거부되었습니다.');
-        // 목록 새로고침
-        loadUsers();
+        
+        // 즉시 로컬 상태에서 사용자 제거 (UI 즉시 반영)
+        const rejectedUser = users.find(u => u.id === userId);
+        if (rejectedUser) {
+          console.log('거부된 사용자 찾음:', rejectedUser);
+          
+          // 로컬 users 상태에서 해당 사용자 제거
+          setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        }
+        
+        // 캐시 무효화 후 목록 새로고침 (백그라운드에서 최신 데이터 동기화)
+        console.log('캐시 무효화 시작...');
+        await clearUserCache();
+        console.log('캐시 무효화 완료, 사용자 목록 새로고침 시작...');
+        await loadUsers();
+        console.log('사용자 목록 새로고침 완료');
       } else {
         setMessage(result.error || '사용자 거부에 실패했습니다.');
       }

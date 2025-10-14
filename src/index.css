@@ -48,6 +48,30 @@ body, html, * {
 font-family: var(--main-font), 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif !important;
 }
 
+/* 입력 필드 텍스트 선택 활성화 */
+input, textarea, [contenteditable] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* 모든 텍스트 선택 가능하도록 설정 */
+* {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* 특정 요소에서만 선택 비활성화 */
+.no-select, button, .button {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
 /* 기본 설정 */
 * {
 margin: 0;

@@ -51,7 +51,7 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        action: 'checkApprovalStatus',
+        action: 'checkUserStatus',
         email: email
       })
     });
@@ -64,7 +64,23 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
 
     const data = await response.json();
     console.log('사용자 등록 상태 확인 응답:', data);
-    return data;
+    
+    // 디버그 정보 출력
+    if (data.debug) {
+      console.log('🔍 App Script 디버그 정보:', data.debug);
+    }
+    
+    // 응답 구조 변환 (UserManagement.gs의 응답을 LoginResponse 형식으로)
+    return {
+      success: data.success || false,
+      isRegistered: data.isRegistered || false,
+      isApproved: data.isApproved || false,
+      approvalStatus: data.approvalStatus || 'not_requested',
+      studentId: data.studentId || data.memberNumber || '',
+      isAdmin: data.isAdmin || false,
+      error: data.error,
+      debug: data.debug
+    };
   } catch (error) {
     console.error('사용자 상태 확인 실패:', error);
     return {
@@ -148,13 +164,9 @@ export const useAuth = (onLogin: (user: User) => void) => {
       const result = await checkUserStatus(email);
       console.log('사용자 등록 상태 확인 응답:', result);
 
-      if (result.success) {
-        // approvalStatus로 승인 상태 확인
-        // O = 승인됨, X = 대기중, 빈칸 = 새로운 사용자
-        const isApproved = result.approvalStatus === "O" || result.approvalStatus === "o";
-        const isRegistered = result.approvalStatus !== undefined && result.approvalStatus !== null && result.approvalStatus !== "";
-        
-        if (isRegistered && isApproved) {
+      if (result.success && result.isRegistered) {
+        // 등록된 사용자 - 승인 상태 확인
+        if (result.isApproved) {
           // 이미 승인된 회원 - 바로 메인 화면으로
           console.log('이미 승인된 회원 - 메인 화면으로 이동');
           alert('이미 가입된 회원입니다. 로그인을 진행합니다.');
@@ -167,7 +179,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
             accessToken: accessToken,
             googleAccessToken: accessToken
           });
-        } else if (isRegistered && !isApproved) {
+        } else {
           // 승인 대기 중 - 승인 대기 화면으로
           console.log('승인 대기 중인 사용자');
           alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
@@ -179,20 +191,10 @@ export const useAuth = (onLogin: (user: User) => void) => {
             isApproved: false,
             googleAccessToken: accessToken
           });
-        } else {
-          // 새로운 사용자 - 회원가입 화면 표시
-          console.log('새로운 사용자 - 회원가입 화면 표시');
-          setFormData(prev => ({ ...prev, email, name: '' })); // 이름은 빈 문자열로 초기화
-          setLoginState(prev => ({ 
-            ...prev, 
-            isLoggedIn: true, 
-            showRegistrationForm: true,
-            isLoading: false 
-          }));
         }
       } else {
-        // 오류 발생 - 회원가입 화면 표시
-        console.log('오류 발생 - 회원가입 화면 표시');
+        // 새로운 사용자 또는 등록되지 않은 사용자 - 회원가입 화면 표시
+        console.log('새로운 사용자 - 회원가입 화면 표시');
         setFormData(prev => ({ ...prev, email, name: '' })); // 이름은 빈 문자열로 초기화
         setLoginState(prev => ({ 
           ...prev, 
@@ -279,6 +281,11 @@ export const useAuth = (onLogin: (user: User) => void) => {
 
       const result = await registerUser(registrationData);
 
+      // 디버그 정보 출력
+      if (result.debug) {
+        console.log('🔍 App Script 디버그 정보:', result.debug);
+      }
+
       if (result.success) {
         alert(result.message);
         onLogin({
@@ -293,6 +300,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
         console.error('상세 오류 정보:', {
           message: result.message,
           error: result.error,
+          debug: result.debug,
           stack: (result as any).stack
         });
         

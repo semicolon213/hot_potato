@@ -164,17 +164,21 @@ export class ApiClient {
     return this.request(API_ACTIONS.REJECT_USER, { studentId });
   }
 
+  async clearUserCache() {
+    return this.request(API_ACTIONS.CLEAR_USER_CACHE);
+  }
+
   // 인증 API
   async checkApprovalStatus(email: string) {
-    return this.request(API_ACTIONS.CHECK_APPROVAL_STATUS, { email });
+    return this.request('checkUserStatus', { email });
   }
 
   async submitRegistrationRequest(registrationData: any) {
-    return this.request(API_ACTIONS.SUBMIT_REGISTRATION_REQUEST, registrationData);
+    return this.request('registerUser', registrationData);
   }
 
   async verifyAdminKey(adminKey: string) {
-    return this.request(API_ACTIONS.VERIFY_ADMIN_KEY, { adminKey });
+    return this.request('verifyAdminKey', { adminKey });
   }
 
   // 관리자 키 API
@@ -234,6 +238,9 @@ export const approveUser = (userId: string) =>
 
 export const rejectUser = (userId: string) =>
   apiClient.rejectUser(userId);
+
+export const clearUserCache = () =>
+  apiClient.clearUserCache();
 
 export const checkUserRegistrationStatus = (email: string) =>
   apiClient.checkApprovalStatus(email);
