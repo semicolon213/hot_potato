@@ -38,6 +38,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   user,
   accessToken,
   sheetEvents,
+  addSheetEvent, // Add missing prop
   updateSheetEvent,
   deleteSheetEvent,
   semesterStartDate,
@@ -208,7 +209,19 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate.getFullYear(), currentDate.getMonth(), refreshKey]);
 
   const events = useMemo(() => {
-    const combinedEvents = [...sheetEvents, ...googleEvents];
+    const visibleSheetEvents = sheetEvents.filter(event => {
+      const attendees = (event as any).attendees;
+      if (!attendees || attendees.trim() === '') {
+        return true; // Public event, visible to all
+      }
+
+      // Private event, visible only to attendees
+      const attendeeIds = attendees.split(',').map((id: string) => id.trim());
+      // Assuming user.studentId holds the unique ID for both students and staff
+      return user ? attendeeIds.includes(user.studentId) : false;
+    });
+
+    const combinedEvents = [...visibleSheetEvents, ...googleEvents];
 
     const sortedEvents = combinedEvents.sort((a, b) => {
         const startDateA = new Date(a.startDate).getTime();
@@ -424,7 +437,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   };
 
   const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
-    if (eventId.startsWith('cal-')) {
+    if (eventId.includes('-cal-')) { // ID format check updated for consistency
       updateSheetEvent(eventId, event);
     } else {
       updateGoogleEvent(eventId, event);
@@ -561,7 +574,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     searchTerm,
     setSearchTerm,
     filterLabels,
-    addSheetEvent: addEvent,
+    addSheetEvent, // Correctly pass the prop function
     extraWeeks: 0,
     setExtraWeeks: (weeks: number) => {
       console.log('Set extra weeks:', weeks);

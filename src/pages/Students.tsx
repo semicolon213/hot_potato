@@ -8,25 +8,8 @@ import {
   StudentList,
   CouncilSection
 } from '../components/features/students';
+import type { StudentWithCouncil } from '../types/features/students/student';
 import '../styles/pages/Students.css';
-
-interface Student {
-  no_student: string;
-  name: string;
-  address: string;
-  grade: string;
-  state: string;
-  council: string;
-}
-
-interface CouncilPosition {
-  year: string;
-  position: string;
-}
-
-interface StudentWithCouncil extends Student {
-  parsedCouncil: CouncilPosition[];
-}
 
 interface StudentsProps {
   onPageChange: (pageName: string) => void;

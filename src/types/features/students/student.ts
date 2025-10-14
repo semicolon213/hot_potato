@@ -2,6 +2,7 @@ export interface Student {
   no_student: string;
   name: string;
   address: string;
+  phone_num: string;
   grade: string;
   state: string;
   council: string;

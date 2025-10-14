@@ -8,6 +8,7 @@ import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../ut
 import { getRecentDocuments, addRecentDocument } from "../utils/helpers/localStorageUtils";
 import { formatRelativeTime } from "../utils/helpers/timeUtils";
 import { useTemplateUI, type Template } from "../hooks/features/templates/useTemplateUI";
+import { ENV_CONFIG } from "../config/environment";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -46,7 +47,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   };
 
   useEffect(() => {
-    const SPREADSHEET_NAME = 'hot_potato_DB';
+    const SPREADSHEET_NAME = ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
     const DOC_SHEET_NAME = 'documents';
 
     const fetchAndSyncDocuments = async () => {
@@ -149,11 +150,11 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
   const frequentlyUsedForms = Array.from(
     customTemplates
-      .filter(template => template.favorites_tag)
+      .filter(template => template.favoritesTag)
       .reduce((map, template) => {
-        if (!map.has(template.favorites_tag!)) {
-          map.set(template.favorites_tag!, {
-            name: template.favorites_tag!,
+        if (!map.has(template.favoritesTag!)) {
+          map.set(template.favoritesTag!, {
+            name: template.favoritesTag!,
             type: template.type,
             title: template.title,
           });

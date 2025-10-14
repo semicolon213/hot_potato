@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { apiClient } from '../utils/api/apiClient';
+import { ENV_CONFIG } from '../config/environment';
+import type { User } from '../types/app';
 import './Login.css';
 
 interface LoginProps {
-  onLogin: (userData: any) => void;
+  onLogin: (userData: User) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -59,41 +62,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       setIsLoading(true);
 
-      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email
-        })
-      });
+      const response = await apiClient.request('checkApprovalStatus', { email });
 
-      const result = await response.json();
-      console.log('사용자 등록 상태 확인 응답:', result);
+      console.log('사용자 등록 상태 확인 응답:', response);
 
-      if (result.success) {
-        if (result.isRegistered && result.isApproved) {
+      if (response.success) {
+        if (response.data?.isRegistered && response.data?.isApproved) {
           // 이미 승인된 회원 - 바로 메인 화면으로
           console.log('이미 승인된 회원 - 메인 화면으로 이동');
           alert('이미 가입된 회원입니다. 로그인을 진행합니다.');
           onLogin({
             email: email,
             name: name,
-            studentId: result.studentId || '',
-            isAdmin: result.isAdmin || false,
+            studentId: response.data?.studentId || '',
+            isAdmin: response.data?.isAdmin || false,
             isApproved: true,
             accessToken: accessToken
           });
-        } else if (result.isRegistered && !result.isApproved) {
+        } else if (response.data?.isRegistered && !response.data?.isApproved) {
           // 승인 대기 중 - 승인 대기 화면으로
           console.log('승인 대기 중인 사용자');
           alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
           onLogin({
             email: email,
             name: name,
-            studentId: result.studentId || '',
-            isAdmin: result.isAdmin || false,
+            studentId: response.data?.studentId || '',
+            isAdmin: response.data?.isAdmin || false,
             isApproved: false
           });
         } else {
@@ -123,23 +117,26 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setIsLoading(true);
       setError('');
 
-      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
+      const response = await fetch(ENV_CONFIG.APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'verifyAdminKey',
           adminKey: adminKey
         })
       });
 
       const result = await response.json();
 
-      if (result.success && result.isValid) {
+      console.log('관리자 키 인증 응답:', result);
+      
+      if (result.success) {
         setIsAdminVerified(true);
         setError('');
       } else {
-        setError('관리자 키가 일치하지 않습니다.');
+        setError(result.message || '관리자 키가 일치하지 않습니다.');
         setIsAdminVerified(false);
       }
 
@@ -183,12 +180,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       console.log('회원가입 요청:', signupData);
 
       // 실제 서버로 회원가입 요청 전송
-      const response = await fetch('https://dailykeyupdate-651515712118.asia-northeast3.run.app/dailyKeyUpdate', {
+      const response = await fetch(ENV_CONFIG.APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(signupData)
+        body: JSON.stringify({
+          action: 'submitRegistrationRequest',
+          ...signupData
+        })
       });
 
       const result = await response.json();

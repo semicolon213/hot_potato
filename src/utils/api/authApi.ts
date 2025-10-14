@@ -1,5 +1,3 @@
-const API_BASE_URL = 'https://dailykeyupdate-651515712118.asia-northeast3.run.app';
-
 // 인증 관련 타입 정의
 export interface User {
   email: string;
@@ -55,52 +53,9 @@ export interface LoginState {
   showRegistrationForm: boolean;
 }
 
-// 사용자 등록 상태 확인 API
-export const checkUserRegistrationStatus = async (email: string): Promise<LoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/checkUserApprovalStatus`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email })
-  });
-
-  const result = await response.json();
-  return result;
-};
-
-// 사용자 등록 요청 API
-export const registerUser = async (registrationData: RegistrationRequest): Promise<RegistrationResponse> => {
-  // 서버가 기대하는 필드명으로 변환
-  const serverData = {
-    userEmail: registrationData.email,
-    userName: registrationData.name,
-    studentId: registrationData.studentId,
-    isAdminVerified: registrationData.isAdmin
-  };
-
-  const response = await fetch(`${API_BASE_URL}/submitRegistrationRequest`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(serverData)
-  });
-
-  const result = await response.json();
-  return result;
-};
-
-// 관리자 키 검증 API
-export const verifyAdminKey = async (adminKey: string): Promise<AdminKeyVerificationResponse> => {
-  const response = await fetch(`${API_BASE_URL}/verifyAdminKey`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ adminKey })
-  });
-
-  const result = await response.json();
-  return result;
-};
+// 새로운 API 클라이언트를 사용하는 래퍼 함수들
+export { 
+  checkUserRegistrationStatus, 
+  registerUser, 
+  verifyAdminKey 
+} from './apiClient';

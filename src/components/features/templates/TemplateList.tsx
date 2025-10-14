@@ -45,7 +45,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         isFixed={isFixed}
                         defaultTags={defaultTags}
                         onToggleFavorite={onToggleFavorite}
-                        isFavorite={!!template.favorites_tag}
+                        isFavorite={!!template.favoritesTag}
                     />
                 )
             })}

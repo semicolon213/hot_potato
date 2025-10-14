@@ -4,13 +4,28 @@ const path = require('path');
 // Windows 팝업 입력 포커스 이슈 우회: 가림 탐지 비활성화
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
+// CSP 및 보안 관련 플래그 추가 (Apps Script 접근 허용)
+app.commandLine.appendSwitch('--disable-web-security');
+app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
+app.commandLine.appendSwitch('--allow-running-insecure-content');
+app.commandLine.appendSwitch('--disable-site-isolation-trials');
+app.commandLine.appendSwitch('--disable-extensions');
+app.commandLine.appendSwitch('--disable-csp');
+app.commandLine.appendSwitch('--disable-xss-auditor');
+app.commandLine.appendSwitch('--disable-http2');
+app.commandLine.appendSwitch('--allow-running-insecure-content');
+app.commandLine.appendSwitch('--disable-background-timer-throttling');
+app.commandLine.appendSwitch('--disable-renderer-backgrounding');
+app.commandLine.appendSwitch('--disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('--disable-ipc-flooding-protection');
+
 // 개발 환경 감지 (여러 방법으로 확인)
 const isDev = process.env.NODE_ENV === 'development' || 
               process.env.ELECTRON_IS_DEV === '1' ||
               !app.isPackaged;
 
-// 개발 환경에서의 Vite 서버 URL
-const VITE_DEV_SERVER_URL = 'http://localhost:5173';
+// 개발 환경에서의 Vite 서버 URL (동적 포트 감지)
+const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 
 function createWindow() {
   // 메인 윈도우 생성
@@ -19,15 +34,29 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      enableRemoteModule: false,
-      webSecurity: false, // Google OAuth를 위해 임시로 비활성화
-      allowRunningInsecureContent: true,
-      backgroundThrottling: false
-      ,webviewTag: true
-    },
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true, // 보안을 위해 활성화
+        enableRemoteModule: false,
+        webSecurity: false, // 웹 보안 완전 비활성화
+        allowRunningInsecureContent: true,
+        backgroundThrottling: false,
+        webviewTag: true,
+        experimentalFeatures: true, // 실험적 기능 활성화
+        preload: path.join(__dirname, 'preload.js'), // preload script 추가
+        additionalArguments: [
+          '--disable-web-security', 
+          '--disable-features=VizDisplayCompositor',
+          '--allow-running-insecure-content',
+          '--disable-site-isolation-trials',
+          '--disable-csp',
+          '--disable-xss-auditor',
+          '--disable-background-timer-throttling',
+          '--disable-renderer-backgrounding',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-ipc-flooding-protection'
+        ]
+      },
     icon: (process.platform === 'win32'
       ? path.join(__dirname, '../public/logo.ico')
       : path.join(__dirname, '../public/logo.png')), // 플랫폼별 아이콘
@@ -35,9 +64,46 @@ function createWindow() {
     show: false // 윈도우가 준비될 때까지 숨김
   });
 
+  // 창 닫기 이벤트 처리
+  mainWindow.on('close', (event) => {
+    // 로그아웃 신호 전송
+    mainWindow.webContents.send('app-before-quit');
+    
+    // 잠시 대기 후 창 닫기 (로그아웃 처리 시간 확보)
+    setTimeout(() => {
+      mainWindow.destroy();
+    }, 100);
+  });
+
   // 윈도우가 준비되면 표시
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    
+    // CSP 완전 제거 및 모든 도메인 허용
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      const responseHeaders = { ...details.responseHeaders };
+      
+      // 모든 CSP 관련 헤더 완전 제거
+      Object.keys(responseHeaders).forEach(key => {
+        if (key.toLowerCase().includes('content-security-policy') || 
+            key.toLowerCase().includes('csp') ||
+            key.toLowerCase().includes('x-frame-options') ||
+            key.toLowerCase().includes('x-content-type-options')) {
+          delete responseHeaders[key];
+        }
+      });
+      
+      // CSP 완전 비활성화
+      responseHeaders['Content-Security-Policy'] = ['default-src * data: blob:; script-src * \'unsafe-inline\' \'unsafe-eval\'; connect-src *; img-src * data: blob:; font-src * data:; style-src * \'unsafe-inline\'; frame-src *; object-src *; media-src *;'];
+      
+      // CORS 헤더 추가
+      responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+      responseHeaders['Access-Control-Allow-Methods'] = ['GET, POST, PUT, DELETE, OPTIONS'];
+      responseHeaders['Access-Control-Allow-Headers'] = ['Content-Type, Authorization, X-Requested-With'];
+      responseHeaders['Access-Control-Max-Age'] = ['3600'];
+      
+      callback({ responseHeaders });
+    });
     
     // 개발 환경에서도 개발자 도구 자동 열기 비활성화
     // 필요시 F12 또는 메뉴에서 수동으로 열 수 있음
@@ -96,6 +162,36 @@ app.whenReady().then(() => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.hotpotato.erp');
   }
+  
+  // 세션 설정 (CSP 완전 우회)
+  const { session } = require('electron');
+  
+  // 모든 요청에서 CSP 헤더 제거
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+    callback({ cancel: false, requestHeaders: details.requestHeaders });
+  });
+  
+  // 모든 응답에서 CSP 헤더 완전 제거
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = { ...details.responseHeaders };
+    
+    // 모든 CSP 관련 헤더 완전 제거
+    Object.keys(responseHeaders).forEach(key => {
+      if (key.toLowerCase().includes('content-security-policy') || 
+          key.toLowerCase().includes('csp') ||
+          key.toLowerCase().includes('x-frame-options') ||
+          key.toLowerCase().includes('x-content-type-options')) {
+        delete responseHeaders[key];
+      }
+    });
+    
+    // CSP 완전 비활성화
+    responseHeaders['Content-Security-Policy'] = ['default-src * data: blob:; script-src * \'unsafe-inline\' \'unsafe-eval\'; connect-src *; img-src * data: blob:; font-src * data:; style-src * \'unsafe-inline\'; frame-src *; object-src *; media-src *;'];
+    
+    callback({ responseHeaders });
+  });
+  
   createWindow();
 
   // macOS에서 독 아이콘 클릭 시 윈도우 재생성
@@ -180,6 +276,22 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// 앱 종료 전 로그아웃 처리
+app.on('before-quit', (event) => {
+  // 모든 윈도우에 로그아웃 신호 전송
+  const windows = BrowserWindow.getAllWindows();
+  windows.forEach(window => {
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('app-before-quit');
+    }
+  });
+  
+  // 잠시 대기 후 앱 종료 (로그아웃 처리 시간 확보)
+  setTimeout(() => {
+    app.exit(0);
+  }, 100);
 });
 
 // 보안: 새 윈도우 생성 방지 (Google OAuth 제외)

@@ -34,7 +34,6 @@
 .login-logo:hover {
   transform: scale(1.05);
   filter: brightness(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .login-header h1 {

@@ -1,16 +1,36 @@
+/**
+ * @file Sidebar.tsx
+ * @brief 사이드바 컴포넌트
+ * @details 애플리케이션의 네비게이션을 담당하는 사이드바 컴포넌트입니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import React, { useState } from "react";
 import "./Sidebar.css";
 import { 
-  HiChatBubbleLeftRight,
-  HiDocumentText,
-  HiCalendarDays,
-  HiUsers,
-  HiShieldCheck,
-  HiChevronDown,
-  HiNewspaper
-} from "react-icons/hi2";
+  BiMessageSquareDetail, 
+  BiFileBlank, 
+  BiCalendar, 
+  BiUser, 
+  BiShield,
+  BiChevronDown
+} from "react-icons/bi";
 import { SiGoogle } from "react-icons/si";
 
+// React 19 호환성을 위한 타입 단언
+const MessageIcon = BiMessageSquareDetail as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const FileIcon = BiFileBlank as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const CalendarIcon = BiCalendar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const UserIcon = BiUser as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const ShieldIcon = BiShield as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const ChevronIcon = BiChevronDown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const GoogleIcon = SiGoogle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
+/**
+ * @brief 사이드바 Props 타입 정의
+ * @details 사이드바 컴포넌트에 전달되는 props의 타입을 정의합니다.
+ */
 interface SidebarProps {
   onPageChange: (pageName: string) => void;
   user?: {
@@ -19,6 +39,12 @@ interface SidebarProps {
   currentPage?: string;
 }
 
+/**
+ * @brief 사이드바 컴포넌트
+ * @details 애플리케이션의 네비게이션 메뉴를 렌더링하는 사이드바 컴포넌트입니다.
+ * @param {SidebarProps} props - 컴포넌트 props
+ * @returns {JSX.Element} 렌더링된 사이드바 컴포넌트
+ */
 const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
@@ -40,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
           style={{ textDecoration: "none" }}
         >
           <div className="logo-container">
-            <img src="/logo.svg" alt="HP ERP Logo" className="logo-image" />
+            <img src="/logo.png" alt="HP ERP Logo" className="logo-image" />
           </div>
         </a>
       </div>
@@ -51,9 +77,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""} ${currentPage === 'board' ? 'active' : ''}`}
             onClick={() => handleMenuClick("board", true)}
           >
-            <HiNewspaper className="menu-icon" />
+            <MessageIcon className="menu-icon" />
             <div className="menu-text">게시판</div>
-            <HiChevronDown className={`submenu-arrow ${activeMenu === "board" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "board" ? "rotated" : ""}`} />
             {activeMenu === "board" && (
               <div className="submenu">
                 <div
@@ -78,9 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "document" ? "active" : ""}`}
             onClick={() => handleMenuClick("document", true)}
           >
-            <HiDocumentText className="menu-icon" />
+            <FileIcon className="menu-icon" />
             <div className="menu-text">문서</div>
-            <HiChevronDown className={`submenu-arrow ${activeMenu === "document" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "document" ? "rotated" : ""}`} />
             {activeMenu === "document" && (
               <div className="submenu">
                 <div
@@ -112,9 +138,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "schedule" ? "active" : ""}`}
             onClick={() => handleMenuClick("schedule", true)}
           >
-            <HiCalendarDays className="menu-icon" />
+            <CalendarIcon className="menu-icon" />
             <div className="menu-text">일정</div>
-            <HiChevronDown className={`submenu-arrow ${activeMenu === "schedule" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "schedule" ? "rotated" : ""}`} />
             {activeMenu === "schedule" && (
               <div className="submenu">
                 <div
@@ -139,9 +165,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
             className={`menu-item menu-item-with-submenu ${activeMenu === "personnel" ? "active" : ""}`}
             onClick={() => handleMenuClick("personnel", true)}
           >
-            <HiUsers className="menu-icon" />
+            <UserIcon className="menu-icon" />
             <div className="menu-text">학생 및 교직원</div>
-            <HiChevronDown className={`submenu-arrow ${activeMenu === "personnel" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "personnel" ? "rotated" : ""}`} />
             {activeMenu === "personnel" && (
               <div className="submenu">
                 <div
@@ -161,14 +187,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
               </div>
             )}
           </div>
+        </div>
+      </div>
 
+      {/* GoogleService: 관리자 메뉴 바로 위에 위치 */}
+      <div className="menu-section">
+        <div className="menu-container">
           <div
             className={`menu-item menu-item-with-submenu ${activeMenu === "googleService" ? "active" : ""}`}
             onClick={() => handleMenuClick("googleService", true)}
           >
-            <SiGoogle className="menu-icon" />
+            <GoogleIcon className="menu-icon" />
             <div className="menu-text">구글서비스</div>
-            <HiChevronDown className={`submenu-arrow ${activeMenu === "googleService" ? "rotated" : ""}`} />
+            <ChevronIcon className={`submenu-arrow ${activeMenu === "googleService" ? "rotated" : ""}`} />
             {activeMenu === "googleService" && (
               <div className="submenu">
                 <div className="submenu-item" onClick={() => onPageChange("google_appscript")}>
@@ -195,26 +226,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
                   <span className="submenu-bullet">•</span>
                   캘린더
                 </div>
-                <div className="submenu-item" onClick={() => onPageChange("google_chats")}>
+                <div className="submenu-item" onClick={() => onPageChange("google_chat")}>
                   <span className="submenu-bullet">•</span>
                   채팅
                 </div>
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* 관리자 메뉴 */}
-          {user?.isAdmin && (
+      {/* 관리자 메뉴 */}
+      {user?.isAdmin && (
+        <div className="menu-section">
+          <div className="menu-container">
             <div
               className={`menu-item ${currentPage === 'admin' ? 'active' : ''}`}
               onClick={() => handleMenuClick("admin")}
             >
-              <HiShieldCheck className="menu-icon" />
+              <ShieldIcon className="menu-icon" />
               <div className="menu-text">관리자 패널</div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

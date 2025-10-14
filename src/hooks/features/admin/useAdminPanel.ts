@@ -15,6 +15,7 @@ interface AdminUser {
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
 import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
+import type { ApiResponse } from '../../../config/api';
 
 export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -29,7 +30,7 @@ export const useAdminPanel = () => {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
-      const result = await fetchPendingUsers();
+      const result = await fetchPendingUsers() as ApiResponse<{ users: AdminUser[] }>;
       
       if (result.success && Array.isArray(result.users)) {
         console.log('=== 사용자 목록 받음 ===');
@@ -183,7 +184,16 @@ export const useAdminPanel = () => {
       }
       
       // 백엔드에서 복호화된 키와 이메일 템플릿 가져오기
-      const result = await sendAdminKeyEmail(emailToSend, adminAccessToken);
+      const result = await sendAdminKeyEmail(emailToSend, adminAccessToken) as ApiResponse<{
+        adminKey: string;
+        encryptedKey: string;
+        layersUsed: number;
+        emailTemplate: {
+          to: string;
+          subject: string;
+          html: string;
+        };
+      }>;
       
       console.log('백엔드 응답:', result);
       console.log('관리자 키 길이:', result.adminKey?.length);
@@ -196,7 +206,11 @@ export const useAdminPanel = () => {
         
         // 이메일 템플릿을 사용하여 Gmail API로 이메일 전송
         try {
-          await sendEmailWithGmailAPI(result.emailTemplate);
+          if (result.emailTemplate) {
+            await sendEmailWithGmailAPI(result.emailTemplate);
+          } else {
+            throw new Error('이메일 템플릿이 없습니다.');
+          }
           setMessage('관리자 키가 이메일로 전송되었습니다!');
           setEmailToSend('');
           setEmailStatus('success');

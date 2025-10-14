@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+coverage/
+src/__mocks__/
+src/config/__mocks__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx

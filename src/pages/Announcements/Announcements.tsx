@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/pages/Announcements.css';
 import type { Post } from '../../types/app';
 import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
+import { ENV_CONFIG } from '../../config/environment';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
@@ -33,7 +34,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
 
         const rowIndexToDelete = (posts.length - 1) - postIndex + 1;
 
-        await deleteSheetRow(announcementSpreadsheetId, '시트1', rowIndexToDelete);
+        await deleteSheetRow(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, rowIndexToDelete);
         alert('공지사항이 삭제되었습니다.');
         window.location.reload();
       } catch (error) {

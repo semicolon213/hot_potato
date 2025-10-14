@@ -188,16 +188,26 @@
 .form-group select,
 .form-group textarea {
   padding: 12px 16px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
   font-size: 14px;
-  transition: border-color 0.2s;
+  font-weight: 500;
+  transition: all 0.2s ease;
   background: white;
+  color: #495057;
   pointer-events: auto;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+  border-color: #adb5bd;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .form-group input:focus,
@@ -205,17 +215,26 @@
 .form-group textarea:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3), 0 2px 8px rgba(0, 123, 255, 0.15);
+  background-color: #f8f9ff;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
   pointer-events: auto;
   user-select: text;
   -webkit-user-select: text;
 }
 
 .form-group input:disabled,
-.form-group select:disabled {
+.form-group select:disabled,
+.form-group textarea:disabled {
   background: #f8f9fa;
   color: #6c757d;
+  border-color: #e9ecef;
   cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
+  transform: none;
 }
 
 .form-group textarea {

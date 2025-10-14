@@ -22,7 +22,9 @@ interface WidgetData {
   props: Record<string, any>;
 }
 
-const SHEET_NAME = 'user_custom';
+import { ENV_CONFIG } from '../../../config/environment';
+
+const SHEET_NAME = ENV_CONFIG.DASHBOARD_SHEET_NAME;
 const RANGE = `${SHEET_NAME}!B2`;
 
 // Google API 초기화는 App.tsx에서 중앙화되어 처리됨
@@ -194,8 +196,8 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => 
       }
       
       // Google API Key 설정 (공개 시트 접근용)
-      if (import.meta.env.VITE_GOOGLE_API_KEY) {
-        gapi.client.setApiKey(import.meta.env.VITE_GOOGLE_API_KEY);
+      if (ENV_CONFIG.PAPYRUS_DB_API_KEY) {
+        gapi.client.setApiKey(ENV_CONFIG.PAPYRUS_DB_API_KEY);
         console.log("Google API Key 설정 완료");
       }
       

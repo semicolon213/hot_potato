@@ -13,6 +13,7 @@ import type { PageType, User, Post, Event, DateRange, CustomPeriod } from '../..
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
+import Staff from '../../pages/Staff';
 import MyCalendarPage from '../../pages/Calendar';
 import Dashboard from '../../pages/Dashboard';
 import Docbox from '../../pages/Docbox';
@@ -24,7 +25,7 @@ import Board from '../../pages/Board/Board';
 import NewBoardPost from '../../pages/Board/NewBoardPost';
 import AnnouncementsPage from '../../pages/Announcements/Announcements';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
-import Proceedings from '../../pages/proceedings';
+import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
 
 interface PageRendererProps {
@@ -218,7 +219,9 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           onPageChange={onPageChange} 
           studentSpreadsheetId={studentSpreadsheetId} />;
       case 'staff':
-        return <div>교직원 관리 페이지 (구현 예정)</div>;
+        return <Staff 
+          onPageChange={onPageChange} 
+          staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':

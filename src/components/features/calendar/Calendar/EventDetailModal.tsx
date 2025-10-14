@@ -2,9 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import './EventDetailModal.css';
 import { type Event } from '../../../../hooks/features/calendar/useCalendarContext';
-import trashIcon from '../../../../assets/Icons/trash.svg';
-import editIcon from '../../../../assets/Icons/edit.svg';
-import xIcon from '../../../../assets/Icons/x.svg';
+import { BiTrashAlt, BiX, BiEditAlt } from 'react-icons/bi';
 
 interface EventDetailModalProps {
     event: Event;
@@ -28,19 +26,20 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
     const formatEventDate = (startStr: string, endStr: string) => {
         const startDate = new Date(startStr);
         const endDate = new Date(endStr);
-        const realEndDate = new Date(endDate);
-        realEndDate.setDate(realEndDate.getDate() - 1);
 
-        const startYear = startDate.getFullYear();
-        const startMonth = startDate.getMonth() + 1;
-        const startDay = startDate.getDate();
-
-        if (startDate.toISOString().split('T')[0] === realEndDate.toISOString().split('T')[0]) {
-             return `${startYear}년 ${startMonth}월 ${startDay}일`;
+        // For single-day events
+        if (endDate.getTime() - startDate.getTime() === 0) {
+            const startYear = startDate.getFullYear();
+            const startMonth = startDate.getMonth() + 1;
+            const startDay = startDate.getDate();
+            return `${startYear}년 ${startMonth}월 ${startDay}일`;
         }
 
-        const endMonth = realEndDate.getMonth() + 1;
-        const endDay = realEndDate.getDate();
+        // For multi-day events
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+        const endMonth = endDate.getMonth() + 1;
+        const endDay = endDate.getDate();
 
         if (startMonth === endMonth) {
             return `${startMonth}월 ${startDay}일-${endDay}일`;
@@ -54,19 +53,17 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
             <div className="event-detail-header">
                 <h2>{event.title}</h2>
                 <div className="header-actions">
-                    <img src={editIcon} alt="Edit" onClick={() => onEdit(event)} className="header-icon" />
-                    <img src={trashIcon} alt="Delete" onClick={handleDelete} className="header-icon" />
-                    <img src={xIcon} alt="Close" onClick={onClose} className="header-icon close-button" />
+                    <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
+                    <BiTrashAlt onClick={handleDelete} className="header-icon" />
+                    <BiX onClick={onClose} className="header-icon close-button" />
                 </div>
             </div>
             <div className="event-detail-body">
                 <div className="detail-item">
-                    <span className="icon">🕒</span>
                     <p>{formatEventDate(event.startDate, event.endDate)}</p>
                 </div>
                 {event.description && (
                     <div className="detail-item">
-                        <span className="icon">📄</span>
                         <p>{event.description}</p>
                     </div>
                 )}

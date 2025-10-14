@@ -44,8 +44,8 @@
 }
 
 .button-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: var(--primary-dark);
+  filter: brightness(1.1);
 }
 
 .button-secondary {
@@ -54,8 +54,8 @@
 }
 
 .button-secondary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: var(--secondary);
+  filter: brightness(1.1);
 }
 
 .button-danger {
@@ -64,8 +64,8 @@
 }
 
 .button-danger:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #d32f2f;
+  filter: brightness(1.1);
 }
 
 .button-warning {
@@ -74,8 +74,8 @@
 }
 
 .button-warning:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #f57c00;
+  filter: brightness(1.1);
 }
 
 /* 포커스 스타일 */

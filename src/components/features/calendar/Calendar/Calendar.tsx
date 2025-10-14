@@ -1,10 +1,65 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
-import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext';
+import { BiSearchAlt2 } from "react-icons/bi";
+import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
+
+// DateInfo 타입 정의
+interface DateInfo {
+    date: string;
+    dayIndexOfWeek: number;
+}
 import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
+import { RRule } from 'rrule';
+import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
+
+// Google Calendar API 타입 정의
+interface GoogleCalendarEvent {
+    id: string;
+    summary: string;
+    start?: {
+        date?: string;
+        dateTime?: string;
+    };
+    end?: {
+        date?: string;
+        dateTime?: string;
+    };
+    description?: string;
+    location?: string;
+}
+
+interface GoogleCalendarResponse {
+    result: {
+        items: GoogleCalendarEvent[];
+    };
+}
+
+// GAPI 타입 정의
+interface GapiClient {
+    calendar: {
+        events: {
+            list: (params: {
+                calendarId: string;
+                maxResults: number;
+                singleEvents: boolean;
+                orderBy: string;
+                timeMin: string;
+                timeMax: string;
+            }) => Promise<GoogleCalendarResponse>;
+        };
+    };
+}
+
+declare global {
+    interface Window {
+        gapi: {
+            client: GapiClient;
+        };
+    }
+}
 
 interface CalendarProps {
     onAddEvent: () => void;
@@ -64,11 +119,157 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     const [newPeriodName, setNewPeriodName] = useState("");
     const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
-    const [inputValue, setInputValue] = useState(searchTerm);
+    const [inputValue, setInputValue] = useState('');
+    const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
+    const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
+
+    const getRecentSearches = (): string[] => {
+        const searches = localStorage.getItem('recentSearchTerms');
+        return searches ? JSON.parse(searches) : [];
+    };
+
+    const addRecentSearch = (term: string) => {
+        let searches = getRecentSearches();
+        searches = searches.filter(s => s !== term);
+        searches.unshift(term);
+        localStorage.setItem('recentSearchTerms', JSON.stringify(searches.slice(0, 10)));
+    };
 
     useEffect(() => {
-        setInputValue(searchTerm);
-    }, [searchTerm]);
+        const terms = searchTerm.split(' ').filter(Boolean);
+        const latestTerm = terms[terms.length - 1];
+        if (latestTerm) {
+            addRecentSearch(latestTerm);
+        }
+    }, [searchTerm, addRecentSearch]);
+
+    const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string }[]>([]);
+
+    useEffect(() => {
+        const loadSuggestions = async () => {
+            await initializeGoogleAPIOnce(null);
+
+            const year = Number(currentDate.year);
+            const timeMin = new Date(year, 0, 1).toISOString();
+            const timeMax = new Date(year, 11, 31, 23, 59, 59).toISOString();
+
+            const sheetPromise = (async () => {
+                // 캘린더 이벤트는 이미 상위 컴포넌트에서 로드됨
+                return [];
+            })();
+
+            const calendarPromise = (async () => {
+                try {
+                    const response = await window.gapi.client.calendar.events.list({
+                        'calendarId': 'primary',
+                        'maxResults': 250,
+                        'singleEvents': true,
+                        'orderBy': 'startTime',
+                        timeMin,
+                        timeMax
+                    });
+                    const items = response.result.items || [];
+                    return items
+                        .map((item: GoogleCalendarEvent) => {
+                            const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                            const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                            return {
+                                title: item.summary,
+                                tag: '개인 일정',
+                                startDate: startDate,
+                                endDate: endDate || startDate
+                            };
+                        })
+                        .filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
+                } catch (error) {
+                    console.error("Error fetching Google Calendar events:", error);
+                    return [];
+                }
+            })();
+
+            const holidayPromise = (async () => {
+                try {
+                    const holidayCalendarId = 'ko.south_korea#holiday@group.v.calendar.google.com';
+                    const response = await window.gapi.client.calendar.events.list({
+                        'calendarId': holidayCalendarId,
+                        'maxResults': 50,
+                        'singleEvents': true,
+                        'orderBy': 'startTime',
+                        timeMin,
+                        timeMax
+                    });
+                    const items = response.result.items || [];
+                    return items.map((item: GoogleCalendarEvent) => {
+                        const startDate = item.start?.date || item.start?.dateTime?.split('T')[0] || '';
+                        const endDate = item.end?.date || item.end?.dateTime?.split('T')[0] || '';
+                        return {
+                            title: item.summary,
+                            tag: '공휴일',
+                            startDate: startDate,
+                            endDate: endDate || startDate
+                        };
+                    }).filter((item: { title: string; tag: string; startDate: string; endDate: string }) => item.title);
+                } catch (error) {
+                    console.error("Error fetching holiday calendar events:", error);
+                    return [];
+                }
+            })();
+
+            const [sheetSuggestions, calendarSuggestions, holidaySuggestions] = await Promise.all([sheetPromise, calendarPromise, holidayPromise]);
+
+            const combinedSource = [...sheetSuggestions, ...calendarSuggestions, ...holidaySuggestions];
+
+            combinedSource.sort((a, b) => {
+                try {
+                    const dateA = new Date(a.startDate).getTime();
+                    const dateB = new Date(b.startDate).getTime();
+                    if (isNaN(dateA)) return 1;
+                    if (isNaN(dateB)) return -1;
+                    return dateA - dateB;
+                } catch (e) {
+                    return 0;
+                }
+            });
+
+            setSuggestionSource(combinedSource);
+        };
+
+        loadSuggestions();
+    }, [currentDate.year]);
+
+    useEffect(() => {
+        if (!isSuggestionsVisible) {
+            setSuggestions([]);
+            return;
+        }
+
+        if (inputValue) {
+            // User is typing, so filter based on input
+            const handler = setTimeout(() => {
+                const lowerInputValue = inputValue.toLowerCase();
+                const filtered = suggestionSource.filter(item =>
+                    item.title.toLowerCase().includes(lowerInputValue) ||
+                    (item.tag && item.tag.toLowerCase().includes(lowerInputValue))
+                );
+                setSuggestions(filtered);
+            }, 300);
+            return () => clearTimeout(handler);
+        } else {
+            // Input is empty, and suggestions are visible, so show recent searches
+            const recentSearches = getRecentSearches().slice(0, 3);
+            if (recentSearches.length > 0) {
+                const historySuggestions = recentSearches.map(term => ({
+                    title: term,
+                    tag: '최근 검색어',
+                    startDate: '',
+                    endDate: ''
+                }));
+                setSuggestions(historySuggestions);
+            } else {
+                setSuggestions([]); // No recent searches, show empty
+            }
+        }
+    }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -305,13 +506,55 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
     };
 
     const weeksInMonth = useMemo(() => {
-        const weeksArr: any[][] = [];
+        const weeksArr: DateInfo[][] = [];
         if (!daysInMonth) return [];
         for (let i = 0; i < daysInMonth.length; i += 7) {
             weeksArr.push(daysInMonth.slice(i, i + 7));
         }
         return weeksArr;
     }, [daysInMonth]);
+
+    const expandedEvents = useMemo(() => {
+        const viewStart = new Date(weeksInMonth[0]?.[0]?.date);
+        const viewEnd = new Date(weeksInMonth[weeksInMonth.length - 1]?.[6]?.date);
+        viewEnd.setHours(23, 59, 59, 999); // Ensure it covers the entire last day
+
+        if (isNaN(viewStart.getTime()) || isNaN(viewEnd.getTime())) {
+            return events; // Return raw events if date range is invalid
+        }
+
+        const allEvents: Event[] = [];
+
+        events.forEach(event => {
+            if (event.rrule) {
+                try {
+                    const rule = RRule.fromString(event.rrule);
+                    const occurrences = rule.between(viewStart, viewEnd);
+
+                    occurrences.forEach(occurrenceDate => {
+                        // Adjust for timezone offset before creating new event
+                        const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
+                        const dateStr = adjustedDate.toISOString().split('T')[0];
+                        
+                        allEvents.push({
+                            ...event,
+                            // Create a new unique ID for each occurrence to avoid key conflicts
+                            id: `${event.id}-occurrence-${dateStr}`,
+                            startDate: dateStr,
+                            endDate: dateStr, // Each occurrence is a single-day event in this context
+                        });
+                    });
+                } catch (e) {
+                    console.error("Error parsing RRULE string:", event.rrule, e);
+                    allEvents.push(event); // Push original event if rule parsing fails
+                }
+            } else {
+                allEvents.push(event);
+            }
+        });
+
+        return allEvents;
+    }, [events, weeksInMonth]);
 
     const eventLayouts = useMemo(() => {
         const layouts = new Map<string, (Event | null)[]>();
@@ -321,7 +564,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             const weekEnd = new Date(week[week.length - 1].date);
             weekEnd.setHours(23, 59, 59, 999);
 
-            const weekEvents = events.filter(e => {
+            const weekEvents = expandedEvents.filter(e => {
                 const eventStart = new Date(e.startDate);
                 const eventEnd = new Date(e.endDate);
                 // 월간 뷰에서는 시간 지정 이벤트를 제외합니다 (종일 이벤트만 표시).
@@ -359,7 +602,106 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
             }
         });
         return layouts;
-    }, [weeksInMonth, events]);
+    }, [weeksInMonth, expandedEvents]);
+
+    const { eventElements, moreButtonElements } = useMemo(() => {
+        const eventElements: React.ReactNode[] = [];
+        const moreButtonElements: React.ReactNode[] = [];
+        const processedEvents = new Set<string>();
+        const MAX_EVENTS = 3;
+
+        const dayHeight = 130;
+        const eventHeight = 22;
+        const dateHeaderHeight = 30;
+
+        weeksInMonth.forEach((week, weekIndex) => {
+            if (!week || week.length === 0) return;
+            week.forEach((day, dayOfWeek) => {
+                if (!day) return;
+                const dayLayout = eventLayouts.get(day.date) || [];
+
+                // Render events
+                dayLayout.slice(0, MAX_EVENTS).forEach((event, laneIndex) => {
+                    if (!event || processedEvents.has(`${event.id}-${day.date}`)) {
+                        return;
+                    }
+
+                    let span = 1;
+                    for (let i = dayOfWeek + 1; i < 7; i++) {
+                        const nextDayLayout = eventLayouts.get(week[i]?.date) || [];
+                        if (nextDayLayout[laneIndex]?.id === event.id) {
+                            span++;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    for (let i = 0; i < span; i++) {
+                        if (week[dayOfWeek + i]) {
+                            processedEvents.add(`${event.id}-${week[dayOfWeek + i].date}`);
+                        }
+                    }
+
+                    const eventStartDate = new Date(event.startDate);
+                    const currentDayDate = new Date(day.date);
+                    const isContinuationLeft = eventStartDate < currentDayDate;
+                    
+                    const eventEndDate = new Date(event.endDate);
+                    const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
+                    const isContinuationRight = eventEndDate > endOfWeekDate;
+
+                    const title = (dayOfWeek === 0 || eventStartDate.toDateString() === currentDayDate.toDateString()) ? event.title : '';
+
+                    eventElements.push(
+                        <div
+                            key={`${event.id}-${day.date}`}
+                            className={`monthly-event-item ${isContinuationLeft ? 'continuation-left' : ''} ${isContinuationRight ? 'continuation-right' : ''}`}
+                            style={{
+                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (laneIndex * eventHeight)}px`,
+                                left: `${(dayOfWeek / 7) * 100}%`,
+                                width: `calc(${(span / 7) * 100}% - 4px)`,
+                                backgroundColor: event.color,
+                                marginLeft: '2px',
+                                marginRight: '2px',
+                            }}
+                            onClick={(e) => handleEventClick(event, e)}
+                        >
+                            <span style={{marginRight: '4px'}}>{event.icon}</span>
+                            {title}
+                        </div>
+                    );
+                });
+
+                // Render "more" button
+                const moreCount = dayLayout.slice(MAX_EVENTS).filter(Boolean).length;
+                if (moreCount > 0) {
+                    const dayEvents = dayLayout.filter((e): e is Event => e !== null);
+                    moreButtonElements.push(
+                        <div
+                            key={`more-${day.date}`}
+                            className="more-events-text"
+                            style={{
+                                position: 'absolute',
+                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (MAX_EVENTS * eventHeight)}px`,
+                                left: `${(dayOfWeek / 7) * 100}%`,
+                                width: `calc(${(1 / 7) * 100}% - 4px)`,
+                                marginLeft: '4px',
+                                cursor: 'pointer',
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoreClick(dayEvents, day.date, e);
+                            }}
+                        >
+                            {moreCount}개 더보기
+                        </div>
+                    );
+                }
+            });
+        });
+
+        return { eventElements, moreButtonElements };
+    }, [eventLayouts, weeksInMonth, handleEventClick, handleMoreClick, selectedEvent]);
 
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';
@@ -369,6 +711,15 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
         end.setDate(end.getDate() + 6);
         return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
+
+    const handleRemoveTerm = (termToRemove: string) => {
+        const newSearchTerm = searchTerm
+            .split(' ')
+            .filter(t => t !== termToRemove)
+            .join(' ');
+        setSearchTerm(newSearchTerm);
+    };
+
 
     return (
         <>
@@ -384,23 +735,66 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                             )}
                         </h2>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                        <div className="search-container" style={{ height: '36px', maxWidth: '250px' }}>
-                            <i>&#x1F50D;</i>
-                            <input
-                                type="text"
-                                placeholder="일정 검색..."
-                                className={`search-input ${inputValue.includes('#') ? 'has-hashtags' : ''}`}
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        const terms = inputValue.split(' ').filter(t => t.length > 0);
-                                        const formattedTerms = terms.map(t => t.startsWith('#') ? t : `#${t}`);
-                                        setSearchTerm(formattedTerms.join(' '));
-                                    }
-                                }}
-                            />
+                        <div className="search-wrapper">
+                            <div className="search-container" style={{ height: '35px', width: '250px' }}>
+                                <BiSearchAlt2 color="black" />
+                                <input
+                                    type="text"
+                                    placeholder="일정 검색..."
+                                    className={"calendar-search-input"}
+                                    style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onFocus={() => setIsSuggestionsVisible(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
+                                            e.preventDefault();
+                                            const newTerm = `#${inputValue.trim()}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(newTerm)) {
+                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+                                            }
+                                            setInputValue('');
+                                        }
+                                    }}
+                                />
+                                {isSuggestionsVisible && suggestions.length > 0 && (
+                                    <ul className="search-suggestions">
+                                        {suggestions.map((suggestion, index) => (
+                                            <li
+                                                key={index}
+                                                onMouseDown={() => {
+                                                    const formattedTerm = `#${suggestion.title}`;
+                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                    if (!existingTerms.includes(formattedTerm)) {
+                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                                    }
+
+                                                    // 날짜 네비게이션은 제거됨 (suggestion에 날짜 정보 없음)
+
+                                                    setInputValue('');
+                                                    setSuggestions([]);
+                                                }}
+                                            >
+                                                <span className="suggestion-title">{suggestion.title}</span>
+                                                <span className="suggestion-date">{suggestion.tag}</span>
+                                                <span className="suggestion-tag">{suggestion.tag}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <div className="search-tags-container">
+                                {searchTerm.split(' ').filter(Boolean).map(term => (
+                                    <div key={term} className="search-tag">
+                                        {term}
+                                        <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                         {viewMode === 'weekly' && <span style={{fontSize: '14px', color: 'var(--text-medium)'}}>{getWeekDatesText(selectedWeek)}</span>}
                     </div>
@@ -476,14 +870,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                     <div className="calendar-body-container">
                         <div className="day-wrapper">
                             {weeks.map((week, index) => (
-                                <div className={`calendar-item ${index === 0 ? 'sunday' : ''}`} key={week}>{week}</div>
+                                <div className={`calendar-item ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`} key={week}>{week}</div>
                             ))}
                         </div>
                         <div className="day-wrapper">
                             {daysInMonth.map((date) => {
-                                const dayLayout = eventLayouts.get(date.date) || [];
-                                const dayEvents = dayLayout.filter((e): e is Event => e !== null);
-
+                                const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
                                 const isSelected = selectedDate.date === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
@@ -499,49 +891,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                                         className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
-                                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                                        <ul className="event-list">
-                                            {dayLayout.slice(0, 3).map((event, index) => {
-                                                if (!event) {
-                                                    return <li key={index} className="event-item" style={{ visibility: 'hidden' }}>&nbsp;</li>;
-                                                }
-                                                const eventStartDate = new Date(event.startDate);
-                                                const eventEndDate = new Date(event.endDate);
-                                                const currentDate = new Date(date.date);
-                                                const isFirstDayOfEvent = eventStartDate.toDateString() === currentDate.toDateString();
-                                                const isLastDayOfEvent = eventEndDate.toDateString() === currentDate.toDateString();
-                                                let itemClasses = 'event-item';
-                                                if (!isFirstDayOfEvent) itemClasses += ' continuation-left';
-                                                if (!isLastDayOfEvent) itemClasses += ' continuation-right';
-                                                if (selectedEvent && selectedEvent.id === event.id) itemClasses += ' selected';
-
-                                                return (
-                                                    <li key={event.id + date.date} className={itemClasses} style={{ backgroundColor: event.color }} onClick={(e) => handleEventClick(event, e)}>
-                                                        <span style={{marginRight: '4px'}}>{event.icon}</span>
-                                                        {(isFirstDayOfEvent || date.dayIndexOfWeek === 0) ? event.title : <>&nbsp;</>}
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                        <div className="overflow-event-lines" onClick={(e) => {
-                                            const moreCount = dayLayout.slice(3).filter(Boolean).length;
-                                            if (moreCount > 0) {
-                                                e.stopPropagation();
-                                                handleMoreClick(dayEvents, date.date, e);
-                                            }
-                                        }}>
-                                            {(() => {
-                                                const moreCount = dayLayout.slice(3).filter(Boolean).length;
-                                                if (moreCount > 0) {
-                                                    return <span className="more-events-text">{moreCount}개 더보기</span>;
-                                                }
-                                                return null;
-                                            })()}
-                                        </div>
-                                        </div>
                                     </div>
                                 );
                             })}
+                            {eventElements}
+                            {moreButtonElements}
                         </div>
                     </div>
                 ) : (
@@ -652,7 +1006,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, viewMode
                         </div>
 
                         <div className="modal-actions">
-                            <button onClick={handleSave}>완료</button>
+                            <button onClick={handleSave} className="done-btn">완료</button>
                             <button onClick={handleCloseWithoutSaving} className="close-btn">닫기</button>
                         </div>
                     </div>

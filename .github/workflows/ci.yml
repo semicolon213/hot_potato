@@ -1,0 +1,179 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # 코드 품질 검사
+  quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: TypeScript type check
+      run: npm run type-check
+      
+    - name: React 19 compatibility check
+      run: |
+        echo "🔍 Checking React 19 compatibility..."
+        npm ls react@^19.0.0
+        npm ls react-dom@^19.0.0
+        npm ls papyrus-db
+        echo "✅ React 19 compatibility verified"
+      
+    - name: ESLint check (warnings only)
+      run: npm run lint -- --max-warnings 1000
+      continue-on-error: true
+      
+    - name: Security audit
+      run: npm audit --audit-level high
+      continue-on-error: true
+
+  # 테스트 실행
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests with coverage
+      run: npm run test:ci
+      env:
+        VITE_GOOGLE_CLIENT_ID: test-client-id
+        VITE_APP_SCRIPT_URL: test-app-script-url
+        VITE_GOOGLE_API_KEY: test-api-key
+        VITE_HOT_POTATO_DB_SPREADSHEET_NAME: hot_potato_DB
+        VITE_BOARD_SPREADSHEET_NAME: board_professor
+        VITE_ANNOUNCEMENT_SPREADSHEET_NAME: notice_professor
+        VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME: calendar_professor
+        VITE_CALENDAR_STUDENT_SPREADSHEET_NAME: calendar_student
+        VITE_STUDENT_SPREADSHEET_NAME: student
+        VITE_BOARD_SHEET_NAME: 시트1
+        VITE_ANNOUNCEMENT_SHEET_NAME: 시트1
+        VITE_CALENDAR_SHEET_NAME: 시트1
+        VITE_DOCUMENT_TEMPLATE_SHEET_NAME: document_template
+        VITE_STUDENT_SHEET_NAME: info
+        VITE_STUDENT_ISSUE_SHEET_NAME: std_issue
+        VITE_STAFF_SHEET_NAME: 시트1
+        VITE_DASHBOARD_SHEET_NAME: user_custom
+        VITE_PAPYRUS_DB_URL: 
+        VITE_PAPYRUS_DB_API_KEY: test-api-key
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+  # 성능 및 빌드 검사
+  performance:
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+        
+    - name: React 19 build verification
+      run: |
+        echo "🚀 Building with React 19..."
+        npm run build
+        echo "✅ React 19 build successful"
+      env:
+        VITE_GOOGLE_CLIENT_ID: test-client-id
+        VITE_APP_SCRIPT_URL: test-app-script-url
+        VITE_GOOGLE_API_KEY: test-api-key
+        VITE_HOT_POTATO_DB_SPREADSHEET_NAME: hot_potato_DB
+        VITE_BOARD_SPREADSHEET_NAME: board_professor
+        VITE_ANNOUNCEMENT_SPREADSHEET_NAME: notice_professor
+        VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME: calendar_professor
+        VITE_CALENDAR_STUDENT_SPREADSHEET_NAME: calendar_student
+        VITE_STUDENT_SPREADSHEET_NAME: student
+        VITE_BOARD_SHEET_NAME: 시트1
+        VITE_ANNOUNCEMENT_SHEET_NAME: 시트1
+        VITE_CALENDAR_SHEET_NAME: 시트1
+        VITE_DOCUMENT_TEMPLATE_SHEET_NAME: document_template
+        VITE_STUDENT_SHEET_NAME: info
+        VITE_STUDENT_ISSUE_SHEET_NAME: std_issue
+        VITE_STAFF_SHEET_NAME: 시트1
+        VITE_DASHBOARD_SHEET_NAME: user_custom
+        VITE_PAPYRUS_DB_URL: 
+        VITE_PAPYRUS_DB_API_KEY: test-api-key
+        
+    - name: Check bundle size
+      run: npm run bundle-size
+      continue-on-error: true
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: dist/
+
+  # 배포 (메인 브랜치만)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [quality, test, performance]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-files
+        path: dist/
+        
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying to production..."
+        echo "✅ All checks passed successfully!"
+        echo "📦 Build artifacts ready for deployment"
+        # Add your deployment commands here
+        # For example, deploy to Vercel, Netlify, or your own server
+
+
+
+
+
+

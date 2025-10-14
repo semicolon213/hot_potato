@@ -11,13 +11,14 @@ import type { User, PageType, Post, Event, DateRange, CustomPeriod } from '../..
 import type { Template } from '../features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce } from '../../utils/google/googleApiInitializer';
 import { 
-    findSpreadsheetById, 
+    initializeSpreadsheetIds,
     fetchPosts, 
     fetchAnnouncements, 
     fetchTemplates, 
     fetchTags,
     fetchCalendarEvents 
-} from '../../utils/google/spreadsheetManager';
+} from '../../utils/database/papyrusManager';
+import { ENV_CONFIG } from '../../config/environment';
 
 /**
  * @brief 전역 애플리케이션 상태 관리 훅
@@ -46,7 +47,6 @@ export const useAppState = () => {
     const [announcements, setAnnouncements] = useState<Post[]>([]);
     const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
     const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
-    const [documentTemplateSheetId, setDocumentTemplateSheetId] = useState<number | null>(null);
     const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
     const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
     const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
@@ -64,113 +64,146 @@ export const useAppState = () => {
     const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
     const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
 
-    // SHEET_ID는 상수로 정의됨
-    const boardSheetName = '시트1';
-    const announcementSheetName = '시트1';
-    const calendarSheetName = '시트1';
+    // 환경변수에서 시트 이름 가져오기
+    const boardSheetName = ENV_CONFIG.BOARD_SHEET_NAME;
+    const announcementSheetName = ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME;
+    const calendarSheetName = ENV_CONFIG.CALENDAR_SHEET_NAME;
 
-    // 로그인 상태 확인
+    // 로그인 상태 확인 및 초기화
     useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        const savedToken = localStorage.getItem('googleAccessToken');
-        if (savedUser && savedToken) {
-            setUser(JSON.parse(savedUser));
-            setGoogleAccessToken(savedToken);
-        }
-        setIsLoading(false);
-    }, []);
-
-    // 스프레드시트 ID 찾기 및 초기화
-    useEffect(() => {
-        const initAndFetch = async () => {
-            try {
-                console.log("새로고침 후 Google API 초기화 시작");
-                await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
-
-                // Find all spreadsheet IDs
-                const [
-                    announcementId,
-                    calendarProfessorId,
-                    calendarStudentId,
-                    boardId,
-                    hotPotatoDBId,
-                    studentId
-                ] = await Promise.all([
-                    findSpreadsheetById('notice_professor'),
-                    findSpreadsheetById('calendar_professor'),
-                    findSpreadsheetById('calendar_student'),
-                    findSpreadsheetById('board_professor'),
-                    findSpreadsheetById('hot_potato_DB'),
-                    findSpreadsheetById('student')
-                ]);
-
-                setAnnouncementSpreadsheetId(announcementId);
-                setCalendarProfessorSpreadsheetId(calendarProfessorId);
-                setCalendarStudentSpreadsheetId(calendarStudentId);
-                setBoardSpreadsheetId(boardId);
-                setHotPotatoDBSpreadsheetId(hotPotatoDBId);
-                setStudentSpreadsheetId(studentId);
-
-                // gapi가 초기화된 후 데이터 로드
-                const fetchInitialData = async (retryCount = 0) => {
+        const initApp = async () => {
+            const savedUser = localStorage.getItem('user');
+            const savedToken = localStorage.getItem('googleAccessToken');
+            const savedSearchTerm = localStorage.getItem('searchTerm');
+            
+            // URL 파라미터에서 페이지 상태 복원 (리팩터링 전 방식)
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageFromUrl = urlParams.get('page');
+            if (pageFromUrl) {
+                console.log('URL에서 페이지 상태 복원:', pageFromUrl);
+                setCurrentPage(pageFromUrl as PageType);
+            } else {
+                // URL에 페이지 파라미터가 없으면 기본값 사용
+                setCurrentPage("dashboard");
+            }
+            
+            // 검색어 상태 복원
+            if (savedSearchTerm) {
+                console.log('검색어 상태 복원:', savedSearchTerm);
+                setSearchTerm(savedSearchTerm);
+            }
+            
+            if (savedUser && savedToken) {
+                const userData = JSON.parse(savedUser);
+                setUser(userData);
+                setGoogleAccessToken(savedToken);
+                
+                // 승인된 사용자인 경우 데이터 초기화
+                if (userData.isApproved) {
+                    console.log('새로고침 후 사용자 상태 복원 - 데이터 로딩 시작');
+                    
                     try {
-                        const gapi = (window as any).gapi;
-                        if (gapi && gapi.client && gapi.client.sheets && gapi.client.sheets.spreadsheets) {
-                            console.log("Google API 초기화 완료, 데이터 로드 시작");
-                            setIsGapiReady(true);
-
-                            // Set auth states to true since we know the user is signed in
-                            setIsGoogleAuthenticatedForAnnouncements(true);
-                            setIsGoogleAuthenticatedForBoard(true);
-
-                            console.log("모든 데이터 로드 완료");
-                        } else {
-                            console.log(`Google API가 아직 초기화되지 않았습니다. 재시도 ${retryCount + 1}/3`);
-                            if (retryCount < 3) {
-                                setTimeout(() => fetchInitialData(retryCount + 1), 500);
-                            } else {
-                                console.error("Google API 초기화 최대 재시도 횟수 초과");
-                            }
-                        }
+                        console.log("Google API 초기화 시작");
+                        await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
+                        
+                        // 스프레드시트 ID들 초기화
+                        const spreadsheetIds = await initializeSpreadsheetIds();
+                        
+                        // 스프레드시트 ID들 상태 업데이트
+                        setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
+                        setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
+                        setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
+                        setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
+                        setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
+                        setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
+                        
+                        setIsGapiReady(true);
+                        setIsGoogleAuthenticatedForAnnouncements(true);
+                        setIsGoogleAuthenticatedForBoard(true);
+                        
+                        console.log("✅ 새로고침 후 Papyrus DB 연결 완료");
                     } catch (error) {
-                        console.error("Error during initial data fetch", error);
-                        if (retryCount < 2) {
-                            console.log(`데이터 로드 재시도 ${retryCount + 1}/2`);
-                            setTimeout(() => fetchInitialData(retryCount + 1), 1000);
-                        } else {
-                            console.error("데이터 로드 최대 재시도 횟수 초과");
-                        }
+                        console.error("Error during refresh initialization", error);
+                        // Google API 초기화 실패해도 계속 진행
+                        setIsGapiReady(true);
+                        setIsGoogleAuthenticatedForAnnouncements(true);
+                        setIsGoogleAuthenticatedForBoard(true);
                     }
-                };
-
-                fetchInitialData();
-            } catch (error) {
-                console.error("Error during initial gapi load", error);
-                setTimeout(() => {
-                    console.log("gapi 초기화 재시도");
-                    initAndFetch();
-                }, 1500);
+                }
             }
+            
+            setIsLoading(false);
         };
-
-        // 승인된 사용자만 Google Sheets 데이터 로드
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-            const userData = JSON.parse(savedUser);
-            if (userData.isApproved) {
-                initAndFetch();
-            }
-        }
+        
+        initApp();
     }, []);
+
+    // 페이지 상태는 URL 파라미터로 관리되므로 localStorage 저장 불필요
+
+    // 검색어 상태 변경 시 localStorage에 저장
+    useEffect(() => {
+        if (searchTerm) {
+            localStorage.setItem('searchTerm', searchTerm);
+        } else {
+            localStorage.removeItem('searchTerm');
+        }
+    }, [searchTerm]);
+
+    // 사용자 로그인 시 데이터 자동 로딩 (새로 로그인한 경우)
+    useEffect(() => {
+        if (user && user.isApproved && !isLoading) {
+            console.log('새로운 로그인 감지 - 데이터 로딩 시작');
+            
+            const initAndFetch = async () => {
+                try {
+                    console.log("로그인 후 Google API 초기화 시작");
+                    await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
+                    
+                    // 스프레드시트 ID들 초기화 및 상태 업데이트
+                    const spreadsheetIds = await initializeSpreadsheetIds();
+                    
+                    // 스프레드시트 ID들 상태 업데이트
+                    setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
+                    setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
+                    setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
+                    setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
+                    setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
+                    setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
+                    
+                    setIsGapiReady(true);
+                    setIsGoogleAuthenticatedForAnnouncements(true);
+                    setIsGoogleAuthenticatedForBoard(true);
+                    
+                    console.log("✅ 로그인 후 Papyrus DB 연결 완료");
+                    console.log("스프레드시트 ID들:", spreadsheetIds);
+                } catch (error) {
+                    console.error("Error during login initialization", error);
+                    console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
+                    
+                    // Google API 초기화 실패해도 계속 진행
+                    setIsGapiReady(false); // 실제 상태 반영
+                    setIsGoogleAuthenticatedForAnnouncements(false);
+                    setIsGoogleAuthenticatedForBoard(false);
+                    
+                    // 사용자에게 알림
+                    console.log("⚠️ 일부 Google 서비스가 제한될 수 있습니다.");
+                }
+            };
+            
+            initAndFetch();
+        }
+    }, [user, isLoading]);
 
     // 데이터 로드 useEffect들
     useEffect(() => {
-        if (boardSpreadsheetId) {
+        if (isGapiReady && boardSpreadsheetId) {
             const loadPosts = async () => {
                 setIsBoardLoading(true);
                 try {
-                    const postsData = await fetchPosts(boardSpreadsheetId, boardSheetName);
+                    console.log('게시글 데이터 로딩 시작...');
+                    const postsData = await fetchPosts();
                     setPosts(postsData);
+                    console.log('게시글 데이터 로딩 완료:', postsData.length, '개');
                 } catch (error) {
                     console.error('Error loading posts:', error);
                 } finally {
@@ -179,15 +212,17 @@ export const useAppState = () => {
             };
             loadPosts();
         }
-    }, [boardSpreadsheetId]);
+    }, [isGapiReady, boardSpreadsheetId]);
 
     useEffect(() => {
-        if (announcementSpreadsheetId) {
+        if (isGapiReady && announcementSpreadsheetId) {
             const loadAnnouncements = async () => {
                 setIsAnnouncementsLoading(true);
                 try {
-                    const announcementsData = await fetchAnnouncements(announcementSpreadsheetId, announcementSheetName);
+                    console.log('공지사항 데이터 로딩 시작...');
+                    const announcementsData = await fetchAnnouncements();
                     setAnnouncements(announcementsData);
+                    console.log('공지사항 데이터 로딩 완료:', announcementsData.length, '개');
                 } catch (error) {
                     console.error('Error loading announcements:', error);
                 } finally {
@@ -196,52 +231,40 @@ export const useAppState = () => {
             };
             loadAnnouncements();
         }
-    }, [announcementSpreadsheetId]);
+    }, [isGapiReady, announcementSpreadsheetId]);
 
     useEffect(() => {
-        const loadCalendarEvents = async () => {
-            setIsCalendarLoading(true);
-            try {
-                const events = await fetchCalendarEvents(
-                    calendarProfessorSpreadsheetId,
-                    calendarStudentSpreadsheetId,
-                    calendarSheetName
-                );
-                setCalendarEvents(events);
-            } catch (error) {
-                console.error('Error loading calendar events:', error);
-            } finally {
-                setIsCalendarLoading(false);
-            }
-        };
-
-        if (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId) {
+        if (isGapiReady && (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId)) {
+            const loadCalendarEvents = async () => {
+                setIsCalendarLoading(true);
+                try {
+                    console.log('캘린더 데이터 로딩 시작...');
+                    const events = await fetchCalendarEvents();
+                    setCalendarEvents(events);
+                    console.log('캘린더 데이터 로딩 완료:', events.length, '개');
+                } catch (error) {
+                    console.error('Error loading calendar events:', error);
+                } finally {
+                    setIsCalendarLoading(false);
+                }
+            };
             loadCalendarEvents();
         }
-    }, [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
+    }, [isGapiReady, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
 
     useEffect(() => {
-        if (hotPotatoDBSpreadsheetId) {
+        if (isGapiReady && hotPotatoDBSpreadsheetId) {
             const fetchTemplateData = async () => {
                 try {
-                    const gapi = (window as any).gapi;
-                    if (gapi && gapi.client && gapi.client.sheets) {
-                        const spreadsheet = await gapi.client.sheets.spreadsheets.get({ 
-                            spreadsheetId: hotPotatoDBSpreadsheetId 
-                        });
-                        const docSheet = spreadsheet.result.sheets.find((s: any) => s.properties.title === 'document_template');
-                        if (docSheet && docSheet.properties) {
-                            setDocumentTemplateSheetId(docSheet.properties.sheetId);
-                        }
-                        
-                        const [templates, tags] = await Promise.all([
-                            fetchTemplates(hotPotatoDBSpreadsheetId),
-                            fetchTags(hotPotatoDBSpreadsheetId)
-                        ]);
-                        
-                        setCustomTemplates(templates);
-                        setTags(tags);
-                    }
+                    console.log('템플릿 데이터 로딩 시작...');
+                    const [templates, tags] = await Promise.all([
+                        fetchTemplates(),
+                        fetchTags()
+                    ]);
+                    
+                    setCustomTemplates(templates);
+                    setTags(tags);
+                    console.log('템플릿 데이터 로딩 완료:', templates.length, '개');
                 } catch (error) {
                     console.error("Error during template data fetch", error);
                 } finally {
@@ -250,7 +273,7 @@ export const useAppState = () => {
             };
             fetchTemplateData();
         }
-    }, [hotPotatoDBSpreadsheetId]);
+    }, [isGapiReady, hotPotatoDBSpreadsheetId]);
 
     return {
         // User state
@@ -273,7 +296,6 @@ export const useAppState = () => {
         isTemplatesLoading,
         tags,
         setTags,
-        documentTemplateSheetId,
         
         // Board state
         posts,

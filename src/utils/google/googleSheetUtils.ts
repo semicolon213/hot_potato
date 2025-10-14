@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+import { ENV_CONFIG } from '../../config/environment';
+
+const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
 let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;

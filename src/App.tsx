@@ -6,11 +6,10 @@
  * @date 2024
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import PageRenderer from "./components/layout/PageRenderer";
-import Chat from "./pages/Chat";
 import "./index.css"; // Global styles and theme variables
 import "./components/features/auth/PendingApproval.css"; // 승인 대기 화면 스타일
 import "./components/features/auth/Login.css"; // 인증 관련 스타일
@@ -18,9 +17,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './components/features/auth/Login';
 import PendingApproval from './components/features/auth/PendingApproval';
 import { useAppState } from './hooks/core/useAppState';
-import { 
-  addPost, 
-  addAnnouncement, 
+import {
+  addPost,
+  addAnnouncement,
   addCalendarEvent,
   addTemplate,
   deleteTemplate,
@@ -30,14 +29,14 @@ import {
   deleteTag,
   updateTag,
   saveAcademicScheduleToSheet,
-  fetchPosts,
-  fetchAnnouncements,
-  fetchTemplates,
-  fetchCalendarEvents
-} from './utils/google/spreadsheetManager';
-import type { Post, Event, DateRange, CustomPeriod } from './types/app';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    fetchPosts,
+    fetchAnnouncements,
+    fetchTemplates,
+    fetchCalendarEvents,
+    updateCalendarEvent
+  } from './utils/database/papyrusManager';
+import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
+import { ENV_CONFIG } from './config/environment';
 
 /**
  * @brief 메인 애플리케이션 컴포넌트
@@ -50,36 +49,36 @@ const App: React.FC = () => {
     user,
     setUser,
     isLoading,
-    
+
     // Page state
     currentPage,
     setCurrentPage,
     googleAccessToken,
+    setGoogleAccessToken,
     searchTerm,
     setSearchTerm,
-    
+
     // Template state
     customTemplates,
     setCustomTemplates,
     isTemplatesLoading,
     tags,
     setTags,
-    documentTemplateSheetId,
-    
+
     // Board state
     posts,
     setPosts,
     isGoogleAuthenticatedForBoard,
     isBoardLoading,
     boardSpreadsheetId,
-    
+
     // Announcements state
     announcements,
     setAnnouncements,
     isGoogleAuthenticatedForAnnouncements,
     isAnnouncementsLoading,
     announcementSpreadsheetId,
-    
+
     // Calendar state
     calendarEvents,
     setCalendarEvents,
@@ -93,44 +92,64 @@ const App: React.FC = () => {
     setGradeEntryPeriod,
     customPeriods,
     setCustomPeriods,
-    calendarProfessorSpreadsheetId,
-    calendarStudentSpreadsheetId,
-    
+
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
-    studentSpreadsheetId,
-    
-    // Constants
-    boardSheetName,
-    announcementSheetName,
-    calendarSheetName
+    studentSpreadsheetId
   } = useAppState();
 
   // 로그인 처리
-  const handleLogin = (userData: any) => {
+  const handleLogin = (userData: User) => {
+    console.log('로그인 처리 시작:', userData);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     if (userData.accessToken) {
       localStorage.setItem('googleAccessToken', userData.accessToken);
+      setGoogleAccessToken(userData.accessToken);
     }
+    console.log('✅ 로그인 완료 - 데이터 로딩은 useAppState에서 자동 처리됩니다');
   };
 
   // 로그아웃 처리
   const handleLogout = () => {
     setUser(null);
+    setCurrentPage("dashboard");
+    setSearchTerm("");
     localStorage.removeItem('user');
     localStorage.removeItem('googleAccessToken');
+    localStorage.removeItem('searchTerm');
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
     }
   };
+
+  // Electron 이벤트 처리 (자동 로그아웃)
+  useEffect(() => {
+    // Electron 환경에서만 실행
+    if (window.electronAPI) {
+      const handleAppBeforeQuit = () => {
+        console.log('앱 종료 감지 - 자동 로그아웃 실행');
+        handleLogout();
+      };
+
+      // Electron 이벤트 리스너 등록
+      window.electronAPI.onAppBeforeQuit(handleAppBeforeQuit);
+
+      // 컴포넌트 언마운트 시 리스너 제거
+      return () => {
+        if (window.electronAPI && window.electronAPI.removeAppBeforeQuitListener) {
+          window.electronAPI.removeAppBeforeQuitListener(handleAppBeforeQuit);
+        }
+      };
+    }
+  }, []);
 
   // 페이지 전환 처리
   const handlePageChange = (pageName: string) => {
     const url = new URL(window.location.toString());
     url.searchParams.set('page', pageName);
     window.history.pushState({}, '', url.toString());
-    setCurrentPage(pageName as any);
+    setCurrentPage(pageName as PageType);
   };
 
   const handleSearch = (term: string) => {
@@ -143,21 +162,12 @@ const App: React.FC = () => {
     }
   };
 
-  const handleChatClick = () => {
-    // 채팅 기능 구현
-    console.log('채팅 버튼 클릭');
-  };
-
   // 게시글 추가 핸들러
   const handleAddPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
-    if (!boardSpreadsheetId) {
-      console.log('게시판 스프레드시트가 아직 로드되지 않았습니다.');
-      return;
-    }
     try {
-      await addPost(boardSpreadsheetId, boardSheetName, postData);
+      await addPost(postData);
       // 게시글 목록 새로고침
-      const updatedPosts = await fetchPosts(boardSpreadsheetId, boardSheetName);
+      const updatedPosts = await fetchPosts();
       setPosts(updatedPosts);
       handlePageChange('board');
     } catch (error) {
@@ -167,14 +177,10 @@ const App: React.FC = () => {
 
   // 공지사항 추가 핸들러
   const handleAddAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
-    if (!announcementSpreadsheetId) {
-      console.log('공지사항 스프레드시트가 아직 로드되지 않았습니다.');
-      return;
-    }
     try {
-      await addAnnouncement(announcementSpreadsheetId, announcementSheetName, postData);
+      await addAnnouncement(postData);
       // 공지사항 목록 새로고침
-      const updatedAnnouncements = await fetchAnnouncements(announcementSpreadsheetId, announcementSheetName);
+      const updatedAnnouncements = await fetchAnnouncements();
       setAnnouncements(updatedAnnouncements);
       handlePageChange('announcements');
     } catch (error) {
@@ -184,19 +190,10 @@ const App: React.FC = () => {
 
   // 캘린더 이벤트 추가 핸들러
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
-    const targetSpreadsheetId = calendarStudentSpreadsheetId || calendarProfessorSpreadsheetId;
-    if (!targetSpreadsheetId) {
-      console.log('캘린더 스프레드시트가 아직 로드되지 않았습니다.');
-      return;
-    }
     try {
-      await addCalendarEvent(targetSpreadsheetId, calendarSheetName, eventData);
+      await addCalendarEvent(eventData);
       // 캘린더 이벤트 목록 새로고침
-      const updatedEvents = await fetchCalendarEvents(
-        calendarProfessorSpreadsheetId,
-        calendarStudentSpreadsheetId,
-        calendarSheetName
-      );
+      const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
     } catch (error) {
       console.error('Error adding calendar event:', error);
@@ -205,8 +202,14 @@ const App: React.FC = () => {
 
   // 캘린더 이벤트 업데이트 핸들러
   const handleUpdateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
-    console.log("Updating event", eventId, eventData);
-    console.log("일정 수정 기능은 아직 구현되지 않았습니다.");
+    try {
+      await updateCalendarEvent(eventId, eventData);
+      // 캘린더 이벤트 목록 새로고침
+      const updatedEvents = await fetchCalendarEvents();
+      setCalendarEvents(updatedEvents);
+    } catch (error) {
+      console.error('Error updating calendar event:', error);
+    }
   };
 
   // 캘린더 이벤트 삭제 핸들러
@@ -223,20 +226,11 @@ const App: React.FC = () => {
     gradeEntryPeriod: DateRange;
     customPeriods: CustomPeriod[];
   }) => {
-    if (!calendarStudentSpreadsheetId) {
-      alert("학생용 캘린더 시트를 찾을 수 없습니다. 먼저 구글 드라이브에서 'calendar_student' 시트가 있는지 확인해주세요.");
-      return;
-    }
-
     try {
-      await saveAcademicScheduleToSheet(calendarStudentSpreadsheetId, calendarSheetName, scheduleData);
+      await saveAcademicScheduleToSheet(scheduleData, '');
       alert('학사일정이 성공적으로 저장되었습니다.');
       // 캘린더 이벤트 목록 새로고침
-      const updatedEvents = await fetchCalendarEvents(
-        calendarProfessorSpreadsheetId,
-        calendarStudentSpreadsheetId,
-        calendarSheetName
-      );
+      const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
     } catch (error) {
       console.error('Error saving academic schedule:', error);
@@ -250,15 +244,10 @@ const App: React.FC = () => {
       return;
     }
 
-    if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
-      console.log('시트 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
-
     try {
-      await deleteTemplate(hotPotatoDBSpreadsheetId, documentTemplateSheetId, rowIndex);
+      await deleteTemplate(rowIndex);
       // 템플릿 목록 새로고침
-      const updatedTemplates = await fetchTemplates(hotPotatoDBSpreadsheetId);
+      const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
       console.log('템플릿이 성공적으로 삭제되었습니다.');
     } catch (error) {
@@ -268,9 +257,9 @@ const App: React.FC = () => {
   };
 
   const handleAddTag = async (newTag: string) => {
-    if (newTag && !tags.includes(newTag) && hotPotatoDBSpreadsheetId) {
+    if (newTag && !tags.includes(newTag)) {
       try {
-        await addTag(hotPotatoDBSpreadsheetId, newTag);
+        await addTag(newTag);
         setTags([...tags, newTag]);
         console.log('새로운 태그가 추가되었습니다.');
       } catch (error) {
@@ -280,7 +269,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteTag = (tagToDelete: string) => {
+  const handleDeleteTag = async (tagToDelete: string) => {
     if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
       return;
     }
@@ -293,29 +282,18 @@ const App: React.FC = () => {
     setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
     console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
 
-    // Background sheet update
-    const deleteFromSheet = async () => {
-      if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
-        setCustomTemplates(oldTemplates);
-        setTags(oldTags);
-        console.log('오류: 시트 정보가 로드되지 않았습니다. 태그 삭제에 실패했습니다.');
-        return;
-      }
-
-      try {
-        await deleteTag(hotPotatoDBSpreadsheetId, documentTemplateSheetId, tagToDelete);
-      } catch (error) {
-        console.error('Error deleting tag from Google Sheet (background):', error);
-        console.log('백그라운드 저장 실패: 태그 삭제가 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
-        setCustomTemplates(oldTemplates);
-        setTags(oldTags);
-      }
-    };
-
-    deleteFromSheet();
+    // Background database update
+    try {
+      await deleteTag(tagToDelete);
+    } catch (error) {
+      console.error('Error deleting tag from Papyrus DB:', error);
+      console.log('백그라운드 저장 실패: 태그 삭제가 데이터베이스에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
+      setCustomTemplates(oldTemplates);
+      setTags(oldTags);
+    }
   };
 
-  const handleUpdateTag = (oldTag: string, newTag: string) => {
+  const handleUpdateTag = async (oldTag: string, newTag: string) => {
     // Optimistic UI update
     const oldTemplates = customTemplates;
     const oldTags = tags;
@@ -324,41 +302,26 @@ const App: React.FC = () => {
     setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
     console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
 
-    // Background sheet update
-    const updateSheet = async () => {
-      if (documentTemplateSheetId === null || !hotPotatoDBSpreadsheetId) {
-        setCustomTemplates(oldTemplates);
-        setTags(oldTags);
-        console.log('오류: 시트 정보가 로드되지 않았습니다. 태그 수정에 실패했습니다.');
-        return;
-      }
-
-      try {
-        await updateTag(hotPotatoDBSpreadsheetId, documentTemplateSheetId, oldTag, newTag);
-      } catch (error) {
-        console.error('Error updating tag in Google Sheet (background):', error);
-        console.log('백그라운드 저장 실패: 태그 수정이 시트에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
-        setCustomTemplates(oldTemplates);
-        setTags(oldTags);
-      }
-    };
-
-    updateSheet();
+    // Background database update
+    try {
+      await updateTag(oldTag, newTag);
+    } catch (error) {
+      console.error('Error updating tag in Papyrus DB:', error);
+      console.log('백그라운드 저장 실패: 태그 수정이 데이터베이스에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
+      setCustomTemplates(oldTemplates);
+      setTags(oldTags);
+    }
   };
 
   const handleAddTemplate = async (newDocData: { title: string; description: string; tag: string; }) => {
-    if (!hotPotatoDBSpreadsheetId) {
-      console.log('오류: 템플릿 시트가 로드되지 않았습니다.');
-      return;
-    }
     try {
-      await addTemplate(hotPotatoDBSpreadsheetId, newDocData);
+      await addTemplate(newDocData);
       // 템플릿 목록 새로고침
-      const updatedTemplates = await fetchTemplates(hotPotatoDBSpreadsheetId);
+      const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
       console.log('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
-      console.error('Error creating document or saving to sheet:', error);
+      console.error('Error creating document or saving to database:', error);
       console.log('문서 생성 또는 저장 중 오류가 발생했습니다.');
     }
   };
@@ -368,7 +331,7 @@ const App: React.FC = () => {
       const originalTemplate = customTemplates.find(t => t.rowIndex === rowIndex);
       const documentId = originalTemplate ? originalTemplate.documentId : '';
 
-      await updateTemplate(hotPotatoDBSpreadsheetId!, rowIndex, newDocData, documentId || '');
+      await updateTemplate(rowIndex, newDocData, documentId || '');
 
       // Migrate localStorage
       if (oldTitle && oldTitle !== newDocData.title) {
@@ -382,29 +345,25 @@ const App: React.FC = () => {
       }
 
       // 템플릿 목록 새로고침
-      const updatedTemplates = await fetchTemplates(hotPotatoDBSpreadsheetId!);
+      const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
 
       console.log('문서가 성공적으로 수정되었습니다.');
     } catch (error) {
-      console.error('Error updating document in Google Sheet:', error);
+      console.error('Error updating document in database:', error);
       console.log('문서 수정 중 오류가 발생했습니다.');
     }
   };
 
   const handleUpdateTemplateFavorite = async (rowIndex: number, favoriteStatus: string | undefined) => {
-    if (!hotPotatoDBSpreadsheetId) {
-      console.error("Spreadsheet ID is not available.");
-      return;
-    }
     try {
-      await updateTemplateFavorite(hotPotatoDBSpreadsheetId, rowIndex, favoriteStatus);
-      console.log(`Template favorite status updated in Google Sheets for row ${rowIndex}.`);
+      await updateTemplateFavorite(rowIndex, favoriteStatus);
+      console.log(`Template favorite status updated in database for row ${rowIndex}.`);
       // 템플릿 목록 새로고침
-      const updatedTemplates = await fetchTemplates(hotPotatoDBSpreadsheetId);
+      const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
     } catch (error) {
-      console.error('Error updating template favorite status in Google Sheet:', error);
+      console.error('Error updating template favorite status in database:', error);
     }
   };
 
@@ -433,17 +392,17 @@ const App: React.FC = () => {
 
   // 승인된 사용자 - develop의 레이아웃과 디자인 유지
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={ENV_CONFIG.GOOGLE_CLIENT_ID}>
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
         <div className="main-panel" data-oid="n9gxxwr">
-          <Header 
-            onPageChange={handlePageChange} 
-            userInfo={user} 
-            onLogout={handleLogout} 
-            searchTerm={searchTerm} 
-            onSearchChange={handleSearch} 
-            onSearchSubmit={handleSearchSubmit} 
+          <Header
+            onPageChange={handlePageChange}
+            userInfo={user}
+            onLogout={handleLogout}
+            searchTerm={searchTerm}
+            onSearchChange={handleSearch}
+            onSearchSubmit={handleSearchSubmit}
           />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             <PageRenderer
@@ -490,7 +449,6 @@ const App: React.FC = () => {
               onUpdateTemplate={handleUpdateTemplate}
               onUpdateTemplateFavorite={handleUpdateTemplateFavorite}
             />
-            <Chat onClick={handleChatClick} />
           </div>
         </div>
       </div>
