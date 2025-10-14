@@ -220,7 +220,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="login-container">
         <div className="login-card">
           <div className="login-logo-container">
-            <img src="/logo.png" alt="HP ERP Logo" className="login-logo" />
+            <img src="/logo.svg" alt="HP ERP Logo" className="login-logo" />
           </div>
           <div className="login-header">
             <h1>HP ERP</h1>

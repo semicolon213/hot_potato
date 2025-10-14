@@ -7,7 +7,7 @@
   width: 100vw;
   background: var(--background, #F5EFEB);
   padding: 1rem;
-  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regular', sans-serif;
+  font-family: var(--main-font);
   position: fixed;
   top: 0;
   left: 0;

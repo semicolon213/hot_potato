@@ -4,13 +4,13 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: 180px;
+  width: 200px;
   background: #f8f8f7;
   color: var(--text-dark);
   padding: 0;
   overflow-y: auto;
   z-index: 1000;
-  border-right: 1px solid var(--border-light);
+  border-right: 1px solid #e2e8f0;
 }
 
 .sidebar-header {
@@ -18,7 +18,7 @@
   padding: 0 16px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid #e2e8f0;
   background: #f8f8f7;
 }
 
@@ -27,8 +27,8 @@
   color: var(--text-dark);
   display: block;
   width: 100%;
-  font-weight: 600;
-  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
 }
 
 /* 로고 스타일링 */
@@ -41,17 +41,23 @@
 }
 
 .logo-image {
-  width: 96px;
-  height: 96px;
+  width: 120px;
   object-fit: contain;
   border-radius: var(--border-radius-sm);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.logo-image:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
 }
 
 
 .logo-title {
   color: #f8f8f7;
-  font-size: 23px;
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   margin-top: 8px;
   text-align: center;
 }
@@ -65,16 +71,17 @@
 /* 메뉴 섹션 스타일 */
 .menu-section {
   margin-bottom: 0;
-  padding: 0 16px;
+  padding: 0;
 }
+
 
 /* 메뉴 섹션 제목 스타일 */
 .menu-section-title {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--text-medium);
   margin-bottom: 16px;
   padding: 0;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -82,7 +89,7 @@
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 12px 0;
+  padding: 16px 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: transparent;
@@ -90,45 +97,57 @@
   height: auto;
   position: relative;
   margin-bottom: 0;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: none;
   gap: 12px;
+  z-index: 1;
+  width: calc(100% - 16px);
+  margin: 0 8px;
 }
 
 .menu-item:hover,
 .menu-item.active:hover,
 .menu-item.menu-item-with-submenu.active:hover {
-  background-color: var(--accent);
+  background-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .menu-item:hover .menu-icon,
 .menu-item:hover .menu-text,
 .menu-item:hover .submenu-arrow {
-  color: var(--primary);
+  color: var(--text-dark);
 }
 
-/* 마지막 메뉴 항목의 하단 테두리 제거 */
+.menu-item:hover .menu-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* 마지막 메뉴 항목도 하단 테두리 유지 */
 .menu-item:last-child {
   border-bottom: none;
 }
 
 .menu-icon {
   color: var(--text-dark);
-  font-size: 18px;
+  font-size: var(--font-size-lg);
   flex-shrink: 0;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transform: scale(1.1);
 }
 
 .menu-text {
   color: var(--text-dark);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   line-height: 20px;
-  font-weight: 400;
+  font-weight: var(--font-weight-normal);
   flex: 1;
 }
 
 .submenu-arrow {
   color: var(--text-dark);
-  font-size: 16px;
+  font-size: var(--font-size-md);
   flex-shrink: 0;
   transition: all 0.2s ease;
   margin-left: auto;
@@ -148,38 +167,40 @@
   border-radius: var(--border-radius-sm);
   padding: 0;
   display: none;
-  z-index: 200;
-  box-shadow: none;
-  border: 1px solid var(--border-light);
-  margin-top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  margin-top: 4px;
 }
 
 .submenu-item {
-  padding: 12px 16px;
+  padding: 16px 16px;
   color: var(--text-dark);
-  font-size: 14px;
+  font-size: var(--font-size-base);
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: none;
   gap: 8px;
 }
 
 .submenu-bullet {
-  color: var(--primary);
-  font-size: 16px;
-  font-weight: bold;
+  color: #000000;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
   flex-shrink: 0;
   transition: color 0.2s ease;
 }
 
 .submenu-item:hover {
-  background-color: var(--accent);
+  background-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .submenu-item:hover .submenu-bullet {
-  color: var(--primary);
-  transform: scale(1.1);
+  color: #000000;
+  transform: scale(1.0);
 }
 
 .submenu-item:last-child {
@@ -189,6 +210,16 @@
 .menu-item:hover .submenu {
   display: block;
   background-color: #f8f8f7;
+}
+
+.menu-item.active .submenu {
+  display: block;
+  background-color: #f8f8f7;
+  z-index: 1001;
+}
+
+.menu-item.active {
+  z-index: 1001;
 }
 
 .menu-item-with-submenu:hover::before {

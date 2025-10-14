@@ -1,8 +1,26 @@
 /* 공통 CSS 변수 정의 */
 
 :root {
-  /* 기본 폰트 */
-  --main-font: system-ui;
+  /* 기본 폰트 - Daeojamjil 웹폰트 우선 사용 */
+  --main-font: 'Daeojamjil', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regular', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  /* 폰트 크기 변수 */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
+  --font-size-4xl: 32px;
+  
+  /* 폰트 굵기 변수 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
   
   /* 미니멀리즘 색상 팔레트 */
   --primary: #0ea5e9;                    /* 하늘색 (sky-500) */
@@ -21,7 +39,6 @@
   --text-light: #666666;                 /* 중간 회색 */
   --menu-bg: #0ea5e9;                    /* 하늘색 메뉴 배경 */
   --table-header-bg: #f8fafc;            /* 연한 회색 테이블 헤더 */
-  --error: #ff3d00;                     /* 구글 레드 */
   --card-shadow: none;
   --card-shadow-hover: none;
   --border-radius-lg: 12px;

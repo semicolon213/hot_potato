@@ -57,7 +57,8 @@
 }
 
 .new-post-button:hover {
-  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .auth-button {
@@ -72,7 +73,8 @@
 }
 
 .auth-button:hover {
-  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .post-list {
@@ -152,7 +154,8 @@
 }
 
 .delete-button:hover {
-  background-color: var(--error);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Modal Styles (reused from Announcements.css, but included here for completeness) */
@@ -225,7 +228,8 @@
 }
 
 .modal-actions button:first-child:hover {
-  background-color: var(--success-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .modal-actions button:last-child {
@@ -234,5 +238,6 @@
 }
 
 .modal-actions button:last-child:hover {
-  background-color: var(--text-medium);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

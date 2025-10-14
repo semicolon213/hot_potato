@@ -47,7 +47,8 @@
 }
 
 .arrow-button:hover {
-  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .calendar-body-container {
@@ -250,7 +251,8 @@
 }
 
 .view-switcher button:hover:not(.active) {
-    color: var(--text-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .filter-tags-container {
