@@ -5,6 +5,7 @@ import Calendar from "../components/features/calendar/Calendar/Calendar";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from "../hooks/features/calendar/useCalendarContext.ts";
 import EventDetailModal from "../components/features/calendar/Calendar/EventDetailModal";
 import AddEventModal from "../components/features/calendar/Calendar/AddEventModal";
+import MoreEventsModal from "../components/features/calendar/Calendar/MoreEventsModal.tsx";
 import CalendarSidebar from "../components/features/calendar/Calendar/CalendarSidebar";
 // Remove Login and GoogleOAuthProvider imports
 import "../styles/pages/Calendar.css";
@@ -46,6 +47,12 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
     const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
     const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition} = useCalendarContext();
     const [modalPosition, setModalPosition] = useState({top: 0, left: 0});
+    const [moreEventsModal, setMoreEventsModal] = useState<{
+        isOpen: boolean;
+        events: Event[];
+        date: string;
+        position: { top: number; left: number };
+    }>({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
 
     const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
     const [selectedWeek, setSelectedWeek] = useState(1);
@@ -53,6 +60,19 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
     const handleSelectWeek = (week: number) => {
         setSelectedWeek(week);
         setViewMode('weekly');
+    };
+
+    const handleMoreClick = (events: Event[], date: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        setMoreEventsModal({
+            isOpen: true,
+            events,
+            date,
+            position: { top: rect.top, left: rect.left },
+        });
+        setSelectedEvent(null);
+        setIsAddModalOpen(false);
     };
 
     const handleSelectEvent = (event: Event, rect: DOMRect) => {
@@ -84,6 +104,8 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 
         setSelectedEvent(event);
         setModalPosition({ top, left });
+        setIsAddModalOpen(false);
+        setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
     };
 
     const handleEdit = (event: Event) => {
@@ -102,8 +124,13 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
             <CalendarSidebar onSelectWeek={handleSelectWeek} selectedWeek={selectedWeek}/>
             <main className="calendar-main-content">
                 <Calendar
-                    onAddEvent={() => setIsAddModalOpen(true)}
+                    onAddEvent={() => {
+                        setIsAddModalOpen(true);
+                        setSelectedEvent(null);
+                        setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
+                    }}
                     onSelectEvent={handleSelectEvent}
+                    onMoreClick={handleMoreClick}
                     onSave={onSaveAcademicSchedule}
                     viewMode={viewMode}
                     setViewMode={setViewMode}
@@ -120,10 +147,27 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
             {selectedEvent && (
                 <EventDetailModal
                     event={selectedEvent}
-                    onClose={() => { setSelectedEvent(null); setModalPosition({ top: 0, left: 0 }); }}
+                    onClose={() => { 
+                        setSelectedEvent(null); 
+                        setModalPosition({ top: 0, left: 0 }); 
+                        setIsAddModalOpen(false); 
+                        setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } }); 
+                    }}
                     onDelete={deleteEvent}
                     onEdit={handleEdit}
                     position={selectedEventPosition || modalPosition}
+                />
+            )}
+            {moreEventsModal.isOpen && (
+                <MoreEventsModal
+                    date={moreEventsModal.date}
+                    events={moreEventsModal.events}
+                    onClose={() => setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } })}
+                    onSelectEvent={(event, rect) => {
+                        handleSelectEvent(event, rect);
+                        setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
+                    }}
+                    position={moreEventsModal.position}
                 />
             )}
         </>

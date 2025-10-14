@@ -19,9 +19,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ selectedWeek }) => {
     if (!semesterStartDate || !selectedWeek) return null;
 
     const baseDate = new Date(semesterStartDate);
-    const dayOfWeek = baseDate.getDay();
-    const dateOffset = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
-    baseDate.setDate(baseDate.getDate() + dateOffset);
+    baseDate.setDate(baseDate.getDate() - baseDate.getDay());
 
     const start = new Date(baseDate);
     start.setDate(start.getDate() + (selectedWeek - 1) * 7);

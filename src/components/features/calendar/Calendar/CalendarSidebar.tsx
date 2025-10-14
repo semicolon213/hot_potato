@@ -14,8 +14,10 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
 
     const getWeekDates = (weekNum: number) => {
         if (!semesterStartDate) return '';
-        const start = new Date(semesterStartDate);
-        // Adjust for week start day if necessary, assuming semesterStartDate is the first day of week 1
+        const week1Start = new Date(semesterStartDate);
+        week1Start.setDate(week1Start.getDate() - week1Start.getDay()); // Set to Sunday
+
+        const start = new Date(week1Start);
         start.setDate(start.getDate() + (weekNum - 1) * 7);
         const end = new Date(start);
         end.setDate(end.getDate() + 6);
