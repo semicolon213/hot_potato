@@ -170,7 +170,7 @@
         'supported_actions': SUPPORTED_ACTIONS,
         'log_levels': LOG_LEVELS,
         'enable_logging': ENABLE_LOGGING,
-        'cache_expiry_minutes': CACHE_EXPIRY_MINUTES,
+        // 'cache_expiry_minutes': CACHE_EXPIRY_MINUTES, // 캐시 사용 안함
         'batch_size': BATCH_SIZE,
         'max_retry_attempts': MAX_RETRY_ATTEMPTS,
         'timeout_ms': TIMEOUT_MS
@@ -267,19 +267,19 @@
     const configs = {
         development: {
         enableLogging: true,
-        cacheExpiryMinutes: 5,
+        // cacheExpiryMinutes: 5, // 캐시 사용 안함
         maxRetryAttempts: 1,
         timeoutMs: 10000
         },
         staging: {
         enableLogging: true,
-        cacheExpiryMinutes: 15,
+        // cacheExpiryMinutes: 15, // 캐시 사용 안함
         maxRetryAttempts: 2,
         timeoutMs: 20000
         },
         production: {
         enableLogging: false,
-        cacheExpiryMinutes: 30,
+        // cacheExpiryMinutes: 30, // 캐시 사용 안함
         maxRetryAttempts: 3,
         timeoutMs: 30000
         }

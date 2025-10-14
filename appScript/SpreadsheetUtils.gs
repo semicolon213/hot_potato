@@ -104,19 +104,7 @@ function findHpMemberSheet() {
 // 모든 사용자 목록 가져오기 (승인 대기 + 승인된 사용자)
 function getAllUsers() {
   try {
-    console.log('getAllUsers 호출됨');
-    
-    // 캐시에서 데이터 확인
-    const cacheKey = 'all_users';
-    const cachedData = getCachedData(cacheKey);
-    if (cachedData) {
-      console.log('✅ Apps Script 캐시에서 사용자 데이터 로드 (성능 향상!)');
-      console.log('캐시된 데이터 크기:', JSON.stringify(cachedData).length, 'bytes');
-      console.log('캐시된 사용자 수:', cachedData.users ? cachedData.users.length : 0);
-      return cachedData;
-    }
-    
-    console.log('❌ 캐시 미스 - 스프레드시트에서 데이터 로드');
+    console.log('getAllUsers 호출됨 - 실시간 데이터 로드 (캐시 사용 안함)');
     
     const { spreadsheetId, spreadsheet } = findHpMemberSheet();
     
@@ -183,10 +171,9 @@ function getAllUsers() {
       users: allUsers
     };
     
-    // 결과를 캐시에 저장 (1분간 유지 - 실시간성 향상)
-    setCachedData(cacheKey, result, 60);
-    console.log('✅ 사용자 데이터를 Apps Script 캐시에 저장 (1분간 유지)');
-    console.log('저장된 데이터 크기:', JSON.stringify(result).length, 'bytes');
+    // 캐시 사용 안함 - 실시간 데이터 처리
+    console.log('✅ 사용자 데이터 실시간 처리 완료');
+    console.log('처리된 데이터 크기:', JSON.stringify(result).length, 'bytes');
     
     return result;
     
@@ -240,8 +227,7 @@ function approveUser(studentId) {
     
     console.log(`사용자 승인 완료: ${studentId}, 승인 날짜: ${currentDate}, is_admin: ${isAdminValue}`);
     
-    // 사용자 데이터 캐시 무효화
-    invalidateCache('all_users');
+    // 캐시 사용 안함 - 실시간 데이터 처리
     
     return {
       success: true,
@@ -295,8 +281,7 @@ function rejectUser(studentId) {
     
     console.log(`사용자 거부 완료: ${studentId}`);
     
-    // 사용자 데이터 캐시 무효화
-    invalidateCache('all_users');
+    // 캐시 사용 안함 - 실시간 데이터 처리
     
     return {
       success: true,
@@ -542,8 +527,7 @@ function addUserRegistrationRequest(userData) {
     
     console.log(`사용자 가입 요청 업데이트: ${userData.studentId} (${userData.userEmail}) - 승인: ${approvalStatus}, 관리자: ${isAdminStatus}`);
     
-    // 사용자 데이터 캐시 무효화
-    invalidateCache('all_users');
+    // 캐시 사용 안함 - 실시간 데이터 처리
     
     return {
       success: true,

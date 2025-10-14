@@ -64,8 +64,8 @@ export class ApiClient {
       headers = {}
     } = options;
 
-    // 캐시 가능한 요청인지 확인 (읽기 전용 액션)
-    const cacheableActions = ['getPendingUsers', 'checkApprovalStatus', 'checkRegistrationStatus'];
+    // 캐시 가능한 요청인지 확인 (읽기 전용 액션, 로그인/관리자 관련 제외)
+    const cacheableActions: string[] = []; // 모든 액션을 실시간으로 처리
     const cacheKey = `${action}_${JSON.stringify(data)}`;
     
     if (cacheableActions.includes(action)) {

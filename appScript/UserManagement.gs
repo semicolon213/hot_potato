@@ -110,15 +110,14 @@ function doGetAuthInternal(e) {
 
 // ===== 사용자 관리 핸들러 함수들 =====
 
-// 사용자 캐시 무효화 핸들러
+// 사용자 캐시 무효화 핸들러 (캐시 사용 안함으로 인해 더 이상 필요 없음)
 function handleClearUserCache() {
   try {
-    console.log('사용자 캐시 무효화 요청');
-    invalidateCache('all_users');
+    console.log('캐시 사용 안함 - 실시간 데이터 처리 중');
     
     return {
       success: true,
-      message: '사용자 캐시가 무효화되었습니다.'
+      message: '실시간 데이터 처리 중입니다. 캐시를 사용하지 않습니다.'
     };
     
   } catch (error) {
