@@ -653,9 +653,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         <>
             <div className="calendar-header-container">
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
+                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '5px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                         <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                        <h2 style={{textAlign: 'center', flexGrow: 1}}>
+                        <h2 style={{textAlign: 'center', flexGrow: 1, minWidth: '180px'}}>
                             {viewMode === 'monthly' ? (
                                 `${currentDate.year}년 ${currentDate.month}월`
                             ) : (
@@ -667,7 +667,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                 </>
                             )}
                         </h2>
-                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 16 ? selectedWeek + 1 : 16)}>&#8250;</button>
 
                     </div>
                     <div className="search-wrapper">
