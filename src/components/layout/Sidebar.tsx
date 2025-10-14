@@ -222,14 +222,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
                   <span className="submenu-bullet">•</span>
                   그룹스
                 </div>
-                <div className="submenu-item" onClick={() => onPageChange("google_calendar")}>
-                  <span className="submenu-bullet">•</span>
-                  캘린더
-                </div>
-                <div className="submenu-item" onClick={() => onPageChange("google_chat")}>
-                  <span className="submenu-bullet">•</span>
-                  채팅
-                </div>
               </div>
             )}
           </div>

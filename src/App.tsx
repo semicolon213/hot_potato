@@ -16,6 +16,7 @@ import "./components/features/auth/Login.css"; // 인증 관련 스타일
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './components/features/auth/Login';
 import PendingApproval from './components/features/auth/PendingApproval';
+import Chat from './pages/Chat';
 import { useAppState } from './hooks/core/useAppState';
 import {
   addPost,
@@ -450,6 +451,7 @@ const App: React.FC = () => {
               onUpdateTemplateFavorite={handleUpdateTemplateFavorite}
             />
           </div>
+          <Chat />
         </div>
       </div>
     </GoogleOAuthProvider>
