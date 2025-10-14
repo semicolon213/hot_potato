@@ -824,6 +824,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             {daysInMonth.map((date) => {
                                 const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
                                 const isSelected = selectedDate.date.toISOString().split('T')[0] === date.date;
+                                const isToday = new Date().toISOString().split('T')[0] === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
@@ -837,7 +838,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                             selectedDate.selectDate(clickedDate);
                                             onAddEvent();
                                         }}
-                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
+                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
                                     </div>
