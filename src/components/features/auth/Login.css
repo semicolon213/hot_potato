@@ -5,7 +5,7 @@
 }
 
 .login-card {
-  background: #ffffff;
+  background: #f8f8f7;
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -21,16 +21,19 @@
 
 .logo,
 .login-logo {
-  width: 80px;
+  width: 160px;
   height: 80px;
   margin-bottom: 20px;
-  border-radius: 50%;
+  border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
+  object-fit: contain;
+  background-color: transparent;
 }
 
 .login-logo:hover {
   transform: scale(1.05);
+  filter: brightness(1.1);
 }
 
 .login-header h1 {
@@ -54,7 +57,7 @@
   width: 100%;
   padding: 16px 24px;
   background: #f8f8f7;
-  border: 2px solid #ddd;
+  border: 2px solid #e2e8f0;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
@@ -148,7 +151,7 @@
 
 .form-input {
   padding: 12px 16px;
-  border: 2px solid #ddd;
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.3s ease;
@@ -187,7 +190,7 @@
   background: #f8f9fa;
   padding: 20px;
   border-radius: 12px;
-  border: 2px solid #e9ecef;
+  border: 2px solid #e2e8f0;
 }
 
 .admin-key-input-group {
@@ -224,7 +227,7 @@
   color: #c33;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #fcc;
+  border: 1px solid #e2e8f0;
   font-size: 14px;
   cursor: pointer;
 }
@@ -305,7 +308,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .info-item:last-child {

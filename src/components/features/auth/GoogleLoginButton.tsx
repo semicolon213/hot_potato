@@ -10,7 +10,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onLogin, isLoadin
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <img src="/src/assets/image/potato.png" alt="Hot Potato Logo" className="logo" />
+          <img src="/logo.svg" alt="Hot Potato Logo" className="logo" />
           <h1>Hot Potato</h1>
           <p>구글 계정으로 로그인하세요</p>
         </div>

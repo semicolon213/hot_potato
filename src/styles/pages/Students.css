@@ -76,8 +76,8 @@
 }
 
 .tab-button:hover {
-  background-color: var(--background-light);
-  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .tab-button.active {
@@ -201,9 +201,8 @@
 }
 
 .council-badge:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .badge-year {
@@ -265,9 +264,8 @@
 }
 
 .council-badge-single:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* 검색 및 필터 영역 */
@@ -334,8 +332,8 @@
 }
 
 .clear-search-btn:hover {
-  background-color: #e9ecef;
-  color: var(--text-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .filter-controls {
@@ -360,8 +358,8 @@
 }
 
 .filter-toggle-btn:hover {
-  background-color: var(--secondary-dark);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .filter-toggle-btn.active {
@@ -384,8 +382,8 @@
 }
 
 .clear-filters-btn:hover {
-  background-color: #c82333;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .filters-panel {
@@ -488,9 +486,8 @@
 }
 
 .export-btn:hover {
-  background-color: #218838;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .template-btn {
@@ -499,9 +496,8 @@
 }
 
 .template-btn:hover {
-  background-color: #e0a800;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .import-btn {

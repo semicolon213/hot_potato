@@ -22,38 +22,53 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'Daeojamjil';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/TheJamsil3Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
 html {
-  overflow-y: scroll; /* 항상 스크롤바 공간 확보 */
+  overflow-y: auto; /* 필요할 때만 스크롤바 표시 */
 }
 
-/* 스크롤바 스타일링으로 일정한 너비 유지 */
+/* 전역 스크롤바 숨기기 */
 ::-webkit-scrollbar {
-  width: 12px;
+  width: 0px;
+  background: transparent;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+/* Firefox용 스크롤바 숨기기 */
+html {
+  scrollbar-width: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 6px;
+/* IE/Edge용 스크롤바 숨기기 */
+html {
+  -ms-overflow-style: none;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+/* 모든 요소의 스크롤바 숨기기 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 body, html, * {
-font-family: var(--main-font), 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif !important;
+  font-family: var(--main-font) !important;
 }
 
 /* 기본 설정 */
 * {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
-font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regular', sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--main-font);
 }
 
 /* === 로그인 페이지 컨테이너 === */
@@ -72,7 +87,7 @@ font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'SUITE-Regu
 /* === 미니멀리즘 레이아웃 === */
 .app-container {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 200px 1fr;
   grid-template-rows: 1fr;
   height: 100vh;
   width: 100vw;

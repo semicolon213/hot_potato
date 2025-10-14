@@ -41,8 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ hotPotatoDBSpreadsheetId }) => {
         <h1>대시보드</h1>
         <div className="dashboard-actions">
           <button className="add-widget-btn" onClick={() => setIsModalOpen(true)}>
-            <i className="fas fa-plus"></i>
-            위젯 추가
+            <i className="fas fa-plus"></i>위젯 추가
           </button>
         </div>
       </div>

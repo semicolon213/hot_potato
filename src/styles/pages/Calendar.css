@@ -32,7 +32,8 @@
 }
 
 .event-button:hover {
-  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .calendar-header-container {
@@ -51,6 +52,6 @@
 }
 
 .add-event-button:hover {
-    background-color: transparent;
-    text-decoration: underline;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

@@ -4,7 +4,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Nanum Gothic', 'Arial', sans-serif;
+    font-family: var(--main-font);
 }
 
 body {
@@ -45,49 +45,53 @@ body {
 }
 
 .add-widget-btn {
-    background: var(--primary);
+    background: #000000;
     color: #f8f8f7;
     border: none;
-    padding: 10px 20px;
+    padding: 10px 16px;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     transition: all 0.2s;
     font-weight: 500;
     font-size: 14px;
+    white-space: nowrap;
 }
 
 .add-widget-btn:hover {
-    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .add-widget-btn i {
-    margin-right: 8px;
     font-size: 16px;
-    color: ffffff;
+    color: #f8f8f7;
 }
 
 .sync-btn {
     background: var(--success);
     color: #f8f8f7;
     border: none;
-    padding: 10px 20px;
+    padding: 10px 16px;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     transition: all 0.2s;
     font-size: 14px;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .sync-btn:hover {
-    background: var(--success-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .sync-btn i {
-    margin-right: 8px;
     font-size: 16px;
     color: #f8f8f7;
 }
@@ -144,7 +148,7 @@ body {
 }
 
 .add-first-widget-btn {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--text-dark) 100%);
+    background: #000000;
     color: #f8f8f7;
     border: none;
     padding: 12px 24px;
@@ -158,5 +162,5 @@ body {
 
 .add-first-widget-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

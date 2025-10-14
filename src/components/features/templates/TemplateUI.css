@@ -1,7 +1,7 @@
 /* new_document.html css */
 /* 전체 컨테이너 스타일 */
 .new-combined-style {
-font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+font-family: var(--main-font);
 max-width: 1200px;
 margin: 0 auto;
 padding: 20px;
@@ -90,7 +90,8 @@ transition: background-color 0.2s;
 }
 
 .new-reset-button:hover {
-background-color: #f1f2f4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* 무선 탭 스타일 */
@@ -242,7 +243,8 @@ margin-left: 0;
 }
 
 .favorite-button:hover {
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .favorite-button svg {
@@ -272,9 +274,8 @@ margin-left: 0;
 }
 
 .new-use-button:hover {
-    background-color: var(--primary);
-    color: #f8f8f7;
-    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .card-icon-group {
@@ -307,8 +308,8 @@ margin-left: 0;
 
 .card-action-button:hover,
 .delete-template-button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Dropdown Menu for template options */
@@ -490,9 +491,8 @@ margin-left: 0;
 }
 
 .use-default-button:hover {
-    background-color: var(--primary);
-    color: #f8f8f7;
-    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .custom-templates-section {
@@ -517,7 +517,8 @@ margin-left: 0;
 }
 
 .add-template-button:hover {
-    background-color: #367cde;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .custom-templates-grid {
