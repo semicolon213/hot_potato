@@ -630,7 +630,10 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';
-        const start = new Date(semesterStartDate);
+        const week1Start = new Date(semesterStartDate);
+        week1Start.setDate(week1Start.getDate() - week1Start.getDay()); // Set to Sunday
+
+        const start = new Date(week1Start);
         start.setDate(start.getDate() + (weekNum - 1) * 7);
         const end = new Date(start);
         end.setDate(end.getDate() + 6);
