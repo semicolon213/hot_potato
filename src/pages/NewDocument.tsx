@@ -242,28 +242,9 @@ export default function NewDocument({
         onUseTemplate 
     } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
 
-    const [showPermissionModal, setShowPermissionModal] = useState(false);
-    const [permissionContext, setPermissionContext] = useState<{ type: string; title: string } | null>(null);
-    const [selectedRole, setSelectedRole] = useState<'student' | 'executive' | 'assistant' | 'professor' | 'adjunct'>('student');
-
     const handleUseTemplateClick = (type: string, title: string) => {
-        setPermissionContext({ type, title });
-        setSelectedRole('student'); // Reset to default
-        setShowPermissionModal(true);
-    };
-
-    const handlePermissionCancel = () => {
-        setShowPermissionModal(false);
-        setPermissionContext(null);
-    };
-
-    const handlePermissionSubmit = () => {
-        if (permissionContext) {
-            // @ts-ignore
-            onUseTemplate(permissionContext.type, permissionContext.title, selectedRole);
-        }
-        setShowPermissionModal(false);
-        setPermissionContext(null);
+        // @ts-ignore
+        onUseTemplate(type, title, 'student'); // Bypass the modal and use default role
     };
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
@@ -492,82 +473,7 @@ export default function NewDocument({
                 </div>
             )}
 
-            {/* Permission Modal */}
-            {showPermissionModal && (
-                <div className="modal-overlay" onClick={handlePermissionCancel}>
-                    <div className="modal-content permission-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>공개 범위 설정</h2>
-                            <button className="modal-close" onClick={handlePermissionCancel}>
-                                &times;
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p className="modal-description">이 문서를 볼 수 있는 최소 역할을 선택하세요. 상위 역할은 자동으로 포함됩니다.</p>
-                            <div className="role-selection-container">
-                                <label className="role-option">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="professor"
-                                        checked={selectedRole === 'professor'}
-                                        onChange={() => setSelectedRole('professor')}
-                                    />
-                                    <span className="role-name">교수</span>
-                                </label>
-                                <label className="role-option">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="assistant"
-                                        checked={selectedRole === 'assistant'}
-                                        onChange={() => setSelectedRole('assistant')}
-                                    />
-                                    <span className="role-name">조교</span>
-                                </label>
-                                <label className="role-option">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="adjunct"
-                                        checked={selectedRole === 'adjunct'}
-                                        onChange={() => setSelectedRole('adjunct')}
-                                    />
-                                    <span className="role-name">겸임교원</span>
-                                </label>
-                                <label className="role-option">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="executive"
-                                        checked={selectedRole === 'executive'}
-                                        onChange={() => setSelectedRole('executive')}
-                                    />
-                                    <span className="role-name">집행부</span>
-                                </label>
-                                <label className="role-option">
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value="student"
-                                        checked={selectedRole === 'student'}
-                                        onChange={() => setSelectedRole('student')}
-                                    />
-                                    <span className="role-name">학생</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="modal-button cancel" onClick={handlePermissionCancel}>
-                                취소
-                            </button>
-                            <button className="modal-button confirm" onClick={handlePermissionSubmit}>
-                                확인
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 }
