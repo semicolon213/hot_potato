@@ -181,6 +181,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         company_name: updatedStudent.council.split(' / ')[0] || '',
         representative: updatedStudent.council.split(' / ')[1] || '',
         note: updatedStudent.council.split(' / ')[2] || '',
+        career: updatedStudent.career || [],
       };
       committeeHook.updateCommittee(selectedCommittee.name, updatedCommittee);
     }
@@ -268,7 +269,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
           grade: selectedCommittee.sortation,
           state: selectedCommittee.position,
           council: `${selectedCommittee.company_name} / ${selectedCommittee.representative} / ${selectedCommittee.note}`,
-          parsedCouncil: [] as { year: string; position: string }[]
+          parsedCouncil: [] as { year: string; position: string }[],
+          career: selectedCommittee.career
         } : null)}
         isOpen={isModalOpen}
         onClose={handleModalClose}

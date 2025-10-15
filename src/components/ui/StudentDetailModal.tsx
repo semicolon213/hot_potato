@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchStudentIssues, addStudentIssue } from '../../utils/database/papyrusManager';
 import { getSheetData } from 'papyrus-db';
 import type { Student, StudentWithCouncil } from '../../types/features/students/student';
+import type { CareerItem } from '../../types/features/staff';
 import './StudentDetailModal.css';
 import { ENV_CONFIG } from '../../config/environment';
 
@@ -224,12 +225,40 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
   };
 
+  const handleCareerChange = (index: number, field: keyof CareerItem, value: string) => {
+    if (!editedStudent || !Array.isArray(editedStudent.career)) return;
+    const newCareer = [...editedStudent.career];
+    newCareer[index] = { ...newCareer[index], [field]: value };
+    setEditedStudent(prev => prev ? { ...prev, career: newCareer } : null);
+  };
+
+  const addCareerItem = () => {
+    if (!editedStudent) return;
+    const newCareerItem: CareerItem = { company: '', position: '', period: '', description: '' };
+    const newCareer = [...(editedStudent.career || []), newCareerItem];
+    setEditedStudent(prev => prev ? { ...prev, career: newCareer } : null);
+  };
+
+  const removeCareerItem = (index: number) => {
+    if (!editedStudent || !Array.isArray(editedStudent.career)) return;
+    const newCareer = editedStudent.career.filter((_, i) => i !== index);
+    setEditedStudent(prev => prev ? { ...prev, career: newCareer } : null);
+  };
+
   const handleSave = async () => {
     if (!editedStudent) return;
 
+    // 저장하기 전 비어있는 경력 항목 자동 삭제
+    const cleanedStudent = { ...editedStudent };
+    if (cleanedStudent.career && Array.isArray(cleanedStudent.career)) {
+      cleanedStudent.career = cleanedStudent.career.filter(
+        item => item.period.trim() !== '' || item.company.trim() !== '' || item.position.trim() !== ''
+      );
+    }
+
     // The modal should not handle the update logic itself.
-    // It should pass the updated data back to the parent component.
-    onUpdate(editedStudent);
+    // It should pass the cleaned data back to the parent component.
+    onUpdate(cleanedStudent);
     setIsEditing(false);
     onClose();
   };
@@ -289,9 +318,37 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   if (!isOpen || !student || !editedStudent) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleCloseModal}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+    <>
+      <style>{`
+        .career-editor {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .career-item {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .career-item input {
+          flex-grow: 1;
+          min-width: 0;
+        }
+        .career-item .remove-btn {
+          flex-shrink: 0;
+        }
+        .career-display input.career-view-item {
+          width: 100%;
+          box-sizing: border-box;
+          margin-bottom: 4px; /* 보기 모드에서 경력 아이템 간 여백 추가 */
+        }
+        .career-editor .form-group {
+          margin-bottom: 4px; /* 경력 아이템 간 세로 여백 줄이기 */
+        }
+      `}</style>
+      <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
         <div className="modal-header">
           <h2>
             {mode === 'staff' ? '교직원 정보' : 
@@ -482,12 +539,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
                   </>
                 ) : mode === 'committee' ? (
-                  // 위원회 필드들 (12개 필드)
+                  // 위원회 필드들 (올바른 데이터 바인딩으로 전면 수정)
                   <>
                     <div className="form-group">
                       <label>위원회 구분</label>
                       <select
-                        value={editedStudent.grade}
+                        value={editedStudent.grade} // sortation -> grade
                         onChange={(e) => handleInputChange('grade', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -515,12 +572,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>연락처</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[0] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
-                        }}
+                        value={editedStudent.phone_num} // phone_num 직접 사용
+                        onChange={(e) => handleInputChange('phone_num', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
@@ -531,12 +584,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>이메일</label>
                       <input
                         type="email"
-                        value={editedStudent.council.split(' / ')[1] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
-                        }}
+                        value={editedStudent.email || ''} // email 직접 사용
+                        onChange={(e) => handleInputChange('email', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="example@company.com"
@@ -546,7 +595,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>직책</label>
                       <select
-                        value={editedStudent.state}
+                        value={editedStudent.state} // position -> state
                         onChange={(e) => handleInputChange('state', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -557,6 +606,72 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="간사">간사</option>
                         <option value="자문위원">자문위원</option>
                       </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>소재지</label>
+                      <input
+                        type="text"
+                        value={editedStudent.address} // location -> address
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        disabled={!isEditing}
+                        onFocus={handleInputFocus}
+                        placeholder="서울시 강남구, 경기도 성남시 등"
+                      />
+                    </div>
+
+                    <div className="form-group full-width">
+                      <label>경력</label>
+                      {isEditing ? (
+                        <div className="career-editor">
+                          {editedStudent.career?.map((item, index) => (
+                            <div key={index} className="form-group">
+                              <div className="career-item">
+                              <input
+                                type="text"
+                                placeholder="근무기간 (예: 2020-2023)"
+                                value={item.period}
+                                onChange={(e) => handleCareerChange(index, 'period', e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                placeholder="회사명"
+                                value={item.company}
+                                onChange={(e) => handleCareerChange(index, 'company', e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                placeholder="직책"
+                                value={item.position}
+                                onChange={(e) => handleCareerChange(index, 'position', e.target.value)}
+                              />
+                              <button type="button" className="remove-btn" onClick={() => removeCareerItem(index)}>-</button>
+                            </div>
+                          </div>
+                          ))}
+                          <button type="button" className="add-btn" onClick={addCareerItem}>+ 경력 추가</button>
+                        </div>
+                      ) : (
+                        <div className="career-display">
+                          {(editedStudent.career && editedStudent.career.length > 0) ? (
+                            editedStudent.career.map((item, index) => (
+                              <input
+                                key={index}
+                                type="text"
+                                className="career-view-item"
+                                value={`${item.period || ''}: ${item.company || ''} (${item.position || ''})`}
+                                disabled
+                              />
+                            ))
+                          ) : (
+                            <input
+                              type="text"
+                              value="입력된 경력 정보가 없습니다."
+                              disabled
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -571,12 +686,11 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
-                        placeholder="업체명을 입력하세요"
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>직위</label>
+                      <label>대표자</label>
                       <input
                         type="text"
                         value={editedStudent.council.split(' / ')[1] || ''}
@@ -587,69 +701,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
-                        placeholder="대표이사, 부장, 과장 등"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>소재지</label>
-                      <input
-                        type="text"
-                        value={editedStudent.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                        placeholder="서울시 강남구, 경기도 성남시 등"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>가족회사여부</label>
-                      <select
-                        value={editedStudent.council.split(' / ')[2] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
-                          handleInputChange('council', newCouncil);
-                        }}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                      >
-                        <option value="">선택하세요</option>
-                        <option value="예">예</option>
-                        <option value="아니오">아니오</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>대표자</label>
-                      <input
-                        type="text"
-                        value={editedStudent.council.split(' / ')[3] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${parts[2] || ''} / ${e.target.value}`;
-                          handleInputChange('council', newCouncil);
-                        }}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                        placeholder="대표자명을 입력하세요"
-                      />
-                    </div>
-
-                    <div className="form-group full-width">
-                      <label>경력</label>
-                      <textarea
-                        value={editedStudent.council.split(' / ')[4] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${parts[2] || ''} / ${parts[3] || ''} / ${e.target.value}`;
-                          handleInputChange('council', newCouncil);
-                        }}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                        placeholder="경력 정보를 입력하세요 (예: 2020-2023: ABC회사 대표이사, 2018-2020: XYZ회사 부장)"
-                        rows={3}
                       />
                     </div>
 
@@ -657,10 +708,10 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>비고</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[5] || ''}
+                        value={editedStudent.council.split(' / ')[2] || ''}
                         onChange={(e) => {
                           const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${parts[2] || ''} / ${parts[3] || ''} / ${parts[4] || ''} / ${e.target.value}`;
+                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
                           handleInputChange('council', newCouncil);
                         }}
                         disabled={!isEditing}
@@ -862,9 +913,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-};
+              </div>
+            </div>
+          </>
+        );};
 
 export default StudentDetailModal;

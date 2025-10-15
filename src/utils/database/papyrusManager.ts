@@ -954,10 +954,26 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
     
     const headers = data.values[0];
     const committeeData: Committee[] = data.values.slice(1).map((row: any[]) => {
-      const committee: Partial<Committee> = {};
+      const committee: { [key: string]: any } = {};
       headers.forEach((header: string, index: number) => {
-        (committee as any)[header] = row[index];
+        committee[header] = row[index];
       });
+
+      // career 필드가 문자열일 경우 JSON으로 파싱 (더욱 안전하게)
+      let parsedCareer: CommitteeType['career'] = [];
+      if (committee.career && typeof committee.career === 'string') {
+        try {
+          const parsed = JSON.parse(committee.career);
+          if (Array.isArray(parsed)) {
+            parsedCareer = parsed;
+          }
+        } catch (e) {
+          console.error('경력 정보 파싱 실패:', e);
+          // 파싱 실패 시 빈 배열로 유지
+        }
+      }
+      committee.career = parsedCareer;
+
       return committee as Committee;
     });
     

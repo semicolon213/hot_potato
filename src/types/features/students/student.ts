@@ -1,3 +1,5 @@
+import type { CareerItem } from '../staff';
+
 export interface Student {
   no_student: string;
   name: string;
@@ -15,4 +17,5 @@ export interface CouncilPosition {
 
 export interface StudentWithCouncil extends Student {
   parsedCouncil: CouncilPosition[];
+  career?: CareerItem[];
 }
