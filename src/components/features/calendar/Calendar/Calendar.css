@@ -648,3 +648,22 @@
     flex-shrink: 0;
     white-space: nowrap;
 }
+
+.calendar-search-bar-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 5px 10px;
+    background-color: #f1f3f4;
+    border-radius: 8px;
+    position: relative;
+}
+
+.calendar-search-input-active {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 16px;
+    margin-left: 10px;
+}

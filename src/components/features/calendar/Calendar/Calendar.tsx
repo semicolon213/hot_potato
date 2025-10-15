@@ -106,6 +106,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         searchTerm,
         setSearchTerm,
         filterLabels,
+        unfilteredEvents,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -142,7 +143,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     const [suggestionSource, setSuggestionSource] = useState<{ title: string; tag: string; startDate: string; endDate: string }[]>([]);
 
     useEffect(() => {
-        const suggestionItems = events.map(event => ({
+        const suggestionItems = unfilteredEvents.map(event => ({
             title: event.title,
             tag: event.type || (event.isHoliday ? '공휴일' : '개인 일정'),
             startDate: event.startDate,
@@ -197,9 +198,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
             }
         }
     }, [inputValue, isSuggestionsVisible, suggestionSource]);
-
-    const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
-    const [isSearchVisible, setIsSearchVisible] = useState(false);
 
     useEffect(() => {
         if (isSemesterPickerOpen) return;
@@ -634,122 +632,114 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         <>
             <div className="calendar-header-container">
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
-                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                        <h2 style={{textAlign: 'center', flexGrow: 1}}>
-                            {viewMode === 'monthly' ? (
-                                `${currentDate.year}년 ${currentDate.month}월`
-                            ) : (
-                                <>
-                                    {`${selectedWeek}주차`}
-                                    <span style={{fontSize: '14px', color: 'var(--text-medium)', display: 'block', marginTop: '4px'}}>
-                                        {getWeekDatesText(selectedWeek)}
-                                    </span>
-                                </>
-                            )}
-                        </h2>
-                        <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
-                    </div>
+                    {isSearchVisible ? (
+                        <div className="calendar-search-bar-wrapper">
+                            <BiSearchAlt2 color="black" />
+                            <input
+                                type="text"
+                                placeholder="일정 검색..."
+                                className={"calendar-search-input-active"}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onFocus={() => setIsSuggestionsVisible(true)}
+                                onBlur={() => {
+                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
+                                        e.preventDefault();
+                                        addRecentSearch(inputValue.trim());
 
-                    <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div className="search-container-wrapper">
-                            <BiSearchAlt2
-                                onClick={() => setIsSearchVisible(!isSearchVisible)}
-                                style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }}
+                                        if (suggestions.length > 0) {
+                                            const bestMatch = suggestions[0];
+                                            if (bestMatch.startDate) {
+                                                goToDate(new Date(bestMatch.startDate));
+                                            }
+                                            const formattedTerm = `#${bestMatch.title}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(formattedTerm)) {
+                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                            }
+                                        } else {
+                                            const newTerm = `#${inputValue.trim()}`;
+                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                            if (!existingTerms.includes(newTerm)) {
+                                                setSearchTerm([...existingTerms, newTerm].join(' '));
+                                            }
+                                        }
+                                        setInputValue('');
+                                        setSuggestions([]);
+                                    }
+                                }}
                             />
-                            {isSearchVisible && (
-                                <div className="search-wrapper">
-                                    <div id="calendar-search-container" className="search-container" style={{ width: '250px' }}>
-                                        <BiSearchAlt2 color="black" />
-                                        <input
-                                            type="text"
-                                            placeholder="일정 검색..."
-                                            className={"calendar-search-input"}
-                                            style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
-                                            value={inputValue}
-                                            onChange={(e) => setInputValue(e.target.value)}
-                                            onFocus={() => setIsSuggestionsVisible(true)}
-                                            onBlur={() => {
-                                                setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
-                                                    e.preventDefault();
-                                                    addRecentSearch(inputValue.trim());
-
-                                                    if (suggestions.length > 0) {
-                                                        const bestMatch = suggestions[0];
-                                                        if (bestMatch.startDate) {
-                                                            goToDate(new Date(bestMatch.startDate));
-                                                        }
-                                                        const formattedTerm = `#${bestMatch.title}`;
-                                                        const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                        if (!existingTerms.includes(formattedTerm)) {
-                                                            setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                        }
-                                                    } else {
-                                                        const newTerm = `#${inputValue.trim()}`;
-                                                        const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                        if (!existingTerms.includes(newTerm)) {
-                                                            setSearchTerm([...existingTerms, newTerm].join(' '));
-                                                        }
-                                                    }
-                                                    setInputValue('');
-                                                    setSuggestions([]);
+                            <button onClick={() => setIsSearchVisible(false)}>닫기</button>
+                            {isSuggestionsVisible && suggestions.length > 0 && (
+                                <ul className="search-suggestions">
+                                    {suggestions.map((suggestion, index) => (
+                                        <li
+                                            key={index}
+                                            onMouseDown={() => {
+                                                const formattedTerm = `#${suggestion.title}`;
+                                                const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                if (!existingTerms.includes(formattedTerm)) {
+                                                    setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                 }
+
+                                                if (suggestion.startDate) {
+                                                    goToDate(new Date(suggestion.startDate));
+                                                }
+
+                                                setInputValue('');
+                                                setSuggestions([]);
                                             }}
-                                        />
-                                        {isSuggestionsVisible && suggestions.length > 0 && (
-                                            <ul className="search-suggestions">
-                                                {suggestions.map((suggestion, index) => (
-                                                    <li
-                                                        key={index}
-                                                        onMouseDown={() => {
-                                                            const formattedTerm = `#${suggestion.title}`;
-                                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                            if (!existingTerms.includes(formattedTerm)) {
-                                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                            }
-
-                                                            if (suggestion.startDate) {
-                                                                goToDate(new Date(suggestion.startDate));
-                                                            }
-
-                                                            setInputValue('');
-                                                            setSuggestions([]);
-                                                        }}
-                                                    >
-                                                        <span className="suggestion-title">{suggestion.title}</span>
-                                                        <span className="suggestion-date">{suggestion.startDate ? suggestion.startDate.substring(5).replace('-', '월 ') + '일' : ''}</span>
-                                                        <span className="suggestion-tag">{suggestion.tag}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                    <div className="search-tags-container">
-                                        {searchTerm.split(' ').filter(Boolean).map(term => (
-                                            <div key={term} className="search-tag">
-                                                {term}
-                                                <button onClick={() => handleRemoveTerm(term)}>x</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                        >
+                                            <span className="suggestion-title">{suggestion.title}</span>
+                                                                                        <span className="suggestion-date">{suggestion.startDate ? `${suggestion.startDate.substring(5).replace('-', '/')} ~ ${suggestion.endDate.substring(5).replace('-', '/')}` : ''}</span>                                            <span className="suggestion-tag">{suggestion.tag}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             )}
                         </div>
-                        {user && user.isAdmin && (
-                            <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
-                        )}
-                        <div className="view-switcher">
-                            <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
-                            <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
-                        </div>
-                        <div className="view-switcher">
-                            <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
-                            <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
-                        </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
+                                <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
+                                <h2 style={{textAlign: 'center', flexGrow: 1}}>
+                                    {viewMode === 'monthly' ? (
+                                        `${currentDate.year}년 ${currentDate.month}월`
+                                    ) : (
+                                        <>
+                                            {`${selectedWeek}주차`}
+                                            <span style={{fontSize: '14px', color: 'var(--text-medium)', display: 'block', marginTop: '4px'}}>
+                                                {getWeekDatesText(selectedWeek)}
+                                            </span>
+                                        </>
+                                    )}
+                                </h2>
+                                <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                            </div>
+
+                            <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div className="search-container-wrapper">
+                                    <BiSearchAlt2
+                                        onClick={() => setIsSearchVisible(!isSearchVisible)}
+                                        style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }}
+                                    />
+                                </div>
+                                {user && user.isAdmin && (
+                                    <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
+                                )}
+                                <div className="view-switcher">
+                                    <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
+                                    <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
+                                </div>
+                                <div className="view-switcher">
+                                    <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
+                                    <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
             {calendarViewMode === 'calendar' ? (

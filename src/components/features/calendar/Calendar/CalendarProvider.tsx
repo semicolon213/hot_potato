@@ -224,7 +224,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     fetchGoogleEvents();
   }, [accessToken, currentDate.getFullYear(), refreshKey]);
 
-  const events = useMemo(() => {
+  const unfilteredEvents = useMemo(() => {
     const visibleSheetEvents = sheetEvents.filter(event => {
       const attendees = (event as any).attendees;
       if (!attendees || attendees.trim() === '') {
@@ -250,7 +250,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         )
     );
 
-    const sortedEvents = uniqueEvents.sort((a, b) => {
+    return uniqueEvents.sort((a, b) => {
         const startDateA = new Date(a.startDate).getTime();
         const startDateB = new Date(b.startDate).getTime();
 
@@ -264,11 +264,13 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         
         return durationB - durationA;
     });
+  }, [googleEvents, sheetEvents, user]);
 
+  const events = useMemo(() => {
     // If a search term is provided, filter all events by search.
     // Otherwise, filter events by the active tags.
     const eventsToDisplay = searchTerm
-      ? sortedEvents.filter(event => {
+      ? unfilteredEvents.filter(event => {
           // For debugging: Log the data being processed
           // console.log(`[Search Debug] Event: "${event.title}", Type: "${event.type}", SearchTerm: "${searchTerm}"`);
 
@@ -299,8 +301,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
           });
         })
       : activeFilters.includes('all')
-        ? sortedEvents
-        : sortedEvents.filter(event => {
+        ? unfilteredEvents
+        : unfilteredEvents.filter(event => {
             const eventType = event.type || '';
             const eventTitle = event.title || '';
             let isVisible = false;
@@ -613,6 +615,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     setSearchTerm,
     filterLabels,
     handleFilterChange,
+    unfilteredEvents,
     addSheetEvent, // Correctly pass the prop function
     extraWeeks: 0,
     setExtraWeeks: (weeks: number) => {
