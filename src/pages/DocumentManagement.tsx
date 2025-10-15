@@ -33,7 +33,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [documents, setDocuments] = useState<FetchedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
-    const { onUseTemplate } = useTemplateUI(customTemplates, onPageChange, '', '전체');
+    const { onUseTemplate, allDefaultTemplates } = useTemplateUI(customTemplates, onPageChange, '', '전체');
 
   const handleDocClick = (doc: { url?: string }) => {
     if (doc.url) {
@@ -149,7 +149,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   }, []);
 
   const frequentlyUsedForms = Array.from(
-    customTemplates
+    [...customTemplates, ...allDefaultTemplates]
       .filter(template => template.favoritesTag)
       .reduce((map, template) => {
         if (!map.has(template.favoritesTag!)) {
@@ -164,7 +164,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   );
 
     const handleFavoriteClick = (item: { name: string; type: string; title: string; }) => {
-        onUseTemplate(item.type, item.title, 'user');
+        // 커스텀 템플릿 또는 동적 템플릿의 경우 documentId를 찾아서 전달
+        const customTemplate = customTemplates.find(t => t.title === item.title);
+        const dynamicTemplate = allDefaultTemplates.find(t => t.title === item.title);
+        const template = customTemplate || dynamicTemplate;
+        const templateType = template?.documentId || item.type;
+        
+        console.log('📄 즐겨찾기 템플릿 클릭:', { type: item.type, title: item.title, templateType, template });
+        
+        onUseTemplate(templateType, item.title, 'user');
     };
 
   const statCards = [

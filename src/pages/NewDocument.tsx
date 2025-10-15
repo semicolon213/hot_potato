@@ -57,7 +57,7 @@ export default function NewDocument({
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("전체");
 
-    const [defaultTemplateItems, setDefaultTemplateItems] = useState(defaultTemplates);
+    const [defaultTemplateItems, setDefaultTemplateItems] = useState<Template[]>([]);
     const [customTemplateItems, setCustomTemplateItems] = useState(customTemplates);
 
     // 즐겨찾기 로직 추가
@@ -78,32 +78,6 @@ export default function NewDocument({
         }
 
     }, [customTemplateItems]);
-
-    useEffect(() => {
-        const storedDefaultOrder = localStorage.getItem('defaultTemplateOrder');
-        if (storedDefaultOrder) {
-            const orderedIds = JSON.parse(storedDefaultOrder);
-            const orderedTemplates = orderedIds.map((id: string) => defaultTemplates.find(t => t.type === id)).filter(Boolean);
-            setDefaultTemplateItems(orderedTemplates as Template[]);
-        } else {
-            setDefaultTemplateItems(defaultTemplates);
-        }
-
-        const storedCustomOrder = localStorage.getItem('customTemplateOrder');
-        if (storedCustomOrder) {
-            const orderedIds = JSON.parse(storedCustomOrder);
-            const baseTemplates = [...customTemplates];
-            const orderedTemplates = orderedIds
-                .map((id: string) => baseTemplates.find(t => (t.rowIndex ? t.rowIndex.toString() : t.title) === id))
-                .filter((t: any): t is Template => !!t);
-            
-            const newTemplates = baseTemplates.filter(t => !orderedIds.includes(t.rowIndex ? t.rowIndex.toString() : t.title));
-            setCustomTemplateItems([...orderedTemplates, ...newTemplates]);
-
-        } else {
-            setCustomTemplateItems(customTemplates);
-        }
-    }, [customTemplates]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -239,12 +213,53 @@ export default function NewDocument({
     // 2. Get filtered Custom Templates from the hook
     const { 
         filteredTemplates: filteredCustomTemplates, 
-        onUseTemplate 
+        onUseTemplate,
+        allDefaultTemplates,
+        isLoadingTemplates,
+        templateError,
+        loadDynamicTemplates
     } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
 
+    // 동적 템플릿이 로드되면 기본 템플릿 목록 업데이트
+    useEffect(() => {
+        if (allDefaultTemplates.length > 0) {
+            const storedDefaultOrder = localStorage.getItem('defaultTemplateOrder');
+            if (storedDefaultOrder) {
+                const orderedIds = JSON.parse(storedDefaultOrder);
+                const orderedTemplates = orderedIds.map((id: string) => allDefaultTemplates.find(t => t.type === id)).filter(Boolean);
+                setDefaultTemplateItems(orderedTemplates as Template[]);
+            } else {
+                setDefaultTemplateItems(allDefaultTemplates);
+            }
+        }
+    }, [allDefaultTemplates]);
+
+    useEffect(() => {
+        const storedCustomOrder = localStorage.getItem('customTemplateOrder');
+        if (storedCustomOrder) {
+            const orderedIds = JSON.parse(storedCustomOrder);
+            const baseTemplates = [...customTemplates];
+            const orderedTemplates = orderedIds
+                .map((id: string) => baseTemplates.find(t => (t.rowIndex ? t.rowIndex.toString() : t.title) === id))
+                .filter((t: any): t is Template => !!t);
+            
+            const newTemplates = baseTemplates.filter(t => !orderedIds.includes(t.rowIndex ? t.rowIndex.toString() : t.title));
+            setCustomTemplateItems([...orderedTemplates, ...newTemplates]);
+
+        } else {
+            setCustomTemplateItems(customTemplates);
+        }
+    }, [customTemplates]);
+
     const handleUseTemplateClick = (type: string, title: string) => {
+        // 커스텀 템플릿의 경우 documentId를 찾아서 전달
+        const template = customTemplateItems.find(t => t.title === title);
+        const templateType = template?.documentId || type;
+        
+        console.log('📄 템플릿 클릭:', { type, title, templateType, template });
+        
         // @ts-ignore
-        onUseTemplate(type, title, 'student'); // Bypass the modal and use default role
+        onUseTemplate(templateType, title, 'student'); // Bypass the modal and use default role
     };
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
@@ -280,7 +295,21 @@ export default function NewDocument({
                 {/* Left Sidebar: Default Templates */}
                 <div className="layout-sidebar">
                     <div className="template-section">
-                        <h2 className="section-title">기본 템플릿</h2>
+                        <h2 className="section-title">
+                            기본 템플릿
+                            {isLoadingTemplates && <span style={{ fontSize: '12px', color: '#666', marginLeft: '8px' }}>로딩 중...</span>}
+                        </h2>
+                        {templateError && (
+                            <div style={{ color: 'red', fontSize: '12px', marginBottom: '10px' }}>
+                                {templateError}
+                                <button 
+                                    onClick={loadDynamicTemplates}
+                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px' }}
+                                >
+                                    다시 시도
+                                </button>
+                            </div>
+                        )}
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCorners}

@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import {
     copyGoogleDocument,
     getSheetIdByName,
@@ -34,16 +34,11 @@ export interface Template {
 }
 
 /**
- * @brief 기본 템플릿 목록
- * @details 시스템에서 제공하는 기본 템플릿들의 배열입니다.
+ * @brief 기본 템플릿 목록 (동적으로 로드됨)
+ * @details 앱스크립트에서 hot_potato/문서/양식 폴더의 파일들을 가져와서 사용합니다.
  */
 export const defaultTemplates: Template[] = [
     { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" },
-    { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
-    { type: "receipt", title: "영수증", description: "지출 증빙을 위한 영수증 템플릿", tag: "재정" },
-    { type: "confirmation", title: "학과 행사 대표자 확인서", description: "학과 행사에 대한 대표자의 확인 서명 템플릿", tag: "증명" },
-    { type: "supporting_document_confirmation", title: "증빙서류 확인서", description: "증빙 서류 확인을 위한 템플릿", tag: "증명" },
-    { type: "fee_deposit_list", title: "학회비 입금자 명단", description: "학회비 입금자 명단 확인용 템플릿", tag: "재정" },
 ];
 
 /**
@@ -73,7 +68,44 @@ export function useTemplateUI(
     searchTerm: string,
     activeTab: string
 ) {
-    
+    // 동적 템플릿 상태
+    const [dynamicTemplates, setDynamicTemplates] = useState<Template[]>([]);
+    const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+    const [templateError, setTemplateError] = useState<string | null>(null);
+
+    // 동적 템플릿 로드 함수
+    const loadDynamicTemplates = useCallback(async () => {
+        setIsLoadingTemplates(true);
+        setTemplateError(null);
+        
+        try {
+            console.log('📄 동적 템플릿 로드 시작');
+            const result = await apiClient.getTemplates();
+            
+            if (result.success && result.data) {
+                console.log('📄 동적 템플릿 로드 성공:', result.data);
+                setDynamicTemplates(result.data);
+            } else {
+                console.error('📄 동적 템플릿 로드 실패:', result.message);
+                setTemplateError(result.message || '템플릿을 불러올 수 없습니다');
+            }
+        } catch (error) {
+            console.error('📄 동적 템플릿 로드 오류:', error);
+            setTemplateError('템플릿을 불러오는 중 오류가 발생했습니다');
+        } finally {
+            setIsLoadingTemplates(false);
+        }
+    }, []);
+
+    // 컴포넌트 마운트 시 동적 템플릿 로드
+    useEffect(() => {
+        loadDynamicTemplates();
+    }, [loadDynamicTemplates]);
+
+    // 기본 템플릿과 동적 템플릿 결합
+    const allDefaultTemplates = useMemo(() => {
+        return [...defaultTemplates, ...dynamicTemplates];
+    }, [dynamicTemplates]);
 
     // 필터링 및 정렬된 템플릿 목록을 계산 (searchTerm, filterOption, activeTab이 바뀔 때마다 재계산)
     const filteredTemplates = useMemo(() => {
@@ -95,21 +127,16 @@ export function useTemplateUI(
     const onUseTemplate = useCallback(async (type: string, title: string, role: string) => {
         console.log('📄 템플릿 사용 시작:', { type, title, role });
         
-        const isDefault = defaultTemplates.some(t => t.type === type);
+        const isDefault = allDefaultTemplates.some(t => t.type === type);
 
-        // Default templates with specific URLs - 기존 방식 유지
-        const defaultTemplateUrls: { [key: string]: string } = {
-            "empty": "https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0",
-            "meeting": "https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku",
-            "receipt": "https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0",
-            "confirmation": "https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh",
-            "supporting_document_confirmation": "https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0",
+        // 특별한 처리가 필요한 템플릿들 (스프레드시트 등)
+        const specialTemplateUrls: { [key: string]: string } = {
             "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
         };
 
-        // 기본 템플릿의 경우 기존 방식 사용 (URL 복사)
-        if (defaultTemplateUrls[type]) {
-            window.open(defaultTemplateUrls[type].replace('/edit', '/copy'), '_blank');
+        // 스프레드시트 템플릿의 경우 기존 방식 사용 (URL 복사)
+        if (specialTemplateUrls[type]) {
+            window.open(specialTemplateUrls[type].replace('/edit', '/copy'), '_blank');
             return;
         }
 
@@ -129,12 +156,34 @@ export function useTemplateUI(
         }
 
         try {
-            // API를 통한 문서 생성
+            // 커스텀 템플릿의 경우 documentId를 사용하여 템플릿 복사
+            if (!isDefault) {
+                console.log('📄 커스텀 템플릿 복사 시도:', { title, type, creatorEmail, role });
+                
+                // documentId가 있는 경우 템플릿 복사
+                if (type && type.length > 10) { // documentId는 보통 긴 문자열
+                    try {
+                        const copyResult = await copyGoogleDocument(type, title);
+                        if (copyResult.success && copyResult.documentUrl) {
+                            console.log('📄 템플릿 복사 성공:', copyResult);
+                            window.open(copyResult.documentUrl, '_blank');
+                            alert('문서가 성공적으로 생성되었습니다!');
+                            return;
+                        } else {
+                            console.error('📄 템플릿 복사 실패:', copyResult);
+                        }
+                    } catch (copyError) {
+                        console.error('📄 템플릿 복사 오류:', copyError);
+                    }
+                }
+            }
+
+            // API를 통한 문서 생성 (기본 템플릿 또는 복사 실패 시)
             console.log('📄 API를 통한 문서 생성 시도:', { title, type, creatorEmail, role });
             
             const result = await apiClient.createDocument({
                 title: title,
-                templateType: type,
+                templateType: isDefault ? type : 'custom', // 커스텀 템플릿의 경우 'custom'으로 설정
                 creatorEmail: creatorEmail,
                 editors: [], // 필요시 편집자 추가
                 role: role
@@ -162,5 +211,9 @@ export function useTemplateUI(
     return {
         filteredTemplates, // 필터링/정렬된 템플릿 목록
         onUseTemplate,     // 템플릿 사용 함수
+        allDefaultTemplates, // 모든 기본 템플릿 (정적 + 동적)
+        isLoadingTemplates, // 동적 템플릿 로딩 상태
+        templateError,     // 템플릿 로딩 오류
+        loadDynamicTemplates, // 동적 템플릿 다시 로드 함수
     };
 }

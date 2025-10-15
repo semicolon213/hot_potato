@@ -205,6 +205,10 @@ export class ApiClient {
     return this.request('createDocument', documentData);
   }
 
+  async getTemplates() {
+    return this.request('getTemplates');
+  }
+
   async getDocuments(params: {
     role: string;
     searchTerm?: string;

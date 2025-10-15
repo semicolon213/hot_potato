@@ -77,14 +77,46 @@ function handleCreateDocument(req) {
 /**
  * Google Drive API로 새 문서 생성
  * @param {string} title - 문서 제목
- * @param {string} templateType - 템플릿 타입
+ * @param {string} templateType - 템플릿 타입 또는 documentId
  * @returns {Object} 생성 결과
  */
 function createGoogleDocument(title, templateType) {
   try {
     console.log('📄 Google 문서 생성 시도:', { title, templateType });
     
-    // Google Drive API로 새 문서 생성
+    // 빈 문서인 경우
+    if (templateType === 'empty') {
+      console.log('📄 빈 문서 생성 (템플릿 없음)');
+    }
+    // templateType이 documentId인 경우 (템플릿 복사)
+    else if (templateType && templateType.length > 20 && !templateType.includes('http')) {
+      console.log('📄 커스텀 템플릿 복사 시도:', templateType);
+      
+      try {
+        // 기존 문서를 복사
+        const copiedFile = Drive.Files.copy({
+          fileId: templateType,
+          title: title
+        });
+        
+        console.log('📄 템플릿 복사 성공:', copiedFile.id);
+        
+        return {
+          success: true,
+          data: {
+            id: copiedFile.id,
+            title: title,
+            webViewLink: `https://docs.google.com/document/d/${copiedFile.id}/edit`
+          }
+        };
+      } catch (copyError) {
+        console.error('📄 템플릿 복사 실패:', copyError);
+        // 복사 실패 시 빈 문서로 생성
+      }
+    }
+    
+    // 기본 문서 생성 또는 복사 실패 시
+    console.log('📄 빈 문서 생성 시도');
     const file = Drive.Files.insert({
       title: title,
       mimeType: 'application/vnd.google-apps.document'
@@ -558,6 +590,116 @@ function testFolderCreation() {
   return folder;
 }
 
+/**
+ * hot potato/문서/양식 폴더에서 템플릿 목록 가져오기
+ * @returns {Object} 템플릿 목록 결과
+ */
+function getTemplatesFromFolder() {
+  try {
+    console.log('📄 템플릿 폴더에서 파일 목록 가져오기 시작');
+    
+    // hot_potato/문서/양식 폴더 찾기
+    const folder = findOrCreateFolder('hot_potato/문서/양식');
+    if (!folder.success) {
+      return {
+        success: false,
+        message: '템플릿 폴더를 찾을 수 없습니다: ' + folder.message
+      };
+    }
+    
+    // 폴더 내의 Google Docs 파일들 가져오기
+    const files = Drive.Files.list({
+      q: `'${folder.data.id}' in parents and mimeType='application/vnd.google-apps.document' and trashed=false`,
+      fields: 'items(id,title,description,modifiedDate,owners)',
+      orderBy: 'title'
+    });
+    
+    if (!files.items || files.items.length === 0) {
+      console.log('📄 템플릿 폴더에 문서가 없습니다');
+      return {
+        success: true,
+        data: [],
+        message: '템플릿 폴더에 문서가 없습니다'
+      };
+    }
+    
+    // 템플릿 정보 파싱
+    const templates = files.items.map(file => {
+      // 파일 제목에서 태그 추출 (예: "회의 / 회의록 / 회의 내용을 기록하는 템플릿" -> "회의")
+      const titleParts = file.title.split(' / ');
+      const tag = titleParts.length > 1 ? titleParts[0] : '기본';
+      const displayTitle = titleParts.length > 1 ? titleParts[1] : file.title;
+      const description = titleParts.length > 2 ? titleParts[2] : (file.description || '템플릿 파일');
+      
+      return {
+        id: file.id,
+        type: file.id, // documentId를 type으로 사용
+        title: displayTitle,
+        description: description,
+        tag: tag,
+        fullTitle: file.title,
+        modifiedDate: file.modifiedDate,
+        owner: file.owners && file.owners.length > 0 ? file.owners[0].displayName : 'Unknown'
+      };
+    });
+    
+    console.log('📄 템플릿 목록 가져오기 성공:', templates.length, '개');
+    
+    return {
+      success: true,
+      data: templates,
+      message: `${templates.length}개의 템플릿을 찾았습니다`
+    };
+    
+  } catch (error) {
+    console.error('📄 템플릿 목록 가져오기 오류:', error);
+    return {
+      success: false,
+      message: '템플릿 목록을 가져오는 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
+ * 빈 문서 템플릿 테스트
+ */
+function testEmptyDocumentTemplate() {
+  console.log('🧪 빈 문서 템플릿 테스트 시작');
+  
+  const testReq = {
+    title: '테스트 빈 문서',
+    templateType: 'empty',
+    creatorEmail: 'test@example.com',
+    editors: [],
+    role: 'student'
+  };
+  
+  const result = handleCreateDocument(testReq);
+  console.log('🧪 빈 문서 템플릿 테스트 결과:', result);
+  
+  return result;
+}
+
+/**
+ * 기본 템플릿 테스트
+ */
+function testDefaultTemplate() {
+  console.log('🧪 기본 템플릿 테스트 시작');
+  
+  const testReq = {
+    title: '테스트 회의록',
+    templateType: 'meeting',
+    creatorEmail: 'test@example.com',
+    editors: [],
+    role: 'student'
+  };
+  
+  const result = handleCreateDocument(testReq);
+  console.log('🧪 기본 템플릿 테스트 결과:', result);
+  
+  return result;
+}
+
 // ===== 배포 정보 =====
 function getDocumentManagementInfo() {
   return {
@@ -573,8 +715,11 @@ function getDocumentManagementInfo() {
       'handleGetDocuments',
       'handleDeleteDocuments',
       'getSpreadsheetNameByRole',
+      'getTemplatesFromFolder',
       'testDocumentCreation',
-      'testFolderCreation'
+      'testFolderCreation',
+      'testEmptyDocumentTemplate',
+      'testDefaultTemplate'
     ],
     dependencies: ['SpreadsheetUtils.gs', 'CONFIG.gs']
   };
