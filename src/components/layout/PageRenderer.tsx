@@ -239,7 +239,9 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'google_groups':
         return <GoogleServicePage service="groups" />;
       case 'google_calendar':
-        return <GoogleServicePage service="calendar" />;
+        return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
+      case 'google_chat':
+        return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       default:
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
     }

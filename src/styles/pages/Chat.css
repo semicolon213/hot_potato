@@ -1,0 +1,139 @@
+/* 채팅 버튼 */
+.chat-floating-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: #f8f8f7;
+  color: #000000;
+  border: none;
+  border-radius: 12px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.chat-floating-button:hover {
+  background: #f8f8f7;
+  color: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* 채팅 오버레이 */
+.chat-window-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  z-index: 1001;
+  pointer-events: none;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 채팅 창 */
+.chat-window {
+  width: 400px;
+  height: 500px;
+  background: #f8f8f7;
+  border-radius: 16px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  pointer-events: auto;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 채팅 헤더 */
+.chat-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 20px;
+  border-bottom: none;
+  background: transparent;
+  border-radius: 16px 16px 0 0;
+}
+
+/* 채팅 바디: webview 컨테이너 */
+.chat-body {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 0 0 16px 16px;
+}
+
+.chat-webview {
+  width: 100%;
+  height: 100%;
+}
+
+.chat-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.chat-close-btn:hover {
+  background: #e2e8f0;
+  color: var(--text-dark);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .chat-window {
+    width: 350px;
+    height: 450px;
+    border-radius: 12px;
+    margin-right: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .chat-header {
+    padding: 16px;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .chat-floating-button {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    bottom: 15px;
+    right: 15px;
+    color: #000000;
+    border: none;
+  }
+}
