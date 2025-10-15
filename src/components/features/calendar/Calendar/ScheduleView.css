@@ -1,5 +1,20 @@
 .schedule-view-container {
+    display: flex;
+    gap: 20px;
     padding: 20px;
+}
+
+.schedule-column {
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-column h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eee;
 }
 
 .schedule-list {
