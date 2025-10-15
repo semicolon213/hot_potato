@@ -14,7 +14,7 @@ interface AddEventModalProps {
 type RecurrenceFreq = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
-  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles } = useCalendarContext();
+  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles, formatDate } = useCalendarContext();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState('');
@@ -117,8 +117,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     } else {
       // Add Mode: Initialize based on selectedDate
       const initialDate = selectedDate.date;
-      setStartDate(initialDate.toISOString().split('T')[0]);
-      setEndDate(initialDate.toISOString().split('T')[0]);
+      setStartDate(formatDate(initialDate));
+      setEndDate(formatDate(initialDate));
 
       if (initialDate.getHours() !== 0 || initialDate.getMinutes() !== 0 || initialDate.getSeconds() !== 0) {
         setShowTime(true);
@@ -246,7 +246,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               eventData.type = customTag;
               eventData.color = customColor;
           } else {
-              eventData.type = tag;
+              eventData.type = tagLabels[tag] || tag;
           }
           eventData.attendees = selectedAttendees.map(a => 'no_student' in a ? a.no_student : a.no).join(',');
       } else {

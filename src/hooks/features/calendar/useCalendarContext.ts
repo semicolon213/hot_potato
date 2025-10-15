@@ -93,6 +93,7 @@ interface CalendarContextType {
     filterLabels: { [key: string]: string };
     handleFilterChange: (filter: string) => void;
     unfilteredEvents: Event[];
+    formatDate: (date: Date) => string;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

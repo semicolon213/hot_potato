@@ -233,12 +233,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         fetchGoogleEvents();
     }, [accessToken, currentDate.getFullYear(), refreshKey]);
 
-    const unfilteredEvents = useMemo(() => {
-        const visibleSheetEvents = sheetEvents.filter(event => {
-            const attendees = (event as any).attendees;
-            if (!attendees || attendees.trim() === '') {
-                return true; // Public event, visible to all
-            }
+  const unfilteredEvents = useMemo(() => {
+    const visibleSheetEvents = sheetEvents.filter(event => {
+      const attendees = (event as any).attendees;
+      if (!attendees || attendees.trim() === '') {
+        return true; // Public event, visible to all
+      }
 
             // Private event, visible only to attendees
             const attendeeIds = attendees.split(',').map((id: string) => id.trim());
@@ -275,7 +275,15 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         });
     }, [googleEvents, sheetEvents, user]);
 
-    const events = useMemo(() => {
+    const filteredEvents = useMemo(() => {
+        const tagKeyMap: { [key: string]: string } = {
+          '휴일/휴강': 'holiday',
+          '행사': 'event',
+          '보강': 'makeup',
+          '시험': 'exam',
+          '회의': 'meeting',
+        };
+
         // If a search term is provided, filter all events by search.
         // Otherwise, filter events by the active tags.
         const eventsToDisplay = searchTerm
@@ -338,25 +346,27 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                     return isVisible;
                 });
 
-        return eventsToDisplay
-            .map(event => {
-                let color;
-                if (event.color) { // Custom color from sheet
-                    color = event.color;
-                } else if (event.type && eventTypeStyles[event.type]) { // Sheet events by type
-                    color = eventTypeStyles[event.type].color;
-                } else if (event.isHoliday) { // Holiday events
-                    color = '#F08080';
-                } else { // Personal Google Calendar events
-                    color = '#7986CB';
-                }
+    return eventsToDisplay
+      .map(event => {
+        let color;
+        const eventTypeKey = tagKeyMap[event.type || ''] || event.type;
+
+        if (event.color) { // Custom color from sheet
+            color = event.color;
+        } else if (eventTypeKey && eventTypeStyles[eventTypeKey]) { // Sheet events by type
+            color = eventTypeStyles[eventTypeKey].color;
+        } else if (event.isHoliday) { // Holiday events
+            color = '#F08080';
+        } else { // Personal Google Calendar events
+            color = '#7986CB';
+        }
 
                 return {
                     ...event,
                     color: color,
                 };
             });
-    }, [googleEvents, sheetEvents, eventColors, calendarColor, activeFilters, searchTerm]);
+    }, [unfilteredEvents, activeFilters, searchTerm]);
 
     const handlePrevYear = () => {
         setCurrentDate(new Date(currentDate.setFullYear(currentDate.getFullYear() - 1)));
@@ -487,7 +497,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
         if (eventId.includes('-cal-')) { // ID format check updated for consistency
             updateSheetEvent(eventId, event);
-        } else {
+        }
+        else {
             updateGoogleEvent(eventId, event);
         }
     };
@@ -590,13 +601,13 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             handlePrevMonth,
             handleNextMonth,
         },
-        selectedDate: {
-            date: selectedDate, // Pass the full Date object
-            selectDate,
-        },
-        events,
-        addEvent,
-        updateEvent,
+            selectedDate: {
+              date: selectedDate, // Pass the full Date object
+              selectDate,
+            },
+            events: filteredEvents,
+            unfilteredEvents,
+            addEvent,        updateEvent,
         deleteEvent,
         selectedEvent,
         setSelectedEvent: (event: Event | null, position?: { top: number; left: number }) => {
@@ -626,8 +637,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         searchTerm,
         setSearchTerm,
         filterLabels,
+        formatDate, // Add this line
         handleFilterChange,
-        unfilteredEvents,
         addSheetEvent, // Correctly pass the prop function
         extraWeeks: 0,
         setExtraWeeks: (weeks: number) => {

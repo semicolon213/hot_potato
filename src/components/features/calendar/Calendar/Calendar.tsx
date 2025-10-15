@@ -108,6 +108,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         setSearchTerm,
         filterLabels,
         unfilteredEvents,
+        formatDate,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -441,7 +442,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         // Adjust for timezone offset before creating new event
                         const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
                         const dateStr = adjustedDate.toISOString().split('T')[0];
-                        
+
                         allEvents.push({
                             ...event,
                             // Create a new unique ID for each occurrence to avoid key conflicts
@@ -477,15 +478,37 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                 return !e.startDateTime && eventStart <= weekEnd && eventEnd >= weekStart;
             });
 
+            // Sort events for optimal packing within the week
+            weekEvents.sort((a, b) => {
+                const startA = new Date(a.startDate);
+                const startB = new Date(b.startDate);
+
+                // Use the week's start date as the effective start for events that began before this week
+                const effectiveStartA = startA < weekStart ? weekStart : startA;
+                const effectiveStartB = startB < weekStart ? weekStart : startB;
+
+                if (effectiveStartA.getTime() !== effectiveStartB.getTime()) {
+                    return effectiveStartA.getTime() - effectiveStartB.getTime();
+                }
+
+                // If effective start dates are the same, prioritize longer events
+                const durationA = new Date(a.endDate).getTime() - startA.getTime();
+                const durationB = new Date(b.endDate).getTime() - startB.getTime();
+                return durationB - durationA;
+            });
+
             const lanes: (Date | null)[] = [];
             for (const event of weekEvents) {
                 const eventStart = new Date(event.startDate);
-                let laneIndex = lanes.findIndex(laneEndDate => laneEndDate && laneEndDate < eventStart);
+                let laneIndex = lanes.findIndex(laneEndDate => laneEndDate && laneEndDate.getTime() <= eventStart.getTime());
                 if (laneIndex === -1) {
                     laneIndex = lanes.length;
                 }
-                const eventEnd = new Date(event.endDate);
-                lanes[laneIndex] = eventEnd;
+                const exclusiveEnd = new Date(event.endDate);
+                exclusiveEnd.setDate(exclusiveEnd.getDate() + 1); // Make it exclusive
+                lanes[laneIndex] = exclusiveEnd;
+
+                const eventEnd = new Date(event.endDate); // Use original inclusive end date
 
                 for (let i = 0; i < 7; i++) {
                     const day = week[i];
@@ -551,7 +574,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                     const eventStartDate = new Date(event.startDate);
                     const currentDayDate = new Date(day.date);
                     const isContinuationLeft = eventStartDate < currentDayDate;
-                    
+
                     const eventEndDate = new Date(event.endDate);
                     const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
                     const isContinuationRight = eventEndDate > endOfWeekDate;
@@ -765,7 +788,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         <div className="day-wrapper">
                             {daysInMonth.map((date) => {
                                 const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
-                                const isSelected = selectedDate.date.toISOString().split('T')[0] === date.date;
+                                const isSelected = formatDate(selectedDate.date) === date.date;
+                                const isToday = new Date().toISOString().split('T')[0] === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
@@ -779,7 +803,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                             selectedDate.selectDate(clickedDate);
                                             onAddEvent();
                                         }}
-                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
+                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
                                     </div>
@@ -898,7 +922,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                     </div>
                 </div>
                         )}
-            
+
                         {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
                     </>
                 );

@@ -668,3 +668,15 @@
     font-size: 16px;
     margin-left: 10px;
 }
+
+.day.today .day-number {
+    background-color: rgba(255, 0, 0, 0.8);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 24px;
+}
