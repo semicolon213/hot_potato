@@ -371,16 +371,18 @@ export const fetchTemplates = async (): Promise<Template[]> => {
       return [];
     }
 
-    const templates = data.values.slice(1).map((row: string[], index: number) => ({
-      rowIndex: index + 2,
-      title: row[0] || '',
-      description: row[1] || '',
-      partTitle: row[1] || '',
-      tag: row[2] || '',
-      type: row[0] || '',
-      documentId: row[4] || '',
-      favoritesTag: row[5] || '',
-    }));
+    const templates = data.values.slice(1)
+      .map((row: string[], index: number) => ({
+        rowIndex: index + 2, // Correct rowIndex based on original array
+        title: row[1] || '',
+        description: row[2] || '',
+        partTitle: row[2] || '',
+        tag: row[3] || '',
+        type: row[1] || '',
+        documentId: row[5] || '',
+        favoritesTag: row[6] || '',
+      }))
+      .filter(template => template.title && template.title.trim() !== ''); // Filter after mapping
     
     console.log(`Loaded ${templates.length} templates`);
     return templates;
@@ -403,7 +405,9 @@ export const fetchTags = async (): Promise<string[]> => {
       return [];
     }
 
-    const tags = data.values.slice(1).map((row: string[]) => row[2]).filter(Boolean);
+    const tagsFromD = data.values.slice(1).map((row: string[]) => row[3]).filter(Boolean);
+    const tagsFromE = data.values.slice(1).map((row: string[]) => row[4]).filter(Boolean);
+    const tags = [...tagsFromD, ...tagsFromE];
     return [...new Set(tags)];
   } catch (error) {
     console.error('Error fetching tags from Google Sheet:', error);
@@ -455,11 +459,16 @@ export const deleteTemplate = async (rowIndex: number): Promise<void> => {
       throw new Error('Hot Potato DB spreadsheet ID not found');
     }
 
-    await deleteRow(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, rowIndex);
+    // Get the number of columns to clear the entire row
+    const data = await getSheetData(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME);
+    const numColumns = data.values[0].length;
+    const emptyRow = [Array(numColumns).fill('')];
 
-    console.log('Template deleted from Google Sheets successfully');
+    await update(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, `A${rowIndex}:${String.fromCharCode(65 + numColumns - 1)}${rowIndex}`, emptyRow);
+
+    console.log('Template cleared from Google Sheets successfully');
   } catch (error) {
-    console.error('Error deleting template from Google Sheet:', error);
+    console.error('Error clearing template from Google Sheet:', error);
     throw error;
   }
 };
@@ -874,8 +883,12 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
 // 태그 관련 함수들
 export const addTag = async (newTag: string): Promise<void> => {
   try {
-    // papyrus-db에서는 태그를 별도 테이블로 관리하지 않으므로 스킵
-    console.log('태그 추가 기능은 현재 지원되지 않습니다:', newTag);
+    if (!hotPotatoDBSpreadsheetId) {
+      throw new Error('Hot Potato DB spreadsheet ID not found');
+    }
+    const newRow = ['', '', '', '', newTag];
+    await append(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, [newRow]);
+    console.log(`Tag '${newTag}' added to the sheet.`);
   } catch (error) {
     console.error('Error saving tag to Papyrus DB:', error);
     throw error;
@@ -884,18 +897,74 @@ export const addTag = async (newTag: string): Promise<void> => {
 
 export const deleteTag = async (tagToDelete: string): Promise<void> => {
   try {
-    // papyrus-db에서는 태그를 별도 테이블로 관리하지 않으므로 스킵
-    console.log('태그 삭제 기능은 현재 지원되지 않습니다:', tagToDelete);
+    if (!hotPotatoDBSpreadsheetId) {
+      throw new Error('Hot Potato DB spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME);
+    if (!data || !data.values || data.values.length <= 1) {
+      return;
+    }
+
+    const numColumns = data.values[0].length;
+    const emptyRow = [Array(numColumns).fill('')];
+    const updatesToPerform = [];
+
+    for (let i = 1; i < data.values.length; i++) {
+      const row = data.values[i];
+      const rowIndex = i + 1; // 1-based index for sheets
+
+      if (row[3] === tagToDelete || row[4] === tagToDelete) {
+        updatesToPerform.push(
+          update(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, `A${rowIndex}:${String.fromCharCode(65 + numColumns - 1)}${rowIndex}`, emptyRow)
+        );
+      }
+    }
+
+    await Promise.all(updatesToPerform);
+
+    console.log(`Tag '${tagToDelete}' and all associated templates have been cleared.`);
+
   } catch (error) {
-    console.error('Error deleting tag from Papyrus DB:', error);
+    console.error('Error clearing tag from Papyrus DB:', error);
     throw error;
   }
 };
 
 export const updateTag = async (oldTag: string, newTag: string): Promise<void> => {
   try {
-    // papyrus-db에서는 태그를 별도 테이블로 관리하지 않으므로 스킵
-    console.log('태그 업데이트 기능은 현재 지원되지 않습니다:', oldTag, '->', newTag);
+    if (!hotPotatoDBSpreadsheetId) {
+      throw new Error('Hot Potato DB spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME);
+    if (!data || !data.values || data.values.length <= 1) {
+      return;
+    }
+
+    const updatesToPerform = [];
+    for (let i = 1; i < data.values.length; i++) {
+      const row = data.values[i];
+      const rowIndex = i + 1; // 1-based index for sheets
+
+      // Check template tag (Column D)
+      if (row[3] === oldTag) {
+        const newRowData = [...row];
+        newRowData[3] = newTag;
+        updatesToPerform.push(update(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, `A${rowIndex}:${String.fromCharCode(65 + row.length - 1)}${rowIndex}`, [newRowData]));
+      }
+
+      // Check standalone tag (Column E)
+      if (row[4] === oldTag) {
+        const newRowData = [...row];
+        newRowData[4] = newTag;
+        updatesToPerform.push(update(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, `A${rowIndex}:${String.fromCharCode(65 + row.length - 1)}${rowIndex}`, [newRowData]));
+      }
+    }
+
+    await Promise.all(updatesToPerform);
+    console.log(`Tag '${oldTag}' updated to '${newTag}' for all matching rows.`);
+
   } catch (error) {
     console.error('Error updating tag in Papyrus DB:', error);
     throw error;
