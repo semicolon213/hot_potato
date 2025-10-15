@@ -10,7 +10,6 @@ interface CalendarSidebarProps {
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
     const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels } = useCalendarContext();
-    const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
 
 
     const getWeekDates = (weekNum: number) => {
@@ -52,42 +51,28 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
                 <h3>태그</h3>
                 <div className="filter-tags-container" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                     {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
-                        <label key={filter} className="filter-checkbox-label">
+                        <div key={filter} className="filter-checkbox-wrapper">
                             <input
                                 type="checkbox"
+                                id={`filter-${filter}`}
                                 checked={activeFilters.includes(filter)}
                                 onChange={() => handleFilterChange(filter)}
                             />
-                            {filterLabels[filter] || filter}
-                        </label>
+                            <label htmlFor={`filter-${filter}`} className="filter-checkbox-label">
+                                <span>{filterLabels[filter] || filter}</span>
+                            </label>
+                        </div>
                     ))}
-                    <div className="filter-checkbox-label">
+                    <div className="filter-checkbox-wrapper">
                         <input
                             type="checkbox"
-                            checked={activeFilters.includes('midterm_exam') || activeFilters.includes('final_exam')}
-                            onChange={() => setIsExamDropdownOpen(!isExamDropdownOpen)}
+                            id="filter-exam"
+                            checked={activeFilters.includes('exam')}
+                            onChange={() => handleFilterChange('exam')}
                         />
-                        시험
-                        {isExamDropdownOpen && (
-                            <div style={{ marginLeft: '20px', marginTop: '5px' }}>
-                                <label className="filter-checkbox-label">
-                                    <input
-                                        type="checkbox"
-                                        checked={activeFilters.includes('midterm_exam')}
-                                        onChange={() => handleFilterChange('midterm_exam')}
-                                    />
-                                    중간고사
-                                </label>
-                                <label className="filter-checkbox-label">
-                                    <input
-                                        type="checkbox"
-                                        checked={activeFilters.includes('final_exam')}
-                                        onChange={() => handleFilterChange('final_exam')}
-                                    />
-                                    기말고사
-                                </label>
-                            </div>
-                        )}
+                        <label htmlFor="filter-exam" className="filter-checkbox-label">
+                            <span>시험</span>
+                        </label>
                     </div>
                 </div>
             </div>
