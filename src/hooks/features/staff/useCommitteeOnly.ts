@@ -215,7 +215,7 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
   };
 
   const sortedCommittee = useMemo(() => {
-    let sortableItems = [...filteredCommittee];
+    const sortableItems = [...filteredCommittee];
     if (sortConfig.key) {
       sortableItems.sort((a, b) => {
         const aValue = (a as any)[sortConfig.key!];

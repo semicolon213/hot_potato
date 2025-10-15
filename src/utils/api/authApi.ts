@@ -30,6 +30,12 @@ export interface RegistrationResponse {
   success: boolean;
   message: string;
   error?: string;
+  debug?: {
+    message?: string;
+    data?: unknown;
+    stack?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface AdminKeyVerificationResponse {

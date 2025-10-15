@@ -209,7 +209,7 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
   };
 
   const sortedStaff = useMemo(() => {
-    let sortableItems = [...filteredStaff];
+    const sortableItems = [...filteredStaff];
     if (sortConfig.key) {
       sortableItems.sort((a, b) => {
         const aValue = (a as any)[sortConfig.key!];

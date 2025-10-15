@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { registerUser, verifyAdminKey } from '../../../utils/api/authApi';
+import { registerUser, verifyAdminKey, type RegistrationResponse } from '../../../utils/api/authApi';
 
 // 타입 정의
 interface User {
@@ -36,6 +36,12 @@ interface LoginResponse {
   isAdmin?: boolean;
   error?: string;
   approvalStatus?: string;
+  debug?: {
+    message?: string;
+    data?: unknown;
+    stack?: string;
+    [key: string]: unknown;
+  };
 }
 
 // API 함수 - 기존 authApi 사용
@@ -80,7 +86,7 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       isAdmin: data.isAdmin || false,
       error: data.error,
       debug: data.debug
-    };
+    } as LoginResponse;
   } catch (error) {
     console.error('사용자 상태 확인 실패:', error);
     return {
@@ -279,7 +285,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
         adminKey: formData.isAdmin ? formData.adminKey : undefined
       };
 
-      const result = await registerUser(registrationData);
+      const result: RegistrationResponse = await registerUser(registrationData);
 
       // 디버그 정보 출력
       if (result.debug) {
@@ -301,7 +307,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
           message: result.message,
           error: result.error,
           debug: result.debug,
-          stack: (result as any).stack
+          stack: result.debug?.stack
         });
         
         // 더 자세한 오류 메시지 표시
