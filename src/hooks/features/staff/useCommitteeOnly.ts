@@ -21,7 +21,7 @@ interface CommitteeFilters {
   position: string; // 위원회의 'position'에 해당
 }
 
-export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
+export const useCommitteeOnly = (staffSpreadsheetId: string | null) => {
   const { hotPotatoDBSpreadsheetId } = useAppState();
   const [committee, setCommittee] = useState<Committee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
