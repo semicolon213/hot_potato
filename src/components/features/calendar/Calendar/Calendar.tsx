@@ -646,6 +646,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                     setTimeout(() => setIsSuggestionsVisible(false), 150);
                                 }}
                                 onKeyDown={(e) => {
+                                    console.log('onKeyDown event:', e.key, 'suggestions:', suggestions);
                                     if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
                                         e.preventDefault();
                                         addRecentSearch(inputValue.trim());
@@ -740,6 +741,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             </div>
                         </>
                     )}
+                </div>
+                <div className="search-tags-container">
+                    {searchTerm.split(' ').filter(Boolean).map(term => (
+                        <div key={term} className="search-tag">
+                            {term}
+                            <button onClick={() => handleRemoveTerm(term)}>x</button>
+                        </div>
+                    ))}
                 </div>
             </div>
             {calendarViewMode === 'calendar' ? (
