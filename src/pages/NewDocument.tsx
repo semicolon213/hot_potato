@@ -309,7 +309,7 @@ export default function NewDocument({
                                 items={filteredDefaultTemplates.map(t => t.type)}
                                 strategy={rectSortingStrategy}
                             >
-                                <div className="new-templates-container" style={{ paddingLeft: '20px' }}>
+                                <div className="new-templates-container">
                                     {filteredDefaultTemplates.map(template => (
                                         <SortableTemplateCard
                                             key={template.type}
@@ -331,7 +331,7 @@ export default function NewDocument({
                 {/* Right Main Area: Custom Templates */}
                 <div className="layout-main">
                     <div className="template-section">
-                        <h2 className="section-title" style={{ position: 'relative', marginLeft: '-20px', width: 'calc(100% - 20px)' }}>
+                        <h2 className="section-title" style={{ position: 'relative' }}>
                             내 템플릿
                             <span
                                 className="new-tab add-tag-button"
@@ -348,28 +348,26 @@ export default function NewDocument({
                                 + 새 템플릿
                             </span>
                         </h2>
-                        <div style={{ marginLeft: '-20px', paddingRight: '40px' }}>
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCorners}
-                                onDragEnd={handleCustomDragEnd}
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCorners}
+                            onDragEnd={handleCustomDragEnd}
+                        >
+                            <SortableContext
+                                items={filteredCustomTemplates.map(t => t.rowIndex ? t.rowIndex.toString() : t.title)}
+                                strategy={rectSortingStrategy}
                             >
-                                <SortableContext
-                                    items={filteredCustomTemplates.map(t => t.rowIndex ? t.rowIndex.toString() : t.title)}
-                                    strategy={rectSortingStrategy}
-                                >
-                                    <TemplateList
-                                        templates={filteredCustomTemplates}
-                                        onUseTemplate={handleUseTemplateClick}
-                                        onDeleteTemplate={deleteTemplate}
-                                        onEditTemplate={handleEditClick} // Pass the handler here
-                                        defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
-                                        onToggleFavorite={handleToggleFavorite} // Pass down the function
-                                        isLoading={isTemplatesLoading}
-                                    />
-                                </SortableContext>
-                            </DndContext>
-                        </div>
+                                <TemplateList
+                                    templates={filteredCustomTemplates}
+                                    onUseTemplate={handleUseTemplateClick}
+                                    onDeleteTemplate={deleteTemplate}
+                                    onEditTemplate={handleEditClick} // Pass the handler here
+                                    defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                                    onToggleFavorite={handleToggleFavorite} // Pass down the function
+                                    isLoading={isTemplatesLoading}
+                                />
+                            </SortableContext>
+                        </DndContext>
                     </div>
                 </div>
             </div>

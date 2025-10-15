@@ -435,12 +435,12 @@ margin-left: 0;
 
 .layout-sidebar {
     flex: 1;
-    padding-right: 20px;
+    padding: 0 20px;
 }
 
 .layout-main {
     flex: 1;
-    padding-left: 20px;
+    padding: 0 20px;
 }
 
 .default-templates-list {

@@ -21,18 +21,33 @@ const updateRow = async (spreadsheetId: string, sheetName: string, key: string, 
 };
 
 // papyrus-db에 Google API 인증 설정
+
 const setupPapyrusAuth = () => {
+
   if ((window as any).gapi && (window as any).gapi.client) {
+
     // papyrus-db가 gapi.client를 사용하도록 설정
+
     (window as any).papyrusAuth = {
+
       client: (window as any).gapi.client
+
     };
+
   }
+
 };
+
+
+
 import type { Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
+
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 
+
+
 // 스프레드시트 ID들을 저장할 변수들
+
 let hotPotatoDBSpreadsheetId: string | null = null;
 let boardSpreadsheetId: string | null = null;
 let announcementSpreadsheetId: string | null = null;
@@ -440,8 +455,7 @@ export const deleteTemplate = async (rowIndex: number): Promise<void> => {
       throw new Error('Hot Potato DB spreadsheet ID not found');
     }
 
-    // papyrus-db를 사용하여 행 삭제 (시트 ID는 0으로 가정)
-    await deleteRow(hotPotatoDBSpreadsheetId, 0, rowIndex);
+    await deleteRow(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME, rowIndex);
 
     console.log('Template deleted from Google Sheets successfully');
   } catch (error) {
