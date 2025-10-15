@@ -51,28 +51,22 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
                 <h3>태그</h3>
                 <div className="filter-tags-container" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                     {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
-                        <div key={filter} className="filter-checkbox-wrapper">
+                        <label key={filter} className="filter-checkbox-label">
                             <input
                                 type="checkbox"
-                                id={`filter-${filter}`}
                                 checked={activeFilters.includes(filter)}
                                 onChange={() => handleFilterChange(filter)}
                             />
-                            <label htmlFor={`filter-${filter}`} className="filter-checkbox-label">
-                                <span>{filterLabels[filter] || filter}</span>
-                            </label>
-                        </div>
+                            <span>{filterLabels[filter] || filter}</span>
+                        </label>
                     ))}
-                    <div className="filter-checkbox-wrapper">
+                    <div className="filter-checkbox-label">
                         <input
                             type="checkbox"
-                            id="filter-exam"
                             checked={activeFilters.includes('exam')}
                             onChange={() => handleFilterChange('exam')}
                         />
-                        <label htmlFor="filter-exam" className="filter-checkbox-label">
-                            <span>시험</span>
-                        </label>
+                        <span>시험</span>
                     </div>
                 </div>
             </div>
