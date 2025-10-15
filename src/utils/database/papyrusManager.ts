@@ -820,9 +820,9 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
   const classDay30 = addInclusiveDays(semesterStartDate, 30);
   const classDay60 = addInclusiveDays(semesterStartDate, 60);
   const classDay90 = addInclusiveDays(semesterStartDate, 90);
-  eventsToSave.push({ id: 'class-day-30', title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30), type: '공용일정' });
-  eventsToSave.push({ id: 'class-day-60', title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60), type: '공용일정' });
-  eventsToSave.push({ id: 'class-day-90', title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90), type: '공용일정' });
+  eventsToSave.push({ id: 'class-day-30', title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30), type: '공용일정', description: '학기 개시일 부터 30일 까지 휴학할 시에 복학 추가 납부 금액 0원' });
+  eventsToSave.push({ id: 'class-day-60', title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60), type: '공용일정', description: '학기 개시일 30일부터 60일 까지 휴학할 시에 복학 추가 납부 금액 : 등록금의 1/3' });
+  eventsToSave.push({ id: 'class-day-90', title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90), type: '공용일정', description: '학기 개시일 60일부터 90일 까지 휴학할 시에 복학 추가 납부 금액 : 등록금의 1/2' });
 
   // 중간고사
   if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
@@ -895,7 +895,7 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
         event.title,
         event.startDate,
         event.endDate,
-        '', // description
+        event.description || '', // description
         '', // colorId
         '', // startDateTime
         '', // endDateTime
