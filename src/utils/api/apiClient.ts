@@ -200,13 +200,25 @@ export class ApiClient {
     templateType?: string;
     creatorEmail: string;
     editors?: string[];
-    role: string;
+    role?: string;
   }) {
     return this.request('createDocument', documentData);
   }
 
   async getTemplates() {
     return this.request('getTemplates');
+  }
+
+  async testDriveApi() {
+    return this.request('testDriveApi');
+  }
+
+  async testTemplateFolderDebug() {
+    return this.request('testTemplateFolderDebug');
+  }
+
+  async testSpecificFolder() {
+    return this.request('testSpecificFolder');
   }
 
   async getDocuments(params: {

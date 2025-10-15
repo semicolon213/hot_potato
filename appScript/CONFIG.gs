@@ -420,3 +420,87 @@
         config: config
     };
     }
+
+    // ===== 문서 관리 설정 =====
+    // 문서 저장 폴더 경로
+    const DOCUMENT_FOLDER_PATH = 'hot potato/문서';
+    
+    // 템플릿 폴더 경로
+    const TEMPLATE_FOLDER_PATH = 'hot potato/문서/양식';
+    
+    // 역할별 스프레드시트 이름 매핑
+    const ROLE_SPREADSHEET_MAP = {
+        'student': '학생_문서관리',
+        'professor': '교수_문서관리',
+        'admin': '관리자_문서관리'
+    };
+    
+    // 기본 역할
+    const DEFAULT_ROLE = 'student';
+    
+    // 문서 상태
+    const DOCUMENT_STATUS = {
+        CREATED: '생성됨',
+        UPDATED: '수정됨',
+        DELETED: '삭제됨'
+    };
+    
+    // 스프레드시트 컬럼 설정
+    const DOCUMENT_SHEET_COLUMNS = {
+        CREATED_AT: 0,      // A열 - 생성일시
+        TITLE: 1,           // B열 - 문서제목
+        CREATOR: 2,         // C열 - 생성자
+        URL: 3,             // D열 - 문서URL
+        STATUS: 4           // E열 - 상태
+    };
+    
+    // ===== 문서 관리 설정 함수들 =====
+    
+    /**
+     * 문서 저장 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getDocumentFolderPath() {
+        return DOCUMENT_FOLDER_PATH;
+    }
+    
+    /**
+     * 템플릿 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getTemplateFolderPath() {
+        return TEMPLATE_FOLDER_PATH;
+    }
+    
+    /**
+     * 역할에 따른 스프레드시트 이름 반환
+     * @param {string} role - 사용자 역할
+     * @returns {string} 스프레드시트 이름
+     */
+    function getSpreadsheetNameByRole(role) {
+        return ROLE_SPREADSHEET_MAP[role] || ROLE_SPREADSHEET_MAP[DEFAULT_ROLE];
+    }
+    
+    /**
+     * 기본 역할 반환
+     * @returns {string} 기본 역할
+     */
+    function getDefaultRole() {
+        return DEFAULT_ROLE;
+    }
+    
+    /**
+     * 문서 상태 반환
+     * @returns {Object} 문서 상태 객체
+     */
+    function getDocumentStatus() {
+        return DOCUMENT_STATUS;
+    }
+    
+    /**
+     * 문서 스프레드시트 컬럼 설정 반환
+     * @returns {Object} 컬럼 설정 객체
+     */
+    function getDocumentSheetColumns() {
+        return DOCUMENT_SHEET_COLUMNS;
+    }

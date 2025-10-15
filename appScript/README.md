@@ -11,16 +11,50 @@
 ## 📁 파일 구조
 ```
 appScript/
-├── 📄 README.md                    # 메인 설명서 (이 파일)
-├── 📧 EMAIL_ENCRYPTION_GUIDE.md   # 이메일 암호화 설정 가이드
-├── ⚙️  CONFIG.gs                   # 설정 파일 (중앙화된 설정 관리)
-├── 🔐 Encryption.gs               # 암호화/복호화 함수들
-├── 🔑 KeyManagement.gs            # 관리자 키 관리 함수들
-├── 📊 SpreadsheetUtils.gs         # Google Sheets 연동 함수들
-├── 👥 UserManagement.gs           # 사용자 관리 함수들
-├── 🚀 Main.gs                     # 메인 함수들과 POST/GET 요청 처리
-├── 🧪 Test.gs                     # 테스트 함수들
-└── ✅ MigrationVerification.gs    # 마이그레이션 검증 함수들
+├── 📄 README.md                           # 메인 설명서 (이 파일)
+├── 📧 EMAIL_ENCRYPTION_GUIDE.md          # 이메일 암호화 설정 가이드
+├── ⚙️  CONFIG.gs                          # 설정 파일 (중앙화된 설정 관리)
+├── 🚀 Main.gs                            # 메인 함수들과 POST/GET 요청 처리
+│
+├── 🔐 암호화 관련
+│   ├── EncryptionCore.gs                 # 암호화/복호화 핵심 함수들
+│   ├── EncryptionAlgorithms.gs           # 암호화 알고리즘들
+│   ├── EncryptionKeyManagement.gs        # 암호화 키 관리
+│   └── EncryptionEmail.gs                # 이메일 암호화/복호화
+│
+├── 🔑 키 관리 관련
+│   ├── KeyVerification.gs                # 키 검증 함수들
+│   ├── KeyGeneration.gs                  # 키 생성 함수들
+│   └── TimeUtils.gs                      # 시간 유틸리티 함수들
+│
+├── 📊 스프레드시트 관련
+│   ├── SpreadsheetCore.gs                # 스프레드시트 핵심 함수들
+│   ├── SpreadsheetCache.gs               # 스프레드시트 캐시 함수들
+│   └── SpreadsheetUtils.gs               # 스프레드시트 유틸리티 함수들
+│
+├── 👥 사용자 관리 관련
+│   ├── UserAuth.gs                       # 사용자 인증 함수들
+│   ├── UserApproval.gs                   # 사용자 승인 함수들
+│   └── UserRegistration.gs               # 사용자 등록 함수들
+│
+├── 📄 문서 관리 관련
+│   ├── DocumentCreation.gs               # 문서 생성 함수들
+│   ├── DocumentPermissions.gs            # 문서 권한 함수들
+│   ├── DocumentFolder.gs                 # 문서 폴더 함수들
+│   ├── DocumentSpreadsheet.gs            # 문서 스프레드시트 함수들
+│   ├── DocumentTemplates.gs              # 문서 템플릿 함수들
+│   └── DocumentTests.gs                  # 문서 테스트 함수들
+│
+├── 🧪 테스트 관련
+│   ├── TestBasic.gs                      # 기본 테스트 함수들
+│   ├── TestSpreadsheet.gs                # 스프레드시트 테스트 함수들
+│   ├── TestUserManagement.gs             # 사용자 관리 테스트 함수들
+│   └── TestDocumentManagement.gs         # 문서 관리 테스트 함수들
+│
+└── ✅ 검증 관련
+    ├── MigrationVerification.gs          # 마이그레이션 검증 함수들
+    ├── OptimizationVerification.gs       # 최적화 확인 함수들
+    └── ComprehensiveVerification.gs      # 종합 검증 함수들
 ```
 
 ## 📚 문서 가이드
@@ -28,12 +62,13 @@ appScript/
 - **EMAIL_ENCRYPTION_GUIDE.md**: 이메일 암호화 설정 상세 가이드
 
 ## 📊 마이그레이션 통계
-- **총 파일 수**: 9개
-- **총 코드 크기**: 약 200KB+
-- **총 함수 수**: 80+ 개
+- **총 파일 수**: 25개 (용도별로 분리된 모듈화된 구조)
+- **총 코드 크기**: 약 300KB+
+- **총 함수 수**: 120+ 개
 - **암호화 방법**: 23개 (Base64, Caesar, ROT13, BitShift, Substitution, Padding, MultiEncode, RandomInsert, Transposition, Reverse, Atbash, Vigenere, RailFence, Columnar, Affine, Permutation, Pattern, Mirror, Zigzag, Wave, Snake)
-- **API 엔드포인트**: 20+ 개
-- **테스트 함수**: 30+ 개
+- **API 엔드포인트**: 30+ 개
+- **테스트 함수**: 50+ 개
+- **검증 함수**: 20+ 개
 
 ## 주요 변경사항
 
@@ -263,14 +298,14 @@ fetch('YOUR_APPS_SCRIPT_URL', {
 ## 주요 기능
 
 ### 1. 암호화/복호화 시스템
-- **파일**: `Encryption.gs`
+- **파일**: `EncryptionCore.gs`, `EncryptionAlgorithms.gs`, `EncryptionKeyManagement.gs`, `EncryptionEmail.gs`
 - **기능**: 23가지 암호화 방법 지원
 - **특징**: 가역적 암호화만 사용하여 데이터 복원 가능
 - **이메일 암호화**: 전체 이메일 주소를 통으로 암호화 (사용자명@도메인.확장자)
 - **다중 레이어**: 5-15단계 암호화 레이어 지원
 
 ### 2. 관리자 키 관리
-- **파일**: `KeyManagement.gs`
+- **파일**: `KeyVerification.gs`, `KeyGeneration.gs`, `TimeUtils.gs`
 - **기능**: 
   - 다중 레이어 키 생성
   - 키 검증
@@ -278,173 +313,202 @@ fetch('YOUR_APPS_SCRIPT_URL', {
   - 이메일 템플릿 생성
 
 ### 3. Google Sheets 연동
-- **파일**: `SpreadsheetUtils.gs`
+- **파일**: `SpreadsheetCore.gs`, `SpreadsheetCache.gs`, `SpreadsheetUtils.gs`
 - **기능**:
   - 스프레드시트 데이터 읽기/쓰기
   - 사용자 관리
+  - 캐시 시스템
   - ROT13 이메일 암호화
 
 ### 4. 사용자 관리
-- **파일**: `UserManagement.gs`
+- **파일**: `UserAuth.gs`, `UserApproval.gs`, `UserRegistration.gs`
 - **기능**:
+  - 사용자 인증
   - 사용자 승인/거부
   - 등록 상태 확인
   - 가입 요청 처리
 
-### 5. 테스트 시스템
-- **파일**: `Test.gs`
+### 5. 문서 관리
+- **파일**: `DocumentCreation.gs`, `DocumentPermissions.gs`, `DocumentFolder.gs`, `DocumentSpreadsheet.gs`, `DocumentTemplates.gs`
 - **기능**:
-  - 암호화/복호화 테스트 (30+ 개 테스트 함수)
+  - Google Docs 문서 생성
+  - 문서 권한 설정
+  - 문서 폴더 관리
+  - 템플릿 관리
+  - 스프레드시트 연동
+
+### 6. 테스트 시스템
+- **파일**: `TestBasic.gs`, `TestSpreadsheet.gs`, `TestUserManagement.gs`, `TestDocumentManagement.gs`
+- **기능**:
+  - 기본 테스트 (암호화/복호화, 키 생성)
+  - 스프레드시트 테스트
+  - 사용자 관리 테스트
+  - 문서 관리 테스트
   - 성능 테스트
   - 통합 테스트
-  - 이메일 암호화 설정 테스트
-  - 관리자 키 생성 테스트
-  - 스프레드시트 연동 테스트
-  - 사용자 관리 테스트
-  - 이메일 발송 테스트
-  - 설정 관리 테스트
-  - API 엔드포인트 테스트
-  - CORS 설정 테스트
-  - 시스템 정보 테스트
-  - 캐시 기능 테스트
+
+### 7. 검증 시스템
+- **파일**: `MigrationVerification.gs`, `OptimizationVerification.gs`, `ComprehensiveVerification.gs`
+- **기능**:
+  - 마이그레이션 검증
+  - 최적화 확인
+  - 시스템 상태 종합 확인
+  - 성능 검증
+  - 에러 처리 검증
 
 ## 사용 방법
 
 ### 1. 기본 테스트 실행
 ```javascript
 // Apps Script 에디터에서 실행
-runSimpleTest();
-runReversibilityTest();
-runAllTests();
+TestBasic.runSimpleTest();
+TestBasic.runAllBasicTests();
 
-// 이메일 암호화 설정 테스트
-runEmailEncryptionConfigTest();
+// 스프레드시트 테스트
+TestSpreadsheet.runAllSpreadsheetTests();
 
-// 전체 App Script 기능 테스트
-runAllAppScriptTests();
+// 사용자 관리 테스트
+TestUserManagement.runAllUserManagementTests();
 
-// 캐시 기능 테스트
-testCache();
+// 문서 관리 테스트
+TestDocumentManagement.runAllDocumentManagementTests();
+
+// 종합 검증
+ComprehensiveVerification.runCompleteVerification();
 ```
 
 ### 2. 개별 기능 테스트 실행
 ```javascript
-// CORS 설정 테스트
-testCORSSettings();
+// 기본 테스트
+TestBasic.testEncryptionAlgorithms();
+TestBasic.testMultiLayerEncryption();
+TestBasic.testEmailEncryption();
 
-// 스프레드시트 연결 테스트
-testSpreadsheetConnection();
+// 스프레드시트 테스트
+TestSpreadsheet.testSpreadsheetConnection();
+TestSpreadsheet.testSheetDataReading();
+TestSpreadsheet.testSheetDataAppending();
 
-// 시스템 정보 테스트
-testSystemInfo();
+// 사용자 관리 테스트
+TestUserManagement.testUserRegistration();
+TestUserManagement.testUserApproval();
+TestUserManagement.testPendingUsers();
 
-// 암호화/복호화 기능 테스트
-testEncryptionDecryptionFunctions();
+// 문서 관리 테스트
+TestDocumentManagement.testDocumentCreation();
+TestDocumentManagement.testDocumentPermissions();
+TestDocumentManagement.testTemplateFolderAccess();
 
-// 관리자 키 생성 및 검증 테스트
-testAdminKeyGeneration();
-
-// 스프레드시트 연동 테스트
-testSpreadsheetIntegration();
-
-// 사용자 관리 기능 테스트
-testUserManagement();
-
-// 이메일 발송 기능 테스트
-testEmailSending();
-
-// 설정 관리 기능 테스트
-testConfigManagement();
-
-// API 엔드포인트 테스트
-testAPIEndpoints();
-
-// 캐시 기능 테스트
-testCache();
+// 검증 테스트
+MigrationVerification.verifyMigration();
+OptimizationVerification.verifyOptimization();
+ComprehensiveVerification.checkSystemStatus();
 ```
 
 ### 3. 특정 테스트 실행
 ```javascript
-// 특정 테스트만 실행
-runSpecificTest('cors');                 // CORS 설정 테스트
-runSpecificTest('spreadsheetConnection'); // 스프레드시트 연결 테스트
-runSpecificTest('systemInfo');           // 시스템 정보 테스트
-runSpecificTest('encryption');           // 암호화 테스트
-runSpecificTest('adminKey');             // 관리자 키 테스트
-runSpecificTest('spreadsheetIntegration'); // 스프레드시트 테스트
-runSpecificTest('userManagement');       // 사용자 관리 테스트
-runSpecificTest('emailSending');         // 이메일 발송 테스트
-runSpecificTest('configManagement');     // 설정 관리 테스트
-runSpecificTest('apiEndpoints');         // API 엔드포인트 테스트
-runSpecificTest('allAppScript');         // 전체 기능 테스트
+// 기본 테스트
+TestBasic.runSimpleTest();                    // 간단한 테스트
+TestBasic.testEncryptionAlgorithms();         // 암호화 알고리즘 테스트
+TestBasic.testMultiLayerEncryption();         // 다중 레이어 암호화 테스트
+TestBasic.testEmailEncryption();              // 이메일 암호화 테스트
+
+// 스프레드시트 테스트
+TestSpreadsheet.testSpreadsheetConnection();  // 스프레드시트 연결 테스트
+TestSpreadsheet.testSheetDataReading();       // 데이터 읽기 테스트
+TestSpreadsheet.testSheetDataAppending();     // 데이터 추가 테스트
+
+// 사용자 관리 테스트
+TestUserManagement.testUserRegistration();    // 사용자 등록 테스트
+TestUserManagement.testUserApproval();        // 사용자 승인 테스트
+TestUserManagement.testPendingUsers();        // 대기 사용자 테스트
+
+// 문서 관리 테스트
+TestDocumentManagement.testDocumentCreation(); // 문서 생성 테스트
+TestDocumentManagement.testDocumentPermissions(); // 문서 권한 테스트
+TestDocumentManagement.testTemplateFolderAccess(); // 템플릿 폴더 테스트
+
+// 검증 테스트
+MigrationVerification.verifyMigration();      // 마이그레이션 검증
+OptimizationVerification.verifyOptimization(); // 최적화 확인
+ComprehensiveVerification.checkSystemStatus(); // 시스템 상태 확인
 ```
 
 ### 4. 관리자 키 갱신
 ```javascript
 // 수동으로 키 갱신
-handleDailyKeyUpdate();
+KeyGeneration.generateAdminKey();
+KeyVerification.verifyAdminKey();
 ```
 
 ### 5. 사용자 관리
 ```javascript
 // 사용자 목록 조회
-handleGetPendingUsers();
+UserApproval.handleGetPendingUsers();
 
 // 사용자 승인
-handleApproveUser('학번');
+UserApproval.handleApproveUser('학번');
 
 // 사용자 거부
-handleRejectUser('학번');
+UserApproval.handleRejectUser('학번');
+
+// 사용자 등록 요청
+UserRegistration.handleSubmitRegistrationRequest(userData);
+
+// 사용자 상태 확인
+UserAuth.handleCheckUserStatus('email@example.com');
 ```
 
 ### 6. 이메일 암호화 설정
 ```javascript
-// 이메일 암호화 방법 설정
-setEmailEncryptionMethod('Base64');
+// 이메일 암호화/복호화
+EncryptionEmail.encryptEmailMain('test@example.com');
+EncryptionEmail.decryptEmailMain('encrypted_email');
 
-// 암호화 레이어 수 설정
-setEmailEncryptionLayers(2);
+// 다중 레이어 키 생성
+EncryptionKeyManagement.generateExtendedMultiLayerKey();
 
-// 레이어 방법들 설정
-setEmailEncryptionLayerMethods(['ROT13', 'Base64']);
-
-// 현재 설정 확인
-const config = getCurrentEmailEncryptionConfig();
-console.log(config);
-
-// 설정 검증
-const validation = validateEmailEncryptionConfig();
-console.log(validation);
+// 암호화/복호화 적용
+EncryptionCore.applyEncryption('text', 'Base64', '');
+EncryptionCore.applyDecryption('encrypted_text', 'Base64', '');
 
 // 이메일 암호화 테스트
-testEmailEncryption();
+TestBasic.testEmailEncryption();
 ```
 
-### 7. App Script 기능 테스트
+### 7. 문서 관리
 ```javascript
-// 개별 기능 테스트
-testEncryptionDecryptionFunctions();     // 암호화/복호화 기능
-testAdminKeyGeneration();                // 관리자 키 생성
-testSpreadsheetIntegration();            // 스프레드시트 연동
-testUserManagement();                    // 사용자 관리
-testEmailSending();                      // 이메일 발송
-testConfigManagement();                  // 설정 관리
-testAPIEndpoints();                      // API 엔드포인트
-testCache();                             // 캐시 기능
+// 문서 생성
+DocumentCreation.createGoogleDocument('문서 제목', 'empty');
 
-// 전체 기능 테스트
-runAllAppScriptTests();                  // 모든 기능 통합 테스트
+// 문서 권한 설정
+DocumentPermissions.setDocumentPermissions('document_id', 'creator@example.com', ['editor@example.com']);
 
-// 특정 테스트 실행
-runSpecificTest('encryption');           // 암호화 테스트
-runSpecificTest('adminKey');             // 관리자 키 테스트
-runSpecificTest('spreadsheetIntegration'); // 스프레드시트 테스트
-runSpecificTest('userManagement');       // 사용자 관리 테스트
-runSpecificTest('emailSending');         // 이메일 발송 테스트
-runSpecificTest('configManagement');     // 설정 관리 테스트
-runSpecificTest('apiEndpoints');         // API 엔드포인트 테스트
-runSpecificTest('cache');                // 캐시 기능 테스트
-runSpecificTest('allAppScript');         // 전체 기능 테스트
+// 문서 폴더 이동
+DocumentFolder.moveDocumentToFolder('document_id');
+
+// 문서 스프레드시트 추가
+DocumentSpreadsheet.addDocumentToSpreadsheet('document_id', '문서 제목', 'creator@example.com', 'document_url', 'student');
+
+// 템플릿 폴더에서 템플릿 가져오기
+DocumentTemplates.getTemplatesFromFolder();
+```
+
+### 8. 스프레드시트 관리
+```javascript
+// 스프레드시트 데이터 읽기
+SpreadsheetCore.getSheetData('HP_Member');
+
+// 스프레드시트 데이터 추가
+SpreadsheetCore.appendSheetData('HP_Member', ['data1', 'data2', 'data3']);
+
+// 스프레드시트 데이터 업데이트
+SpreadsheetCore.updateSheetData('HP_Member', ['updated_data1', 'updated_data2'], 0);
+
+// 캐시 관리
+SpreadsheetCache.getCachedData('cache_key');
+SpreadsheetCache.setCachedData('cache_key', data, 60);
+SpreadsheetCache.clearCache('cache_key');
 ```
 
 ## 웹 앱으로 배포
@@ -489,22 +553,49 @@ fetch('YOUR_APPS_SCRIPT_URL', {
 ### 1. 마이그레이션 검증
 ```javascript
 // 전체 마이그레이션 검증
-verifyMigration();
+MigrationVerification.verifyMigration();
 
 // 최적화 확인
-verifyOptimization();
+OptimizationVerification.verifyOptimization();
 
 // 종합 검증
-runCompleteVerification();
+ComprehensiveVerification.runCompleteVerification();
 ```
 
-### 2. 성능 테스트
+### 2. 시스템 상태 확인
 ```javascript
-// 성능 테스트 실행
-runPerformanceTest();
+// 시스템 상태 종합 확인
+ComprehensiveVerification.checkSystemStatus();
 
-// 특정 테스트 실행
-runSpecificTest('performance');
+// 기본 시스템 상태 확인
+ComprehensiveVerification.checkBasicSystemStatus();
+
+// 암호화 시스템 상태 확인
+ComprehensiveVerification.checkEncryptionSystemStatus();
+
+// 스프레드시트 시스템 상태 확인
+ComprehensiveVerification.checkSpreadsheetSystemStatus();
+
+// 사용자 관리 시스템 상태 확인
+ComprehensiveVerification.checkUserManagementSystemStatus();
+
+// 문서 관리 시스템 상태 확인
+ComprehensiveVerification.checkDocumentManagementSystemStatus();
+
+// 테스트 시스템 상태 확인
+ComprehensiveVerification.checkTestSystemStatus();
+```
+
+### 3. 성능 테스트
+```javascript
+// 성능 검증
+MigrationVerification.verifyPerformance();
+
+// 성능 최적화 확인
+OptimizationVerification.verifyPerformanceOptimization();
+
+// 메모리 사용량 최적화 확인
+OptimizationVerification.verifyMemoryOptimization();
 ```
 
 ## ⚠️ 보안 고려사항
@@ -537,10 +628,18 @@ runSpecificTest('performance');
 ## 마이그레이션 체크리스트
 
 - [ ] Apps Script 프로젝트 생성
-- [ ] 모든 .gs 파일 업로드
+- [ ] 모든 .gs 파일 업로드 (25개 파일)
 - [ ] 스프레드시트 연결 또는 ID 설정
 - [ ] 권한 설정 확인
 - [ ] 기본 테스트 실행
+  - [ ] TestBasic.runAllBasicTests()
+  - [ ] TestSpreadsheet.runAllSpreadsheetTests()
+  - [ ] TestUserManagement.runAllUserManagementTests()
+  - [ ] TestDocumentManagement.runAllDocumentManagementTests()
+- [ ] 검증 테스트 실행
+  - [ ] MigrationVerification.verifyMigration()
+  - [ ] OptimizationVerification.verifyOptimization()
+  - [ ] ComprehensiveVerification.runCompleteVerification()
 - [ ] 웹 앱 배포
 - [ ] 트리거 설정
 - [ ] 실제 데이터로 테스트
@@ -548,41 +647,65 @@ runSpecificTest('performance');
 ## 성능 최적화
 
 ### 1. 캐싱 활용
-- 스프레드시트 데이터 캐싱
+- 스프레드시트 데이터 캐싱 (SpreadsheetCache.gs)
 - PropertiesService 사용
+- CacheService 활용
 
-### 2. 배치 처리
+### 2. 모듈화된 구조
+- 용도별 파일 분리로 유지보수성 향상
+- 함수별 명확한 책임 분리
+- 재사용 가능한 유틸리티 함수들
+
+### 3. 배치 처리
 - 여러 사용자 처리 시 배치 작업 사용
+- 효율적인 데이터 처리
 
-### 3. 에러 처리
+### 4. 에러 처리
 - 적절한 try-catch 구문 사용
 - 로깅 시스템 구축
+- 재시도 로직 (지수적 백오프)
 
 ## 추가 개발 사항
 
 ### 1. 모니터링
 - 실행 로그 모니터링
 - 에러 알림 시스템
+- 성능 모니터링
 
 ### 2. 백업
 - 정기적인 스프레드시트 백업
 - 설정 데이터 백업
+- 문서 백업
 
 ### 3. 확장성
 - 새로운 암호화 방법 추가
 - 추가 사용자 관리 기능
+- 문서 관리 기능 확장
+
+### 4. 보안 강화
+- 추가 인증 로직
+- 권한 관리 개선
+- 데이터 암호화 강화
 
 ## 지원 및 문의
 
 문제가 발생하거나 추가 기능이 필요한 경우:
 1. Apps Script 로그 확인
 2. 테스트 함수 실행
-3. 스프레드시트 권한 확인
-4. 코드 리뷰 및 디버깅
+   - TestBasic.runAllBasicTests()
+   - TestSpreadsheet.runAllSpreadsheetTests()
+   - TestUserManagement.runAllUserManagementTests()
+   - TestDocumentManagement.runAllDocumentManagementTests()
+3. 검증 함수 실행
+   - MigrationVerification.verifyMigration()
+   - OptimizationVerification.verifyOptimization()
+   - ComprehensiveVerification.runCompleteVerification()
+4. 스프레드시트 권한 확인
+5. 코드 리뷰 및 디버깅
 
 ---
 
-**마이그레이션 항목 변경일**: 2025년 10월 1일   
-**버전**: 1.0.0     
+**마이그레이션 항목 변경일**: 2024년 12월   
+**버전**: 2.0.0 (모듈화된 구조)     
 **개발팀**: 감자도리    
 **작성자**: 김형균균

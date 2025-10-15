@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/features/templates/useTemplateUI";
 import type { Template } from "../hooks/features/templates/useTemplateUI";
+import { ENV_CONFIG } from "../config/environment";
 import "../components/features/templates/TemplateUI.css";
 import {
     DndContext,
@@ -24,6 +25,7 @@ import {
     TemplateList,
   } from "../components/features/templates";
   import { SortableTemplateCard } from "../components/features/templates/SortableTemplateCard";
+  import StudentDetailModal from "../components/ui/StudentDetailModal";
 
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
@@ -39,7 +41,7 @@ interface TemplatePageProps {
   isTemplatesLoading?: boolean;
 }
 
-export default function NewDocument({ 
+function NewDocument({ 
     onPageChange, 
     customTemplates, 
     deleteTemplate, 
@@ -217,7 +219,21 @@ export default function NewDocument({
         allDefaultTemplates,
         isLoadingTemplates,
         templateError,
-        loadDynamicTemplates
+        loadDynamicTemplates,
+        testDriveApi,
+        testTemplateFolderDebug,
+        testSpecificFolder,
+        // 권한 설정 모달 관련
+        isPermissionModalOpen,
+        selectedTemplate,
+        permissionType,
+        setPermissionType,
+        selectedGroups,
+        setSelectedGroups,
+        individualEmails,
+        setIndividualEmails,
+        createDocument,
+        closePermissionModal,
     } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
 
     // 동적 템플릿이 로드되면 기본 템플릿 목록 업데이트
@@ -307,6 +323,43 @@ export default function NewDocument({
                                     style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px' }}
                                 >
                                     다시 시도
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        const result = await testDriveApi();
+                                        alert(result.message);
+                                    }}
+                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '3px' }}
+                                >
+                                    Drive API 테스트
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        const result = await testTemplateFolderDebug();
+                                        if (result.success && result.data) {
+                                            const debugInfo = result.data.debugInfo || [];
+                                            alert(`디버깅 결과:\n${debugInfo.join('\n')}`);
+                                        } else {
+                                            alert(result.message);
+                                        }
+                                    }}
+                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '3px' }}
+                                >
+                                    폴더 디버깅
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        const result = await testSpecificFolder();
+                                        if (result.success && result.data) {
+                                            const debugInfo = result.data.debugInfo || [];
+                                            alert(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`);
+                                        } else {
+                                            alert(result.message);
+                                        }
+                                    }}
+                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px', backgroundColor: '#ffc107', color: 'black', border: 'none', borderRadius: '3px' }}
+                                >
+                                    특정 폴더 테스트
                                 </button>
                             </div>
                         )}
@@ -502,7 +555,130 @@ export default function NewDocument({
                 </div>
             )}
 
+            {/* 권한 설정 모달 */}
+            {isPermissionModalOpen && selectedTemplate && (
+                <div className="modal-overlay" onClick={closePermissionModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>문서 생성 설정</h2>
+                            <button className="close-modal" onClick={closePermissionModal}>
+                                &times;
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body">
+                            <div className="modal-description">
+                                <strong>{selectedTemplate.title}</strong> 문서를 생성합니다.
+                            </div>
+
+                            {/* 권한 타입 선택 */}
+                            <div className="form-group">
+                                <label>문서 접근 권한</label>
+                                <div className="permission-type-buttons">
+                                    <button
+                                        type="button"
+                                        className={`permission-button ${permissionType === 'private' ? 'active' : ''}`}
+                                        onClick={() => setPermissionType('private')}
+                                    >
+                                        나만 보기
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`permission-button ${permissionType === 'shared' ? 'active' : ''}`}
+                                        onClick={() => setPermissionType('shared')}
+                                    >
+                                        권한 부여
+                                    </button>
+                                </div>
+                            </div>
+
+                            {permissionType === 'shared' && (
+                                <>
+                                    {/* 그룹 권한 */}
+                                    <div className="form-group">
+                                        <label>그룹 권한</label>
+                                        <div className="group-checkboxes">
+                                            {Object.entries(ENV_CONFIG.GROUP_EMAILS).map(([key, email]) => (
+                                                <label key={key} className="checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedGroups.includes(key)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedGroups([...selectedGroups, key]);
+                                                            } else {
+                                                                setSelectedGroups(selectedGroups.filter(group => group !== key));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span className="checkbox-text">
+                                                        {key === 'STUDENT' && '학생'}
+                                                        {key === 'COUNCIL' && '집행부'}
+                                                        {key === 'PROFESSOR' && '교수'}
+                                                        {key === 'ADJUNCT_PROFESSOR' && '겸임교원'}
+                                                        {key === 'ASSISTANT' && '조교'}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 개인 권한 */}
+                                    <div className="form-group">
+                                        <label>개인 권한 (직접 입력)</label>
+                                        <div className="individual-emails-container">
+                                            {individualEmails.map((email, index) => (
+                                                <div key={index} className="email-input-row">
+                                                    <input
+                                                        type="email"
+                                                        placeholder="개인 이메일을 입력하세요"
+                                                        value={email}
+                                                        onChange={(e) => {
+                                                            const newEmails = [...individualEmails];
+                                                            newEmails[index] = e.target.value;
+                                                            setIndividualEmails(newEmails);
+                                                        }}
+                                                        className="email-input"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newEmails = individualEmails.filter((_, i) => i !== index);
+                                                            setIndividualEmails(newEmails);
+                                                        }}
+                                                        className="remove-email-btn"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIndividualEmails([...individualEmails, ''])}
+                                                className="add-email-btn"
+                                            >
+                                                + 이메일 추가
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="modal-actions">
+                            <button type="button" className="cancel-btn" onClick={closePermissionModal}>
+                                취소
+                            </button>
+                            <button type="button" className="save-btn" onClick={createDocument}>
+                                문서 생성
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
 }
+
+export default NewDocument;
