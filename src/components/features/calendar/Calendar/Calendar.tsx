@@ -12,6 +12,7 @@ import './Calendar.css';
 import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
+import HelpModal from './HelpModal';
 import { RRule } from 'rrule';
 import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
@@ -125,6 +126,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
     const [isSearchVisible, setIsSearchVisible] = useState(false);
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
     const getRecentSearches = (): string[] => {
         const searches = localStorage.getItem('recentSearchTerms');
@@ -721,7 +723,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             </div>
 
                             <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <BiHelpCircle style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }} />
+                                <BiHelpCircle onClick={() => setIsHelpModalOpen(true)} style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }} />
                                 <div className="search-container-wrapper">
                                     <BiSearchAlt2
                                         onClick={() => setIsSearchVisible(!isSearchVisible)}
@@ -895,9 +897,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         </div>
                     </div>
                 </div>
-            )}
-        </>
-    );
+                        )}
+            
+                        {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
+                    </>
+                );
 };
 
 export default Calendar;
