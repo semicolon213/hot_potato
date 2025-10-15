@@ -32,6 +32,18 @@ interface Staff {
   note: string;
 }
 
+// 변환된 데이터 타입 (StudentList에서 사용)
+interface ConvertedData {
+  no_student: string;
+  name: string;
+  address: string;
+  phone_num: string;
+  email: string;
+  grade: string;
+  state: string;
+  council: string;
+}
+
 
 interface StaffProps {
   onPageChange: (pageName: string) => void;
@@ -55,8 +67,9 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   const convertedStaff = staffHook.filteredStaff.map(staff => ({
     no_student: staff.no,
     name: staff.name,
-    address: staff.tel,
-    phone_num: staff.phone,
+    address: staff.tel,        // 내선번호
+    phone_num: staff.phone,    // 연락처
+    email: staff.email,        // 이메일 추가
     grade: staff.pos,
     state: staff.date,
     council: staff.note,
@@ -68,6 +81,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     name: committee.name,
     address: committee.location,
     phone_num: committee.tel,
+    email: committee.email,        // 이메일 추가
     grade: committee.sortation,
     state: committee.position,
     council: `${committee.company_name} / ${committee.representative} / ${committee.note}`,
@@ -91,7 +105,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     { key: 'grade', header: '구분', sortable: true },
     { key: 'name', header: '이름', sortable: true },
     { key: 'address', header: '내선번호', sortable: true },
-    { key: 'phone', header: '연락처', sortable: true },
+    { key: 'phone_num', header: '연락처', sortable: true },
     { key: 'email', header: '이메일', sortable: true },
     { key: 'state', header: '임용일', sortable: true },
     { key: 'council', header: '비고', sortable: false },
@@ -103,12 +117,14 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     { key: 'grade', header: '위원회 구분', sortable: true },
     { key: 'name', header: '이름', sortable: true },
     { key: 'address', header: '소재지', sortable: true },
+    { key: 'phone_num', header: '연락처', sortable: true },
+    { key: 'email', header: '이메일', sortable: true },
     { key: 'state', header: '직책', sortable: true },
     { key: 'council', header: '업체명/대표자/비고', sortable: false },
   ];
 
   // 교직원 더블클릭 처리
-  const handleStaffDoubleClick = (student: any) => {
+  const handleStaffDoubleClick = (student: ConvertedData) => {
     // 변환된 데이터에서 원본 교직원 데이터 찾기
     const originalStaff = staffHook.staff.find(s => s.no === student.no_student);
     if (originalStaff) {
@@ -119,7 +135,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   };
 
   // 위원회 더블클릭 처리
-  const handleCommitteeDoubleClick = (student: any) => {
+  const handleCommitteeDoubleClick = (student: ConvertedData) => {
     // 변환된 데이터에서 원본 위원회 데이터 찾기
     const originalCommittee = committeeHook.committee.find(c => c.name === student.no_student);
     if (originalCommittee) {
@@ -137,7 +153,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   };
 
   // 모달 업데이트 처리
-  const handleModalUpdate = (updatedStudent: any) => {
+  const handleModalUpdate = (updatedStudent: ConvertedData) => {
     if (selectedStaff) {
       // 교직원 데이터 업데이트
       const updatedStaff: Staff = {
@@ -145,11 +161,11 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         no: updatedStudent.no_student,
         name: updatedStudent.name,
         tel: updatedStudent.address,
+        phone: updatedStudent.phone_num,
+        email: updatedStudent.email,
         pos: updatedStudent.grade,
         date: updatedStudent.state,
-        note: updatedStudent.council.split(' / ')[2] || '',
-        phone: updatedStudent.council.split(' / ')[0] || '',
-        email: updatedStudent.council.split(' / ')[1] || '',
+        note: updatedStudent.council,
       };
       staffHook.updateStaff(updatedStaff);
     } else if (selectedCommittee) {
@@ -158,6 +174,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         ...selectedCommittee,
         name: updatedStudent.name,
         location: updatedStudent.address,
+        tel: updatedStudent.phone_num,
+        email: updatedStudent.email,
         sortation: updatedStudent.grade,
         position: updatedStudent.state,
         company_name: updatedStudent.council.split(' / ')[0] || '',
@@ -236,15 +254,17 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
           name: selectedStaff.name,
           address: selectedStaff.tel,
           phone_num: selectedStaff.phone,
+          email: selectedStaff.email,  // 이메일 필드 추가
           grade: selectedStaff.pos,
           state: selectedStaff.date,
-          council: `${selectedStaff.phone} / ${selectedStaff.email} / ${selectedStaff.note}`,
+          council: selectedStaff.note,  // 비고만 포함
           parsedCouncil: [] as { year: string; position: string }[]
         } : (selectedCommittee ? {
           no_student: selectedCommittee.name,
           name: selectedCommittee.name,
           address: selectedCommittee.location,
           phone_num: selectedCommittee.tel,
+          email: selectedCommittee.email,  // 이메일 필드 추가
           grade: selectedCommittee.sortation,
           state: selectedCommittee.position,
           council: `${selectedCommittee.company_name} / ${selectedCommittee.representative} / ${selectedCommittee.note}`,
@@ -253,7 +273,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onUpdate={handleModalUpdate}
-        studentSpreadsheetId={staffSpreadsheetId}
+        studentSpreadsheetId={activeTab === 'staff' ? staffSpreadsheetId : staffSpreadsheetId}
         mode={selectedStaff ? 'staff' : selectedCommittee ? 'committee' : 'student'}
       />
     </div>

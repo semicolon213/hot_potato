@@ -38,70 +38,9 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
 
-  // 암호화된 데이터 복호화 (통합 App Script API 사용)
-  const decryptData = useCallback(async (dataList: any[]) => {
-    try {
-      const isDevelopment = import.meta.env.DEV;
-      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
-
-      // 각 위원회의 전화번호와 이메일을 개별적으로 복호화
-      const decryptedList = await Promise.all(
-        dataList.map(async (committee) => {
-          const decryptedCommittee = { ...committee };
-          
-          // 전화번호 복호화
-          if (committee.tel && committee.tel.trim() !== '') {
-            try {
-              const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'decryptEmail', data: committee.tel })
-              });
-              
-              if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                  decryptedCommittee.tel = result.data;
-                }
-              }
-            } catch (error) {
-              console.warn('전화번호 복호화 실패:', error);
-            }
-          }
-          
-          // 이메일 복호화
-          if (committee.email && committee.email.trim() !== '') {
-            try {
-              const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'decryptEmail', data: committee.email })
-              });
-              
-              if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                  decryptedCommittee.email = result.data;
-                }
-              }
-            } catch (error) {
-              console.warn('이메일 복호화 실패:', error);
-            }
-          }
-          
-          return decryptedCommittee;
-        })
-      );
-      
-      return decryptedList;
-    } catch (error) {
-      console.warn('데이터 복호화 실패, 원본 데이터를 사용합니다:', error);
-      return dataList;
-    }
-  }, []);
 
   // 데이터 암호화 (통합 App Script API 사용)
-  const encryptData = useCallback(async (dataItem: any) => {
+  const encryptData = useCallback(async (dataItem: Committee) => {
     try {
       const isDevelopment = import.meta.env.DEV;
       const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
@@ -155,26 +94,102 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
     }
   }, []);
 
+  // 전화번호 복호화 함수 (학생관리와 동일한 방식)
+  const decryptPhone = async (encryptedPhone: string): Promise<string> => {
+    if (!encryptedPhone || encryptedPhone.trim() === '') {
+      return '';
+    }
+
+    try {
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decryptEmail', data: encryptedPhone })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          return result.data;
+        }
+      }
+      return encryptedPhone;
+    } catch (error) {
+      console.warn('전화번호 복호화 실패:', error);
+      return encryptedPhone;
+    }
+  };
+
+  // 이메일 복호화 함수
+  const decryptEmail = async (encryptedEmail: string): Promise<string> => {
+    if (!encryptedEmail || encryptedEmail.trim() === '') {
+      return '';
+    }
+
+    try {
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decryptEmail', data: encryptedEmail })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          return result.data;
+        }
+      }
+      return encryptedEmail;
+    } catch (error) {
+      console.warn('이메일 복호화 실패:', error);
+      return encryptedEmail;
+    }
+  };
+
   // 위원회 목록 조회
   const fetchCommittee = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const committeeData = await fetchCommitteeFromPapyrus(hotPotatoDBSpreadsheetId!);
-      const decryptedCommittee = await decryptData(committeeData);
+      const committeeData = await fetchCommitteeFromPapyrus(staffSpreadsheetId!);
+      console.log('Papyrus DB에서 받은 위원회 데이터:', committeeData);
+      
+      // 전화번호와 이메일 복호화 처리 (학생관리와 동일한 방식)
+      const decryptedCommittee = await Promise.all(
+        committeeData.map(async (committee: Committee) => {
+          const decryptedTel = await decryptPhone(committee.tel || '');
+          const decryptedEmail = await decryptEmail(committee.email || '');
+          
+          console.log(`위원회 ${committee.name}: tel=${committee.tel} -> ${decryptedTel}, email=${committee.email} -> ${decryptedEmail}`);
+          
+          return {
+            ...committee,
+            tel: decryptedTel,
+            email: decryptedEmail
+          };
+        })
+      );
+      
+      console.log('복호화된 위원회 데이터:', decryptedCommittee);
       setCommittee(decryptedCommittee);
     } catch (err) {
       setError(err instanceof Error ? err.message : '학과 위원회 목록 조회 실패');
     } finally {
       setIsLoading(false);
     }
-  }, [hotPotatoDBSpreadsheetId, decryptData]);
+  }, [staffSpreadsheetId]);
 
   useEffect(() => {
-    if (hotPotatoDBSpreadsheetId) {
+    if (staffSpreadsheetId) {
       fetchCommittee();
     }
-  }, [hotPotatoDBSpreadsheetId, fetchCommittee]);
+  }, [staffSpreadsheetId, fetchCommittee]);
 
   // 필터링된 위원회 목록
   const filteredCommittee = useMemo(() => {
@@ -293,7 +308,7 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
       setIsLoading(true);
       try {
         const encryptedCommittee = await encryptData(newCommittee);
-        await addCommitteeToPapyrus(hotPotatoDBSpreadsheetId!, encryptedCommittee);
+        await addCommitteeToPapyrus(staffSpreadsheetId!, encryptedCommittee);
         await fetchCommittee();
       } catch (err) {
         setError(err instanceof Error ? err.message : '위원회 추가 실패');
@@ -305,7 +320,7 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
       setIsLoading(true);
       try {
         const encryptedCommittee = await encryptData(updatedCommittee);
-        await updateCommitteeInPapyrus(hotPotatoDBSpreadsheetId!, encryptedCommittee);
+        await updateCommitteeInPapyrus(staffSpreadsheetId!, encryptedCommittee);
         await fetchCommittee();
       } catch (err) {
         setError(err instanceof Error ? err.message : '위원회 업데이트 실패');
@@ -316,7 +331,7 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
     deleteCommittee: async (committeeName: string) => {
       setIsLoading(true);
       try {
-        await deleteCommitteeFromPapyrus(hotPotatoDBSpreadsheetId!, committeeName);
+        await deleteCommitteeFromPapyrus(staffSpreadsheetId!, committeeName);
         await fetchCommittee();
       } catch (err) {
         setError(err instanceof Error ? err.message : '위원회 삭제 실패');

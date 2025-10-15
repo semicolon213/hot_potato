@@ -162,7 +162,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       editedStudent.grade !== student.grade ||
       editedStudent.state !== student.state ||
       editedStudent.address !== student.address ||
-      editedStudent.council !== student.council
+      editedStudent.council !== student.council ||
+      (editedStudent.email || '') !== (student.email || '')
     );
   };
 
@@ -238,16 +239,49 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       const firstSheetName = sheets[0].properties.title;
       
       const data = await getSheetData(studentSpreadsheetId, firstSheetName);
+      console.log('스프레드시트 데이터:', data);
+      console.log('시트 이름:', firstSheetName);
+      
       if (data && data.values && data.values.length > 1) {
-        const rowIndex = data.values.findIndex((row: any) => row[0] === student?.no_student);
+        // 모드에 따라 다른 필드로 검색
+        const searchField = mode === 'staff' || mode === 'committee' ? editedStudent.no_student : student?.no_student;
+        console.log('검색할 필드:', searchField);
+        console.log('모드:', mode);
+        console.log('editedStudent:', editedStudent);
+        
+        const rowIndex = data.values.findIndex((row: string[]) => {
+          console.log(`행 ${data.values.indexOf(row)}: [${row[0]}] === [${searchField}] ?`, row[0] === searchField);
+          return row[0] === searchField;
+        });
+        console.log('찾은 행 인덱스:', rowIndex);
         if (rowIndex !== -1) {
-          const range = `${firstSheetName}!A${rowIndex + 1}:G${rowIndex + 1}`;
+          const range = mode === 'staff' || mode === 'committee' ? 
+            `${firstSheetName}!A${rowIndex + 1}:H${rowIndex + 1}` : 
+            `${firstSheetName}!A${rowIndex + 1}:G${rowIndex + 1}`;
           await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: studentSpreadsheetId,
             range: range,
             valueInputOption: 'USER_ENTERED',
             resource: {
-              values: [[
+              values: mode === 'staff' ? [[
+                editedStudent.no_student,
+                editedStudent.grade,
+                editedStudent.name,
+                editedStudent.address, // 내선번호
+                encryptedPhone, // 암호화된 연락처
+                editedStudent.email || '', // 이메일
+                editedStudent.state, // 임용일
+                editedStudent.council // 비고
+              ]] : mode === 'committee' ? [[
+                editedStudent.no_student,
+                editedStudent.grade,
+                editedStudent.name,
+                editedStudent.address, // 소재지
+                encryptedPhone, // 암호화된 연락처
+                editedStudent.email || '', // 이메일
+                editedStudent.state, // 직책
+                editedStudent.council // 업체명/대표자/비고
+              ]] : [[
                 editedStudent.no_student,
                 editedStudent.name,
                 editedStudent.address,
@@ -259,21 +293,34 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             }
           });
 
-          // 업데이트된 학생 데이터 (암호화된 연락처 포함)
+          // 업데이트된 데이터 (암호화된 연락처 포함)
           const updatedStudent = { ...editedStudent, phone_num: encryptedPhone };
           onUpdate(updatedStudent);
           setIsEditing(false);
-          alert('학생 정보가 성공적으로 업데이트되었습니다.');
+          
+          const successMessage = mode === 'staff' ? '교직원 정보가 성공적으로 업데이트되었습니다.' :
+                                mode === 'committee' ? '위원회 정보가 성공적으로 업데이트되었습니다.' :
+                                '학생 정보가 성공적으로 업데이트되었습니다.';
+          alert(successMessage);
           onClose(); // 저장 완료 후 모달 닫기
         } else {
-          alert('해당 학생을 찾을 수 없습니다.');
+          const notFoundMessage = mode === 'staff' ? '해당 교직원을 찾을 수 없습니다.' :
+                                 mode === 'committee' ? '해당 위원회를 찾을 수 없습니다.' :
+                                 '해당 학생을 찾을 수 없습니다.';
+          alert(notFoundMessage);
         }
       } else {
-        alert('학생 데이터를 찾을 수 없습니다.');
+        const noDataMessage = mode === 'staff' ? '교직원 데이터를 찾을 수 없습니다.' :
+                             mode === 'committee' ? '위원회 데이터를 찾을 수 없습니다.' :
+                             '학생 데이터를 찾을 수 없습니다.';
+        alert(noDataMessage);
       }
     } catch (error) {
-      console.error('학생 정보 업데이트 실패:', error);
-      alert('학생 정보 업데이트에 실패했습니다.');
+      console.error(`${mode === 'staff' ? '교직원' : mode === 'committee' ? '위원회' : '학생'} 정보 업데이트 실패:`, error);
+      const errorMessage = mode === 'staff' ? '교직원 정보 업데이트에 실패했습니다.' :
+                          mode === 'committee' ? '위원회 정보 업데이트에 실패했습니다.' :
+                          '학생 정보 업데이트에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -457,11 +504,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>연락처</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[0] || ''}
+                        value={mode === 'staff' || mode === 'committee' ? editedStudent.phone_num : (editedStudent.council.split(' / ')[0] || '')}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
+                          if (mode === 'staff' || mode === 'committee') {
+                            handleInputChange('phone_num', e.target.value);
+                          } else {
+                            const parts = editedStudent.council.split(' / ');
+                            const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
+                            handleInputChange('council', newCouncil);
+                          }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -473,11 +524,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>이메일</label>
                       <input
                         type="email"
-                        value={editedStudent.council.split(' / ')[1] || ''}
+                        value={mode === 'staff' || mode === 'committee' ? (editedStudent.email || '') : (editedStudent.council.split(' / ')[1] || '')}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
+                          if (mode === 'staff' || mode === 'committee') {
+                            handleInputChange('email', e.target.value);
+                          } else {
+                            const parts = editedStudent.council.split(' / ');
+                            const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
+                            handleInputChange('council', newCouncil);
+                          }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -500,11 +555,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>비고</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[2] || ''}
+                        value={mode === 'staff' || mode === 'committee' ? editedStudent.council : (editedStudent.council.split(' / ')[2] || '')}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
-                          handleInputChange('council', newCouncil);
+                          if (mode === 'staff' || mode === 'committee') {
+                            handleInputChange('council', e.target.value);
+                          } else {
+                            const parts = editedStudent.council.split(' / ');
+                            const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
+                            handleInputChange('council', newCouncil);
+                          }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
