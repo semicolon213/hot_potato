@@ -28,7 +28,7 @@ const MoreEventsModal: React.FC<MoreEventsModalProps> = ({ events, date, onClose
         </div>
         <ul className="more-events-list">
           {events.map(event => (
-            <li key={event.id} className="more-event-item" style={{ backgroundColor: event.color }} onClick={(e) => onSelectEvent(event, e)}>
+            <li key={event.id} className="more-event-item" style={{ backgroundColor: event.color }} onClick={(e) => onSelectEvent(event, e.currentTarget.getBoundingClientRect())}>
               {event.title}
             </li>
           ))}

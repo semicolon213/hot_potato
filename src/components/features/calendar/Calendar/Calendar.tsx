@@ -461,7 +461,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         // Adjust for timezone offset before creating new event
                         const adjustedDate = new Date(occurrenceDate.getTime() - (occurrenceDate.getTimezoneOffset() * 60000));
                         const dateStr = adjustedDate.toISOString().split('T')[0];
-                        
+
                         allEvents.push({
                             ...event,
                             // Create a new unique ID for each occurrence to avoid key conflicts
@@ -593,7 +593,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                     const eventStartDate = new Date(event.startDate);
                     const currentDayDate = new Date(day.date);
                     const isContinuationLeft = eventStartDate < currentDayDate;
-                    
+
                     const eventEndDate = new Date(event.endDate);
                     const endOfWeekDate = new Date(week[dayOfWeek + span - 1].date);
                     const isContinuationRight = eventEndDate > endOfWeekDate;
@@ -851,6 +851,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             {daysInMonth.map((date) => {
                                 const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
                                 const isSelected = formatDate(selectedDate.date) === date.date;
+                                const isToday = new Date().toISOString().split('T')[0] === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
@@ -864,7 +865,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                             selectedDate.selectDate(clickedDate);
                                             onAddEvent();
                                         }}
-                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
+                                        className={`day ${isCurrentMonth ? '' : 'not-current-month'} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''} ${isHoliday ? 'holiday' : ''}`}
                                         key={date.date}>
                                         <span className="day-number">{date.day}</span>
                                     </div>
