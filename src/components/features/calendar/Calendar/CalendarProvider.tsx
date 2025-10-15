@@ -206,6 +206,14 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [accessToken, currentDate.getFullYear(), refreshKey]);
 
   const events = useMemo(() => {
+    const tagKeyMap: { [key: string]: string } = {
+      '휴일/휴강': 'holiday',
+      '행사': 'event',
+      '보강': 'makeup',
+      '시험': 'exam',
+      '회의': 'meeting',
+    };
+
     const visibleSheetEvents = sheetEvents.filter(event => {
       const attendees = (event as any).attendees;
       if (!attendees || attendees.trim() === '') {
@@ -308,10 +316,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     return eventsToDisplay
       .map(event => {
         let color;
+        const eventTypeKey = tagKeyMap[event.type || ''] || event.type;
+
         if (event.color) { // Custom color from sheet
             color = event.color;
-        } else if (event.type && eventTypeStyles[event.type]) { // Sheet events by type
-            color = eventTypeStyles[event.type].color;
+        } else if (eventTypeKey && eventTypeStyles[eventTypeKey]) { // Sheet events by type
+            color = eventTypeStyles[eventTypeKey].color;
         } else if (event.isHoliday) { // Holiday events
             color = '#F08080';
         } else { // Personal Google Calendar events
@@ -593,6 +603,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     searchTerm,
     setSearchTerm,
     filterLabels,
+    formatDate, // Add this line
     addSheetEvent, // Correctly pass the prop function
     extraWeeks: 0,
     setExtraWeeks: (weeks: number) => {

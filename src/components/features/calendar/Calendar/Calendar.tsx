@@ -106,6 +106,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         searchTerm,
         setSearchTerm,
         filterLabels,
+        formatDate,
     } = useCalendarContext();
 
     const weeks = ["일", "월", "화", "수", "목", "금", "토"];
@@ -849,7 +850,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         <div className="day-wrapper">
                             {daysInMonth.map((date) => {
                                 const dayEvents = (eventLayouts.get(date.date) || []).filter((e): e is Event => e !== null);
-                                const isSelected = selectedDate.date.toISOString().split('T')[0] === date.date;
+                                const isSelected = formatDate(selectedDate.date) === date.date;
                                 const isSunday = date.dayIndexOfWeek === 0;
                                 const isSaturday = date.dayIndexOfWeek === 6;
                                 const isCurrentMonth = currentDate.month === date.month;
