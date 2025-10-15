@@ -49,11 +49,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const decryptPhone = async (encryptedPhone: string): Promise<string> => {
     console.log('연락처 복호화 시도:', encryptedPhone);
     
-    const appScriptUrl = import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec';
-    console.log('App Script URL:', appScriptUrl);
-    
-    if (!encryptedPhone || !appScriptUrl) {
-      console.log('연락처 복호화 건너뜀 - 데이터 없음 또는 URL 없음');
+    if (!encryptedPhone) {
+      console.log('연락처 복호화 건너뜀 - 데이터 없음');
       return encryptedPhone;
     }
 
@@ -64,13 +61,17 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
 
     try {
+      // 개발 환경에서는 프록시 사용, 프로덕션에서는 직접 URL 사용
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+      
       const requestBody = {
         action: 'decryptEmail',
         data: encryptedPhone
       };
-      console.log('복호화 요청 데이터:', requestBody);
+      console.log('복호화 요청 데이터:', { baseUrl, requestBody });
       
-      const response = await fetch(appScriptUrl, {
+      const response = await fetch(baseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,11 +98,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const encryptPhone = async (phone: string): Promise<string> => {
     console.log('연락처 암호화 시도:', phone);
     
-    const appScriptUrl = import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec';
-    console.log('App Script URL:', appScriptUrl);
-    
-    if (!phone || !appScriptUrl) {
-      console.log('연락처 암호화 건너뜀 - 데이터 없음 또는 URL 없음');
+    if (!phone) {
+      console.log('연락처 암호화 건너뜀 - 데이터 없음');
       return phone;
     }
 
@@ -112,13 +110,21 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
 
     try {
+      // 개발 환경에서는 프록시 사용, 프로덕션에서는 직접 URL 사용
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+      
+      console.log('🔗 사용하는 URL:', baseUrl);
+      console.log('🔗 환경변수 VITE_APP_SCRIPT_URL:', import.meta.env.VITE_APP_SCRIPT_URL);
+      console.log('🔗 개발환경 여부:', isDevelopment);
+      
       const requestBody = {
         action: 'encryptEmail',
         data: phone
       };
-      console.log('암호화 요청 데이터:', requestBody);
+      console.log('암호화 요청 데이터:', { baseUrl, requestBody });
       
-      const response = await fetch(appScriptUrl, {
+      const response = await fetch(baseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,6 +137,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       if (response.ok) {
         const result = await response.json();
         console.log('암호화 응답 데이터:', result);
+        if (result.debug) {
+          console.log('🔍 디버그 정보:', result.debug);
+        }
         return result.success ? result.data : phone;
       } else {
         console.error('암호화 응답 실패:', response.status, response.statusText);

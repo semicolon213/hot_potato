@@ -68,8 +68,10 @@ function setCachedData(key, data, expirationSeconds = null) {
 // 캐시 무효화
 function invalidateCache(pattern) {
   try {
+    console.log(`캐시 무효화 시도: ${pattern}`);
     const cache = CacheService.getScriptCache();
     cache.remove(pattern);
+    console.log(`✅ 캐시 무효화 완료: ${pattern}`);
   } catch (error) {
     console.warn('캐시 무효화 실패:', error);
   }
@@ -102,18 +104,7 @@ function findHpMemberSheet() {
 // 모든 사용자 목록 가져오기 (승인 대기 + 승인된 사용자)
 function getAllUsers() {
   try {
-    console.log('getAllUsers 호출됨');
-    
-    // 캐시에서 데이터 확인
-    const cacheKey = 'all_users';
-    const cachedData = getCachedData(cacheKey);
-    if (cachedData) {
-      console.log('✅ Apps Script 캐시에서 사용자 데이터 로드 (성능 향상!)');
-      console.log('캐시된 데이터 크기:', JSON.stringify(cachedData).length, 'bytes');
-      return cachedData;
-    }
-    
-    console.log('❌ 캐시 미스 - 스프레드시트에서 데이터 로드');
+    console.log('getAllUsers 호출됨 - 실시간 데이터 로드 (캐시 사용 안함)');
     
     const { spreadsheetId, spreadsheet } = findHpMemberSheet();
     
@@ -141,7 +132,7 @@ function getAllUsers() {
       const active = row[1]; // B열: 활성화 상태
       const name = row[2]; // C열: 이름
       const encryptedEmail = row[3]; // D열: Google 계정 이메일 (암호화됨)
-      const email = rot13Decrypt(encryptedEmail); // 복호화된 이메일
+      const email = decryptEmailMain(encryptedEmail); // 복호화된 이메일
       const approvalStatus = row[4]; // E열: 승인 상태
       const isAdmin = row[5]; // F열: 관리자 여부
       const approvalDate = row[6]; // G열: 승인 날짜
@@ -180,10 +171,9 @@ function getAllUsers() {
       users: allUsers
     };
     
-    // 결과를 캐시에 저장 (5분간 유지)
-    setCachedData(cacheKey, result, 300);
-    console.log('✅ 사용자 데이터를 Apps Script 캐시에 저장 (5분간 유지)');
-    console.log('저장된 데이터 크기:', JSON.stringify(result).length, 'bytes');
+    // 캐시 사용 안함 - 실시간 데이터 처리
+    console.log('✅ 사용자 데이터 실시간 처리 완료');
+    console.log('처리된 데이터 크기:', JSON.stringify(result).length, 'bytes');
     
     return result;
     
@@ -237,8 +227,7 @@ function approveUser(studentId) {
     
     console.log(`사용자 승인 완료: ${studentId}, 승인 날짜: ${currentDate}, is_admin: ${isAdminValue}`);
     
-    // 사용자 데이터 캐시 무효화
-    invalidateCache('all_users');
+    // 캐시 사용 안함 - 실시간 데이터 처리
     
     return {
       success: true,
@@ -292,8 +281,7 @@ function rejectUser(studentId) {
     
     console.log(`사용자 거부 완료: ${studentId}`);
     
-    // 사용자 데이터 캐시 무효화
-    invalidateCache('all_users');
+    // 캐시 사용 안함 - 실시간 데이터 처리
     
     return {
       success: true,
@@ -343,7 +331,7 @@ function checkUserRegistrationStatus(email) {
       
       const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
       // ROT13으로 복호화하여 비교 (Cloud Run과 동일한 방식)
-      const userEmail = encryptedUserEmail ? rot13Decrypt(encryptedUserEmail) : '';
+      const userEmail = encryptedUserEmail ? decryptEmailMain(encryptedUserEmail) : '';
       const approvalStatus = row[4]; // Approval 컬럼 (E열)
       const isAdmin = row[5]; // is_admin 컬럼 (F열)
       const studentId = row[0]; // no_member 컬럼 (A열)
@@ -531,13 +519,15 @@ function addUserRegistrationRequest(userData) {
       isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
       
       // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
-      // ROT13으로 암호화 (Cloud Run과 동일한 방식)
-      const encryptedEmail = rot13Encrypt(userData.userEmail);
+      // 통합 암호화 방식 사용 (Base64)
+      const encryptedEmail = encryptEmailMain(userData.userEmail);
       sheet.getRange(`D${userRowIndex}:F${userRowIndex}`).setValues([[encryptedEmail, approvalStatus, isAdminStatus]]);
       console.log(`사용자 가입 요청 완료: ${userData.studentId} (${userData.userEmail}) - 승인 대기: ${approvalStatus}, 관리자: ${isAdminStatus}`);
     }
     
     console.log(`사용자 가입 요청 업데이트: ${userData.studentId} (${userData.userEmail}) - 승인: ${approvalStatus}, 관리자: ${isAdminStatus}`);
+    
+    // 캐시 사용 안함 - 실시간 데이터 처리
     
     return {
       success: true,
@@ -587,123 +577,47 @@ function cleanupInvalidApprovalValues() {
   }
 }
 
-// ===== 이메일 암호화/복호화 함수들 =====
-// 설정 기반 이메일 암호화 함수 (전체 이메일 주소 통으로 암호화)
+// ===== 이메일 암호화/복호화 함수들 (Main.gs로 이동됨) =====
+// 이 함수들은 Main.gs의 encryptEmailMain, decryptEmailMain으로 통합되었습니다.
+// 하위 호환성을 위해 래퍼 함수로 유지합니다.
+
 function encryptEmail(email) {
-  if (!email || !getConfig('use_email_encryption')) return email;
-  
-  const config = getCurrentEmailEncryptionConfig();
-  let encryptedEmail = email;
-  
-  if (config.layers === 1) {
-    // 단일 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
-    encryptedEmail = applyEncryption(email, config.method, '');
-  } else {
-    // 다중 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
-    for (let i = 0; i < config.layers; i++) {
-      const method = config.layerMethods[i % config.layerMethods.length];
-      encryptedEmail = applyEncryption(encryptedEmail, method, '');
-    }
-  }
-  
-  console.log(`이메일 전체 암호화 완료: ${email} -> ${encryptedEmail.substring(0, 20)}...`);
-  return encryptedEmail;
+  // Main.gs의 통합 암호화 함수 호출
+  return encryptEmailMain(email);
 }
 
-// 설정 기반 이메일 복호화 함수 (전체 이메일 주소 통으로 복호화)
 function decryptEmail(encryptedEmail) {
-  if (!encryptedEmail || !getConfig('use_email_encryption')) return encryptedEmail;
-  
-  const config = getCurrentEmailEncryptionConfig();
-  let decryptedEmail = encryptedEmail;
-  
-  if (config.layers === 1) {
-    // 단일 레이어 복호화 - 전체 이메일 주소를 통으로 복호화
-    decryptedEmail = applyDecryption(encryptedEmail, config.method, '');
-  } else {
-    // 다중 레이어 복호화 (역순으로 적용) - 전체 이메일 주소를 통으로 복호화
-    for (let i = config.layers - 1; i >= 0; i--) {
-      const method = config.layerMethods[i % config.layerMethods.length];
-      decryptedEmail = applyDecryption(decryptedEmail, method, '');
-    }
-  }
-  
-  console.log(`이메일 전체 복호화 완료: ${encryptedEmail.substring(0, 20)}... -> ${decryptedEmail}`);
-  return decryptedEmail;
+  // Main.gs의 통합 복호화 함수 호출
+  return decryptEmailMain(encryptedEmail);
 }
 
-// 이메일이 이미 암호화되었는지 확인하는 함수 (전체 이메일 주소 기준)
+// 이메일이 이미 암호화되었는지 확인하는 함수 (간단한 패턴 기반)
 function isEncryptedEmail(email) {
   if (!email) return false;
   
-  const config = getCurrentEmailEncryptionConfig();
+  // Base64 암호화된 데이터는 일반적으로 길고 특수문자를 포함
+  // 일반적인 이메일 패턴과 전화번호 패턴을 제외
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phonePattern = /^010-\d{4}-\d{4}$/;
   
-  // 다중 레이어인 경우 모든 레이어 방법의 패턴을 확인
-  let isEncrypted = false;
-  
-  if (config.layers === 1) {
-    // 단일 레이어인 경우 기존 로직 사용
-    const patterns = config.identificationPatterns[config.method] || [];
-    isEncrypted = checkPatternsForMethod(email, config.method, patterns);
-  } else {
-    // 다중 레이어인 경우 모든 레이어 방법의 패턴을 확인
-    for (const method of config.layerMethods) {
-      const patterns = config.identificationPatterns[method] || [];
-      if (checkPatternsForMethod(email, method, patterns)) {
-        isEncrypted = true;
-        break;
-      }
-    }
+  // 이메일이나 전화번호 패턴이면 암호화되지 않음
+  if (emailPattern.test(email) || phonePattern.test(email)) {
+    return false;
   }
   
-  // 디버깅을 위한 로그
-  console.log(`이메일 전체 검사: ${email}, 방법: ${config.method}, 레이어: ${config.layers}, 암호화됨: ${isEncrypted}`);
-  
-  return isEncrypted;
+  // 길이가 20자 이상이고 특수문자를 포함하면 암호화된 것으로 간주
+  return email.length > 20 && /[^a-zA-Z0-9@.-]/.test(email);
 }
 
-// 특정 방법에 대한 패턴 확인 함수
-function checkPatternsForMethod(email, method, patterns) {
-  if (method === 'ROT13') {
-    // ROT13의 경우 도메인 확장자 패턴만 확인 (.pbz, .bet 등)
-    const domainPatterns = patterns.filter(pattern => pattern.startsWith('.'));
-    return domainPatterns.some(pattern => email.includes(pattern));
-  } else if (method === 'Base64') {
-    // Base64의 경우 패딩 패턴만 확인 (==, =)
-    const paddingPatterns = patterns.filter(pattern => pattern === '==' || pattern === '=');
-    return paddingPatterns.some(pattern => email.includes(pattern));
-  } else if (method === 'BitShift') {
-    // BitShift의 경우 특수 문자 패턴만 확인
-    const specialCharPatterns = patterns.filter(pattern => ['{', '}', '|', '~', '^', '`'].includes(pattern));
-    return specialCharPatterns.some(pattern => email.includes(pattern));
-  } else if (method === 'Caesar' || method === 'Substitution') {
-    // Caesar, Substitution의 경우 @ 기호는 유지되지만, 
-    // 암호화된 이메일은 일반적인 이메일 패턴과 다름
-    const domainPattern = /@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/;
-    const match = email.match(domainPattern);
-    if (match) {
-      const domain = match[1];
-      // 일반적인 도메인 확장자가 아닌 경우 암호화된 것으로 간주
-      const commonExtensions = ['.com', '.org', '.net', '.edu', '.gov', '.co.kr', '.kr'];
-      return !commonExtensions.some(ext => domain.endsWith(ext));
-    } else {
-      return false;
-    }
-  } else {
-    // 기타 방법들의 경우 패턴 매칭
-    return patterns.some(pattern => email.includes(pattern));
-  }
-}
+// ===== 하위 호환성 함수들 (Main.gs로 통합됨) =====
+// 이 함수들은 Main.gs의 통합 함수로 대체되었습니다.
 
-// ===== 기존 ROT13 함수들 (하위 호환성 유지) =====
-// ROT13 암호화 함수 (전체 이메일 주소 통으로 암호화)
 function rot13Encrypt(text) {
-  if (!text) return text;
-  return rot13(text);
+  // Main.gs의 통합 암호화 함수 호출
+  return encryptEmailMain(text);
 }
 
-// ROT13 복호화 함수 (ROT13은 암호화와 복호화가 동일, 전체 이메일 주소 통으로 복호화)
 function rot13Decrypt(text) {
-  if (!text) return text;
-  return rot13(text);
+  // Main.gs의 통합 복호화 함수 호출
+  return decryptEmailMain(text);
 }

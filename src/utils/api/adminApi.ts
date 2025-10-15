@@ -43,5 +43,6 @@ export {
   sendAdminKeyEmail, 
   fetchPendingUsers, 
   approveUser, 
-  rejectUser 
+  rejectUser,
+  clearUserCache
 } from './apiClient';

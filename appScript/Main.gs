@@ -7,25 +7,70 @@
 // ===== 메인 엔트리 포인트 =====
 function doPost(e) {
   try {
-    console.log('=== 메인 doPost 시작 ===');
-    console.log('요청 데이터:', e);
+    console.log('🚀 === 메인 doPost 시작 ===');
+    console.log('📥 요청 데이터:', e);
     
     // 요청 데이터 파싱
     const req = parseRequest(e);
-    console.log('파싱된 요청:', req);
+    console.log('📋 파싱된 요청:', req);
+    console.log('🎯 액션:', req.action);
     
     // 암복호화 액션 직접 처리
     if (req.action === 'encryptEmail') {
-      const encrypted = encryptEmail(req.data);
+      console.log('🔐 암호화 요청 받음:', req.data);
+      const encrypted = encryptEmailMain(req.data);
+      console.log('🔐 암호화 결과:', encrypted);
+      const response = {
+        success: true, 
+        data: encrypted,
+        debug: {
+          original: req.data,
+          encrypted: encrypted,
+          source: 'Main.gs encryptEmailMain',
+          timestamp: new Date().toISOString()
+        }
+      };
+      console.log('🔐 최종 응답:', response);
       return ContentService
-        .createTextOutput(JSON.stringify({ success: true, data: encrypted }))
+        .createTextOutput(JSON.stringify(response))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
     if (req.action === 'decryptEmail') {
-      const decrypted = decryptEmail(req.data);
+      console.log('🔓 복호화 요청 받음:', req.data);
+      const decrypted = decryptEmailMain(req.data);
+      console.log('🔓 복호화 결과:', decrypted);
       return ContentService
         .createTextOutput(JSON.stringify({ success: true, data: decrypted }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    
+    // 사용자 인증 관련 액션들
+    if (req.action === 'checkUserStatus') {
+      console.log('👤 사용자 상태 확인 요청:', req.email);
+      const result = handleCheckRegistrationStatus(req.email);
+      console.log('👤 사용자 상태 확인 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'registerUser') {
+      console.log('📝 사용자 등록 요청:', req);
+      const result = handleSubmitRegistrationRequest(req);
+      console.log('📝 사용자 등록 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'verifyAdminKey') {
+      console.log('🔑 관리자 키 검증 요청:', req.adminKey);
+      const result = verifyAdminKeyData(req.adminKey);
+      console.log('🔑 관리자 키 검증 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
@@ -156,11 +201,101 @@ function testMain() {
   }
 }
 
+// ===== 통합 암호화 테스트 함수 =====
+function testUnifiedEncryption() {
+  console.log('=== 통합 암호화 테스트 시작 ===');
+  
+  const testData = [
+    '010-3283-7936', // 전화번호
+    'test@example.com', // 이메일
+    'user123@domain.co.kr' // 복잡한 이메일
+  ];
+  
+  const results = [];
+  
+  for (const data of testData) {
+    console.log(`\n테스트 데이터: ${data}`);
+    
+    try {
+      // 암호화 테스트
+      const encrypted = encryptEmail(data);
+      console.log('암호화 결과:', encrypted);
+      
+      // 복호화 테스트
+      const decrypted = decryptEmail(encrypted);
+      console.log('복호화 결과:', decrypted);
+      
+      // 검증
+      const isValid = data === decrypted;
+      console.log('테스트 결과:', isValid ? '성공' : '실패');
+      
+      results.push({
+        original: data,
+        encrypted: encrypted,
+        decrypted: decrypted,
+        success: isValid
+      });
+    } catch (error) {
+      console.error('테스트 오류:', error);
+      results.push({
+        original: data,
+        success: false,
+        error: error.message
+      });
+    }
+  }
+  
+  const allSuccess = results.every(r => r.success);
+  console.log(`\n전체 테스트 결과: ${allSuccess ? '성공' : '실패'}`);
+  
+  return {
+    success: allSuccess,
+    results: results,
+    message: allSuccess ? '통합 암호화 테스트 성공' : '통합 암호화 테스트 실패'
+  };
+}
+
+// ===== 간단한 전화번호 암호화 테스트 =====
+function testPhoneEncryptionSimple() {
+  console.log('🧪 === 전화번호 암호화 테스트 시작 ===');
+  
+  const phone = '010-3283-7936';
+  console.log('📱 원본 전화번호:', phone);
+  
+  try {
+    const encrypted = encryptEmailMain(phone);
+    console.log('🔐 암호화 결과:', encrypted);
+    
+    const decrypted = decryptEmailMain(encrypted);
+    console.log('🔓 복호화 결과:', decrypted);
+    
+    const success = phone === decrypted;
+    console.log('✅ 테스트 결과:', success ? '성공' : '실패');
+    
+    if (!success) {
+      console.error('❌ 암호화/복호화 실패!');
+      console.error('원본:', phone);
+      console.error('암호화:', encrypted);
+      console.error('복호화:', decrypted);
+    }
+    
+    return {
+      success: success,
+      original: phone,
+      encrypted: encrypted,
+      decrypted: decrypted
+    };
+  } catch (error) {
+    console.error('💥 테스트 오류:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // ===== 배포 정보 =====
 function getDeploymentInfo() {
   return {
-    version: '1.0.0',
-    description: '메인 엔트리 포인트 - UserManagement.gs 연동',
+    version: '1.14.0',
+    description: '메인 엔트리 포인트 - 통합 사용자 인증 + Base64 암호화 + 올바른 시트 사용',
     functions: [
       'doPost',
       'doGet', 
@@ -168,92 +303,45 @@ function getDeploymentInfo() {
       'doPostAuthInternal',
       'doGetAuthInternal',
       'testMain',
-      'encryptEmail',
-      'decryptEmail',
+      'testUnifiedEncryption',
+      'testPhoneEncryptionSimple',
+      'encryptEmailMain', // Encryption.gs에서 정의
+      'decryptEmailMain', // Encryption.gs에서 정의
+      'verifyAdminKeyData',
       'checkApprovalStatus'
     ],
-    dependencies: ['UserManagement.gs', 'SpreadsheetUtils.gs', 'Encryption.gs', 'CONFIG.gs']
+    dependencies: ['UserManagement.gs', 'SpreadsheetUtils.gs', 'Encryption.gs', 'CONFIG.gs', 'KeyManagement.gs']
   };
 }
 
+// ===== 사용자 인증 관련 함수들 =====
+// UserManagement.gs의 기존 함수들을 사용합니다.
+
+/**
+ * 관리자 키 검증
+ */
+function verifyAdminKeyData(adminKey) {
+  try {
+    console.log('🔑 관리자 키 검증 시작');
+    
+    // 관리자 키 검증 로직 (기존 KeyManagement.gs 활용)
+    const isValid = verifyAdminKey(adminKey);
+    
+    console.log('🔑 관리자 키 검증 결과:', isValid);
+    
+    return {
+      success: isValid,
+      isValid: isValid,
+      message: isValid ? '유효한 관리자 키입니다' : '유효하지 않은 관리자 키입니다'
+    };
+    
+  } catch (error) {
+    console.error('🔑 관리자 키 검증 오류:', error);
+    return { success: false, isValid: false, error: error.message };
+  }
+}
+
+
 // ===== 이메일/연락처 암복호화 함수들 =====
+// Encryption.gs의 encryptEmailMain, decryptEmailMain 함수를 사용합니다.
 
-/**
- * 이메일/연락처 암호화
- */
-function encryptEmail(email) {
-  try {
-    console.log('이메일/연락처 암호화 요청:', email);
-    
-    if (!email || typeof email !== 'string') {
-      console.warn('암호화할 이메일/연락처가 유효하지 않습니다:', email);
-      return email || '';
-    }
-    
-    if (!getConfig('use_email_encryption')) {
-      console.log('이메일 암호화가 비활성화되어 있습니다.');
-      return email;
-    }
-    
-    const config = getCurrentEmailEncryptionConfig();
-    let encryptedEmail = email;
-    
-    if (config.layers === 1) {
-      // 단일 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
-      encryptedEmail = applyEncryption(email, config.method, '');
-    } else {
-      // 다중 레이어 암호화 - 전체 이메일 주소를 통으로 암호화
-      for (let i = 0; i < config.layers; i++) {
-        const method = config.layerMethods[i % config.layerMethods.length];
-        encryptedEmail = applyEncryption(encryptedEmail, method, '');
-      }
-    }
-    
-    console.log(`이메일 전체 암호화 완료: ${email} -> ${encryptedEmail.substring(0, 20)}...`);
-    return encryptedEmail;
-  } catch (error) {
-    console.error('이메일/연락처 암호화 오류:', error);
-    return email || '';
-  }
-}
-
-/**
- * 이메일/연락처 복호화
- */
-function decryptEmail(encryptedEmail) {
-  try {
-    console.log('이메일/연락처 복호화 요청:', encryptedEmail);
-    
-    if (!encryptedEmail || typeof encryptedEmail !== 'string') {
-      console.warn('복호화할 이메일/연락처가 유효하지 않습니다:', encryptedEmail);
-      return encryptedEmail || '';
-    }
-    
-    if (!getConfig('use_email_encryption')) {
-      console.log('이메일 암호화가 비활성화되어 있습니다.');
-      return encryptedEmail;
-    }
-    
-    const config = getCurrentEmailEncryptionConfig();
-    let decryptedEmail = encryptedEmail;
-    
-    if (config.layers === 1) {
-      // 단일 레이어 복호화 - 전체 이메일 주소를 통으로 복호화
-      decryptedEmail = applyDecryption(encryptedEmail, config.method, '');
-    } else {
-      // 다중 레이어 복호화 (역순으로 적용) - 전체 이메일 주소를 통으로 복호화
-      for (let i = config.layers - 1; i >= 0; i--) {
-        const method = config.layerMethods[i % config.layerMethods.length];
-        decryptedEmail = applyDecryption(decryptedEmail, method, '');
-      }
-    }
-    
-    console.log(`이메일 전체 복호화 완료: ${encryptedEmail.substring(0, 20)}... -> ${decryptedEmail}`);
-    return decryptedEmail;
-  } catch (error) {
-    console.error('이메일/연락처 복호화 오류:', error);
-    return encryptedEmail || '';
-  }
-}
-
-// ===== 간단한 암복호화 함수들 (이메일 암호화 로직 재사용) =====

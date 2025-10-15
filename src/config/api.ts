@@ -43,6 +43,7 @@ export const API_ACTIONS = {
   
   // 관리자 키
   SEND_ADMIN_KEY_EMAIL: 'sendAdminKeyEmail',
+  CLEAR_USER_CACHE: 'clearUserCache',
   
   // 이메일 마이그레이션
   MIGRATE_EMAILS: 'migrateEmails',

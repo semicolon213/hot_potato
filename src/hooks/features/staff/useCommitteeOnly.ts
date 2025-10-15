@@ -38,54 +38,117 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
 
-  // 암호화된 데이터 복호화
+  // 암호화된 데이터 복호화 (통합 App Script API 사용)
   const decryptData = useCallback(async (dataList: any[]) => {
     try {
-      // App Script URL이 없으면 원본 데이터 반환
-      if (!import.meta.env.VITE_APP_SCRIPT_URL) {
-        console.warn('App Script URL이 설정되지 않았습니다. 암호화되지 않은 데이터를 사용합니다.');
-        return dataList;
-      }
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
 
-      const response = await fetch(`${import.meta.env.VITE_APP_SCRIPT_URL}?action=decryptCommitteeData`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ committeeList: dataList })
-      });
+      // 각 위원회의 전화번호와 이메일을 개별적으로 복호화
+      const decryptedList = await Promise.all(
+        dataList.map(async (committee) => {
+          const decryptedCommittee = { ...committee };
+          
+          // 전화번호 복호화
+          if (committee.tel && committee.tel.trim() !== '') {
+            try {
+              const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'decryptEmail', data: committee.tel })
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                  decryptedCommittee.tel = result.data;
+                }
+              }
+            } catch (error) {
+              console.warn('전화번호 복호화 실패:', error);
+            }
+          }
+          
+          // 이메일 복호화
+          if (committee.email && committee.email.trim() !== '') {
+            try {
+              const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'decryptEmail', data: committee.email })
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                  decryptedCommittee.email = result.data;
+                }
+              }
+            } catch (error) {
+              console.warn('이메일 복호화 실패:', error);
+            }
+          }
+          
+          return decryptedCommittee;
+        })
+      );
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.success ? data.decryptedCommitteeList : dataList;
+      return decryptedList;
     } catch (error) {
       console.warn('데이터 복호화 실패, 원본 데이터를 사용합니다:', error);
       return dataList;
     }
   }, []);
 
-  // 데이터 암호화
+  // 데이터 암호화 (통합 App Script API 사용)
   const encryptData = useCallback(async (dataItem: any) => {
     try {
-      // App Script URL이 없으면 원본 데이터 반환
-      if (!import.meta.env.VITE_APP_SCRIPT_URL) {
-        console.warn('App Script URL이 설정되지 않았습니다. 암호화되지 않은 데이터를 사용합니다.');
-        return dataItem;
-      }
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
 
-      const response = await fetch(`${import.meta.env.VITE_APP_SCRIPT_URL}?action=encryptCommitteeData`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ committee: dataItem })
-      });
+      const encryptedCommittee = { ...dataItem };
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // 전화번호 암호화
+      if (dataItem.tel && dataItem.tel.trim() !== '') {
+        try {
+          const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'encryptEmail', data: dataItem.tel })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              encryptedCommittee.tel = result.data;
+            }
+          }
+        } catch (error) {
+          console.warn('전화번호 암호화 실패:', error);
+        }
       }
       
-      const data = await response.json();
-      return data.success ? data.encryptedCommittee : dataItem;
+      // 이메일 암호화
+      if (dataItem.email && dataItem.email.trim() !== '') {
+        try {
+          const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'encryptEmail', data: dataItem.email })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              encryptedCommittee.email = result.data;
+            }
+          }
+        } catch (error) {
+          console.warn('이메일 암호화 실패:', error);
+        }
+      }
+      
+      return encryptedCommittee;
     } catch (error) {
       console.warn('데이터 암호화 실패, 원본 데이터를 사용합니다:', error);
       return dataItem;

@@ -64,8 +64,8 @@ export class ApiClient {
       headers = {}
     } = options;
 
-    // 캐시 가능한 요청인지 확인 (읽기 전용 액션)
-    const cacheableActions = ['getPendingUsers', 'checkApprovalStatus', 'checkRegistrationStatus'];
+    // 캐시 가능한 요청인지 확인 (읽기 전용 액션, 로그인/관리자 관련 제외)
+    const cacheableActions: string[] = []; // 모든 액션을 실시간으로 처리
     const cacheKey = `${action}_${JSON.stringify(data)}`;
     
     if (cacheableActions.includes(action)) {
@@ -164,17 +164,21 @@ export class ApiClient {
     return this.request(API_ACTIONS.REJECT_USER, { studentId });
   }
 
+  async clearUserCache() {
+    return this.request(API_ACTIONS.CLEAR_USER_CACHE);
+  }
+
   // 인증 API
   async checkApprovalStatus(email: string) {
-    return this.request(API_ACTIONS.CHECK_APPROVAL_STATUS, { email });
+    return this.request('checkUserStatus', { email });
   }
 
   async submitRegistrationRequest(registrationData: any) {
-    return this.request(API_ACTIONS.SUBMIT_REGISTRATION_REQUEST, registrationData);
+    return this.request('registerUser', registrationData);
   }
 
   async verifyAdminKey(adminKey: string) {
-    return this.request(API_ACTIONS.VERIFY_ADMIN_KEY, { adminKey });
+    return this.request('verifyAdminKey', { adminKey });
   }
 
   // 관리자 키 API
@@ -234,6 +238,9 @@ export const approveUser = (userId: string) =>
 
 export const rejectUser = (userId: string) =>
   apiClient.rejectUser(userId);
+
+export const clearUserCache = () =>
+  apiClient.clearUserCache();
 
 export const checkUserRegistrationStatus = (email: string) =>
   apiClient.checkApprovalStatus(email);
