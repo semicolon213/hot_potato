@@ -56,6 +56,7 @@ const ScheduleView: React.FC = () => {
                                 <div className="schedule-item-content">
                                     <div className="schedule-item-date">{formatDate(event.startDate)}</div>
                                     <div className="schedule-item-title">{event.title}</div>
+                                    <div className="schedule-item-description">{event.description}</div>
                                 </div>
                                 <div className="schedule-item-dday">{dDayText}</div>
                             </li>

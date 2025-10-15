@@ -294,6 +294,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
             id: `custom-${Date.now()}`,
             name: "보강기간",
             period: { start: null, end: null },
+            type: "makeup",
         };
         setCustomPeriods([...customPeriods, newPeriod]);
     };

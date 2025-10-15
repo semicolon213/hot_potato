@@ -324,25 +324,25 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             : activeFilters.includes('all')
                 ? unfilteredEvents
                 : unfilteredEvents.filter(event => {
-                    const eventType = event.type || '';
+                    const eventTypeLabel = event.type || ''; // This is the Korean label, e.g., '보강'
                     const eventTitle = event.title || '';
+                    const typeKey = tagKeyMap[eventTypeLabel]; // This is the English key, e.g., 'makeup'
+
                     let isVisible = false;
-                    for (const filter of activeFilters) {
+                    for (const filter of activeFilters) { // filter is the English key, e.g., 'makeup'
                         switch (filter) {
                             case 'holiday':
                                 if (event.isHoliday) isVisible = true;
                                 break;
-                            case 'exam':
-                                if (eventType === '시험') isVisible = true;
-                                break;
                             case 'midterm_exam':
-                                if (eventType === 'exam' && eventTitle === '중간고사') isVisible = true;
+                                if (typeKey === 'exam' && eventTitle === '중간고사') isVisible = true;
                                 break;
                             case 'final_exam':
-                                if (eventType === 'exam' && eventTitle === '기말고사') isVisible = true;
+                                if (typeKey === 'exam' && eventTitle === '기말고사') isVisible = true;
                                 break;
+                            // This handles 'exam', 'makeup', 'event', 'meeting'
                             default:
-                                if (eventType === filter) isVisible = true;
+                                if (typeKey === filter) isVisible = true;
                                 break;
                         }
                         if (isVisible) break;

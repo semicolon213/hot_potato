@@ -68,3 +68,9 @@
     padding: 40px;
     font-size: 16px;
 }
+
+.schedule-item-description {
+    font-size: 14px;
+    color: #666;
+    margin-top: 4px;
+}
