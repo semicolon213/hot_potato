@@ -115,7 +115,6 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   const committeeColumns = [
     { key: 'no_student', header: '이름', sortable: true },
     { key: 'grade', header: '위원회 구분', sortable: true },
-    { key: 'name', header: '이름', sortable: true },
     { key: 'address', header: '소재지', sortable: true },
     { key: 'phone_num', header: '연락처', sortable: true },
     { key: 'email', header: '이메일', sortable: true },
@@ -206,14 +205,27 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         onSearchChange={currentHook.setSearchTerm}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
-        filters={currentHook.filters}
-        onFiltersChange={currentHook.setFilters}
+        filters={activeTab === 'staff' ? staffHook.filters : {
+          grade: '', // 위원회 탭에서는 사용하지 않음
+          state: committeeHook.filters.sortation,
+          council: committeeHook.filters.position,
+        }}
+        onFiltersChange={(newFilters) => {
+          if (activeTab === 'staff') {
+            staffHook.setFilters(newFilters);
+          } else {
+            committeeHook.setFilters({
+              sortation: newFilters.state,
+              position: newFilters.council,
+            });
+          }
+        }}
         filterOptions={activeTab === 'staff' ? {
           grades: staffHook.filterOptions.grades, // 교직원 구분 (전임교수, 조교, 외부강사 등)
           states: ['전체 상태', '재학', '졸업', '휴학', '자퇴'], // 교직원 상태 (사용하지 않음)
-          councilPositions: ['전체 직책', '학생장', '부학생장', '총무부장', '기획부장', '학술부장', '서기'] // 교직원 직책 (사용하지 않음)
+          councilPositions: ['전체 직책', '학생장', '부학생장', '총무부장', '기획부장', '학술부장', '서기'] // 교직원 직책 (사용하지 않지 않음)
         } : {
-          grades: ['전체 구분', '교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'], // 위원회 구분
+          grades: ['교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'], // 위원회 구분
           states: committeeHook.filterOptions.sortations, // 위원회 종류
           councilPositions: committeeHook.filterOptions.positions // 위원회 직책
         }}

@@ -241,7 +241,7 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
 
   // 필터 옵션들 (교직원 전용)
   const filterOptions = {
-    grades: ['전체 구분', '전임교수', '조교', '외부강사', '겸임교수', '시간강사']
+    grades: ['전임교수', '조교', '외부강사', '겸임교수', '시간강사']
   };
 
   // CSV 내보내기

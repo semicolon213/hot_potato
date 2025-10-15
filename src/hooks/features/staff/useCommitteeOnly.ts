@@ -245,8 +245,8 @@ export const useCommitteeOnly = (staffSpreadsheetId: string | null) => {
 
   // 필터 옵션들 (위원회 전용)
   const filterOptions = {
-    sortations: ['전체 위원회', '교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'],
-    positions: ['전체 직책', '위원장', '위원', '간사', '자문위원']
+    sortations: ['교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'],
+    positions: ['위원장', '위원', '간사', '자문위원']
   };
 
   // CSV 내보내기

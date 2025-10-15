@@ -248,6 +248,25 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const handleSave = async () => {
     if (!editedStudent) return;
 
+    // 위원회 필수 항목 유효성 검사
+    if (mode === 'committee') {
+      const requiredFields = [
+        { key: 'grade', name: '위원회 구분' },
+        { key: 'name', name: '이름' },
+        { key: 'phone_num', name: '연락처' },
+        { key: 'email', name: '이메일' },
+        { key: 'state', name: '직책' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        if (typeof value !== 'string' || !value.trim()) {
+          alert(`${field.name}은(는) 필수 입력 항목입니다.`);
+          return; // 저장 중단
+        }
+      }
+    }
+
     // 저장하기 전 비어있는 경력 항목 자동 삭제
     const cleanedStudent = { ...editedStudent };
     if (cleanedStudent.career && Array.isArray(cleanedStudent.career)) {
