@@ -53,24 +53,26 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
     const modalContent = (
-        <div className="event-detail-container" style={modalStyle} onClick={(e) => e.stopPropagation()}>
-            <div className="event-detail-header">
-                <h2>{event.title}</h2>
-                <div className="header-actions">
-                    <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
-                    <BiTrashAlt onClick={handleDelete} className="header-icon" />
-                    <BiX onClick={onClose} className="header-icon close-button" />
-                </div>
-            </div>
-            <div className="event-detail-body">
-                <div className="detail-item">
-                    <p>{formatEventDate(event.startDate, event.endDate)}</p>
-                </div>
-                {event.description && (
-                    <div className="detail-item">
-                        <p>{event.description}</p>
+        <div className="event-detail-modal-overlay" onClick={onClose}>
+            <div className="event-detail-container" style={modalStyle} onClick={(e) => e.stopPropagation()}>
+                <div className="event-detail-header">
+                    <h2>{event.title}</h2>
+                    <div className="header-actions">
+                        <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
+                        <BiTrashAlt onClick={handleDelete} className="header-icon" />
+                        <BiX onClick={onClose} className="header-icon close-button" />
                     </div>
-                )}
+                </div>
+                <div className="event-detail-body">
+                    <div className="detail-item">
+                        <p>{formatEventDate(event.startDate, event.endDate)}</p>
+                    </div>
+                    {event.description && (
+                        <div className="detail-item">
+                            <p>{event.description}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
