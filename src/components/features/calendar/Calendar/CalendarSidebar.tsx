@@ -29,8 +29,23 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
-                
                 <MiniCalendar selectedWeek={selectedWeek} />
+            </div>
+
+            <div className="sidebar-section">
+                <h3>주차별 보기</h3>
+                <ul className="week-navigation-list">
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map(weekNum => (
+                        <li
+                            key={weekNum}
+                            className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
+                            onClick={() => onSelectWeek(weekNum)}
+                        >
+                            {weekNum}주차
+                            <span className="week-dates">{getWeekDates(weekNum)}</span>
+                        </li>
+                    ))}
+                </ul>
             </div>
 
             <div className="sidebar-section">
@@ -87,22 +102,6 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
                         )}
                     </div>
                 </div>
-            </div>
-
-            <div className="sidebar-section">
-                <h3>주차별 보기</h3>
-                <ul className="week-navigation-list">
-                    {Array.from({ length: 16 }, (_, i) => i + 1).map(weekNum => (
-                        <li
-                            key={weekNum}
-                            className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
-                            onClick={() => onSelectWeek(weekNum)}
-                        >
-                            {weekNum}주차
-                            <span className="week-dates">{getWeekDates(weekNum)}</span>
-                        </li>
-                    ))}
-                </ul>
             </div>
         </aside>
     );
