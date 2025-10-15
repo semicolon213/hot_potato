@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
-import { BiSearchAlt2 } from "react-icons/bi";
+import { BiSearchAlt2, BiHelpCircle } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 
 // DateInfo 타입 정의
@@ -721,6 +721,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             </div>
 
                             <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <BiHelpCircle style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }} />
                                 <div className="search-container-wrapper">
                                     <BiSearchAlt2
                                         onClick={() => setIsSearchVisible(!isSearchVisible)}
