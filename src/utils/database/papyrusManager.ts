@@ -121,6 +121,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
     boardSpreadsheetId: string | null;
     hotPotatoDBSpreadsheetId: string | null;
     studentSpreadsheetId: string | null;
+    staffSpreadsheetId: string | null;
 }> => {
     console.log('스프레드시트 ID 초기화 시작...');
     
@@ -135,7 +136,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
                 calendarStudentSpreadsheetId: null,
                 boardSpreadsheetId: null,
                 hotPotatoDBSpreadsheetId: null,
-                studentSpreadsheetId: null
+                studentSpreadsheetId: null,
+                staffSpreadsheetId: null
             };
         }
 
@@ -176,12 +178,16 @@ export const initializeSpreadsheetIds = async (): Promise<{
         const studentId = await findSpreadsheetById(ENV_CONFIG.STUDENT_SPREADSHEET_NAME);
         console.log('👥 학생 스프레드시트 ID:', studentId);
 
+        const staffId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+        console.log('👥 교직원 스프레드시트 ID:', staffId);
+
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
         calendarStudentSpreadsheetId = calendarStudentId;
         boardSpreadsheetId = boardId;
         hotPotatoDBSpreadsheetId = hotPotatoDBId;
         studentSpreadsheetId = studentId;
+        staffSpreadsheetId = staffId;
         
         console.log('스프레드시트 ID 초기화 완료:', {
             announcement: !!announcementId,
@@ -189,7 +195,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudent: !!calendarStudentId,
             board: !!boardId,
             hotPotatoDB: !!hotPotatoDBId,
-            student: !!studentId
+            student: !!studentId,
+            staff: !!staffId
         });
 
         return {
@@ -198,7 +205,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: calendarStudentId,
             boardSpreadsheetId: boardId,
             hotPotatoDBSpreadsheetId: hotPotatoDBId,
-            studentSpreadsheetId: studentId
+            studentSpreadsheetId: studentId,
+            staffSpreadsheetId: staffId
         };
     } catch (error) {
         console.error('❌ 스프레드시트 ID 초기화 중 오류:', error);
@@ -209,7 +217,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: null,
             boardSpreadsheetId: null,
             hotPotatoDBSpreadsheetId: null,
-            studentSpreadsheetId: null
+            studentSpreadsheetId: null,
+            staffSpreadsheetId: null
         };
     }
 };
@@ -703,6 +712,19 @@ export const fetchStaff = async (): Promise<Staff[]> => {
     console.error('Error fetching staff from Google Sheet:', error);
     return [];
   }
+};
+
+export const fetchAttendees = async (): Promise<{ students: Student[], staff: Staff[] }> => {
+    try {
+        const [students, staff] = await Promise.all([
+            fetchStudents(),
+            fetchStaffFromPapyrus(staffSpreadsheetId || '')
+        ]);
+        return { students, staff };
+    } catch (error) {
+        console.error('Error fetching attendees:', error);
+        return { students: [], staff: [] };
+    }
 };
 
 // 학생 이슈 관련 함수들

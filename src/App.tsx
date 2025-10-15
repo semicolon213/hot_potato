@@ -97,7 +97,11 @@ const App: React.FC = () => {
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
     calendarStudentSpreadsheetId,
-    calendarProfessorSpreadsheetId
+    calendarProfessorSpreadsheetId,
+
+    // Attendees
+    students,
+    staff
   } = useAppState();
 
   // 로그인 처리
@@ -439,6 +443,8 @@ const App: React.FC = () => {
               customPeriods={customPeriods}
               hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
               studentSpreadsheetId={studentSpreadsheetId}
+              students={students}
+              staff={staff}
               searchTerm={searchTerm}
               onPageChange={handlePageChange}
               onAddPost={handleAddPost}

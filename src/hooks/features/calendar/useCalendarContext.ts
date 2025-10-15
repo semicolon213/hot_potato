@@ -7,7 +7,7 @@
  */
 
 import { createContext, useContext } from "react";
-import { type User } from "../../../types/app";
+import { type User, type Student, type Staff } from "../../../types/app";
 
 /**
  * @brief 날짜 정보 타입 정의
@@ -94,6 +94,8 @@ interface CalendarContextType {
     handleFilterChange: (filter: string) => void;
     unfilteredEvents: Event[];
     formatDate: (date: Date) => string;
+    students: Student[];
+    staff: Staff[];
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

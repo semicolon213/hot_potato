@@ -5,7 +5,7 @@ import {
     type DateRange,
     type CustomPeriod
 } from "../../../../hooks/features/calendar/useCalendarContext.ts";
-import {type User} from "../../../../types/app";
+import {type User, type Student, type Staff} from "../../../../types/app";
 
 const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     holiday: {color: '#EA4335', icon: '🏖️'},
@@ -36,6 +36,8 @@ interface CalendarProviderProps {
     setGradeEntryPeriod: (period: DateRange) => void;
     customPeriods: CustomPeriod[];
     setCustomPeriods: (periods: CustomPeriod[]) => void;
+    students: Student[];
+    staff: Staff[];
 }
 
 const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -56,6 +58,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                                                                setGradeEntryPeriod,
                                                                customPeriods,
                                                                setCustomPeriods,
+                                                               students,
+                                                               staff,
                                                            }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -640,6 +644,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         formatDate, // Add this line
         handleFilterChange,
         addSheetEvent, // Correctly pass the prop function
+        students,
+        staff,
         extraWeeks: 0,
         setExtraWeeks: (weeks: number) => {
             console.log('Set extra weeks:', weeks);

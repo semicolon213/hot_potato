@@ -14,7 +14,7 @@ interface AddEventModalProps {
 type RecurrenceFreq = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
-  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles, formatDate } = useCalendarContext();
+  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles, formatDate, students, staff } = useCalendarContext();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState('');
@@ -33,8 +33,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   
   // Attendee States
   const [isAttendeeSearchVisible, setIsAttendeeSearchVisible] = useState(false);
-  const [students] = useState<Student[]>([]);
-  const [staff] = useState<Staff[]>([]);
   const [attendeeSearchTerm, setAttendeeSearchTerm] = useState('');
   const [isLoadingAttendees, setIsLoadingAttendees] = useState(false);
   const [selectedAttendees, setSelectedAttendees] = useState<(Student | Staff)[]>([]);
@@ -141,24 +139,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setSelectedAttendees([]);
     }
   }, [eventToEdit, isEditMode, eventTypes]);
-
-  // Fetch attendee data when modal opens for a sheet event
-  useEffect(() => {
-    if (saveTarget === 'sheet' && (students.length === 0 || staff.length === 0)) {
-      const fetchData = async () => {
-        setIsLoadingAttendees(true);
-        try {
-            // 학생 및 교직원 데이터는 이미 상위 컴포넌트에서 로드됨
-            // 필요시 여기서 추가 로딩 로직 구현
-        } catch (error) {
-            console.error("Error fetching attendee data:", error);
-        } finally {
-            setIsLoadingAttendees(false);
-        }
-      };
-      fetchData();
-    }
-  }, [saveTarget]);
 
   // Pre-populate selected attendees in edit mode once data is loaded
   useEffect(() => {

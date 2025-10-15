@@ -1,4 +1,4 @@
-import { type User } from "../types/app";
+import { type User, type Student, type Staff } from "../types/app";
 import React, {useState} from "react"; // Remove useEffect
 import CalendarProvider from "../components/features/calendar/Calendar/CalendarProvider";
 import Calendar from "../components/features/calendar/Calendar/Calendar";
@@ -34,6 +34,8 @@ interface CalendarPageProps {
         gradeEntryPeriod: DateRange;
         customPeriods: CustomPeriod[];
     }) => Promise<void>;
+    students: Student[];
+    staff: Staff[];
 }
 
 const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
@@ -191,6 +193,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                                                        customPeriods,
                                                        setCustomPeriods,
                                                        onSaveAcademicSchedule,
+                                                       students,
+                                                       staff,
                                                    }) => {
     return (
         <div id="Calendar">
@@ -211,6 +215,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({
                 setGradeEntryPeriod={setGradeEntryPeriod}
                 customPeriods={customPeriods}
                 setCustomPeriods={setCustomPeriods}
+                students={students}
+                staff={staff}
             >
                 <CalendarContent onSaveAcademicSchedule={onSaveAcademicSchedule}/>
             </CalendarProvider>

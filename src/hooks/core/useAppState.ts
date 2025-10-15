@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { User, PageType, Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { User, PageType, Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce } from '../../utils/google/googleApiInitializer';
 import { 
@@ -16,7 +16,8 @@ import {
     fetchAnnouncements, 
     fetchTemplates, 
     fetchTags,
-    fetchCalendarEvents 
+    fetchCalendarEvents,
+    fetchAttendees
 } from '../../utils/database/papyrusManager';
 import { ENV_CONFIG } from '../../config/environment';
 
@@ -51,6 +52,7 @@ export const useAppState = () => {
     const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
     const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
     const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
+    const [staffSpreadsheetId, setStaffSpreadsheetId] = useState<string | null>(null);
     const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
     const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -63,6 +65,10 @@ export const useAppState = () => {
     const [midtermExamsPeriod, setMidtermExamsPeriod] = useState<DateRange>({ start: null, end: null });
     const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
     const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
+
+    // State for Attendees
+    const [students, setStudents] = useState<Student[]>([]);
+    const [staff, setStaff] = useState<Staff[]>([]);
 
     // 환경변수에서 시트 이름 가져오기
     const boardSheetName = ENV_CONFIG.BOARD_SHEET_NAME;
@@ -116,6 +122,7 @@ export const useAppState = () => {
                         setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
                         setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                         setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
+                        setStaffSpreadsheetId(spreadsheetIds.staffSpreadsheetId);
                         
                         setIsGapiReady(true);
                         setIsGoogleAuthenticatedForAnnouncements(true);
@@ -169,6 +176,7 @@ export const useAppState = () => {
                     setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
                     setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                     setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
+                    setStaffSpreadsheetId(spreadsheetIds.staffSpreadsheetId);
                     
                     setIsGapiReady(true);
                     setIsGoogleAuthenticatedForAnnouncements(true);
@@ -275,6 +283,23 @@ export const useAppState = () => {
         }
     }, [isGapiReady, hotPotatoDBSpreadsheetId]);
 
+    useEffect(() => {
+        if (isGapiReady && studentSpreadsheetId && staffSpreadsheetId) {
+            const loadAttendees = async () => {
+                try {
+                    console.log('참석자 데이터 로딩 시작...');
+                    const { students, staff } = await fetchAttendees();
+                    setStudents(students);
+                    setStaff(staff);
+                    console.log('참석자 데이터 로딩 완료:', students.length, '명 학생,', staff.length, '명 교직원');
+                } catch (error) {
+                    console.error('Error loading attendees:', error);
+                }
+            };
+            loadAttendees();
+        }
+    }, [isGapiReady, studentSpreadsheetId, staffSpreadsheetId]);
+
     return {
         // User state
         user,
@@ -332,6 +357,10 @@ export const useAppState = () => {
         setCustomPeriods,
         calendarProfessorSpreadsheetId,
         calendarStudentSpreadsheetId,
+
+        // Attendees state
+        students,
+        staff,
         
         // Other spreadsheet IDs
         hotPotatoDBSpreadsheetId,
