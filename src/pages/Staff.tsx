@@ -182,7 +182,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         representative: updatedStudent.council.split(' / ')[1] || '',
         note: updatedStudent.council.split(' / ')[2] || '',
       };
-      committeeHook.updateCommittee(updatedCommittee);
+      committeeHook.updateCommittee(selectedCommittee.name, updatedCommittee);
     }
     handleModalClose();
   };

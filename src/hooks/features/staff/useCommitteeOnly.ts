@@ -316,11 +316,11 @@ export const useCommitteeOnly = (staffSpreadsheetId: string | null) => {
         setIsLoading(false);
       }
     },
-    updateCommittee: async (updatedCommittee: Committee) => {
+    updateCommittee: async (committeeName: string, updatedCommittee: Committee) => {
       setIsLoading(true);
       try {
         const encryptedCommittee = await encryptData(updatedCommittee);
-        await updateCommitteeInPapyrus(staffSpreadsheetId!, encryptedCommittee);
+        await updateCommitteeInPapyrus(staffSpreadsheetId!, committeeName, encryptedCommittee);
         await fetchCommittee();
       } catch (err) {
         setError(err instanceof Error ? err.message : '위원회 업데이트 실패');

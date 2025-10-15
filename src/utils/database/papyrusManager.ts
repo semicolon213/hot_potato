@@ -1123,21 +1123,57 @@ export const addCommittee = async (spreadsheetId: string, committee: CommitteeTy
  * @param {Committee} committee - 업데이트할 위원회 정보
  * @returns {Promise<void>}
  */
-export const updateCommittee = async (spreadsheetId: string, committee: CommitteeType): Promise<void> => {
+export const updateCommittee = async (spreadsheetId: string, committeeName: string, committee: CommitteeType): Promise<void> => {
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee.name, committee);
+
+    const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    // 학과 위원회는 이름(name)을 고유 키로 사용 (두 번째 컬럼)
+    const rowIndex = data.values.findIndex(row => row[1] === committeeName);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const range = `${sheetName}!A${rowIndex + 1}:L${rowIndex + 1}`;
+    const values = [[
+      committee.sortation,
+      committee.name,
+      committee.tel,
+      committee.email,
+      committee.position,
+      JSON.stringify(committee.career), // career는 JSON 문자열로 저장
+      committee.company_name,
+      committee.company_position,
+      committee.location,
+      committee.is_family,
+      committee.representative,
+      committee.note
+    ]];
+
+    const gapi = (window as any).gapi;
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: effectiveSpreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      resource: {
+        values: values
+      }
+    });
+
   } catch (error) {
-    console.error('Error updating committee:', error);
+    console.error('Error updating committee in papyrusManager:', error);
     throw error;
   }
 };
