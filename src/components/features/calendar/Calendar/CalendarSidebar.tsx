@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import useCalendarContext from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './CalendarSidebar.css';
 import MiniCalendar from './MiniCalendar';
@@ -9,7 +9,8 @@ interface CalendarSidebarProps {
 }
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
-    const { semesterStartDate } = useCalendarContext();
+    const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels } = useCalendarContext();
+    const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
 
 
     const getWeekDates = (weekNum: number) => {
@@ -30,6 +31,62 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
             <div className="sidebar-section">
                 
                 <MiniCalendar selectedWeek={selectedWeek} />
+            </div>
+
+            <div className="sidebar-section">
+                <h3>필터</h3>
+                <div className="filter-tags-container">
+                    {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
+                        <button
+                            key={filter}
+                            className={`filter-tag ${activeFilters.includes(filter) ? 'active' : ''}`}
+                            onClick={() => handleFilterChange(filter)}
+                        >
+                            {filterLabels[filter] || filter}
+                        </button>
+                    ))}
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <button
+                            className={`filter-tag ${activeFilters.includes('midterm_exam') || activeFilters.includes('final_exam') ? 'active' : ''}`}
+                            onClick={() => setIsExamDropdownOpen(!isExamDropdownOpen)}
+                        >
+                            시험
+                        </button>
+                        {isExamDropdownOpen && (
+                            <div style={{
+                                position: 'absolute',
+                                backgroundColor: '#f9f9f9',
+                                minWidth: '120px',
+                                boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                                zIndex: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                border: '1px solid #ddd',
+                            }}>
+                                <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={activeFilters.includes('midterm_exam')}
+                                        onChange={() => handleFilterChange('midterm_exam')}
+                                        style={{ marginRight: '8px' }}
+                                    />
+                                    중간고사
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={activeFilters.includes('final_exam')}
+                                        onChange={() => handleFilterChange('final_exam')}
+                                        style={{ marginRight: '8px' }}
+                                    />
+                                    기말고사
+                                </label>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="sidebar-section">

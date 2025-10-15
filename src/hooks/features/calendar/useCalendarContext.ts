@@ -91,6 +91,7 @@ interface CalendarContextType {
     searchTerm: string;
     setSearchTerm: (term: string) => void;
     filterLabels: { [key: string]: string };
+    handleFilterChange: (filter: string) => void;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

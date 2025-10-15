@@ -119,7 +119,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
     const [newPeriodName, setNewPeriodName] = useState("");
-    const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
     const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
     const [inputValue, setInputValue] = useState('');
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
@@ -199,27 +198,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         }
     }, [inputValue, isSuggestionsVisible, suggestionSource]);
 
-    const handleFilterChange = (filter: string) => {
-        if (filter === 'all') {
-            setActiveFilters(['all']);
-            goToDate(new Date()); // Navigate home
-            return;
-        }
-
-        const newFilters = activeFilters.includes('all')
-            ? [filter] // If 'all' is selected, start a new selection
-            : activeFilters.includes(filter)
-                ? activeFilters.filter(f => f !== filter) // Deselect if already selected
-                : [...activeFilters, filter]; // Add to selection
-
-        // If all filters are deselected, select 'all' again and navigate home
-        if (newFilters.length === 0) {
-            setActiveFilters(['all']);
-            goToDate(new Date());
-        } else {
-            setActiveFilters(newFilters);
-        }
-    };
+    const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
 
     useEffect(() => {
         if (isSemesterPickerOpen) return;
@@ -672,90 +652,92 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                     </div>
 
                     <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <BiSearchAlt2
-                            onClick={() => setIsSearchVisible(!isSearchVisible)}
-                            style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }}
-                        />
-                        {isSearchVisible && (
-                            <div className="search-wrapper">
-                                <div id="calendar-search-container" className="search-container" style={{ width: '250px' }}>
-                                    <BiSearchAlt2 color="black" />
-                                    <input
-                                        type="text"
-                                        placeholder="일정 검색..."
-                                        className={"calendar-search-input"}
-                                        style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        onFocus={() => setIsSuggestionsVisible(true)}
-                                        onBlur={() => {
-                                            setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
-                                                e.preventDefault();
-                                                addRecentSearch(inputValue.trim());
+                        <div className="search-container-wrapper">
+                            <BiSearchAlt2
+                                onClick={() => setIsSearchVisible(!isSearchVisible)}
+                                style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }}
+                            />
+                            {isSearchVisible && (
+                                <div className="search-wrapper">
+                                    <div id="calendar-search-container" className="search-container" style={{ width: '250px' }}>
+                                        <BiSearchAlt2 color="black" />
+                                        <input
+                                            type="text"
+                                            placeholder="일정 검색..."
+                                            className={"calendar-search-input"}
+                                            style={{ border: 'none', borderRadius: 0, boxShadow: 'none', outline: 'none', background: 'none', height: '100%', paddingLeft: '5px' }}
+                                            value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            onFocus={() => setIsSuggestionsVisible(true)}
+                                            onBlur={() => {
+                                                setTimeout(() => setIsSuggestionsVisible(false), 150);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
+                                                    e.preventDefault();
+                                                    addRecentSearch(inputValue.trim());
 
-                                                if (suggestions.length > 0) {
-                                                    const bestMatch = suggestions[0];
-                                                    if (bestMatch.startDate) {
-                                                        goToDate(new Date(bestMatch.startDate));
-                                                    }
-                                                    const formattedTerm = `#${bestMatch.title}`;
-                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                    if (!existingTerms.includes(formattedTerm)) {
-                                                        setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                    }
-                                                } else {
-                                                    const newTerm = `#${inputValue.trim()}`;
-                                                    const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                    if (!existingTerms.includes(newTerm)) {
-                                                        setSearchTerm([...existingTerms, newTerm].join(' '));
-                                                    }
-                                                }
-                                                setInputValue('');
-                                                setSuggestions([]);
-                                            }
-                                        }}
-                                    />
-                                    {isSuggestionsVisible && suggestions.length > 0 && (
-                                        <ul className="search-suggestions">
-                                            {suggestions.map((suggestion, index) => (
-                                                <li
-                                                    key={index}
-                                                    onMouseDown={() => {
-                                                        const formattedTerm = `#${suggestion.title}`;
+                                                    if (suggestions.length > 0) {
+                                                        const bestMatch = suggestions[0];
+                                                        if (bestMatch.startDate) {
+                                                            goToDate(new Date(bestMatch.startDate));
+                                                        }
+                                                        const formattedTerm = `#${bestMatch.title}`;
                                                         const existingTerms = searchTerm.split(' ').filter(Boolean);
                                                         if (!existingTerms.includes(formattedTerm)) {
                                                             setSearchTerm([...existingTerms, formattedTerm].join(' '));
                                                         }
-
-                                                        if (suggestion.startDate) {
-                                                            goToDate(new Date(suggestion.startDate));
+                                                    } else {
+                                                        const newTerm = `#${inputValue.trim()}`;
+                                                        const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                        if (!existingTerms.includes(newTerm)) {
+                                                            setSearchTerm([...existingTerms, newTerm].join(' '));
                                                         }
+                                                    }
+                                                    setInputValue('');
+                                                    setSuggestions([]);
+                                                }
+                                            }}
+                                        />
+                                        {isSuggestionsVisible && suggestions.length > 0 && (
+                                            <ul className="search-suggestions">
+                                                {suggestions.map((suggestion, index) => (
+                                                    <li
+                                                        key={index}
+                                                        onMouseDown={() => {
+                                                            const formattedTerm = `#${suggestion.title}`;
+                                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
+                                                            if (!existingTerms.includes(formattedTerm)) {
+                                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
+                                                            }
 
-                                                        setInputValue('');
-                                                        setSuggestions([]);
-                                                    }}
-                                                >
-                                                    <span className="suggestion-title">{suggestion.title}</span>
-                                                    <span className="suggestion-date">{suggestion.startDate ? suggestion.startDate.substring(5).replace('-', '월 ') + '일' : ''}</span>
-                                                    <span className="suggestion-tag">{suggestion.tag}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
+                                                            if (suggestion.startDate) {
+                                                                goToDate(new Date(suggestion.startDate));
+                                                            }
+
+                                                            setInputValue('');
+                                                            setSuggestions([]);
+                                                        }}
+                                                    >
+                                                        <span className="suggestion-title">{suggestion.title}</span>
+                                                        <span className="suggestion-date">{suggestion.startDate ? suggestion.startDate.substring(5).replace('-', '월 ') + '일' : ''}</span>
+                                                        <span className="suggestion-tag">{suggestion.tag}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                    <div className="search-tags-container">
+                                        {searchTerm.split(' ').filter(Boolean).map(term => (
+                                            <div key={term} className="search-tag">
+                                                {term}
+                                                <button onClick={() => handleRemoveTerm(term)}>x</button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="search-tags-container">
-                                    {searchTerm.split(' ').filter(Boolean).map(term => (
-                                        <div key={term} className="search-tag">
-                                            {term}
-                                            <button onClick={() => handleRemoveTerm(term)}>x</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                         {user && user.isAdmin && (
                             <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                         )}
@@ -766,58 +748,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         <div className="view-switcher">
                             <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
                             <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
-                        </div>
-                        <div className="filter-tags-container">
-                            {['all', ...eventTypes.filter(f => f !== 'exam')].map(filter => (
-                                <button
-                                    key={filter}
-                                    className={`filter-tag ${activeFilters.includes(filter) ? 'active' : ''}`}
-                                    onClick={() => handleFilterChange(filter)}
-                                >
-                                    {filterLabels[filter] || filter}
-                                </button>
-                            ))}
-                            <div style={{ position: 'relative', display: 'inline-block' }}>
-                                <button
-                                    className={`filter-tag ${activeFilters.includes('midterm_exam') || activeFilters.includes('final_exam') ? 'active' : ''}`}
-                                    onClick={() => setIsExamDropdownOpen(!isExamDropdownOpen)}
-                                >
-                                    시험
-                                </button>
-                                {isExamDropdownOpen && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        backgroundColor: '#f9f9f9',
-                                        minWidth: '120px',
-                                        boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
-                                        zIndex: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        padding: '8px',
-                                        borderRadius: '4px',
-                                        border: '1px solid #ddd',
-                                    }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={activeFilters.includes('midterm_exam')}
-                                                onChange={() => handleFilterChange('midterm_exam')}
-                                                style={{ marginRight: '8px' }}
-                                            />
-                                            중간고사
-                                        </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={activeFilters.includes('final_exam')}
-                                                onChange={() => handleFilterChange('final_exam')}
-                                                style={{ marginRight: '8px' }}
-                                            />
-                                            기말고사
-                                        </label>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 </div>

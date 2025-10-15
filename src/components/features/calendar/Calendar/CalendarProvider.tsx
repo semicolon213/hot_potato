@@ -63,10 +63,29 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [calendarColor, setCalendarColor] = useState<string | undefined>();
   const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
   const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
-  const filterLabels: { [key: string]: string } = {
+      const [searchTerm, setSearchTerm] = useState('');
+  
+      const handleFilterChange = (filter: string) => {
+          if (filter === 'all') {
+              setActiveFilters(['all']);
+              return;
+          }
+  
+          const newFilters = activeFilters.includes('all')
+              ? [filter] // If 'all' is selected, start a new selection
+              : activeFilters.includes(filter)
+                  ? activeFilters.filter(f => f !== filter) // Deselect if already selected
+                  : [...activeFilters, filter]; // Add to selection
+  
+          // If all filters are deselected, select 'all' again and navigate home
+          if (newFilters.length === 0) {
+              setActiveFilters(['all']);
+          } else {
+              setActiveFilters(newFilters);
+          }
+      };
+  
+      const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];  const filterLabels: { [key: string]: string } = {
       all: '전체',
       holiday: '휴일/휴강',
       exam: '시험',
@@ -593,6 +612,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     searchTerm,
     setSearchTerm,
     filterLabels,
+    handleFilterChange,
     addSheetEvent, // Correctly pass the prop function
     extraWeeks: 0,
     setExtraWeeks: (weeks: number) => {
