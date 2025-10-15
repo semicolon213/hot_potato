@@ -3,6 +3,7 @@ import { fetchStudentIssues, addStudentIssue } from '../../utils/database/papyru
 import { getSheetData } from 'papyrus-db';
 import type { Student, StudentWithCouncil } from '../../types/features/students/student';
 import './StudentDetailModal.css';
+import { ENV_CONFIG } from '../../config/environment';
 
 type ModalMode = 'student' | 'staff' | 'committee';
 
@@ -224,104 +225,13 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!editedStudent || !studentSpreadsheetId) return;
+    if (!editedStudent) return;
 
-    try {
-      // 연락처 암호화
-      const encryptedPhone = await encryptPhone(editedStudent.phone_num);
-      
-      const gapi = (window as any).gapi;
-      const spreadsheet = await gapi.client.sheets.spreadsheets.get({
-        spreadsheetId: studentSpreadsheetId
-      });
-      
-      const sheets = spreadsheet.result.sheets;
-      const firstSheetName = sheets[0].properties.title;
-      
-      const data = await getSheetData(studentSpreadsheetId, firstSheetName);
-      console.log('스프레드시트 데이터:', data);
-      console.log('시트 이름:', firstSheetName);
-      
-      if (data && data.values && data.values.length > 1) {
-        // 모드에 따라 다른 필드로 검색
-        const searchField = mode === 'staff' || mode === 'committee' ? editedStudent.no_student : student?.no_student;
-        console.log('검색할 필드:', searchField);
-        console.log('모드:', mode);
-        console.log('editedStudent:', editedStudent);
-        
-        const rowIndex = data.values.findIndex((row: string[]) => {
-          console.log(`행 ${data.values.indexOf(row)}: [${row[0]}] === [${searchField}] ?`, row[0] === searchField);
-          return row[0] === searchField;
-        });
-        console.log('찾은 행 인덱스:', rowIndex);
-        if (rowIndex !== -1) {
-          const range = mode === 'staff' || mode === 'committee' ? 
-            `${firstSheetName}!A${rowIndex + 1}:H${rowIndex + 1}` : 
-            `${firstSheetName}!A${rowIndex + 1}:G${rowIndex + 1}`;
-          await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: studentSpreadsheetId,
-            range: range,
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-              values: mode === 'staff' ? [[
-                editedStudent.no_student,
-                editedStudent.grade,
-                editedStudent.name,
-                editedStudent.address, // 내선번호
-                encryptedPhone, // 암호화된 연락처
-                editedStudent.email || '', // 이메일
-                editedStudent.state, // 임용일
-                editedStudent.council // 비고
-              ]] : mode === 'committee' ? [[
-                editedStudent.no_student,
-                editedStudent.grade,
-                editedStudent.name,
-                editedStudent.address, // 소재지
-                encryptedPhone, // 암호화된 연락처
-                editedStudent.email || '', // 이메일
-                editedStudent.state, // 직책
-                editedStudent.council // 업체명/대표자/비고
-              ]] : [[
-                editedStudent.no_student,
-                editedStudent.name,
-                editedStudent.address,
-                encryptedPhone, // 암호화된 연락처 저장
-                editedStudent.grade,
-                editedStudent.state,
-                editedStudent.council
-              ]]
-            }
-          });
-
-          // 업데이트된 데이터 (암호화된 연락처 포함)
-          const updatedStudent = { ...editedStudent, phone_num: encryptedPhone };
-          onUpdate(updatedStudent);
-          setIsEditing(false);
-          
-          const successMessage = mode === 'staff' ? '교직원 정보가 성공적으로 업데이트되었습니다.' :
-                                mode === 'committee' ? '위원회 정보가 성공적으로 업데이트되었습니다.' :
-                                '학생 정보가 성공적으로 업데이트되었습니다.';
-          alert(successMessage);
-          onClose(); // 저장 완료 후 모달 닫기
-        } else {
-          const notFoundMessage = mode === 'staff' ? '해당 교직원을 찾을 수 없습니다.' :
-                                 mode === 'committee' ? '해당 위원회를 찾을 수 없습니다.' :
-                                 '해당 학생을 찾을 수 없습니다.';
-          alert(notFoundMessage);
-        }
-      } else {
-        const noDataMessage = mode === 'staff' ? '교직원 데이터를 찾을 수 없습니다.' :
-                             mode === 'committee' ? '위원회 데이터를 찾을 수 없습니다.' :
-                             '학생 데이터를 찾을 수 없습니다.';
-        alert(noDataMessage);
-      }
-    } catch (error) {
-      console.error(`${mode === 'staff' ? '교직원' : mode === 'committee' ? '위원회' : '학생'} 정보 업데이트 실패:`, error);
-      const errorMessage = mode === 'staff' ? '교직원 정보 업데이트에 실패했습니다.' :
-                          mode === 'committee' ? '위원회 정보 업데이트에 실패했습니다.' :
-                          '학생 정보 업데이트에 실패했습니다.';
-      alert(errorMessage);
-    }
+    // The modal should not handle the update logic itself.
+    // It should pass the updated data back to the parent component.
+    onUpdate(editedStudent);
+    setIsEditing(false);
+    onClose();
   };
 
   const handleAddIssue = async () => {

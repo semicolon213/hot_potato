@@ -1015,21 +1015,53 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
  * @param {StaffMember} staff - 업데이트할 교직원 정보
  * @returns {Promise<void>}
  */
-export const updateStaff = async (spreadsheetId: string, staff: StaffMember): Promise<void> => {
+export const updateStaff = async (spreadsheetId: string, staffNo: string, staff: StaffMember): Promise<void> => {
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff.no, staff);
+
+    const sheetName = ENV_CONFIG.STAFF_INFO_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === staffNo);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 교직원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const range = `${sheetName}!A${rowIndex + 1}:H${rowIndex + 1}`;
+    const values = [[
+      staff.no,
+      staff.pos,
+      staff.name,
+      staff.tel,
+      staff.phone,
+      staff.email,
+      staff.date,
+      staff.note
+    ]];
+
+    const gapi = (window as any).gapi;
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: effectiveSpreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      resource: {
+        values: values
+      }
+    });
+
   } catch (error) {
-    console.error('Error updating staff:', error);
+    console.error('Error updating staff in papyrusManager:', error);
+    // 에러를 다시 던져서 상위 호출자가 처리할 수 있도록 함
     throw error;
   }
 };

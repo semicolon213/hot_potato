@@ -167,7 +167,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         date: updatedStudent.state,
         note: updatedStudent.council,
       };
-      staffHook.updateStaff(updatedStaff);
+      staffHook.updateStaff(selectedStaff.no, updatedStaff);
     } else if (selectedCommittee) {
       // 위원회 데이터 업데이트
       const updatedCommittee: Committee = {

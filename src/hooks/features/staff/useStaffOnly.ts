@@ -311,11 +311,11 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
         setIsLoading(false);
       }
     },
-    updateStaff: async (updatedStaff: StaffMember) => {
+    updateStaff: async (staffNo: string, updatedStaff: StaffMember) => {
       setIsLoading(true);
       try {
         const encryptedStaff = await encryptData(updatedStaff);
-        await updateStaffInPapyrus(staffSpreadsheetId!, encryptedStaff);
+        await updateStaffInPapyrus(staffSpreadsheetId!, staffNo, encryptedStaff);
         await fetchStaff();
       } catch (err) {
         setError(err instanceof Error ? err.message : '교직원 업데이트 실패');
