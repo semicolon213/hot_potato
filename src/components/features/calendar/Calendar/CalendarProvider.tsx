@@ -7,6 +7,29 @@ import {
 } from "../../../../hooks/features/calendar/useCalendarContext.ts";
 import {type User, type Student, type Staff} from "../../../../types/app";
 
+// Google Calendar API 타입 정의
+interface GoogleApiColor {
+  background: string;
+  foreground: string;
+}
+
+interface GoogleApiEventItem {
+  id: string;
+  summary: string;
+  description?: string;
+  start: { date?: string; dateTime?: string };
+  end: { date?: string; dateTime?: string };
+  colorId?: string;
+}
+
+interface GoogleApiRequestBody {
+  summary?: string;
+  description?: string;
+  colorId?: string;
+  start: { date?: string; dateTime?: string; timeZone: string };
+  end: { date?: string; dateTime?: string; timeZone: string };
+}
+
 const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     holiday: {color: '#EA4335', icon: '🏖️'},
     exam: {color: '#4285F4', icon: '✍️'},
@@ -14,6 +37,7 @@ const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
     event: {color: '#FBBC05', icon: '🎉'}, // Changed to Yellow
     makeup: {color: '#A142F4', icon: '✨'},
     meeting: {color: '#34A853', icon: '🤝'}, // Changed to Green
+    '공용일정': {color: '#A5D6A7', icon: '🗓️'},
     default: {color: '#7986CB', icon: ''},
 };
 
@@ -71,7 +95,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     } | undefined>(undefined);
     const [refreshKey, setRefreshKey] = useState(0);
     const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
-    const [eventColors, setEventColors] = useState<any>({});
+    const [eventColors, setEventColors] = useState<Record<string, GoogleApiColor>>({});
     const [calendarColor, setCalendarColor] = useState<string | undefined>();
     const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
     const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
@@ -97,7 +121,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         }
     };
 
-    const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
+    const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting', 'personal'];
     const filterLabels: { [key: string]: string } = {
         all: '전체',
         holiday: '휴일/휴강',
@@ -107,6 +131,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         event: '행사',
         makeup: '보강',
         meeting: '회의',
+        personal: '개인일정',
     };
 
     useEffect(() => {
@@ -182,7 +207,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                 const primaryData = await primaryResponse.json();
                 const holidayData = holidayResponse.ok ? await holidayResponse.json() : {items: []};
 
-                const transformEvent = (item: any, isHoliday: boolean = false): Event | null => {
+                const transformEvent = (item: GoogleApiEventItem, isHoliday: boolean = false): Event | null => {
                     try {
                         const startStr = item.start.date || item.start.dateTime;
                         const endStr = item.end.date || item.end.dateTime;
@@ -220,8 +245,8 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                     }
                 };
 
-                const primaryEvents = (primaryData.items || []).map((item: any) => transformEvent(item, false));
-                const holidayEvents = (holidayData.items || []).map((item: any) => transformEvent(item, true));
+                const primaryEvents = (primaryData.items || []).map((item: GoogleApiEventItem) => transformEvent(item, false));
+                const holidayEvents = (holidayData.items || []).map((item: GoogleApiEventItem) => transformEvent(item, true));
 
                 const transformedEvents: Event[] = [...primaryEvents, ...holidayEvents].filter(Boolean) as Event[];
                 setGoogleEvents(transformedEvents);
@@ -239,7 +264,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const unfilteredEvents = useMemo(() => {
     const visibleSheetEvents = sheetEvents.filter(event => {
-      const attendees = (event as any).attendees;
+      const attendees = (event as Event).attendees;
       if (!attendees || attendees.trim() === '') {
         return true; // Public event, visible to all
       }
@@ -324,6 +349,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             : activeFilters.includes('all')
                 ? unfilteredEvents
                 : unfilteredEvents.filter(event => {
+                    if (event.type === '공용일정') {
+                        return true;
+                    }
                     const eventType = event.type || '';
                     const eventTitle = event.title || '';
                     let isVisible = false;
@@ -340,6 +368,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                                 break;
                             case 'final_exam':
                                 if (eventType === 'exam' && eventTitle === '기말고사') isVisible = true;
+                                break;
+                            case 'personal':
+                                if (!event.isHoliday && !event.type) isVisible = true;
                                 break;
                             default:
                                 if (eventType === filter) isVisible = true;
@@ -407,7 +438,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         }
 
         try {
-            const requestBody: any = {
+            const requestBody: Partial<GoogleApiRequestBody> = {
                 summary: event.title,
                 description: event.description,
                 colorId: event.colorId,
@@ -458,7 +489,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         }
 
         try {
-            const requestBody: any = {
+            const requestBody: Partial<GoogleApiRequestBody> = {
                 summary: event.title,
                 description: event.description,
                 colorId: event.colorId,
