@@ -48,7 +48,6 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
     const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition} = useCalendarContext();
-    const [modalPosition, setModalPosition] = useState({top: 0, left: 0});
     const [moreEventsModal, setMoreEventsModal] = useState<{
         isOpen: boolean;
         events: Event[];
@@ -104,8 +103,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
             left = gap;
         }
 
-        setSelectedEvent(event);
-        setModalPosition({ top, left });
+        setSelectedEvent(event, { top, left });
         setIsAddModalOpen(false);
         setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
     };
@@ -151,13 +149,12 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
                     event={selectedEvent}
                     onClose={() => { 
                         setSelectedEvent(null); 
-                        setModalPosition({ top: 0, left: 0 }); 
                         setIsAddModalOpen(false); 
                         setMoreEventsModal({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } }); 
                     }}
                     onDelete={deleteEvent}
                     onEdit={handleEdit}
-                    position={selectedEventPosition || modalPosition}
+                    position={selectedEventPosition}
                 />
             )}
             {moreEventsModal.isOpen && (

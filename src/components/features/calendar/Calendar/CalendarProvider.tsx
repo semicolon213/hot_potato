@@ -95,7 +95,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     } | undefined>(undefined);
     const [refreshKey, setRefreshKey] = useState(0);
     const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
-    const [eventColors, setEventColors] = useState<Record<string, GoogleApiColor>>({});
+    const [eventColors, setEventColors] = useState<any>({});
     const [calendarColor, setCalendarColor] = useState<string | undefined>();
     const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
     const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
@@ -353,27 +353,27 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                         return true;
                     }
                     const eventType = event.type || '';
+                    const eventTypeLabel = event.type || ''; // This is the Korean label, e.g., '보강'
                     const eventTitle = event.title || '';
+                    const typeKey = tagKeyMap[eventTypeLabel]; // This is the English key, e.g., 'makeup'
+
                     let isVisible = false;
-                    for (const filter of activeFilters) {
+                    for (const filter of activeFilters) { // filter is the English key, e.g., 'makeup'
                         switch (filter) {
                             case 'holiday':
                                 if (event.isHoliday) isVisible = true;
                                 break;
-                            case 'exam':
-                                if (eventType === '시험') isVisible = true;
-                                break;
                             case 'midterm_exam':
-                                if (eventType === 'exam' && eventTitle === '중간고사') isVisible = true;
+                                if (typeKey === 'exam' && eventTitle === '중간고사') isVisible = true;
                                 break;
                             case 'final_exam':
-                                if (eventType === 'exam' && eventTitle === '기말고사') isVisible = true;
+                                if (typeKey === 'exam' && eventTitle === '기말고사') isVisible = true;
                                 break;
                             case 'personal':
                                 if (!event.isHoliday && !event.type) isVisible = true;
                                 break;
                             default:
-                                if (eventType === filter) isVisible = true;
+                                if (typeKey === filter) isVisible = true;
                                 break;
                         }
                         if (isVisible) break;
@@ -530,7 +530,9 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     };
 
     const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
-        if (eventId.includes('-cal-')) { // ID format check updated for consistency
+        // Heuristic: Google Calendar event IDs are alphanumeric and do not contain hyphens.
+        // Our sheet events have composite IDs that always contain a hyphen (spreadsheetId-eventIdInSheet).
+        if (eventId.includes('-')) {
             updateSheetEvent(eventId, event);
         }
         else {
