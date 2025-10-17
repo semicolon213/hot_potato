@@ -45,7 +45,31 @@ const ScheduleView: React.FC = () => {
                         }
 
                         return (
-                            <li key={event.id} className="schedule-item" onClick={(e) => { setSelectedEvent(event, { top: e.clientY, left: e.clientX }); }}>
+                            <li key={event.id} className="schedule-item" onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const modalWidth = 480;
+                                const modalHeight = 150;
+                                const { innerWidth, innerHeight } = window;
+                                const gap = 10;
+
+                                let top = rect.bottom + gap;
+                                let left = rect.left;
+
+                                if (top + modalHeight > innerHeight) {
+                                    top = rect.top - modalHeight - gap;
+                                }
+                                if (top < 0) {
+                                    top = gap;
+                                }
+                                if (left + modalWidth > innerWidth) {
+                                    left = rect.right - modalWidth;
+                                }
+                                if (left < 0) {
+                                    left = gap;
+                                }
+
+                                setSelectedEvent(event, { top, left });
+                            }}>
                                 <div className="schedule-item-tag" style={{ backgroundColor: event.color }}>
                                     {event.type || '개인일정'}
                                 </div>

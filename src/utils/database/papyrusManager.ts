@@ -833,6 +833,7 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
     startDate: string;
     endDate: string;
     type?: string;
+    description?: string;
   }> = [];
 
   // 개강일
@@ -864,7 +865,7 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
   // Custom periods
   customPeriods.forEach(p => {
     if (p.period.start && p.period.end) {
-      eventsToSave.push({ id: p.id, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: p.type || '공용일정' });
+      eventsToSave.push({ id: p.id, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: '공용일정' });
     }
   });
 
