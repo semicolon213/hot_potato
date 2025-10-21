@@ -1,10 +1,10 @@
 .calendar-header-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .year-display {
@@ -47,8 +47,7 @@
 }
 
 .arrow-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    color: var(--primary);
 }
 
 .calendar-body-container {
@@ -137,7 +136,7 @@
 }
 
 .day.sunday .day-number {
-  color: var(--error);
+    color: var(--error);
 }
 
 .day.saturday .day-number {
@@ -212,6 +211,7 @@
   gap: 20px; /* Adjust as needed */
   position: relative;
   right: 50px;
+  margin-left: auto; /* Push to the right */
 }
 
 .view-switcher {
@@ -355,7 +355,7 @@
     flex-direction: column;
     gap: 20px;
     align-items: center;
-    min-width: 600px;
+    min-width: 700px;
 }
 
 .date-selector-row {
@@ -379,6 +379,15 @@
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 0.75em;
+}
+
+.semester-picker-modal .date-selector-row .tag-input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.75em;
+    margin-left: 10px;
+    width: 100px;
 }
 
 .semester-picker-modal .modal-actions .done-btn {
@@ -570,9 +579,20 @@
 }
 
 .search-wrapper {
-    position: relative;
+    position: absolute;
+    top: 40px; /* Adjust as needed */
+    right: 0;
+    z-index: 1001;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+}
+
+.search-container-wrapper {
+    position: relative;
 }
 
 .search-tags-container {
@@ -580,7 +600,8 @@
     flex-wrap: wrap;
     gap: 5px;
     padding-top: 8px;
-    width: 250px; /* Match search-container width */
+    width: 100%;
+    margin-top: 10px;
 }
 
 .search-tag {
@@ -604,13 +625,14 @@
     line-height: 1;
 }
 
-.calendar-header-container .search-container {
+#calendar-search-container {
     display: flex !important;
     align-items: center !important;
     background: none !important;
-    border: none !important;
-    height: 35px !important;
-    width: 250px !important;
+    border: 1px solid #ccc !important;
+    min-height: 35px !important;
+    width: 200px !important;
+    border-radius: 4px;
 }
 
 .calendar-search-input,
@@ -627,4 +649,35 @@
 .calendar-title h2 {
     flex-shrink: 0;
     white-space: nowrap;
+}
+
+.calendar-search-bar-wrapper {
+    display: flex;
+    align-items: center;
+    width: 50%;
+    padding: 5px 10px;
+    background-color: #f1f3f4;
+    border-radius: 8px;
+    position: relative;
+}
+
+.calendar-search-input-active {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 16px;
+    margin-left: 10px;
+}
+
+.day.today .day-number {
+    background-color: rgba(255, 0, 0, 0.8);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 24px;
 }

@@ -7,7 +7,7 @@
  */
 
 import { createContext, useContext } from "react";
-import { type User } from "../../../types/app";
+import { type User, type Student, type Staff } from "../../../types/app";
 
 /**
  * @brief 날짜 정보 타입 정의
@@ -41,7 +41,12 @@ export interface Event {
 }
 
 export type DateRange = { start: Date | null; end: Date | null };
-export type CustomPeriod = { id: string; name: string; period: DateRange };
+export interface CustomPeriod {
+  id: string;
+  name: string;
+  period: DateRange;
+  type?: string;
+}
 
 interface CalendarContextType {
     currentDate: DateInfo;
@@ -53,14 +58,14 @@ interface CalendarContextType {
         handleNextMonth: () => void;
     };
     selectedDate: {
-        date: string;
+        date: Date;
         selectDate: (date: Date) => void;
     };
     events: Event[];
     addEvent: (event: Event) => void;
     deleteEvent: (id: string) => void;
     selectedEvent: Event | null;
-    setSelectedEvent: (event: Event | null) => void;
+    setSelectedEvent: (event: Event | null, position?: { top: number; left: number }) => void;
     semesterStartDate: Date;
     setSemesterStartDate: (date: Date) => void;
     finalExamsPeriod: DateRange;
@@ -86,6 +91,11 @@ interface CalendarContextType {
     searchTerm: string;
     setSearchTerm: (term: string) => void;
     filterLabels: { [key: string]: string };
+    handleFilterChange: (filter: string) => void;
+    unfilteredEvents: Event[];
+    formatDate: (date: Date) => string;
+    students: Student[];
+    staff: Staff[];
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import useCalendarContext from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './CalendarSidebar.css';
 import MiniCalendar from './MiniCalendar';
@@ -9,13 +9,15 @@ interface CalendarSidebarProps {
 }
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
-    const { semesterStartDate } = useCalendarContext();
+    const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels } = useCalendarContext();
 
 
     const getWeekDates = (weekNum: number) => {
         if (!semesterStartDate) return '';
-        const start = new Date(semesterStartDate);
-        // Adjust for week start day if necessary, assuming semesterStartDate is the first day of week 1
+        const week1Start = new Date(semesterStartDate);
+        week1Start.setDate(week1Start.getDate() - week1Start.getDay()); // Set to Sunday
+
+        const start = new Date(week1Start);
         start.setDate(start.getDate() + (weekNum - 1) * 7);
         const end = new Date(start);
         end.setDate(end.getDate() + 6);
@@ -26,7 +28,6 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
-                
                 <MiniCalendar selectedWeek={selectedWeek} />
             </div>
 
@@ -44,6 +45,22 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
                         </li>
                     ))}
                 </ul>
+            </div>
+
+            <div className="sidebar-section">
+                <h3>태그</h3>
+                <div className="filter-tags-container" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                    {['all', ...eventTypes].map(filter => (
+                        <label key={filter} className="filter-checkbox-label">
+                            <input
+                                type="checkbox"
+                                checked={activeFilters.includes(filter)}
+                                onChange={() => handleFilterChange(filter)}
+                            />
+                            <span>{filterLabels[filter] || filter}</span>
+                        </label>
+                    ))}
+                </div>
             </div>
         </aside>
     );

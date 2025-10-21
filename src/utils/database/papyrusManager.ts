@@ -121,6 +121,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
     boardSpreadsheetId: string | null;
     hotPotatoDBSpreadsheetId: string | null;
     studentSpreadsheetId: string | null;
+    staffSpreadsheetId: string | null;
 }> => {
     console.log('스프레드시트 ID 초기화 시작...');
     
@@ -135,7 +136,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
                 calendarStudentSpreadsheetId: null,
                 boardSpreadsheetId: null,
                 hotPotatoDBSpreadsheetId: null,
-                studentSpreadsheetId: null
+                studentSpreadsheetId: null,
+                staffSpreadsheetId: null
             };
         }
 
@@ -176,12 +178,16 @@ export const initializeSpreadsheetIds = async (): Promise<{
         const studentId = await findSpreadsheetById(ENV_CONFIG.STUDENT_SPREADSHEET_NAME);
         console.log('👥 학생 스프레드시트 ID:', studentId);
 
+        const staffId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+        console.log('👥 교직원 스프레드시트 ID:', staffId);
+
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
         calendarStudentSpreadsheetId = calendarStudentId;
         boardSpreadsheetId = boardId;
         hotPotatoDBSpreadsheetId = hotPotatoDBId;
         studentSpreadsheetId = studentId;
+        staffSpreadsheetId = staffId;
         
         console.log('스프레드시트 ID 초기화 완료:', {
             announcement: !!announcementId,
@@ -189,7 +195,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudent: !!calendarStudentId,
             board: !!boardId,
             hotPotatoDB: !!hotPotatoDBId,
-            student: !!studentId
+            student: !!studentId,
+            staff: !!staffId
         });
 
         return {
@@ -198,7 +205,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: calendarStudentId,
             boardSpreadsheetId: boardId,
             hotPotatoDBSpreadsheetId: hotPotatoDBId,
-            studentSpreadsheetId: studentId
+            studentSpreadsheetId: studentId,
+            staffSpreadsheetId: staffId
         };
     } catch (error) {
         console.error('❌ 스프레드시트 ID 초기화 중 오류:', error);
@@ -209,7 +217,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: null,
             boardSpreadsheetId: null,
             hotPotatoDBSpreadsheetId: null,
-            studentSpreadsheetId: null
+            studentSpreadsheetId: null,
+            staffSpreadsheetId: null
         };
     }
 };
@@ -539,11 +548,18 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
     });
 
     const results = await Promise.all(allEventsPromises);
-    const allEvents = results.flat().filter(Boolean);
 
-    const uniqueEvents = allEvents.filter((event, index, self) =>
-      index === self.findIndex((e) => e.id === event.id)
-    );
+    const eventMap = new Map<string, Event>(); // stableId -> Event
+
+    results.forEach((eventsFromSheet, i) => {
+        const sheetId = spreadsheetIds[i];
+        eventsFromSheet.forEach(event => {
+            const stableId = event.id.replace(`${sheetId}-`, '');
+            eventMap.set(stableId, event);
+        });
+    });
+
+    const uniqueEvents = Array.from(eventMap.values());
 
     console.log('Loaded calendar events:', uniqueEvents);
     return uniqueEvents;
@@ -698,6 +714,19 @@ export const fetchStaff = async (): Promise<Staff[]> => {
   }
 };
 
+export const fetchAttendees = async (): Promise<{ students: Student[], staff: Staff[] }> => {
+    try {
+        const [students, staff] = await Promise.all([
+            fetchStudents(),
+            fetchStaffFromPapyrus(staffSpreadsheetId || '')
+        ]);
+        return { students, staff };
+    } catch (error) {
+        console.error('Error fetching attendees:', error);
+        return { students: [], staff: [] };
+    }
+};
+
 // 학생 이슈 관련 함수들
 export const fetchStudentIssues = async (studentNo: string): Promise<any[]> => {
   try {
@@ -789,65 +818,122 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
     return newDate;
   };
 
-    const eventsToSave: Array<{
-      title: string;
-      startDate: string;
-      endDate: string;
-      type?: string;
-    }> = [];
+  const slugify = (text: string) => {
+    return text.toString().toLowerCase()
+      .replace(/\s+/g, '-')           // Replace spaces with -
+      .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+      .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+      .replace(/^-+/, '')             // Trim - from start of text
+      .replace(/-+$/, '');            // Trim - from end of text
+  }
+
+  const eventsToSave: Array<{
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    type?: string;
+    description?: string;
+  }> = [];
 
   // 개강일
-  eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
+  eventsToSave.push({ id: 'semester-start', title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate), type: '공용일정' });
 
   // 수업일수 events
   const classDay30 = addInclusiveDays(semesterStartDate, 30);
   const classDay60 = addInclusiveDays(semesterStartDate, 60);
   const classDay90 = addInclusiveDays(semesterStartDate, 90);
-  eventsToSave.push({ title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30) });
-  eventsToSave.push({ title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60) });
-  eventsToSave.push({ title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90) });
+  eventsToSave.push({ id: 'class-day-30', title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30), type: '공용일정', description: '학기 개시일 부터 30일 까지 휴학할 시에 복학 추가 납부 금액 0원' });
+  eventsToSave.push({ id: 'class-day-60', title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60), type: '공용일정', description: '학기 개시일 30일부터 60일 까지 휴학할 시에 복학 추가 납부 금액 : 등록금의 1/3' });
+  eventsToSave.push({ id: 'class-day-90', title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90), type: '공용일정', description: '학기 개시일 60일부터 90일 까지 휴학할 시에 복학 추가 납부 금액 : 등록금의 1/2' });
 
   // 중간고사
   if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
-    eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'exam' });
+    eventsToSave.push({ id: 'midterm-exam', title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'exam' });
   }
 
   // 기말고사
   if (finalExamsPeriod.start && finalExamsPeriod.end) {
-    eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'exam' });
+    eventsToSave.push({ id: 'final-exam', title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'exam' });
   }
 
   // 성적입력 및 강의평가
   if (gradeEntryPeriod.start && gradeEntryPeriod.end) {
-    eventsToSave.push({ title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end) });
+    eventsToSave.push({ id: 'grade-entry', title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end), type: '공용일정' });
   }
 
   // Custom periods
   customPeriods.forEach(p => {
     if (p.period.start && p.period.end) {
-      eventsToSave.push({ title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end) });
+      eventsToSave.push({ id: p.id, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: '공용일정' });
     }
   });
 
   try {
-    // 기존 학사일정 이벤트 삭제 (papyrus-db에서는 직접 삭제 기능이 제한적이므로 스킵)
     console.log('학사일정 이벤트 저장 시작:', eventsToSave.length, '개');
 
-    // 새로운 이벤트들 생성
+    // Get current data to check for existing events
+    const sheetData = await getSheetData(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+    const existingEvents = sheetData && sheetData.values ? sheetData.values : [];
+    const existingEventsMap = new Map<string, number>(); // id -> rowIndex
+    existingEvents.forEach((row, index) => {
+      if (index > 0) { // Skip header row
+        const id = row[0];
+        if (id) {
+          existingEventsMap.set(id, index + 1);
+        }
+      }
+    });
+
+    // 이벤트 삭제, 업데이트, 추가 로직
+    const newEventIds = new Set(eventsToSave.map(e => e.id));
+    const rowsToDelete: number[] = [];
+
+    // 삭제할 행 식별 (학사일정 관련 이벤트만 대상으로 함)
+    existingEventsMap.forEach((rowIndex, id) => {
+      const isAcademicEvent = id.startsWith('semester-') || id.startsWith('class-day-') || id.startsWith('midterm-') || id.startsWith('final-') || id.startsWith('grade-') || id.startsWith('custom-');
+      if (isAcademicEvent && !newEventIds.has(id)) {
+        rowsToDelete.push(rowIndex);
+      }
+    });
+
+    // 행을 삭제하는 대신 내용을 지워서 삭제 효과를 냄
+    if (rowsToDelete.length > 0) {
+      console.log(`Clearing ${rowsToDelete.length} academic schedule event rows that no longer exist.`);
+      for (const rowIndex of rowsToDelete) {
+        const range = `${ENV_CONFIG.CALENDAR_SHEET_NAME}!A${rowIndex}:K${rowIndex}`;
+        await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+          spreadsheetId: calendarSpreadsheetId,
+          range: range,
+        });
+      }
+    }
+
+    // 새로운 이벤트들 생성 또는 업데이트
     for (const event of eventsToSave) {
-      await append(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [[
+      const rowIndex = existingEventsMap.get(event.id);
+
+      const rowData = [
+        event.id,
         event.title,
         event.startDate,
         event.endDate,
-        '',
-        '',
-        '',
-        '',
-        (event.type && tagLabels[event.type]) || event.type || '',
-        '',
-        '',
-        ''
-      ]]);
+        event.description || '', // description
+        '', // colorId
+        '', // startDateTime
+        '', // endDateTime
+        (event.type && tagLabels[event.type]) || event.type || '', // type
+        '', // rrule
+        ''  // attendees
+      ];
+
+      if (rowIndex) {
+        // Update existing event
+        await update(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex}:K${rowIndex}`, [rowData]);
+      } else {
+        // Append new event
+        await append(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [rowData]);
+      }
     }
 
     console.log('학사일정이 성공적으로 저장되었습니다.');

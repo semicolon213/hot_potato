@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import type { PageType, User, Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
@@ -51,6 +51,8 @@ interface PageRendererProps {
   customPeriods: CustomPeriod[];
   hotPotatoDBSpreadsheetId: string | null;
   studentSpreadsheetId: string | null;
+  students: Student[];
+  staff: Staff[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
   onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => Promise<void>;
@@ -102,6 +104,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   customPeriods,
   hotPotatoDBSpreadsheetId,
   studentSpreadsheetId,
+  students,
+  staff,
   searchTerm,
   onPageChange,
   onAddPost,
@@ -199,6 +203,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           customPeriods={customPeriods}
           setCustomPeriods={onSetCustomPeriods}
           onSaveAcademicSchedule={onSaveAcademicSchedule}
+          students={students}
+          staff={staff}
         />;
       case "preferences":
         return (

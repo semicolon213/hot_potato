@@ -20,6 +20,7 @@ const MoreEventsModal: React.FC<MoreEventsModalProps> = ({ events, date, onClose
     : '';
 
   const modalContent = (
+    <div className="more-events-modal-overlay" onClick={onClose}>
       <div className="more-events-modal" style={{ top: position.top, left: position.left }} onClick={(e) => e.stopPropagation()}>
         <div className="more-events-modal-header">
           <h4>{formattedDate}</h4>
@@ -27,12 +28,13 @@ const MoreEventsModal: React.FC<MoreEventsModalProps> = ({ events, date, onClose
         </div>
         <ul className="more-events-list">
           {events.map(event => (
-            <li key={event.id} className="more-event-item" style={{ backgroundColor: event.color }} onClick={(e) => onSelectEvent(event, e)}>
+            <li key={event.id} className="more-event-item" style={{ backgroundColor: event.color }} onClick={(e) => onSelectEvent(event, e.currentTarget.getBoundingClientRect())}>
               {event.title}
             </li>
           ))}
         </ul>
       </div>
+    </div>
   );
 
   return createPortal(modalContent, document.body);
