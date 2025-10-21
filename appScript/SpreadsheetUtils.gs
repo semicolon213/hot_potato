@@ -7,6 +7,38 @@
 // ===== 스프레드시트 유틸리티 함수들 =====
 
 /**
+ * 스프레드시트 이름으로 ID 찾기
+ * @param {string} sheetName - 스프레드시트 이름
+ * @returns {string} 스프레드시트 ID
+ */
+function getSheetIdByName(sheetName) {
+  try {
+    console.log('📊 스프레드시트 ID 찾기 시작:', sheetName);
+    
+    const query = `name='${sheetName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+    console.log('📊 스프레드시트 검색 쿼리:', query);
+    
+    const files = Drive.Files.list({
+      q: query,
+      fields: 'files(id,name)'
+    });
+    
+    if (files.files && files.files.length > 0) {
+      const spreadsheetId = files.files[0].id;
+      console.log('📊 스프레드시트 ID 찾기 성공:', spreadsheetId);
+      return spreadsheetId;
+    } else {
+      console.warn('📊 스프레드시트를 찾을 수 없습니다:', sheetName);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error('📊 스프레드시트 ID 찾기 오류:', error);
+    return null;
+  }
+}
+
+/**
  * 문서 ID로 행 삭제
  * @param {string} spreadsheetId - 스프레드시트 ID
  * @param {string} sheetName - 시트 이름

@@ -14,13 +14,15 @@ function getPendingUsers() {
   try {
     console.log('👥 대기 중인 사용자 목록 조회 시작');
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:F');
@@ -82,13 +84,15 @@ function approveUser(studentId) {
       };
     }
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:F');
@@ -181,13 +185,15 @@ function rejectUser(studentId) {
       };
     }
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:F');
@@ -280,13 +286,15 @@ function checkApprovalStatus(email) {
       };
     }
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:F');

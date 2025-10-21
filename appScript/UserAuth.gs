@@ -22,17 +22,18 @@ function checkUserStatus(email) {
       };
     }
     
-    // 스프레드시트에서 사용자 정보 조회
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
-    const sheetName = 'users';
-    const data = getSheetData(spreadsheetId, sheetName, 'A:F');
+    const sheetName = 'user';  // 스프레드시트의 시트명이 'user'
+    const data = getSheetData(spreadsheetId, sheetName, 'A:G');  // G열까지 포함
     
     if (!data || data.length <= 1) {
       return {
@@ -53,7 +54,9 @@ function checkUserStatus(email) {
       return user;
     });
     
-    const user = users.find(u => u.email === email);
+    // 암호화된 이메일로 비교
+    const encryptedEmail = applyEncryption(email, 'Base64', '');
+    const user = users.find(u => u.google_member === encryptedEmail);
     
     if (!user) {
       return {
@@ -65,12 +68,20 @@ function checkUserStatus(email) {
       };
     }
     
+    // 승인 상태 확인 (Approval 컬럼)
+    const isApproved = user.Approval === 'O';
+    const isAdmin = user.is_admin === 'O';
+    
     return {
       success: true,
       data: {
-        status: user.status || 'pending',
-        message: getStatusMessage(user.status),
-        user: user
+        status: isApproved ? 'approved' : 'pending',
+        message: getStatusMessage(isApproved ? 'approved' : 'pending'),
+        user: {
+          ...user,
+          isApproved: isApproved,
+          isAdmin: isAdmin
+        }
       }
     };
     

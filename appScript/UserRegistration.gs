@@ -136,13 +136,15 @@ function checkExistingUser(email, studentId) {
   try {
     console.log('🔍 기존 사용자 확인 시작:', email, studentId);
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         exists: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:F');
@@ -204,13 +206,15 @@ function addUserToSpreadsheet(userData) {
   try {
     console.log('📊 스프레드시트에 사용자 정보 추가 시작:', userData);
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     
@@ -262,13 +266,15 @@ function updateUserInfo(email, updateData) {
   try {
     console.log('📝 사용자 정보 업데이트 시작:', email, updateData);
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:H');
@@ -340,13 +346,15 @@ function deleteUserInfo(email) {
   try {
     console.log('🗑️ 사용자 정보 삭제 시작:', email);
     
-    const spreadsheetId = getSheetIdByName(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-    if (!spreadsheetId) {
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
       return {
         success: false,
         message: '스프레드시트를 찾을 수 없습니다.'
       };
     }
+    const spreadsheetId = spreadsheet.getId();
     
     const sheetName = 'users';
     const data = getSheetData(spreadsheetId, sheetName, 'A:H');

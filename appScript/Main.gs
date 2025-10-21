@@ -157,6 +157,19 @@ function doPost(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       
+      // DocumentTemplates 모듈이 로드되었는지 확인
+      if (typeof DocumentTemplates === 'undefined') {
+        console.error('📄 DocumentTemplates 모듈이 로드되지 않았습니다');
+        const errorResult = {
+          success: false,
+          message: 'DocumentTemplates 모듈이 로드되지 않았습니다. Apps Script에서 파일을 저장하고 다시 배포해주세요.',
+          debugInfo: ['❌ DocumentTemplates is not defined']
+        };
+        return ContentService
+          .createTextOutput(JSON.stringify(errorResult))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      
       const result = DocumentTemplates.getTemplatesFromFolder();
       console.log('📄 템플릿 목록 조회 결과:', result);
       return ContentService
@@ -167,6 +180,20 @@ function doPost(e) {
     // Drive API 연결 테스트 액션 처리
     if (req.action === 'testDriveApi') {
       console.log('🔧 Drive API 테스트 요청 받음:', req);
+      
+      // DocumentTests 모듈이 로드되었는지 확인
+      if (typeof DocumentTests === 'undefined') {
+        console.error('🔧 DocumentTests 모듈이 로드되지 않았습니다');
+        const errorResult = {
+          success: false,
+          message: 'DocumentTests 모듈이 로드되지 않았습니다. Apps Script에서 파일을 저장하고 다시 배포해주세요.',
+          debugInfo: ['❌ DocumentTests is not defined']
+        };
+        return ContentService
+          .createTextOutput(JSON.stringify(errorResult))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      
       const result = DocumentTests.testDriveApiConnection();
       console.log('🔧 Drive API 테스트 결과:', result);
       return ContentService
@@ -373,11 +400,13 @@ function getDeploymentInfo() {
     'SpreadsheetCore.gs',
     'SpreadsheetCache.gs',
     'SpreadsheetUtils.gs',
+    'CONFIG.gs',
     'EncryptionCore.gs',
     'EncryptionAlgorithms.gs',
     'EncryptionKeyManagement.gs',
     'EncryptionEmail.gs',
-    'CONFIG.gs',
+    'DocumentTemplates.gs',
+    'DocumentTests.gs',
     'KeyVerification.gs',
     'KeyGeneration.gs',
     'TimeUtils.gs',
@@ -428,7 +457,82 @@ function getDeploymentInfo() {
 }
 
 // ===== 사용자 인증 관련 함수들 =====
-// UserManagement.gs의 기존 함수들을 사용합니다.
+
+/**
+ * 사용자 등록 상태 확인
+ * @param {string} email - 사용자 이메일
+ * @returns {Object} 등록 상태 확인 결과
+ */
+function handleCheckRegistrationStatus(email) {
+  try {
+    console.log('👤 사용자 등록 상태 확인 시작:', email);
+    
+    if (!email) {
+      return {
+        success: false,
+        message: '이메일이 필요합니다.'
+      };
+    }
+    
+    // UserAuth.gs의 checkUserStatus 함수 사용
+    const result = checkUserStatus(email);
+    
+    if (result.success) {
+      const userData = result.data;
+      return {
+        success: true,
+        isRegistered: userData.status !== 'not_registered',
+        isApproved: userData.status === 'approved',
+        approvalStatus: userData.status,
+        studentId: userData.user ? userData.user.student_id : '',
+        user: userData.user
+      };
+    } else {
+      return {
+        success: false,
+        isRegistered: false,
+        isApproved: false,
+        approvalStatus: 'not_requested',
+        studentId: '',
+        message: result.message
+      };
+    }
+    
+  } catch (error) {
+    console.error('👤 사용자 등록 상태 확인 오류:', error);
+    return {
+      success: false,
+      isRegistered: false,
+      isApproved: false,
+      approvalStatus: 'not_requested',
+      studentId: '',
+      message: '사용자 상태 확인 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
+ * 사용자 등록 요청 처리
+ * @param {Object} req - 등록 요청 데이터
+ * @returns {Object} 등록 결과
+ */
+function handleSubmitRegistrationRequest(req) {
+  try {
+    console.log('📝 사용자 등록 요청 처리 시작:', req);
+    
+    // UserRegistration.gs의 submitRegistrationRequest 함수 사용
+    const result = submitRegistrationRequest(req);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('📝 사용자 등록 요청 처리 오류:', error);
+    return {
+      success: false,
+      message: '사용자 등록 요청 처리 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
 
 /**
  * 관리자 키 검증
@@ -453,6 +557,3 @@ function verifyAdminKeyData(adminKey) {
     return { success: false, isValid: false, error: error.message };
   }
 }
-
-// ===== 문서 관리 함수들 (DocumentManagement.gs에서 호출) =====
-
