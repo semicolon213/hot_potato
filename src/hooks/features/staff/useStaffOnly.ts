@@ -13,15 +13,15 @@ import {
   updateStaff as updateStaffInPapyrus,
   deleteStaff as deleteStaffFromPapyrus
 } from '../../../utils/database/papyrusManager';
-import { useAppState } from '../../core/useAppState';
+// useAppState 의존성 제거 - 교직원 전용 데이터만 로드
 import type { StaffMember } from '../../../types/features/staff';
 
 interface StaffFilters {
   grade: string; // 교직원의 'pos'에 해당
 }
 
-export const useStaffOnly = (staffSpreadsheetId: string | null) => {
-  const { hotPotatoDBSpreadsheetId } = useAppState();
+export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
+  // useAppState 의존성 제거 - 교직원 전용 데이터만 로드
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

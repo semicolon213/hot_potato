@@ -749,9 +749,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>비고</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[2] || ''}
+                        value={editedStudent.council?.split(' / ')[2] || ''}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
+                          const parts = editedStudent.council?.split(' / ') || ['', '', ''];
                           const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
                           handleInputChange('council', newCouncil);
                         }}

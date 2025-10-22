@@ -14,7 +14,7 @@ import {
   deleteCommittee as deleteCommitteeFromPapyrus
 } from '../../../utils/database/papyrusManager';
 import { useAppState } from '../../core/useAppState';
-import type { Committee } from '../../../types/features/staff';
+import type { Committee, CareerItem } from '../../../types/features/staff';
 
 interface CommitteeFilters {
   sortation: string; // 위원회의 'sortation'에 해당
@@ -161,18 +161,34 @@ export const useCommitteeOnly = (staffSpreadsheetId: string | null) => {
       console.log('Papyrus DB에서 받은 위원회 데이터:', committeeData);
       
       // 전화번호와 이메일 복호화 처리 (학생관리와 동일한 방식)
-      const decryptedCommittee = await Promise.all(
-        committeeData.map(async (committee: Committee) => {
+      const decryptedCommittee: Committee[] = await Promise.all(
+        committeeData.map(async (committee) => {
           const decryptedTel = await decryptPhone(committee.tel || '');
           const decryptedEmail = await decryptEmail(committee.email || '');
           
           console.log(`위원회 ${committee.name}: tel=${committee.tel} -> ${decryptedTel}, email=${committee.email} -> ${decryptedEmail}`);
           
+          // career 필드가 문자열인 경우 JSON으로 파싱
+          let parsedCareer: CareerItem[] = [];
+          if (committee.career && typeof committee.career === 'string') {
+            try {
+              const parsed = JSON.parse(committee.career);
+              if (Array.isArray(parsed)) {
+                parsedCareer = parsed;
+              }
+            } catch (e) {
+              console.error('경력 정보 파싱 실패:', e);
+            }
+          } else if (Array.isArray(committee.career)) {
+            parsedCareer = committee.career;
+          }
+          
           return {
             ...committee,
             tel: decryptedTel,
-            email: decryptedEmail
-          };
+            email: decryptedEmail,
+            career: parsedCareer
+          } as Committee;
         })
       );
       
