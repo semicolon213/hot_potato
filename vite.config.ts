@@ -13,8 +13,7 @@ export default defineConfig({
       overlay: true
     },
     headers: {
-      'Content-Security-Policy':
-          "connect-src 'self' https://accounts.google.com https://www.googleapis.com https://script.google.com https://script.googleusercontent.com https://*.googleusercontent.com https://sheets.googleapis.com https://docs.googleapis.com https://drive.googleapis.com;"
+      'Content-Security-Policy': "connect-src 'self' https://accounts.google.com https://script.google.com https://script.googleusercontent.com https://*.googleusercontent.com https://sheets.googleapis.com https://docs.googleapis.com https://drive.googleapis.com;"
     },
     proxy: {
       '/api': {
