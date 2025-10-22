@@ -45,42 +45,48 @@ const UserList: React.FC<UserListProps> = ({
         {pendingUsers.length === 0 ? (
           <p className="no-users">승인 대기 중인 사용자가 없습니다.</p>
         ) : (
-          <div className="users-list">
-            {pendingUsers.map(user => (
-              <div key={user.id} className="user-card pending">
-                <div className="user-info">
-                  <div className="user-details">
-                    <div className="user-name">{user.name || '이름 없음'}</div>
-                    <div className="user-email">{user.email}</div>
-                    <div className="user-id">ID: {user.studentId}</div>
-                    <div className="request-date">
-                      요청일: {user.requestDate}
-                    </div>
-                  </div>
-                  <div className="user-badge">
-                    <div className={`user-type ${user.isAdmin ? 'admin' : 'user'}`}>
+          <div className="user-list-container">
+            <div className="user-list-header">
+              <div className="user-list-cell">이름</div>
+              <div className="user-list-cell">이메일</div>
+              <div className="user-list-cell">학번</div>
+              <div className="user-list-cell">유형</div>
+              <div className="user-list-cell">요청일</div>
+              <div className="user-list-cell">작업</div>
+            </div>
+            <div className="user-list-body">
+              {pendingUsers.map(user => (
+                <div key={user.id} className="user-list-row">
+                  <div className="user-list-cell">{user.name || '이름 없음'}</div>
+                  <div className="user-list-cell">{user.email}</div>
+                  <div className="user-list-cell">{user.studentId}</div>
+                  <div className="user-list-cell">
+                    <span className={`user-type ${user.isAdmin ? 'admin' : 'user'}`}>
                       {user.isAdmin ? '관리자 요청' : '일반 사용자'}
+                    </span>
+                  </div>
+                  <div className="user-list-cell">{user.requestDate}</div>
+                  <div className="user-list-cell">
+                    <div className="user-actions">
+                      <button
+                        onClick={() => onApproveUser(user.id)}
+                        disabled={isLoading}
+                        className="approve-btn"
+                      >
+                        ✅ 승인
+                      </button>
+                      <button
+                        onClick={() => onRejectUser(user.id)}
+                        disabled={isLoading}
+                        className="reject-btn"
+                      >
+                        ❌ 거부
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div className="user-actions">
-                  <button 
-                    onClick={() => onApproveUser(user.id)}
-                    disabled={isLoading}
-                    className="approve-btn"
-                  >
-                    ✅ 승인
-                  </button>
-                  <button 
-                    onClick={() => onRejectUser(user.id)}
-                    disabled={isLoading}
-                    className="reject-btn"
-                  >
-                    ❌ 거부
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -98,6 +104,7 @@ const UserList: React.FC<UserListProps> = ({
               <div className="user-list-cell">학번</div>
               <div className="user-list-cell">유형</div>
               <div className="user-list-cell">승인일</div>
+              <div className="user-list-cell"></div>
             </div>
             <div className="user-list-body">
               {approvedUsers.map(user => (
@@ -113,6 +120,7 @@ const UserList: React.FC<UserListProps> = ({
                   <div className="user-list-cell">
                     {user.approvalDate || user.requestDate}
                   </div>
+                  <div className="user-list-cell"></div>
                 </div>
               ))}
             </div>
