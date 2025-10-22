@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { fetchStudents as fetchStudentsFromPapyrus } from '../../../utils/database/papyrusManager';
+import { fetchStudents as fetchStudentsFromPapyrus, deleteStudent as deleteStudentFromPapyrus } from '../../../utils/database/papyrusManager';
 import type { Student, StudentWithCouncil, CouncilPosition } from '../../../types/features/students/student';
 
 /**
@@ -441,6 +441,19 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     }
   };
 
+  const deleteStudent = async (studentNo: string) => {
+    if (!studentSpreadsheetId) return;
+
+    try {
+      await deleteStudentFromPapyrus(studentSpreadsheetId, studentNo);
+      setStudents(prev => prev.filter(s => s.no_student !== studentNo));
+      alert('학생이 성공적으로 삭제되었습니다.');
+    } catch (error) {
+      console.error('학생 삭제 실패:', error);
+      alert('학생 삭제에 실패했습니다.');
+    }
+  };
+
   useEffect(() => {
     if (studentSpreadsheetId) {
       fetchStudents();
@@ -463,6 +476,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     downloadExcelTemplate,
     handleExcelUpload,
     addStudent, // addStudent 추가
+    deleteStudent,
     fetchStudents,
     getCouncilByYear,
     getAllYears,

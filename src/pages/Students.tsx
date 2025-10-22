@@ -34,6 +34,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
     handleExcelUpload,
     getAllYears,
     addStudent, // 학생 추가 함수
+    deleteStudent,
     getCouncilTableData,
     studentColumns,
     councilColumns,
@@ -84,6 +85,10 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
     }
     setIsModalOpen(false);
     setSelectedStudent(null);
+  };
+
+  const handleDeleteStudent = (studentToDelete: StudentWithCouncil) => {
+    deleteStudent(studentToDelete.no_student);
   };
 
   // 필터 토글 핸들러
@@ -170,6 +175,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onUpdate={handleStudentUpdate}
+        onDelete={handleDeleteStudent}
         studentSpreadsheetId={studentSpreadsheetId}
       />
 

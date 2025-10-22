@@ -13,6 +13,7 @@ interface StudentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedStudent: StudentWithCouncil) => void;
+  onDelete: (studentToDelete: StudentWithCouncil) => void;
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
   isAdding?: boolean;
@@ -45,6 +46,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   isOpen,
   onClose,
   onUpdate,
+  onDelete,
   studentSpreadsheetId,
   mode = 'student',
   isAdding = false,
@@ -61,6 +63,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     content_issue: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleDelete = () => {
+    if (window.confirm('정말로 이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      if (editedStudent) {
+        onDelete(editedStudent);
+        onClose();
+      }
+    }
+  };
 
   // App Script를 통한 암복호화 함수들
   const decryptPhone = async (encryptedPhone: string): Promise<string> => {
@@ -449,9 +460,14 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           </h2>
           <div className="header-actions">
             {!isEditing ? (
-              <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                수정
-              </button>
+              <>
+                <button className="delete-btn" onClick={handleDelete}>
+                  삭제
+                </button>
+                <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                  수정
+                </button>
+              </>
             ) : (
               <div className="edit-actions">
                 <button className="save-btn" onClick={handleSave}>
