@@ -268,6 +268,19 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const handleSave = async () => {
     if (!editedStudent) return;
 
+    // 연락처와 이메일 유효성 검사
+    if (mode === 'staff' || mode === 'committee') {
+      const phone = editedStudent.phone_num;
+      if (!/^\d{3}-\d{3,4}-\d{4}$/.test(phone)) {
+        alert('연락처는 하이픈(-)을 포함한 12~13자리 숫자로 입력해야 합니다.');
+        return;
+      }
+      if (!editedStudent.email.includes('@')) {
+        alert('이메일 형식이 올바르지 않습니다. "@"를 포함해야 합니다.');
+        return;
+      }
+    }
+
     if (mode === 'staff') {
       const requiredFields = [
         { key: 'no_student', name: '교번' },
