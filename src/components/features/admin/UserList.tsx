@@ -91,29 +91,31 @@ const UserList: React.FC<UserListProps> = ({
         {approvedUsers.length === 0 ? (
           <p className="no-users">승인된 사용자가 없습니다.</p>
         ) : (
-          <div className="users-list">
-            {approvedUsers.map(user => (
-              <div key={user.id} className="user-card approved">
-                <div className="user-info">
-                  <div className="user-details">
-                    <div className="user-name">{user.name || '이름 없음'}</div>
-                    <div className="user-email">{user.email}</div>
-                    <div className="user-id">ID: {user.studentId}</div>
-                    <div className="request-date">
-                      승인일: {user.approvalDate || user.requestDate}
-                    </div>
-                  </div>
-                  <div className="user-badge">
-                    <div className={`user-type ${user.isAdmin ? 'admin' : 'user'}`}>
+          <div className="user-list-container">
+            <div className="user-list-header">
+              <div className="user-list-cell">이름</div>
+              <div className="user-list-cell">이메일</div>
+              <div className="user-list-cell">학번</div>
+              <div className="user-list-cell">유형</div>
+              <div className="user-list-cell">승인일</div>
+            </div>
+            <div className="user-list-body">
+              {approvedUsers.map(user => (
+                <div key={user.id} className="user-list-row">
+                  <div className="user-list-cell">{user.name || '이름 없음'}</div>
+                  <div className="user-list-cell">{user.email}</div>
+                  <div className="user-list-cell">{user.studentId}</div>
+                  <div className="user-list-cell">
+                    <span className={`user-type ${user.isAdmin ? 'admin' : 'user'}`}>
                       {user.isAdmin ? '관리자' : '일반 사용자'}
-                    </div>
+                    </span>
+                  </div>
+                  <div className="user-list-cell">
+                    {user.approvalDate || user.requestDate}
                   </div>
                 </div>
-                <div className="user-status">
-                  <span className="status-approved">✅ 승인됨</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

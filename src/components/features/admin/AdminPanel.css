@@ -834,3 +834,60 @@
     transform: none;
   }
 }
+
+/* 승인된 사용자 리스트 */
+.user-list-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
+}
+
+.user-list-header {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1.5fr;
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  text-align: left;
+}
+
+.user-list-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-list-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1.5fr;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f3f5;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  text-align: left;
+}
+
+.user-list-row:last-child {
+  border-bottom: none;
+}
+
+.user-list-row:hover {
+  background-color: #f8f9fa;
+}
+
+.user-list-cell {
+  font-size: 14px;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-list-cell .user-type {
+  font-size: 12px;
+  padding: 4px 10px;
+}
