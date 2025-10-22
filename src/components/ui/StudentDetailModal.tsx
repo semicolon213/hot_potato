@@ -490,12 +490,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>연락처</label>
                       <input
                         type="text"
-                        value={mode === 'staff' || mode === 'committee' ? editedStudent.phone_num : (editedStudent.council.split(' / ')[0] || '')}
+                        value={mode === 'staff' || mode === 'committee' ? editedStudent.phone_num : ((editedStudent.council || '').split(' / ')[0] || '')}
                         onChange={(e) => {
                           if (mode === 'staff' || mode === 'committee') {
                             handleInputChange('phone_num', e.target.value);
                           } else {
-                            const parts = editedStudent.council.split(' / ');
+                            const parts = (editedStudent.council || '').split(' / ');
                             const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
                             handleInputChange('council', newCouncil);
                           }
@@ -510,12 +510,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>이메일</label>
                       <input
                         type="email"
-                        value={mode === 'staff' || mode === 'committee' ? (editedStudent.email || '') : (editedStudent.council.split(' / ')[1] || '')}
+                        value={mode === 'staff' || mode === 'committee' ? (editedStudent.email || '') : ((editedStudent.council || '').split(' / ')[1] || '')}
                         onChange={(e) => {
                           if (mode === 'staff' || mode === 'committee') {
                             handleInputChange('email', e.target.value);
                           } else {
-                            const parts = editedStudent.council.split(' / ');
+                            const parts = (editedStudent.council || '').split(' / ');
                             const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
                             handleInputChange('council', newCouncil);
                           }
@@ -541,12 +541,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>비고</label>
                       <input
                         type="text"
-                        value={mode === 'staff' || mode === 'committee' ? editedStudent.council : (editedStudent.council.split(' / ')[2] || '')}
+                        value={mode === 'staff' || mode === 'committee' ? editedStudent.council : ((editedStudent.council || '').split(' / ')[2] || '')}
                         onChange={(e) => {
                           if (mode === 'staff' || mode === 'committee') {
                             handleInputChange('council', e.target.value);
                           } else {
-                            const parts = editedStudent.council.split(' / ');
+                            const parts = (editedStudent.council || '').split(' / ');
                             const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
                             handleInputChange('council', newCouncil);
                           }
@@ -697,9 +697,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>업체명</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[0] || ''}
+                        value={(editedStudent.council || '').split(' / ')[0] || ''}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
+                          const parts = (editedStudent.council || '').split(' / ');
                           const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
                           handleInputChange('council', newCouncil);
                         }}
@@ -712,9 +712,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>대표자</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[1] || ''}
+                        value={(editedStudent.council || '').split(' / ')[1] || ''}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
+                          const parts = (editedStudent.council || '').split(' / ');
                           const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
                           handleInputChange('council', newCouncil);
                         }}
