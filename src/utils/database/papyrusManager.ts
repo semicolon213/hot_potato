@@ -1222,7 +1222,21 @@ export const addCommittee = async (spreadsheetId: string, committee: CommitteeTy
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
     
-    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee);
+    const newRow = [[
+      committee.sortation,
+      committee.name,
+      committee.tel,
+      committee.email,
+      committee.position,
+      JSON.stringify(committee.career), // career는 JSON 문자열로 저장
+      committee.company_name,
+      committee.company_position,
+      committee.location,
+      committee.is_family,
+      committee.representative,
+      committee.note
+    ]];
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, newRow);
   } catch (error) {
     console.error('Error adding committee:', error);
     throw error;

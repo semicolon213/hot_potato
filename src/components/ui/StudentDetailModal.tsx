@@ -588,7 +588,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   // 위원회 필드들 (올바른 데이터 바인딩으로 전면 수정)
                   <>
                     <div className="form-group">
-                      <label>위원회 구분</label>
+                      <label>위원회 구분<span style={{color: 'red'}}>*</span></label>
                       <select
                         value={editedStudent.grade} // sortation -> grade
                         onChange={(e) => handleInputChange('grade', e.target.value)}
@@ -604,7 +604,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이름</label>
+                      <label>이름<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.name}
@@ -615,7 +615,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>연락처</label>
+                      <label>연락처<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.phone_num} // phone_num 직접 사용
@@ -627,7 +627,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이메일</label>
+                      <label>이메일<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="email"
                         value={editedStudent.email || ''} // email 직접 사용
@@ -639,7 +639,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>직책</label>
+                      <label>직책<span style={{color: 'red'}}>*</span></label>
                       <select
                         value={editedStudent.state} // position -> state
                         onChange={(e) => handleInputChange('state', e.target.value)}
