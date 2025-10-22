@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
-import { BiSearchAlt2, BiHelpCircle } from "react-icons/bi";
+import { BiSearchAlt2, BiHelpCircle, BiPlus } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
 
 // DateInfo 타입 정의
@@ -653,6 +653,27 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         setSearchTerm(newSearchTerm);
     };
 
+    const handleTodayClick = () => {
+        const today = new Date();
+        goToDate(today);
+
+        if (viewMode === 'weekly' && semesterStartDate) {
+            const semesterStart = new Date(semesterStartDate);
+            const todayDate = new Date();
+
+            semesterStart.setHours(0, 0, 0, 0);
+            todayDate.setHours(0, 0, 0, 0);
+
+            const semesterWeekStart = new Date(semesterStart);
+            semesterWeekStart.setDate(semesterStart.getDate() - semesterStart.getDay());
+
+            const diffTime = todayDate.getTime() - semesterWeekStart.getTime();
+            const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+            setSelectedWeek(diffWeeks + 1);
+        }
+    };
+
 
     return (
         <>
@@ -747,6 +768,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             </div>
 
                             <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <button className="today-button" onClick={handleTodayClick}>오늘</button>
+                                <BiPlus onClick={onAddEvent} style={{ cursor: 'pointer', fontSize: '30px', color: 'black' }} />
                                 <BiHelpCircle onClick={() => setIsHelpModalOpen(true)} style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }} />
                                 <div className="search-container-wrapper">
                                     <BiSearchAlt2

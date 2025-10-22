@@ -210,16 +210,28 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEven
         };
     };
 
+    const todayDateString = new Date().toISOString().split('T')[0];
+
     return (
         <div className="weekly-calendar-container">
             <div className="weekly-header">
                 <div className="time-column-header"></div>
-                {weekDays.map((day, index) => (
-                    <div key={day.date} className={`day-header ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
-                        <span className="day-name">{daysOfWeek[index]}</span>
-                        <span className="day-number">{day.day}</span>
-                    </div>
-                ))}
+                {weekDays.map((day, index) => {
+                    const isToday = day.date === todayDateString;
+                    const dayHeaderClasses = [
+                        'day-header',
+                        index === 0 ? 'sunday' : '',
+                        index === 6 ? 'saturday' : '',
+                        isToday ? 'today' : ''
+                    ].filter(Boolean).join(' ');
+
+                    return (
+                        <div key={day.date} className={dayHeaderClasses}>
+                            <span className="day-name">{daysOfWeek[index]}</span>
+                            <span className="day-number">{day.day}</span>
+                        </div>
+                    );
+                })}
             </div>
 
             <div className="weekly-all-day-section">
