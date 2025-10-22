@@ -51,6 +51,28 @@ interface StaffProps {
 }
 
 const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const handleAddCommittee = () => {
+    // For now, just a placeholder. In the future, this would open a modal.
+    console.log('Add new committee member');
+  };
+
+  const handleAddStaff = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddModalClose = () => {
+    setIsAddModalOpen(false);
+  };
+
+  const handleCreateStaff = (newStaff: any) => {
+    console.log('Creating new staff:', newStaff);
+    // Here you would typically call an API to create the staff member
+    // e.g., staffHook.addStaff(newStaff);
+    setIsAddModalOpen(false);
+  };
+
   // 교직원 전용 훅
   const staffHook = useStaffOnly(staffSpreadsheetId);
   
@@ -249,6 +271,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
                 onSort={staffHook.handleSort}
                 onStudentDoubleClick={handleStaffDoubleClick}
                 isStaffMode={true}
+                onAddStaff={handleAddStaff}
+                staffTabType='staff'
               />
             ) : (
               <StudentList
@@ -258,6 +282,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
                 onSort={committeeHook.handleSort}
                 onStudentDoubleClick={handleCommitteeDoubleClick}
                 isStaffMode={true}
+                onAddCommittee={handleAddCommittee}
+                staffTabType='committee'
               />
             )}
 
@@ -289,6 +315,16 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         onUpdate={handleModalUpdate}
         studentSpreadsheetId={activeTab === 'staff' ? staffSpreadsheetId : staffSpreadsheetId}
         mode={selectedStaff ? 'staff' : selectedCommittee ? 'committee' : 'student'}
+      />
+
+      <StudentDetailModal
+        student={null}
+        isOpen={isAddModalOpen}
+        onClose={handleAddModalClose}
+        onUpdate={handleCreateStaff}
+        studentSpreadsheetId={staffSpreadsheetId}
+        mode='staff'
+        isAdding={true}
       />
     </div>
   );

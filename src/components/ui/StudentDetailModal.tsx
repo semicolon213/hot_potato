@@ -15,6 +15,7 @@ interface StudentDetailModalProps {
   onUpdate: (updatedStudent: StudentWithCouncil) => void;
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
+  isAdding?: boolean;
 }
 
 interface StudentIssue {
@@ -26,17 +27,31 @@ interface StudentIssue {
   content_issue: string;
 }
 
+const emptyStaff: StudentWithCouncil = {
+  no_student: '',
+  name: '',
+  phone_num: '',
+  email: '',
+  grade: '',
+  state: '',
+  address: '',
+  council: '',
+  parsedCouncil: [],
+  career: [],
+};
+
 const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   student,
   isOpen,
   onClose,
   onUpdate,
   studentSpreadsheetId,
-  mode = 'student'
+  mode = 'student',
+  isAdding = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'issues'>('info');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedStudent, setEditedStudent] = useState<StudentWithCouncil | null>(null);
+  const [isEditing, setIsEditing] = useState(isAdding);
+  const [editedStudent, setEditedStudent] = useState<StudentWithCouncil | null>(isAdding ? emptyStaff : student);
   const [issues, setIssues] = useState<StudentIssue[]>([]);
   const [newIssue, setNewIssue] = useState<Omit<StudentIssue, 'id'>>({
     no_member: '',
@@ -189,27 +204,32 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   useEffect(() => {
-    if (student && isOpen) {
-      // 연락처 복호화 후 학생 데이터 설정
-      const loadStudentData = async () => {
-        const decryptedPhone = await decryptPhone(student.phone_num);
-        setEditedStudent({ 
-          ...student, 
-          phone_num: decryptedPhone 
-        });
-        setNewIssue({
-          no_member: student.no_student,
-          date_issue: '',
-          type_issue: '',
-          level_issue: '',
-          content_issue: ''
-        });
-        loadStudentIssues();
-      };
-      
-      loadStudentData();
+    if (isOpen) {
+      if (isAdding) {
+        setEditedStudent(emptyStaff);
+        setIsEditing(true);
+      } else if (student) {
+        // 연락처 복호화 후 학생 데이터 설정
+        const loadStudentData = async () => {
+          const decryptedPhone = await decryptPhone(student.phone_num);
+          setEditedStudent({ 
+            ...student, 
+            phone_num: decryptedPhone 
+          });
+          setNewIssue({
+            no_member: student.no_student,
+            date_issue: '',
+            type_issue: '',
+            level_issue: '',
+            content_issue: ''
+          });
+          loadStudentIssues();
+        };
+        
+        loadStudentData();
+      }
     }
-  }, [student, isOpen]);
+  }, [student, isOpen, isAdding]);
 
   const loadStudentIssues = async () => {
     if (!student) return;
@@ -334,7 +354,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
   };
 
-  if (!isOpen || !student || !editedStudent) return null;
+  if (!isOpen || (!student && !isAdding) || !editedStudent) return null;
 
   return (
     <>
@@ -370,12 +390,14 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           {/* Header */}
         <div className="modal-header">
           <h2>
-            {mode === 'staff' ? '교직원 정보' : 
-             mode === 'committee' ? '위원회 정보' : 
-             '학생 정보'}
+            {isAdding
+              ? (mode === 'staff' ? '교직원 추가' : '위원 추가')
+              : (mode === 'staff' ? '교직원 정보' :
+                 mode === 'committee' ? '위원회 정보' :
+                 '학생 정보')}
           </h2>
           <div className="header-actions">
-            {!isEditing ? (
+            {isAdding ? null : !isEditing ? (
               <button className="edit-btn" onClick={() => setIsEditing(true)}>
                 수정
               </button>
