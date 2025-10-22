@@ -13,15 +13,15 @@ import {
   updateStaff as updateStaffInPapyrus,
   deleteStaff as deleteStaffFromPapyrus
 } from '../../../utils/database/papyrusManager';
-import { useAppState } from '../../core/useAppState';
+// useAppState 의존성 제거 - 교직원 전용 데이터만 로드
 import type { StaffMember } from '../../../types/features/staff';
 
 interface StaffFilters {
   grade: string; // 교직원의 'pos'에 해당
 }
 
-export const useStaffOnly = (staffSpreadsheetId: string | null) => {
-  const { hotPotatoDBSpreadsheetId } = useAppState();
+export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
+  // useAppState 의존성 제거 - 교직원 전용 데이터만 로드
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -153,12 +153,23 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
     }
   }, []);
 
-  // 교직원 목록 조회
+  // 교직원 목록 조회 (직접 스프레드시트에서 로드)
   const fetchStaff = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const staffData = await fetchStaffFromPapyrus(hotPotatoDBSpreadsheetId!);
+      // 교직원 스프레드시트 ID 직접 조회
+      let targetSpreadsheetId = staffSpreadsheetId;
+      if (!targetSpreadsheetId) {
+        const { findSpreadsheetById } = await import('../../../utils/database/papyrusManager');
+        targetSpreadsheetId = await findSpreadsheetById('staff');
+      }
+      
+      if (!targetSpreadsheetId) {
+        throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+      }
+      
+      const staffData = await fetchStaffFromPapyrus(targetSpreadsheetId);
       const decryptedStaff = await decryptData(staffData);
       setStaff(decryptedStaff);
     } catch (err) {
@@ -166,13 +177,11 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [hotPotatoDBSpreadsheetId, decryptData]);
+  }, [staffSpreadsheetId, decryptData]);
 
   useEffect(() => {
-    if (hotPotatoDBSpreadsheetId) {
-      fetchStaff();
-    }
-  }, [hotPotatoDBSpreadsheetId, fetchStaff]);
+    fetchStaff();
+  }, [fetchStaff]);
 
   // 필터링된 교직원 목록
   const filteredStaff = useMemo(() => {

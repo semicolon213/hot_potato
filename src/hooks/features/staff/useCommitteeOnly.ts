@@ -13,7 +13,7 @@ import {
   updateCommittee as updateCommitteeInPapyrus,
   deleteCommittee as deleteCommitteeFromPapyrus
 } from '../../../utils/database/papyrusManager';
-import { useAppState } from '../../core/useAppState';
+// useAppState 의존성 제거 - 위원회 전용 데이터만 로드
 import type { Committee } from '../../../types/features/staff';
 
 interface CommitteeFilters {
@@ -21,8 +21,8 @@ interface CommitteeFilters {
   position: string; // 위원회의 'position'에 해당
 }
 
-export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
-  const { hotPotatoDBSpreadsheetId } = useAppState();
+export const useCommitteeOnly = (committeeSpreadsheetId?: string | null) => {
+  // useAppState 의존성 제거 - 위원회 전용 데이터만 로드
   const [committee, setCommittee] = useState<Committee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,12 +155,23 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
     }
   }, []);
 
-  // 위원회 목록 조회
+  // 위원회 목록 조회 (직접 스프레드시트에서 로드)
   const fetchCommittee = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const committeeData = await fetchCommitteeFromPapyrus(hotPotatoDBSpreadsheetId!);
+      // 교직원 스프레드시트 ID 직접 조회
+      let targetSpreadsheetId = committeeSpreadsheetId;
+      if (!targetSpreadsheetId) {
+        const { findSpreadsheetById } = await import('../../../utils/database/papyrusManager');
+        targetSpreadsheetId = await findSpreadsheetById('staff');
+      }
+      
+      if (!targetSpreadsheetId) {
+        throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
+      }
+      
+      const committeeData = await fetchCommitteeFromPapyrus(targetSpreadsheetId);
       const decryptedCommittee = await decryptData(committeeData);
       setCommittee(decryptedCommittee);
     } catch (err) {
@@ -168,13 +179,11 @@ export const useCommitteeOnly = (committeeSpreadsheetId: string | null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [hotPotatoDBSpreadsheetId, decryptData]);
+  }, [committeeSpreadsheetId, decryptData]);
 
   useEffect(() => {
-    if (hotPotatoDBSpreadsheetId) {
-      fetchCommittee();
-    }
-  }, [hotPotatoDBSpreadsheetId, fetchCommittee]);
+    fetchCommittee();
+  }, [fetchCommittee]);
 
   // 필터링된 위원회 목록
   const filteredCommittee = useMemo(() => {

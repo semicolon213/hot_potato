@@ -222,7 +222,7 @@ export function useTemplateUI(
             title,
             description: allDefaultTemplates.find(t => t.type === type)?.description || '',
             tag: allDefaultTemplates.find(t => t.type === type)?.tag || '기본',
-            documentId: type.length > 10 ? type : undefined
+            documentId: type.length > 20 ? type : undefined // documentId는 보통 20자 이상
         };
         
         setSelectedTemplate(template);
@@ -278,6 +278,13 @@ export function useTemplateUI(
                 const validIndividualEmails = individualEmails.filter(email => email.trim() !== '');
                 const allEditors = [...groupEmails, ...validIndividualEmails];
                 
+                console.log('📄 선택된 템플릿 정보:', {
+                    title: selectedTemplate.title,
+                    documentId: selectedTemplate.documentId,
+                    type: selectedTemplate.type,
+                    templateType: selectedTemplate.documentId || selectedTemplate.type
+                });
+                
                 const result = await apiClient.createDocument({
                     title: selectedTemplate.title,
                     templateType: selectedTemplate.documentId || selectedTemplate.type,
@@ -325,7 +332,9 @@ export function useTemplateUI(
         testSpecificFolder, // 특정 폴더 ID 테스트 함수
         // 권한 설정 모달 관련
         isPermissionModalOpen,
+        setIsPermissionModalOpen,
         selectedTemplate,
+        setSelectedTemplate,
         permissionType,
         setPermissionType,
         selectedGroups,

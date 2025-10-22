@@ -7,6 +7,100 @@
 // ===== 문서 생성 관련 함수들 =====
 
 /**
+ * Google 문서 생성 (DriveApp 사용)
+ * @param {string} title - 문서 제목
+ * @param {string} templateType - 템플릿 타입 또는 documentId
+ * @returns {Object} 생성 결과
+ */
+function createGoogleDocument(title, templateType) {
+  try {
+    console.log('📄 Google 문서 생성 시도:', { title, templateType });
+    
+    // DriveApp API 확인
+    if (typeof DriveApp === 'undefined') {
+      console.error('📄 DriveApp API가 정의되지 않았습니다');
+      return {
+        success: false,
+        message: 'DriveApp API가 활성화되지 않았습니다. Google Apps Script에서 DriveApp API를 활성화해주세요.'
+      };
+    }
+    
+    // 빈 문서인 경우
+    if (templateType === 'empty' || !templateType) {
+      console.log('📄 빈 문서 생성 (템플릿 없음)');
+      const file = DriveApp.createFile(Blob.createFromString(''), MimeType.GOOGLE_DOCS);
+      file.setName(title);
+      
+      return {
+        success: true,
+        data: {
+          id: file.getId(),
+          name: title,
+          webViewLink: file.getUrl()
+        }
+      };
+    }
+    // templateType이 documentId인 경우 (템플릿 복사)
+    else if (templateType && templateType.length > 20 && !templateType.includes('http')) {
+      console.log('📄 커스텀 템플릿 복사 시도:', templateType);
+      
+      try {
+        // 기존 문서를 복사
+        const templateFile = DriveApp.getFileById(templateType);
+        const copiedFile = templateFile.makeCopy(title);
+        
+        console.log('📄 템플릿 복사 성공:', copiedFile.getId());
+        
+        return {
+          success: true,
+          data: {
+            id: copiedFile.getId(),
+            name: title,
+            webViewLink: copiedFile.getUrl()
+          }
+        };
+      } catch (copyError) {
+        console.error('📄 템플릿 복사 실패:', copyError);
+        // 복사 실패 시 빈 문서로 생성
+        console.log('📄 복사 실패로 빈 문서 생성 시도');
+        const file = DriveApp.createFile(Blob.createFromString(''), MimeType.GOOGLE_DOCS);
+        file.setName(title);
+        
+        return {
+          success: true,
+          data: {
+            id: file.getId(),
+            name: title,
+            webViewLink: file.getUrl()
+          }
+        };
+      }
+    }
+    
+    // 기본 문서 생성
+    console.log('📄 빈 문서 생성 시도');
+    const file = DriveApp.createFile(Blob.createFromString(''), MimeType.GOOGLE_DOCS);
+    file.setName(title);
+    
+    return {
+      success: true,
+      data: {
+        id: file.getId(),
+        name: title,
+        webViewLink: file.getUrl()
+      }
+    };
+    
+  } catch (error) {
+    console.error('📄 문서 생성 오류:', error);
+    return {
+      success: false,
+      message: '문서 생성 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
  * 문서 생성 요청 처리
  * @param {Object} req - 요청 데이터
  * @returns {Object} 응답 결과

@@ -7,7 +7,7 @@
 // ===== 문서 권한 관련 함수들 =====
 
 /**
- * 문서 권한 설정
+ * 문서 권한 설정 (DriveApp 사용 - 간단한 버전)
  * @param {string} documentId - 문서 ID
  * @param {string} creatorEmail - 생성자 이메일
  * @param {Array} editors - 편집자 이메일 배열
@@ -15,52 +15,93 @@
  */
 function setDocumentPermissions(documentId, creatorEmail, editors) {
   try {
-    console.log('🔐 문서 권한 설정 시작:', { documentId, creatorEmail, editors });
+    console.log('🔐 문서 권한 설정 시작 (DriveApp):', { documentId, creatorEmail, editors });
     
-    // 소유자는 앱스크립트 소유자로 유지 (이미 소유자이므로 변경 불필요)
+    // 입력 데이터 검증
+    if (!documentId) {
+      throw new Error('문서 ID가 필요합니다');
+    }
     
-    // 편집자 권한 부여
-    const allEditors = [creatorEmail, ...editors].filter((email, index, arr) => 
-      email && arr.indexOf(email) === index // 중복 제거
+    const file = DriveApp.getFileById(documentId);
+    console.log('📄 문서 정보:', { id: file.getId(), name: file.getName() });
+    
+    // 모든 사용자에게 편집 권한 부여 (생성자 + 편집자)
+    const allUsers = [creatorEmail, ...(editors || [])].filter((email, index, arr) => 
+      email && email.trim() !== '' && arr.indexOf(email) === index // 중복 제거
     );
     
-    for (const editorEmail of allEditors) {
+    console.log('🔐 권한 부여할 사용자 목록:', allUsers);
+    console.log('🔐 사용자 수:', allUsers.length);
+    
+    if (allUsers.length === 0) {
+      console.warn('⚠️ 권한 부여할 사용자가 없습니다');
+      return {
+        success: true,
+        message: '권한 부여할 사용자가 없습니다',
+        grantedUsers: [],
+        currentEditors: []
+      };
+    }
+    
+    // 권한 설정 전 현재 상태 확인
+    const beforePermissions = file.getEditors();
+    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    // 각 사용자에게 편집 권한 부여
+    for (const userEmail of allUsers) {
       try {
-        // 기존 권한 확인
-        const permissions = Drive.Permissions.list(documentId);
-        const existingPermission = permissions.items.find(p => p.emailAddress === editorEmail);
+        console.log('🔐 권한 부여 시도:', userEmail);
         
-        if (!existingPermission) {
-          // 새 권한 추가
-          Drive.Permissions.create({
-            emailAddress: editorEmail,
-            type: 'user',
-            role: 'writer'
-          }, documentId);
-          
-          console.log('🔐 편집자 권한 부여 완료:', editorEmail);
-        } else {
-          console.log('🔐 이미 권한이 있는 사용자:', editorEmail);
+        // 이미 권한이 있는지 확인
+        const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+        if (hasPermission) {
+          console.log('✅ 이미 권한이 있는 사용자:', userEmail);
+          successCount++;
+          continue;
         }
-      } catch (permissionError) {
-        console.warn('🔐 권한 설정 실패:', editorEmail, permissionError.message);
-        // 개별 권한 설정 실패는 전체 실패로 처리하지 않음
+        
+        // 권한 부여
+        file.addEditor(userEmail);
+        console.log('✅ 편집 권한 부여 완료:', userEmail);
+        successCount++;
+        
+        // 잠시 대기 (API 제한 방지)
+        Utilities.sleep(100);
+        
+      } catch (permError) {
+        console.error('❌ 권한 설정 실패:', userEmail, permError.message);
+        failCount++;
       }
     }
     
-    return {
-      success: true,
-      message: '문서 권한 설정이 완료되었습니다.'
+    // 권한 설정 후 결과 확인
+    const afterPermissions = file.getEditors();
+    console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+    
+    const result = {
+      success: successCount > 0,
+      message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
+      grantedUsers: allUsers,
+      currentEditors: afterPermissions.map(p => p.getEmail()),
+      successCount: successCount,
+      failCount: failCount
     };
     
+    console.log('🔐 최종 권한 설정 결과:', result);
+    return result;
+    
   } catch (error) {
-    console.error('🔐 문서 권한 설정 오류:', error);
+    console.error('❌ 문서 권한 설정 오류:', error);
     return {
       success: false,
-      message: '문서 권한 설정 실패: ' + error.message
+      message: '문서 권한 설정 중 오류가 발생했습니다: ' + error.message
     };
   }
 }
+
 
 /**
  * 문서 권한 확인

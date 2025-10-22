@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/features/templates/useTemplateUI";
 import type { Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
+import { apiClient } from "../utils/api/apiClient";
 import "../components/features/templates/TemplateUI.css";
+import "../styles/pages/NewDocument.css";
 import {
     DndContext,
     closestCorners,
@@ -58,6 +60,133 @@ function NewDocument({
     // Lifted state for global search and filter
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("전체");
+    
+    // 파일명 입력 모달 상태
+    const [showFileNameModal, setShowFileNameModal] = useState(false);
+    const [documentTitle, setDocumentTitle] = useState("");
+    
+    // 문서 생성 후 선택 모달 상태
+    const [showAfterCreateModal, setShowAfterCreateModal] = useState(false);
+    const [createdDocumentUrl, setCreatedDocumentUrl] = useState("");
+    
+    // 파일명 입력 모달 함수들
+    const openFileNameModal = (template: Template) => {
+        setSelectedTemplate(template);
+        setDocumentTitle("");
+        setShowFileNameModal(true);
+    };
+    
+    const closeFileNameModal = () => {
+        setShowFileNameModal(false);
+        setDocumentTitle("");
+        setSelectedTemplate(null);
+    };
+    
+    const openPermissionModal = () => {
+        setShowFileNameModal(false);
+        setIsPermissionModalOpen(true);
+    };
+    
+    // 문서 생성 후 선택 모달 함수들
+    const openDocument = () => {
+        if (createdDocumentUrl) {
+            window.open(createdDocumentUrl, '_blank');
+        }
+        setShowAfterCreateModal(false);
+        setCreatedDocumentUrl("");
+    };
+    
+    const goToDocbox = () => {
+        setShowAfterCreateModal(false);
+        setCreatedDocumentUrl("");
+        onPageChange('docbox');
+    };
+    
+    const closeAfterCreateModal = () => {
+        setShowAfterCreateModal(false);
+        setCreatedDocumentUrl("");
+    };
+    
+    // 실제 문서 생성 함수
+    const createDocument = async () => {
+        if (!selectedTemplate || !documentTitle.trim()) return;
+
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        const creatorEmail = userInfo.email || '';
+
+        // 선택된 그룹들의 이메일 수집
+        const groupEmails = selectedGroups.map(group => ENV_CONFIG.GROUP_EMAILS[group]).filter(Boolean);
+        
+        // 개별 이메일과 그룹 이메일 합치기
+        const allEditors = [...groupEmails, ...individualEmails.filter(email => email.trim())];
+
+        try {
+            console.log('📄 권한 부여 문서 생성:', {
+                selectedTemplate,
+                selectedGroups,
+                individualEmails,
+                allEditors
+            });
+            
+            console.log('📄 권한 설정 상세 정보:', {
+                creatorEmail,
+                groupEmails,
+                individualEmails,
+                allEditors: allEditors,
+                editorsCount: allEditors.length
+            });
+
+            console.log('선택된 템플릿 정보:', {
+                title: selectedTemplate.title,
+                documentId: selectedTemplate.documentId,
+                type: selectedTemplate.type,
+                templateType: selectedTemplate.documentId || selectedTemplate.type
+            });
+            
+            const result = await apiClient.createDocument({
+                title: documentTitle, // 사용자가 입력한 제목 사용
+                templateType: selectedTemplate.documentId || selectedTemplate.type,
+                creatorEmail: creatorEmail,
+                editors: allEditors,
+                role: 'student' // 기본값으로 student 설정
+            });
+
+            if (result.success) {
+                console.log('📄 문서 생성 성공:', result);
+                
+                // 디버그 정보 표시
+                if (result.debug) {
+                    console.log('🔍 디버그 정보:', result.debug);
+                    console.log('📋 요청된 편집자:', result.debug.requestedEditors);
+                    console.log('🔐 권한 설정 성공:', result.debug.permissionSuccess);
+                    console.log('📝 권한 설정 메시지:', result.debug.permissionMessage);
+                    console.log('✅ 권한 부여된 사용자:', result.debug.grantedUsers);
+                    console.log('👥 현재 편집자 목록:', result.debug.currentEditors);
+                }
+                
+                // 권한 설정 결과 확인
+                if (result.permissionResult) {
+                    console.log('🔐 권한 설정 결과:', result.permissionResult);
+                    if (result.permissionResult.successCount > 0) {
+                        console.log(`✅ ${result.permissionResult.successCount}명에게 권한 부여 완료`);
+                    }
+                    if (result.permissionResult.failCount > 0) {
+                        console.warn(`⚠️ ${result.permissionResult.failCount}명 권한 부여 실패`);
+                    }
+                }
+                
+                setCreatedDocumentUrl(result.data.documentUrl);
+                closePermissionModal();
+                setShowAfterCreateModal(true);
+            } else {
+                console.error('📄 문서 생성 실패:', result);
+                alert('문서 생성에 실패했습니다: ' + result.message);
+            }
+        } catch (error) {
+            console.error('📄 문서 생성 오류:', error);
+            alert('문서 생성 중 오류가 발생했습니다.');
+        }
+    };
 
     const [defaultTemplateItems, setDefaultTemplateItems] = useState<Template[]>([]);
     const [customTemplateItems, setCustomTemplateItems] = useState(customTemplates);
@@ -225,14 +354,15 @@ function NewDocument({
         testSpecificFolder,
         // 권한 설정 모달 관련
         isPermissionModalOpen,
+        setIsPermissionModalOpen,
         selectedTemplate,
+        setSelectedTemplate,
         permissionType,
         setPermissionType,
         selectedGroups,
         setSelectedGroups,
         individualEmails,
         setIndividualEmails,
-        createDocument,
         closePermissionModal,
     } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
 
@@ -274,8 +404,15 @@ function NewDocument({
         
         console.log('📄 템플릿 클릭:', { type, title, templateType, template });
         
-        // @ts-ignore
-        onUseTemplate(templateType, title, 'student'); // Bypass the modal and use default role
+        if (template) {
+            openFileNameModal(template);
+        } else {
+            // 기본 템플릿의 경우
+            const defaultTemplate = defaultTemplateItems.find(t => t.type === type);
+            if (defaultTemplate) {
+                openFileNameModal(defaultTemplate);
+            }
+        }
     };
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
@@ -434,63 +571,87 @@ function NewDocument({
                     </div>
                 </div>
             </div>
-            {/* 새 문서 모달 - 3개 필드 */}
+            {/* 새 문서 모달 - 개선된 UI */}
             {showNewDocModal && (
-                <div className="modal-overlay" onClick={handleNewDocCancel}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>새 문서 만들기</h2>
-                            <button className="modal-close" onClick={handleNewDocCancel}>
-                                &times;
+                <div className="document-modal-overlay" onClick={handleNewDocCancel}>
+                    <div className="document-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="document-modal-header">
+                            <div className="header-left">
+                                <h2>📄 새 문서 만들기</h2>
+                                <p className="header-subtitle">문서의 기본 정보를 입력해주세요</p>
+                            </div>
+                            <button className="document-modal-close" onClick={handleNewDocCancel}>
+                                <span>&times;</span>
                             </button>
                         </div>
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label htmlFor="doc-title">제목</label>
-                                <input
-                                    id="doc-title"
-                                    type="text"
-                                    className="modal-input"
-                                    placeholder="문서 제목을 입력하세요 (예: 회의록)"
-                                    value={newDocData.title}
-                                    onChange={(e) => handleInputChange("title", e.target.value)}
-                                    autoFocus
-                                />
-                            </div>
+                        
+                        <div className="document-modal-body">
+                            <div className="form-section">
+                                <div className="form-group-large">
+                                    <label htmlFor="doc-title" className="form-label-large">
+                                        <span className="label-icon">📝</span>
+                                        문서 제목
+                                    </label>
+                                    <input
+                                        id="doc-title"
+                                        type="text"
+                                        className="form-input-large"
+                                        placeholder="예: 2024년 1월 정기회의록"
+                                        value={newDocData.title}
+                                        onChange={(e) => handleInputChange("title", e.target.value)}
+                                        autoFocus
+                                    />
+                                    <div className="input-hint">문서를 식별할 수 있는 명확한 제목을 입력하세요</div>
+                                </div>
 
-                            <div className="form-group">
-                                <label htmlFor="doc-description">상세정보</label>
-                                <textarea
-                                    id="doc-description"
-                                    className="modal-textarea"
-                                    placeholder="문서에 대한 상세 설명을 입력하세요 (예: 회의 내용을 기록하는 템플릿)"
-                                    value={newDocData.description}
-                                    onChange={(e) => handleInputChange("description", e.target.value)}
-                                    rows={3}
-                                />
-                            </div>
+                                <div className="form-group-large">
+                                    <label htmlFor="doc-description" className="form-label-large">
+                                        <span className="label-icon">📋</span>
+                                        상세 설명
+                                    </label>
+                                    <textarea
+                                        id="doc-description"
+                                        className="form-textarea-large"
+                                        placeholder="문서의 목적이나 내용에 대한 간단한 설명을 입력하세요"
+                                        value={newDocData.description}
+                                        onChange={(e) => handleInputChange("description", e.target.value)}
+                                        rows={4}
+                                    />
+                                    <div className="input-hint">문서의 용도나 특별한 사항을 기록해두세요</div>
+                                </div>
 
-                            <div className="form-group">
-                                <label htmlFor="doc-tag">태그</label>
-                                <select
-                                    id="doc-tag"
-                                    className="modal-input"
-                                    value={newDocData.tag}
-                                    onChange={(e) => handleInputChange("tag", e.target.value)}
-                                >
-                                    <option value="" disabled>태그를 선택하세요</option>
-                                    {orderedTags.map(tag => (
-                                        <option key={tag} value={tag}>{tag}</option>
-                                    ))}
-                                </select>
+                                <div className="form-group-large">
+                                    <label htmlFor="doc-tag" className="form-label-large">
+                                        <span className="label-icon">🏷️</span>
+                                        카테고리
+                                    </label>
+                                    <select
+                                        id="doc-tag"
+                                        className="form-select-large"
+                                        value={newDocData.tag}
+                                        onChange={(e) => handleInputChange("tag", e.target.value)}
+                                    >
+                                        <option value="" disabled>카테고리를 선택하세요</option>
+                                        {orderedTags.map(tag => (
+                                            <option key={tag} value={tag}>{tag}</option>
+                                        ))}
+                                    </select>
+                                    <div className="input-hint">문서를 분류할 카테고리를 선택하세요</div>
+                                </div>
                             </div>
                         </div>
-                        <div className="modal-footer">
-                            <button className="modal-button cancel" onClick={handleNewDocCancel}>
-                                취소
+
+                        <div className="document-modal-actions">
+                            <button type="button" className="action-btn cancel-btn" onClick={handleNewDocCancel}>
+                                <span>취소</span>
                             </button>
-                            <button className="modal-button confirm" onClick={handleNewDocSubmit}>
-                                확인
+                            <button 
+                                type="button" 
+                                className="action-btn save-btn" 
+                                onClick={handleNewDocSubmit}
+                                disabled={!newDocData.title.trim()}
+                            >
+                                <span>📄 문서 생성</span>
                             </button>
                         </div>
                     </div>
@@ -555,51 +716,126 @@ function NewDocument({
                 </div>
             )}
 
-            {/* 권한 설정 모달 */}
-            {isPermissionModalOpen && selectedTemplate && (
-                <div className="modal-overlay" onClick={closePermissionModal}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>문서 생성 설정</h2>
-                            <button className="close-modal" onClick={closePermissionModal}>
-                                &times;
+            {/* 파일명 입력 모달 */}
+            {showFileNameModal && selectedTemplate && (
+                <div className="filename-modal-overlay" onClick={closeFileNameModal}>
+                    <div className="filename-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="filename-modal-header">
+                            <div className="header-left">
+                                <h2>📝 파일명 입력</h2>
+                                <p className="header-subtitle">생성할 문서의 제목을 입력해주세요</p>
+                            </div>
+                            <button className="filename-modal-close" onClick={closeFileNameModal}>
+                                <span>&times;</span>
                             </button>
                         </div>
                         
-                        <div className="modal-body">
-                            <div className="modal-description">
-                                <strong>{selectedTemplate.title}</strong> 문서를 생성합니다.
+                        <div className="filename-modal-body">
+                            <div className="template-info">
+                                <div className="template-icon">📄</div>
+                                <div className="template-details">
+                                    <h3>{selectedTemplate.title}</h3>
+                                    <p>템플릿을 사용하여 문서를 생성합니다</p>
+                                </div>
                             </div>
 
-                            {/* 권한 타입 선택 */}
-                            <div className="form-group">
-                                <label>문서 접근 권한</label>
-                                <div className="permission-type-buttons">
+                            <div className="filename-section">
+                                <div className="form-group-large">
+                                    <label htmlFor="filename-input" className="form-label-large">
+                                        <span className="label-icon">📝</span>
+                                        문서 제목
+                                    </label>
+                                    <input
+                                        id="filename-input"
+                                        type="text"
+                                        className="form-input-large"
+                                        placeholder="예: 2024년 1월 정기회의록"
+                                        value={documentTitle}
+                                        onChange={(e) => setDocumentTitle(e.target.value)}
+                                        autoFocus
+                                    />
+                                    <div className="input-hint">문서를 식별할 수 있는 명확한 제목을 입력하세요</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="filename-modal-actions">
+                            <button type="button" className="action-btn cancel-btn" onClick={closeFileNameModal}>
+                                <span>취소</span>
+                            </button>
+                            <button 
+                                type="button" 
+                                className="action-btn save-btn" 
+                                onClick={openPermissionModal}
+                                disabled={!documentTitle.trim()}
+                            >
+                                <span>다음 단계</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 권한 설정 모달 - 개선된 UI */}
+            {isPermissionModalOpen && selectedTemplate && (
+                <div className="permission-modal-overlay" onClick={closePermissionModal}>
+                    <div className="permission-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="permission-modal-header">
+                            <div className="header-left">
+                                <h2>🔐 문서 생성 설정</h2>
+                                <p className="header-subtitle">문서 접근 권한을 설정해주세요</p>
+                            </div>
+                            <button className="permission-modal-close" onClick={closePermissionModal}>
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        
+                        <div className="permission-modal-body">
+                            <div className="template-info">
+                                <div className="template-icon">📄</div>
+                                <div className="template-details">
+                                    <h3>{selectedTemplate.title}</h3>
+                                    <p>문서를 생성합니다</p>
+                                </div>
+                            </div>
+
+                            <div className="permission-section">
+                                <h4 className="section-title">문서 접근 권한</h4>
+                                <div className="permission-options">
                                     <button
                                         type="button"
-                                        className={`permission-button ${permissionType === 'private' ? 'active' : ''}`}
+                                        className={`permission-option ${permissionType === 'private' ? 'active' : ''}`}
                                         onClick={() => setPermissionType('private')}
                                     >
-                                        나만 보기
+                                        <div className="option-icon">🔒</div>
+                                        <div className="option-content">
+                                            <div className="option-title">나만 보기</div>
+                                            <div className="option-desc">개인 문서로 생성</div>
+                                        </div>
                                     </button>
                                     <button
                                         type="button"
-                                        className={`permission-button ${permissionType === 'shared' ? 'active' : ''}`}
+                                        className={`permission-option ${permissionType === 'shared' ? 'active' : ''}`}
                                         onClick={() => setPermissionType('shared')}
                                     >
-                                        권한 부여
+                                        <div className="option-icon">👥</div>
+                                        <div className="option-content">
+                                            <div className="option-title">권한 부여</div>
+                                            <div className="option-desc">다른 사용자와 공유</div>
+                                        </div>
                                     </button>
                                 </div>
                             </div>
 
                             {permissionType === 'shared' && (
-                                <>
-                                    {/* 그룹 권한 */}
-                                    <div className="form-group">
-                                        <label>그룹 권한</label>
-                                        <div className="group-checkboxes">
+                                <div className="sharing-options">
+                                    <h4 className="section-title">공유 설정</h4>
+                                    
+                                    <div className="group-permissions-section">
+                                        <h5 className="subsection-title">그룹 권한</h5>
+                                        <div className="group-permissions">
                                             {Object.entries(ENV_CONFIG.GROUP_EMAILS).map(([key, email]) => (
-                                                <label key={key} className="checkbox-label">
+                                                <label key={key} className="group-permission-item">
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedGroups.includes(key)}
@@ -611,7 +847,8 @@ function NewDocument({
                                                             }
                                                         }}
                                                     />
-                                                    <span className="checkbox-text">
+                                                    <span className="checkbox-custom"></span>
+                                                    <span className="group-name">
                                                         {key === 'STUDENT' && '학생'}
                                                         {key === 'COUNCIL' && '집행부'}
                                                         {key === 'PROFESSOR' && '교수'}
@@ -623,15 +860,14 @@ function NewDocument({
                                         </div>
                                     </div>
 
-                                    {/* 개인 권한 */}
-                                    <div className="form-group">
-                                        <label>개인 권한 (직접 입력)</label>
-                                        <div className="individual-emails-container">
+                                    <div className="individual-emails-section">
+                                        <h5 className="subsection-title">개별 이메일</h5>
+                                        <div className="individual-emails">
                                             {individualEmails.map((email, index) => (
-                                                <div key={index} className="email-input-row">
+                                                <div key={index} className="email-input-group">
                                                     <input
                                                         type="email"
-                                                        placeholder="개인 이메일을 입력하세요"
+                                                        placeholder="이메일 주소를 입력하세요"
                                                         value={email}
                                                         onChange={(e) => {
                                                             const newEmails = [...individualEmails];
@@ -647,6 +883,7 @@ function NewDocument({
                                                             setIndividualEmails(newEmails);
                                                         }}
                                                         className="remove-email-btn"
+                                                        title="이메일 제거"
                                                     >
                                                         ×
                                                     </button>
@@ -657,20 +894,82 @@ function NewDocument({
                                                 onClick={() => setIndividualEmails([...individualEmails, ''])}
                                                 className="add-email-btn"
                                             >
-                                                + 이메일 추가
+                                                <span>+</span> 이메일 추가
                                             </button>
                                         </div>
                                     </div>
-                                </>
+                                </div>
                             )}
                         </div>
 
-                        <div className="modal-actions">
-                            <button type="button" className="cancel-btn" onClick={closePermissionModal}>
-                                취소
+                        <div className="permission-modal-actions">
+                            <button type="button" className="action-btn cancel-btn" onClick={closePermissionModal}>
+                                <span>취소</span>
                             </button>
-                            <button type="button" className="save-btn" onClick={createDocument}>
-                                문서 생성
+                            <button type="button" className="action-btn save-btn" onClick={createDocument}>
+                                <span>📄 문서 생성</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 문서 생성 후 선택 모달 */}
+            {showAfterCreateModal && (
+                <div className="after-create-modal-overlay" onClick={closeAfterCreateModal}>
+                    <div className="after-create-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="after-create-modal-header">
+                            <div className="header-left">
+                                <h2>🎉 문서 생성 완료!</h2>
+                                <p className="header-subtitle">문서가 성공적으로 생성되었습니다</p>
+                            </div>
+                            <button className="after-create-modal-close" onClick={closeAfterCreateModal}>
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        
+                        <div className="after-create-modal-body">
+                            <div className="success-info">
+                                <div className="success-icon">✅</div>
+                                <div className="success-details">
+                                    <h3>{documentTitle}</h3>
+                                    <p>문서가 Google Drive에 저장되었습니다</p>
+                                </div>
+                            </div>
+
+                            <div className="action-options">
+                                <h4 className="options-title">다음에 무엇을 하시겠습니까?</h4>
+                                <div className="option-buttons">
+                                    <button 
+                                        type="button" 
+                                        className="option-btn primary-btn" 
+                                        onClick={openDocument}
+                                    >
+                                        <div className="option-icon">📄</div>
+                                        <div className="option-content">
+                                            <div className="option-title">문서 바로 보기</div>
+                                            <div className="option-desc">새 탭에서 문서를 열어 편집합니다</div>
+                                        </div>
+                                    </button>
+                                    
+                                    <button 
+                                        type="button" 
+                                        className="option-btn secondary-btn" 
+                                        onClick={goToDocbox}
+                                    >
+                                        <div className="option-icon">📁</div>
+                                        <div className="option-content">
+                                            <div className="option-title">문서함으로 이동</div>
+                                            <div className="option-desc">문서함에서 생성된 문서를 확인합니다</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="after-create-modal-actions">
+                            <button type="button" className="action-btn cancel-btn" onClick={closeAfterCreateModal}>
+                                <span>닫기</span>
                             </button>
                         </div>
                     </div>

@@ -674,15 +674,39 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
       return [];
     }
 
-    const students = data.values.slice(1).map((row: string[]) => ({
-      no_student: row[0] || '', // 'no' 컬럼을 'no_student'로 매핑
-      name: row[1] || '',
-      address: row[2] || '',
-      phone_num: row[3] || '', // 암호화된 연락처 (복호화는 프론트엔드에서)
-      grade: row[4] || '',
-      state: row[5] || '',
-      council: row[6] || '',
-    }));
+    const students = data.values.slice(1).map((row: string[]) => {
+      // 암호화된 연락처 복호화 - 이미 복호화된 데이터는 건너뛰기
+      let phone_num = row[3] || '';
+      try {
+        // 이미 복호화된 데이터인지 확인 (전화번호 형식)
+        const isAlreadyDecrypted = phone_num && phone_num.includes('-');
+        
+        if (!isAlreadyDecrypted && phone_num && phone_num.length > 0) {
+          // Base64로 암호화된 데이터인지 확인 (Base64 패턴 체크)
+          const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+          if (base64Pattern.test(phone_num)) {
+            // Base64 디코딩 시도
+            const decoded = atob(phone_num);
+            if (decoded && decoded.length > 0) {
+              phone_num = decoded;
+            }
+          }
+        }
+      } catch (error) {
+        // 복호화 실패 시 원본 값 유지 (조용히 처리)
+        // console.warn('학생 연락처 복호화 실패:', phone_num, error);
+      }
+
+      return {
+        no_student: row[0] || '', // 'no' 컬럼을 'no_student'로 매핑
+        name: row[1] || '',
+        address: row[2] || '',
+        phone_num: phone_num, // 복호화된 연락처
+        grade: row[4] || '',
+        state: row[5] || '',
+        council: row[6] || '',
+      };
+    });
     
     console.log(`Loaded ${students.length} students`);
     return students;
@@ -1000,7 +1024,35 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
     const staffData: Staff[] = data.values.slice(1).map((row: any[]) => {
       const staff: Partial<Staff> = {};
       headers.forEach((header: string, index: number) => {
-        (staff as any)[header] = row[index];
+        let value = row[index];
+        
+        // 암호화된 필드 복호화 (Base64) - 이미 복호화된 데이터는 건너뛰기
+        if (header === 'tel' || header === 'phone' || header === 'email') {
+          try {
+            // 이미 복호화된 데이터인지 확인 (전화번호 형식, 이메일 형식 등)
+            const isAlreadyDecrypted = 
+              (header === 'tel' && value && value.includes('-')) || // 전화번호 형식
+              (header === 'phone' && value && value.includes('-')) || // 전화번호 형식
+              (header === 'email' && value && value.includes('@')); // 이메일 형식
+            
+            if (!isAlreadyDecrypted && value && typeof value === 'string' && value.length > 0) {
+              // Base64로 암호화된 데이터인지 확인 (Base64 패턴 체크)
+              const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+              if (base64Pattern.test(value)) {
+                // Base64 디코딩 시도
+                const decoded = atob(value);
+                if (decoded && decoded.length > 0) {
+                  value = decoded;
+                }
+              }
+            }
+          } catch (error) {
+            // 복호화 실패 시 원본 값 유지 (조용히 처리)
+            // console.warn(`복호화 실패 (${header}):`, value, error);
+          }
+        }
+        
+        (staff as any)[header] = value;
       });
       return staff as Staff;
     });
@@ -1039,7 +1091,35 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
     const committeeData: Committee[] = data.values.slice(1).map((row: any[]) => {
       const committee: Partial<Committee> = {};
       headers.forEach((header: string, index: number) => {
-        (committee as any)[header] = row[index];
+        let value = row[index];
+        
+        // 암호화된 필드 복호화 (Base64) - 이미 복호화된 데이터는 건너뛰기
+        if (header === 'tel' || header === 'phone' || header === 'email') {
+          try {
+            // 이미 복호화된 데이터인지 확인 (전화번호 형식, 이메일 형식 등)
+            const isAlreadyDecrypted = 
+              (header === 'tel' && value && value.includes('-')) || // 전화번호 형식
+              (header === 'phone' && value && value.includes('-')) || // 전화번호 형식
+              (header === 'email' && value && value.includes('@')); // 이메일 형식
+            
+            if (!isAlreadyDecrypted && value && typeof value === 'string' && value.length > 0) {
+              // Base64로 암호화된 데이터인지 확인 (Base64 패턴 체크)
+              const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+              if (base64Pattern.test(value)) {
+                // Base64 디코딩 시도
+                const decoded = atob(value);
+                if (decoded && decoded.length > 0) {
+                  value = decoded;
+                }
+              }
+            }
+          } catch (error) {
+            // 복호화 실패 시 원본 값 유지 (조용히 처리)
+            // console.warn(`복호화 실패 (${header}):`, value, error);
+          }
+        }
+        
+        (committee as any)[header] = value;
       });
       return committee as Committee;
     });

@@ -18,31 +18,45 @@ function doPost(e) {
     // 암복호화 액션 처리
     if (req.action === 'encryptEmail') {
       console.log('🔐 암호화 요청 받음:', req.data);
-        const encrypted = EncryptionEmail.encryptEmailMain(req.data);
-      console.log('🔐 암호화 결과:', encrypted);
-      const response = {
-        success: true, 
-        data: encrypted,
-        debug: {
-          original: req.data,
-          encrypted: encrypted,
-          source: 'Encryption.gs encryptEmailMain',
-          timestamp: new Date().toISOString()
-        }
-      };
-      console.log('🔐 최종 응답:', response);
-      return ContentService
-        .createTextOutput(JSON.stringify(response))
-        .setMimeType(ContentService.MimeType.JSON);
+      try {
+        const encrypted = encryptEmailMain(req.data);
+        console.log('🔐 암호화 결과:', encrypted);
+        const response = {
+          success: true, 
+          data: encrypted,
+          debug: {
+            original: req.data,
+            encrypted: encrypted,
+            source: 'Encryption.gs encryptEmailMain',
+            timestamp: new Date().toISOString()
+          }
+        };
+        console.log('🔐 최종 응답:', response);
+        return ContentService
+          .createTextOutput(JSON.stringify(response))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔐 암호화 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: '암호화 중 오류가 발생했습니다: ' + error.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     if (req.action === 'decryptEmail') {
       console.log('🔓 복호화 요청 받음:', req.data);
-        const decrypted = EncryptionEmail.decryptEmailMain(req.data);
-      console.log('🔓 복호화 결과:', decrypted);
-      return ContentService
-        .createTextOutput(JSON.stringify({ success: true, data: decrypted }))
-        .setMimeType(ContentService.MimeType.JSON);
+      try {
+        const decrypted = decryptEmailMain(req.data);
+        console.log('🔓 복호화 결과:', decrypted);
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, data: decrypted }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔓 복호화 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: '복호화 중 오류가 발생했습니다: ' + error.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     // 문서 생성 액션 처리
@@ -61,8 +75,15 @@ function doPost(e) {
             .setMimeType(ContentService.MimeType.JSON);
         }
         
-        // Google Drive API로 새 문서 생성
-        const document = DocumentCreation.createGoogleDocument(title, templateType);
+        // DocumentCreation 모듈 확인 및 문서 생성
+        let document;
+        if (typeof DocumentCreation !== 'undefined' && typeof DocumentCreation.createGoogleDocument === 'function') {
+          console.log('✅ DocumentCreation 모듈 사용');
+          document = DocumentCreation.createGoogleDocument(title, templateType);
+        } else {
+          console.log('⚠️ DocumentCreation 모듈 로드 실패, 직접 함수 호출');
+          document = createGoogleDocumentDirect(title, templateType);
+        }
         if (!document.success) {
           return ContentService
             .createTextOutput(JSON.stringify(document))
@@ -72,24 +93,105 @@ function doPost(e) {
         const documentId = document.data.id;
         const documentUrl = document.data.webViewLink;
         
-        // 문서 권한 설정
-        const permissionResult = DocumentPermissions.setDocumentPermissions(documentId, creatorEmail, editors || []);
-        if (!permissionResult.success) {
-          return ContentService
-            .createTextOutput(JSON.stringify(permissionResult))
-            .setMimeType(ContentService.MimeType.JSON);
+        // 권한 설정 (직접 처리)
+        let permissionResult = null;
+        try {
+          console.log('🔐 권한 설정 시작 - 전달된 데이터:', { documentId, creatorEmail, editors });
+          
+          // 입력 데이터 검증
+          if (!documentId) {
+            throw new Error('문서 ID가 필요합니다');
+          }
+          
+          const file = DriveApp.getFileById(documentId);
+          console.log('📄 문서 정보:', { id: file.getId(), name: file.getName() });
+          
+          // 모든 사용자에게 편집 권한 부여 (생성자 + 편집자)
+          const allUsers = [creatorEmail, ...(editors || [])].filter((email, index, arr) => 
+            email && email.trim() !== '' && arr.indexOf(email) === index // 중복 제거
+          );
+          
+          console.log('🔐 권한 부여할 사용자 목록:', allUsers);
+          console.log('🔐 사용자 수:', allUsers.length);
+          
+          if (allUsers.length === 0) {
+            console.warn('⚠️ 권한 부여할 사용자가 없습니다');
+            permissionResult = {
+              success: true,
+              message: '권한 부여할 사용자가 없습니다',
+              grantedUsers: [],
+              currentEditors: []
+            };
+          } else {
+            // 권한 설정 전 현재 상태 확인
+            const beforePermissions = file.getEditors();
+            console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            // 각 사용자에게 편집 권한 부여
+            for (const userEmail of allUsers) {
+              try {
+                console.log('🔐 권한 부여 시도:', userEmail);
+                
+                // 이미 권한이 있는지 확인
+                const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+                if (hasPermission) {
+                  console.log('✅ 이미 권한이 있는 사용자:', userEmail);
+                  successCount++;
+                  continue;
+                }
+                
+                // 권한 부여
+                file.addEditor(userEmail);
+                console.log('✅ 편집 권한 부여 완료:', userEmail);
+                successCount++;
+                
+                // 잠시 대기 (API 제한 방지)
+                Utilities.sleep(100);
+                
+              } catch (permError) {
+                console.error('❌ 권한 설정 실패:', userEmail, permError.message);
+                failCount++;
+              }
+            }
+            
+            // 권한 설정 후 결과 확인
+            const afterPermissions = file.getEditors();
+            console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+            
+            permissionResult = {
+              success: successCount > 0,
+              message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
+              grantedUsers: allUsers,
+              currentEditors: afterPermissions.map(p => p.getEmail()),
+              successCount: successCount,
+              failCount: failCount
+            };
+            
+            console.log('🔐 최종 권한 설정 결과:', permissionResult);
+          }
+          
+        } catch (permissionError) {
+          console.error('❌ 문서 권한 설정 실패:', permissionError);
+          permissionResult = {
+            success: false,
+            message: '권한 설정 중 오류가 발생했습니다: ' + permissionError.message
+          };
         }
         
-        // hot potato/문서 폴더에 문서 이동
-        const moveResult = DocumentFolder.moveDocumentToFolder(documentId);
-        if (!moveResult.success) {
-          console.warn('문서 폴더 이동 실패:', moveResult.message);
-        }
-        
-        // 문서 정보를 스프레드시트에 추가
-        const spreadsheetResult = DocumentSpreadsheet.addDocumentToSpreadsheet(documentId, title, creatorEmail, documentUrl, role);
-        if (!spreadsheetResult.success) {
-          console.warn('스프레드시트 추가 실패:', spreadsheetResult.message);
+        // 문서를 지정된 폴더로 이동
+        try {
+          if (typeof DocumentFolder !== 'undefined' && typeof DocumentFolder.findOrCreateFolder === 'function') {
+            console.log('✅ DocumentFolder 모듈 사용');
+            moveDocumentToSharedFolderWithModule(documentId);
+          } else {
+            console.log('⚠️ DocumentFolder 모듈 로드 실패, 직접 함수 호출');
+            moveDocumentToSharedFolder(documentId);
+          }
+        } catch (moveError) {
+          console.warn('문서 폴더 이동 실패:', moveError);
         }
         
         const result = {
@@ -101,7 +203,15 @@ function doPost(e) {
             creatorEmail: creatorEmail,
             editors: editors || []
           },
-          message: '문서가 성공적으로 생성되었습니다.'
+          message: '문서가 성공적으로 생성되었습니다.',
+          permissionResult: permissionResult,
+          debug: {
+            requestedEditors: editors || [],
+            permissionSuccess: permissionResult ? permissionResult.success : false,
+            permissionMessage: permissionResult ? permissionResult.message : '권한 설정 없음',
+            grantedUsers: permissionResult ? permissionResult.grantedUsers : [],
+            currentEditors: permissionResult ? permissionResult.currentEditors : []
+          }
         };
         
         console.log('📄 문서 생성 결과:', result);
@@ -157,68 +267,92 @@ function doPost(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       
-      // DocumentTemplates 모듈이 로드되었는지 확인
-      if (typeof DocumentTemplates === 'undefined') {
-        console.error('📄 DocumentTemplates 모듈이 로드되지 않았습니다');
+      // DocumentTemplates 함수 직접 호출
+      try {
+        const result = getTemplatesFromFolder();
+        console.log('📄 템플릿 목록 조회 결과:', result);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('📄 템플릿 목록 조회 오류:', error);
         const errorResult = {
           success: false,
-          message: 'DocumentTemplates 모듈이 로드되지 않았습니다. Apps Script에서 파일을 저장하고 다시 배포해주세요.',
-          debugInfo: ['❌ DocumentTemplates is not defined']
+          message: '템플릿 목록 조회 중 오류가 발생했습니다: ' + error.message,
+          debugInfo: ['❌ getTemplatesFromFolder 함수 호출 실패']
         };
         return ContentService
           .createTextOutput(JSON.stringify(errorResult))
           .setMimeType(ContentService.MimeType.JSON);
       }
-      
-      const result = DocumentTemplates.getTemplatesFromFolder();
-      console.log('📄 템플릿 목록 조회 결과:', result);
-      return ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
     }
     
     // Drive API 연결 테스트 액션 처리
     if (req.action === 'testDriveApi') {
       console.log('🔧 Drive API 테스트 요청 받음:', req);
       
-      // DocumentTests 모듈이 로드되었는지 확인
-      if (typeof DocumentTests === 'undefined') {
-        console.error('🔧 DocumentTests 모듈이 로드되지 않았습니다');
+      // DocumentTests 함수 직접 호출
+      try {
+        const result = testDriveApiConnection();
+        console.log('🔧 Drive API 테스트 결과:', result);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔧 Drive API 테스트 오류:', error);
         const errorResult = {
           success: false,
-          message: 'DocumentTests 모듈이 로드되지 않았습니다. Apps Script에서 파일을 저장하고 다시 배포해주세요.',
-          debugInfo: ['❌ DocumentTests is not defined']
+          message: 'Drive API 테스트 중 오류가 발생했습니다: ' + error.message,
+          debugInfo: ['❌ testDriveApiConnection 함수 호출 실패']
         };
         return ContentService
           .createTextOutput(JSON.stringify(errorResult))
           .setMimeType(ContentService.MimeType.JSON);
       }
-      
-      const result = DocumentTests.testDriveApiConnection();
-      console.log('🔧 Drive API 테스트 결과:', result);
-      return ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
     }
     
     // 템플릿 폴더 디버깅 테스트 액션 처리
     if (req.action === 'testTemplateFolderDebug') {
       console.log('🔍 템플릿 폴더 디버깅 테스트 요청 받음:', req);
-      const result = DocumentTemplates.testTemplateFolderDebug();
-      console.log('🔍 템플릿 폴더 디버깅 테스트 결과:', result);
-      return ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
+      try {
+        const result = testTemplateFolderDebug();
+        console.log('🔍 템플릿 폴더 디버깅 테스트 결과:', result);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔍 템플릿 폴더 디버깅 테스트 오류:', error);
+        const errorResult = {
+          success: false,
+          message: '템플릿 폴더 디버깅 테스트 중 오류가 발생했습니다: ' + error.message,
+          debugInfo: ['❌ testTemplateFolderDebug 함수 호출 실패']
+        };
+        return ContentService
+          .createTextOutput(JSON.stringify(errorResult))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     // 특정 폴더 ID 테스트 액션 처리
     if (req.action === 'testSpecificFolder') {
       console.log('🔍 특정 폴더 ID 테스트 요청 받음:', req);
-      const result = DocumentTemplates.testSpecificFolder();
-      console.log('🔍 특정 폴더 ID 테스트 결과:', result);
-      return ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
+      try {
+        const result = testSpecificFolder();
+        console.log('🔍 특정 폴더 ID 테스트 결과:', result);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔍 특정 폴더 ID 테스트 오류:', error);
+        const errorResult = {
+          success: false,
+          message: '특정 폴더 ID 테스트 중 오류가 발생했습니다: ' + error.message,
+          debugInfo: ['❌ testSpecificFolder 함수 호출 실패']
+        };
+        return ContentService
+          .createTextOutput(JSON.stringify(errorResult))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     
@@ -377,7 +511,360 @@ function testMain() {
   }
 }
 
+// ===== 문서 생성 함수들 =====
+
+/**
+ * 문서를 공유 폴더로 이동
+ * @param {string} documentId - 문서 ID
+ * @returns {Object} 이동 결과
+ */
+function moveDocumentToSharedFolder(documentId) {
+  try {
+    console.log('📁 문서 폴더 이동 시작:', documentId);
+    
+    // DriveApp API 확인
+    if (typeof DriveApp === 'undefined') {
+      console.error('📁 DriveApp API가 정의되지 않았습니다');
+      return {
+        success: false,
+        message: 'DriveApp API가 활성화되지 않았습니다.'
+      };
+    }
+    
+    // 문서 가져오기
+    const file = DriveApp.getFileById(documentId);
+    
+    // 폴더 경로: hot potato/문서/공유 문서
+    const targetFolder = findOrCreateFolderPath(['hot potato', '문서', '공유 문서']);
+    
+    if (!targetFolder) {
+      console.error('📁 대상 폴더를 찾을 수 없습니다');
+      return {
+        success: false,
+        message: '대상 폴더를 찾을 수 없습니다.'
+      };
+    }
+    
+    // 문서를 폴더로 이동
+    file.moveTo(targetFolder);
+    console.log('✅ 문서가 공유 폴더로 이동되었습니다:', targetFolder.getName());
+    
+    return {
+      success: true,
+      message: '문서가 공유 폴더로 이동되었습니다.'
+    };
+    
+  } catch (error) {
+    console.error('📁 문서 폴더 이동 오류:', error);
+    return {
+      success: false,
+      message: '문서 폴더 이동 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
+ * 문서를 공유 폴더로 이동 (DocumentFolder 모듈 사용)
+ * @param {string} documentId - 문서 ID
+ * @returns {Object} 이동 결과
+ */
+function moveDocumentToSharedFolderWithModule(documentId) {
+  try {
+    console.log('📁 문서 폴더 이동 시작 (모듈 사용):', documentId);
+    
+    // 문서 가져오기
+    const file = DriveApp.getFileById(documentId);
+    
+    // 폴더 경로: hot potato/문서/공유 문서
+    const folderPath = 'hot potato/문서/공유 문서';
+    const targetFolder = DocumentFolder.findOrCreateFolder(folderPath);
+    
+    if (!targetFolder) {
+      console.error('📁 대상 폴더를 찾을 수 없습니다');
+      return {
+        success: false,
+        message: '대상 폴더를 찾을 수 없습니다.'
+      };
+    }
+    
+    // 문서를 폴더로 이동
+    file.moveTo(targetFolder);
+    console.log('✅ 문서가 공유 폴더로 이동되었습니다:', targetFolder.getName());
+    
+    return {
+      success: true,
+      message: '문서가 공유 폴더로 이동되었습니다.'
+    };
+    
+  } catch (error) {
+    console.error('📁 문서 폴더 이동 오류:', error);
+    return {
+      success: false,
+      message: '문서 폴더 이동 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
+ * 폴더 경로를 찾거나 생성 (직접 구현)
+ * @param {Array} folderPath - 폴더 경로 배열
+ * @returns {Object} 폴더 객체 또는 null
+ */
+function findOrCreateFolderPath(folderPath) {
+  try {
+    console.log('📁 폴더 경로 찾기/생성:', folderPath);
+    
+    let currentFolder = DriveApp.getRootFolder();
+    
+    for (const folderName of folderPath) {
+      const folders = currentFolder.getFoldersByName(folderName);
+      
+      if (folders.hasNext()) {
+        currentFolder = folders.next();
+        console.log('📁 기존 폴더 발견:', folderName);
+      } else {
+        currentFolder = currentFolder.createFolder(folderName);
+        console.log('📁 새 폴더 생성:', folderName);
+      }
+    }
+    
+    return currentFolder;
+    
+  } catch (error) {
+    console.error('📁 폴더 경로 생성 오류:', error);
+    return null;
+  }
+}
+
+/**
+ * Google 문서 생성 (직접 구현 - 백업용)
+ * @param {string} title - 문서 제목
+ * @param {string} templateType - 템플릿 타입 또는 documentId
+ * @returns {Object} 생성 결과
+ */
+function createGoogleDocumentDirect(title, templateType) {
+  try {
+    console.log('📄 Google 문서 생성 시도 (직접 구현):', { title, templateType });
+    
+    // DriveApp API 확인
+    if (typeof DriveApp === 'undefined') {
+      console.error('📄 DriveApp API가 정의되지 않았습니다');
+      return {
+        success: false,
+        message: 'DriveApp API가 활성화되지 않았습니다. Google Apps Script에서 DriveApp API를 활성화해주세요.'
+      };
+    }
+    
+    // 빈 문서인 경우
+    if (templateType === 'empty' || !templateType) {
+      console.log('📄 빈 문서 생성 (템플릿 없음)');
+      const file = DriveApp.createFile(Blob.createFromString(''), MimeType.GOOGLE_DOCS);
+      file.setName(title);
+      
+      return {
+        success: true,
+        data: {
+          id: file.getId(),
+          name: title,
+          webViewLink: file.getUrl()
+        }
+      };
+    }
+    // templateType이 documentId인 경우 (템플릿 복사)
+    else if (templateType && templateType.length > 20 && !templateType.includes('http')) {
+      console.log('📄 커스텀 템플릿 복사 시도:', templateType);
+      
+      try {
+        // 기존 문서를 복사
+        const templateFile = DriveApp.getFileById(templateType);
+        const copiedFile = templateFile.makeCopy(title);
+        
+        console.log('📄 템플릿 복사 성공:', copiedFile.getId());
+        
+        return {
+          success: true,
+          data: {
+            id: copiedFile.getId(),
+            name: title,
+            webViewLink: copiedFile.getUrl()
+          }
+        };
+      } catch (copyError) {
+        console.error('📄 템플릿 복사 실패:', copyError);
+        // 복사 실패 시 빈 문서로 생성
+        console.log('📄 복사 실패로 빈 문서 생성 시도');
+        const file = DriveApp.createFile(Blob.createFromString(''), MimeType.GOOGLE_DOCS);
+        file.setName(title);
+        
+        return {
+          success: true,
+          data: {
+            id: file.getId(),
+            name: title,
+            webViewLink: file.getUrl()
+          }
+        };
+      }
+    }
+    
+    // 기본 문서 생성
+    console.log('📄 빈 문서 생성 시도');
+    const file = DriveApp.createFile(Blob.createFromString(''), MimeType.GOOGLE_DOCS);
+    file.setName(title);
+    
+    return {
+      success: true,
+      data: {
+        id: file.getId(),
+        name: title,
+        webViewLink: file.getUrl()
+      }
+    };
+    
+  } catch (error) {
+    console.error('📄 문서 생성 오류:', error);
+    return {
+      success: false,
+      message: '문서 생성 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+
 // ===== 테스트 함수들 (Encryption.gs에서 제공) =====
+
+// ===== 백업 함수들 =====
+
+/**
+ * 문서 권한 설정 (백업용 - DocumentPermissions 모듈이 로드되지 않을 때 사용)
+ */
+function setDocumentPermissions(documentId, creatorEmail, editors) {
+  try {
+    console.log('🔐 문서 권한 설정 시작 (백업 함수):', { documentId, creatorEmail, editors });
+    
+    // 입력 데이터 검증
+    if (!documentId) {
+      throw new Error('문서 ID가 필요합니다');
+    }
+    
+    const file = DriveApp.getFileById(documentId);
+    console.log('📄 문서 정보:', { id: file.getId(), name: file.getName() });
+    
+    // 모든 사용자에게 편집 권한 부여 (생성자 + 편집자)
+    const allUsers = [creatorEmail, ...(editors || [])].filter((email, index, arr) => 
+      email && email.trim() !== '' && arr.indexOf(email) === index // 중복 제거
+    );
+    
+    console.log('🔐 권한 부여할 사용자 목록:', allUsers);
+    console.log('🔐 사용자 수:', allUsers.length);
+    
+    if (allUsers.length === 0) {
+      console.warn('⚠️ 권한 부여할 사용자가 없습니다');
+      return {
+        success: true,
+        message: '권한 부여할 사용자가 없습니다',
+        grantedUsers: [],
+        currentEditors: []
+      };
+    }
+    
+    // 권한 설정 전 현재 상태 확인
+    const beforePermissions = file.getEditors();
+    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    // 각 사용자에게 편집 권한 부여
+    for (const userEmail of allUsers) {
+      try {
+        console.log('🔐 권한 부여 시도:', userEmail);
+        
+        // 이미 권한이 있는지 확인
+        const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+        if (hasPermission) {
+          console.log('✅ 이미 권한이 있는 사용자:', userEmail);
+          successCount++;
+          continue;
+        }
+        
+        // 권한 부여
+        file.addEditor(userEmail);
+        console.log('✅ 편집 권한 부여 완료:', userEmail);
+        successCount++;
+        
+        // 잠시 대기 (API 제한 방지)
+        Utilities.sleep(100);
+        
+      } catch (permError) {
+        console.error('❌ 권한 설정 실패:', userEmail, permError.message);
+        failCount++;
+      }
+    }
+    
+    // 권한 설정 후 결과 확인
+    const afterPermissions = file.getEditors();
+    console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+    
+    const result = {
+      success: successCount > 0,
+      message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
+      grantedUsers: allUsers,
+      currentEditors: afterPermissions.map(p => p.getEmail()),
+      successCount: successCount,
+      failCount: failCount
+    };
+    
+    console.log('🔐 최종 권한 설정 결과:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ 문서 권한 설정 오류:', error);
+    return {
+      success: false,
+      message: '문서 권한 설정 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+// ===== 테스트 함수들 =====
+
+/**
+ * 권한 설정 테스트 함수
+ */
+function testDocumentPermissions() {
+  try {
+    console.log('🧪 권한 설정 테스트 시작');
+    
+    // 테스트용 문서 ID (실제 문서 ID로 변경 필요)
+    const testDocumentId = '1oqY3J_1zPuHfGn61SPDM0-72tvYSavjorciAl9fHpbA';
+    const testCreatorEmail = 'khk213624@gmail.com';
+    const testEditors = ['ach021105@gmail.com', 'answnsdud1004@gmail.com'];
+    
+    console.log('🧪 테스트 데이터:', { testDocumentId, testCreatorEmail, testEditors });
+    
+    // DocumentPermissions 모듈 확인
+    if (typeof DocumentPermissions !== 'undefined') {
+      console.log('✅ DocumentPermissions 모듈 사용 가능');
+      const result = DocumentPermissions.setDocumentPermissions(testDocumentId, testCreatorEmail, testEditors);
+      console.log('🧪 테스트 결과:', result);
+      return result;
+    } else {
+      console.error('❌ DocumentPermissions 모듈이 로드되지 않았습니다');
+      return {
+        success: false,
+        message: 'DocumentPermissions 모듈이 로드되지 않았습니다'
+      };
+    }
+    
+  } catch (error) {
+    console.error('🧪 테스트 오류:', error);
+    return {
+      success: false,
+      message: '테스트 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
 
 // ===== 배포 정보 =====
 function getDeploymentInfo() {
@@ -407,15 +894,13 @@ function getDeploymentInfo() {
     'EncryptionEmail.gs',
     'DocumentTemplates.gs',
     'DocumentTests.gs',
-    'KeyVerification.gs',
-    'KeyGeneration.gs',
-    'TimeUtils.gs',
     'DocumentCreation.gs',
     'DocumentPermissions.gs',
     'DocumentFolder.gs',
     'DocumentSpreadsheet.gs',
-    'DocumentTemplates.gs',
-    'DocumentTests.gs',
+    'KeyVerification.gs',
+    'KeyGeneration.gs',
+    'TimeUtils.gs',
     'TestBasic.gs',
     'TestSpreadsheet.gs',
     'TestUserManagement.gs',

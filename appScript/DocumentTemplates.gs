@@ -63,7 +63,7 @@ function getTemplatesFromFolder() {
     
     for (const path of possiblePaths) {
       debugInfo.push(`📁 폴더 경로 시도: ${path}`);
-      const result = DocumentFolder.findOrCreateFolder(path);
+      const result = findOrCreateFolder(path);
       debugInfo.push(`📄 폴더 찾기 결과 (${path}): ` + JSON.stringify(result));
       
       if (result && result.success && result.data && result.data.id) {
@@ -442,6 +442,6 @@ function getDocumentTemplatesInfo() {
       'testSpecificFolder',
       'testTemplateFolderDebug'
     ],
-    dependencies: ['DocumentFolder.gs', 'CONFIG.gs']
+    dependencies: ['CONFIG.gs']
   };
 }
