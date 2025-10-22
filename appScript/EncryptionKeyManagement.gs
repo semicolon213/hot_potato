@@ -48,7 +48,7 @@ function generateExtendedMultiLayerKey() {
     for (let i = 0; i < selectedMethods.length; i++) {
       const method = selectedMethods[i];
       const beforeEncrypt = encryptedKey;
-      encryptedKey = EncryptionCore.applyEncryption(encryptedKey, method, '');
+      encryptedKey = applyEncryption(encryptedKey, method, '');
       console.log(`암호화 ${i + 1}/${selectedMethods.length} (${method}):`, beforeEncrypt.substring(0, 20) + '...', '->', encryptedKey.substring(0, 20) + '...');
       
       if (!encryptedKey || encryptedKey === 'undefined' || encryptedKey.includes('undefined')) {
@@ -88,7 +88,7 @@ function validateEncryptedKey(encryptedKey, methods) {
     for (let i = methods.length - 1; i >= 0; i--) {
       const method = methods[i];
       const beforeDecrypt = decryptedKey;
-      decryptedKey = EncryptionCore.applyDecryption(decryptedKey, method, '');
+      decryptedKey = applyDecryption(decryptedKey, method, '');
       console.log(`복호화 ${methods.length - i}/${methods.length} (${method}):`, beforeDecrypt.substring(0, 20) + '...', '->', decryptedKey.substring(0, 20) + '...');
     }
     
@@ -127,7 +127,7 @@ function decryptKey(encryptedKey, methods) {
     let decryptedKey = encryptedKey;
     for (let i = methods.length - 1; i >= 0; i--) {
       const method = methods[i];
-      decryptedKey = EncryptionCore.applyDecryption(decryptedKey, method, '');
+      decryptedKey = applyDecryption(decryptedKey, method, '');
     }
     
     console.log('키 복호화 완료:', decryptedKey);
@@ -152,7 +152,7 @@ function reencryptKey(originalKey, newMethods) {
     let encryptedKey = originalKey;
     for (let i = 0; i < newMethods.length; i++) {
       const method = newMethods[i];
-      encryptedKey = EncryptionCore.applyEncryption(encryptedKey, method, '');
+      encryptedKey = applyEncryption(encryptedKey, method, '');
     }
     
     return {

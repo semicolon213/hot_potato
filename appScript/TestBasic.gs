@@ -20,10 +20,10 @@ function runSimpleTest() {
     const testString = 'Hello World!';
     console.log('원본:', testString);
     
-    const encrypted = EncryptionCore.applyEncryption(testString, 'Base64', '');
+    const encrypted = applyEncryption(testString, 'Base64', '');
     console.log('암호화:', encrypted);
     
-    const decrypted = EncryptionCore.applyDecryption(encrypted, 'Base64', '');
+    const decrypted = applyDecryption(encrypted, 'Base64', '');
     console.log('복호화:', decrypted);
     
     console.log('가역성:', decrypted === testString ? '✅ 성공' : '❌ 실패');
@@ -39,7 +39,7 @@ function runSimpleTest() {
     let decryptedKey = key;
     for (let i = layers.length - 1; i >= 0; i--) {
       const layer = layers[i].trim();
-      decryptedKey = EncryptionCore.applyDecryption(decryptedKey, layer, '');
+      decryptedKey = applyDecryption(decryptedKey, layer, '');
     }
     
     console.log('복호화된 키:', decryptedKey);
@@ -78,10 +78,10 @@ function testEncryptionAlgorithms() {
       try {
         console.log(`\n--- ${algorithm} 테스트 ---`);
         
-        const encrypted = EncryptionCore.applyEncryption(testString, algorithm, '');
+        const encrypted = applyEncryption(testString, algorithm, '');
         console.log('암호화:', encrypted);
         
-        const decrypted = EncryptionCore.applyDecryption(encrypted, algorithm, '');
+        const decrypted = applyDecryption(encrypted, algorithm, '');
         console.log('복호화:', decrypted);
         
         const isReversible = decrypted === testString;
@@ -135,7 +135,7 @@ function testMultiLayerEncryption() {
     console.log('사용할 레이어:', layers);
     
     // 암호화
-    const encryptionResult = EncryptionCore.multiLayerEncrypt(testString, layers);
+    const encryptionResult = multiLayerEncrypt(testString, layers);
     
     if (!encryptionResult.success) {
       throw new Error('암호화 실패: ' + encryptionResult.error);
@@ -144,7 +144,7 @@ function testMultiLayerEncryption() {
     console.log('암호화 결과:', encryptionResult.encryptedText);
     
     // 복호화
-    const decryptionResult = EncryptionCore.multiLayerDecrypt(encryptionResult.encryptedText, layers);
+    const decryptionResult = multiLayerDecrypt(encryptionResult.encryptedText, layers);
     
     if (!decryptionResult.success) {
       throw new Error('복호화 실패: ' + decryptionResult.error);

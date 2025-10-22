@@ -48,7 +48,7 @@ function generateNewAdminKey() {
     for (let i = 0; i < selectedMethods.length; i++) {
       const method = selectedMethods[i];
       const beforeEncrypt = encryptedKey;
-      encryptedKey = EncryptionCore.applyEncryption(encryptedKey, method, '');
+      encryptedKey = applyEncryption(encryptedKey, method, '');
       console.log(`암호화 ${i + 1}/${selectedMethods.length} (${method}):`, beforeEncrypt.substring(0, 20) + '...', '->', encryptedKey.substring(0, 20) + '...');
       
       if (!encryptedKey || encryptedKey === 'undefined' || encryptedKey.includes('undefined')) {

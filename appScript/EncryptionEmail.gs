@@ -21,7 +21,7 @@ function encryptEmailMain(email) {
     }
     
     // 기존 암호화 함수 사용 (Base64)
-    const result = EncryptionCore.applyEncryption(email, 'Base64', '');
+    const result = applyEncryption(email, 'Base64', '');
     console.log('🔐 암호화 완료:', email, '->', result);
     return result;
   } catch (error) {
@@ -51,7 +51,7 @@ function decryptEmailMain(encryptedEmail) {
     }
     
     // 기존 복호화 함수 사용 (Base64)
-    const result = EncryptionCore.applyDecryption(encryptedEmail, 'Base64', '');
+    const result = applyDecryption(encryptedEmail, 'Base64', '');
     console.log('🔓 복호화 완료:', encryptedEmail, '->', result);
     return result;
   } catch (error) {

@@ -140,8 +140,8 @@ function verifyEncryptionSystem() {
     
     for (const method of methods) {
       try {
-        const encrypted = EncryptionCore.applyEncryption(testString, method, '');
-        const decrypted = EncryptionCore.applyDecryption(encrypted, method, '');
+        const encrypted = applyEncryption(testString, method, '');
+        const decrypted = applyDecryption(encrypted, method, '');
         const isReversible = decrypted === testString;
         
         testResults[method] = {
@@ -171,7 +171,7 @@ function verifyEncryptionSystem() {
       let decryptedKey = key;
       for (let i = layers.length - 1; i >= 0; i--) {
         const layer = layers[i].trim();
-        decryptedKey = EncryptionCore.applyDecryption(decryptedKey, layer, '');
+        decryptedKey = applyDecryption(decryptedKey, layer, '');
       }
       
       keyGenerationTest = decryptedKey === originalKey;
@@ -299,8 +299,8 @@ function verifyPerformance() {
     const iterations = 50;
     
     for (let i = 0; i < iterations; i++) {
-      const encrypted = EncryptionCore.applyEncryption(testString, 'Base64', '');
-      const decrypted = EncryptionCore.applyDecryption(encrypted, 'Base64', '');
+      const encrypted = applyEncryption(testString, 'Base64', '');
+      const decrypted = applyDecryption(encrypted, 'Base64', '');
     }
     
     const endTime = new Date().getTime();
