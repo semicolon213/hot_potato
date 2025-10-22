@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchStaffFromPapyrus, fetchCommitteeFromPapyrus } from '../../../utils/database/papyrusManager';
 
 /**
@@ -70,6 +70,64 @@ export const useStaffManagement = (staffSpreadsheetId: string | null) => {
   // 탭 상태
   const [activeTab, setActiveTab] = useState<'staff' | 'committee'>('staff');
 
+  // 전화번호 복호화 함수 (학생관리와 동일한 방식)
+  const decryptPhone = async (encryptedPhone: string): Promise<string> => {
+    if (!encryptedPhone || encryptedPhone.trim() === '') {
+      return '';
+    }
+
+    try {
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decryptEmail', data: encryptedPhone })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          return result.data;
+        }
+      }
+      return encryptedPhone;
+    } catch (error) {
+      console.warn('전화번호 복호화 실패:', error);
+      return encryptedPhone;
+    }
+  };
+
+  // 이메일 복호화 함수
+  const decryptEmail = async (encryptedEmail: string): Promise<string> => {
+    if (!encryptedEmail || encryptedEmail.trim() === '') {
+      return '';
+    }
+
+    try {
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decryptEmail', data: encryptedEmail })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          return result.data;
+        }
+      }
+      return encryptedEmail;
+    } catch (error) {
+      console.warn('이메일 복호화 실패:', error);
+      return encryptedEmail;
+    }
+  };
+
   // Papyrus DB에서 교직원 데이터 가져오기
   const fetchStaff = async () => {
     setIsLoading(true);
@@ -82,19 +140,28 @@ export const useStaffManagement = (staffSpreadsheetId: string | null) => {
       console.log('Papyrus DB에서 받은 교직원 데이터:', staffData);
       
       if (staffData && staffData.length > 0) {
-        const processedStaff: Staff[] = staffData.map((staff: any) => ({
-          no: staff.no || '',
-          pos: staff.pos || '',
-          name: staff.name || '',
-          tel: staff.tel || '',
-          phone: staff.phone || '',
-          email: staff.email || '',
-          date: staff.date || '',
-          note: staff.note || ''
-        }));
+        // 전화번호와 이메일 복호화 처리 (학생관리와 동일한 방식)
+        const processedStaff: Staff[] = await Promise.all(
+          staffData.map(async (staff: Staff) => {
+            const decryptedTel = await decryptPhone(staff.tel || '');
+            const decryptedPhone = await decryptPhone(staff.phone || '');
+            const decryptedEmail = await decryptEmail(staff.email || '');
+            
+            return {
+              no: staff.no || '',
+              pos: staff.pos || '',
+              name: staff.name || '',
+              tel: decryptedTel,
+              phone: decryptedPhone,
+              email: decryptedEmail,
+              date: staff.date || '',
+              note: staff.note || ''
+            };
+          })
+        );
         
         setStaff(processedStaff);
-        console.log('처리된 교직원 데이터:', processedStaff);
+        console.log(`교직원 ${processedStaff.length}명 데이터 로드 완료 (연락처 및 이메일 복호화 완료)`);
       } else {
         setStaff([]);
         console.log('교직원 데이터가 없습니다.');
@@ -118,7 +185,7 @@ export const useStaffManagement = (staffSpreadsheetId: string | null) => {
       console.log('Papyrus DB에서 받은 학과 위원회 데이터:', committeeData);
       
       if (committeeData && committeeData.length > 0) {
-        const processedCommittee: Committee[] = committeeData.map((committee: any) => ({
+        const processedCommittee: Committee[] = committeeData.map((committee: Committee) => ({
           sortation: committee.sortation || '',
           name: committee.name || '',
           tel: committee.tel || '',
