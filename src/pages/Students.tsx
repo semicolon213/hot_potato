@@ -33,6 +33,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
     downloadExcelTemplate,
     handleExcelUpload,
     getAllYears,
+    addStudent, // 학생 추가 함수
     getCouncilTableData,
     studentColumns,
     councilColumns,
@@ -44,9 +45,18 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentWithCouncil | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); // 학생 추가 모달 상태
 
   const years = getAllYears();
   const councilData = selectedYear ? getCouncilTableData(selectedYear) : [];
+
+  // 학생 추가 핸들러
+  const handleAddStudent = () => setIsAddStudentModalOpen(true);
+  const handleAddStudentModalClose = () => setIsAddStudentModalOpen(false);
+  const handleCreateStudent = (newStudentData: StudentWithCouncil) => {
+    addStudent(newStudentData);
+    setIsAddStudentModalOpen(false);
+  };
 
   // Council 데이터용 정렬 함수
   const handleCouncilSort = (key: string) => {
@@ -137,6 +147,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
             sortConfig={sortConfig}
             onSort={(key: string) => handleSort(key as keyof StudentWithCouncil)}
             onStudentDoubleClick={handleStudentDoubleClick}
+            onAddStudent={handleAddStudent} // 학생 추가 버튼 핸들러 전달
           />
         </div>
       )}
@@ -160,6 +171,17 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
         onClose={handleCloseModal}
         onUpdate={handleStudentUpdate}
         studentSpreadsheetId={studentSpreadsheetId}
+      />
+
+      {/* 학생 추가 모달 */}
+      <StudentDetailModal
+        student={null}
+        isOpen={isAddStudentModalOpen}
+        onClose={handleAddStudentModalClose}
+        onUpdate={handleCreateStudent}
+        studentSpreadsheetId={studentSpreadsheetId}
+        mode="student"
+        isAdding={true}
       />
     </div>
   );

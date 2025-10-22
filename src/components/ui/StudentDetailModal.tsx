@@ -319,6 +319,25 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       }
     }
 
+    // 학생 필수 항목 유효성 검사
+    if (mode === 'student') {
+      const requiredFields = [
+        { key: 'no_student', name: '학번' },
+        { key: 'name', name: '이름' },
+        { key: 'phone_num', name: '연락처' },
+        { key: 'grade', name: '학년' },
+        { key: 'address', name: '주소' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        if (typeof value !== 'string' || !value.trim()) {
+          alert(`${field.name}은(는) 필수 입력 항목입니다.`);
+          return; // 저장 중단
+        }
+      }
+    }
+
     // 저장하기 전 비어있는 경력 항목 자동 삭제
     const cleanedStudent = { ...editedStudent };
     if (cleanedStudent.career && Array.isArray(cleanedStudent.career)) {
@@ -783,7 +802,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   // 학생 필드들 (기존)
                   <>
                     <div className="form-group">
-                      <label>학번</label>
+                      <label>학번<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.no_student}
@@ -794,7 +813,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이름</label>
+                      <label>이름<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.name}
@@ -805,7 +824,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>연락처</label>
+                      <label>연락처<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.phone_num}
@@ -817,7 +836,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>학년</label>
+                      <label>학년<span style={{color: 'red'}}>*</span></label>
                       <select
                         value={editedStudent.grade}
                         onChange={(e) => handleInputChange('grade', e.target.value)}
@@ -849,7 +868,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group full-width">
-                      <label>주소</label>
+                      <label>주소<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.address}
