@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
 import { BiSearchAlt2, BiHelpCircle, BiPlus } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
@@ -128,6 +128,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                setIsSearchVisible(false);
+                setSearchTerm('');
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [searchContainerRef, setIsSearchVisible, setSearchTerm]);
 
     const getRecentSearches = (): string[] => {
         const searches = localStorage.getItem('recentSearchTerms');
@@ -680,7 +695,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
             <div className="calendar-header-container">
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {isSearchVisible ? (
-                        <div className="calendar-search-bar-wrapper">
+                        <div className="calendar-search-bar-wrapper" ref={searchContainerRef}>
                             <BiSearchAlt2 color="black" />
                             <input
                                 type="text"
@@ -689,9 +704,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onFocus={() => setIsSuggestionsVisible(true)}
-                                onBlur={() => {
-                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                }}
                                 onKeyDown={(e) => {
                                     console.log('onKeyDown event:', e.key, 'suggestions:', suggestions);
                                     if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
@@ -720,7 +732,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                     }
                                 }}
                             />
-                            <button onClick={() => setIsSearchVisible(false)}>닫기</button>
+
                             {isSuggestionsVisible && suggestions.length > 0 && (
                                 <ul className="search-suggestions">
                                     {suggestions.map((suggestion, index) => (
@@ -752,7 +764,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         <>
                             <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                                 <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                                <h2 style={{textAlign: 'center', flexGrow: 1}}>
+                                <h2 className="calendar-month-year" style={{textAlign: 'center', flexGrow: 1}}>
                                     {viewMode === 'monthly' ? (
                                         `${currentDate.year}년 ${currentDate.month}월`
                                     ) : (
@@ -786,7 +798,27 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                 </div>
                                 <div className="view-switcher">
                                     <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
-                                    <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
+                                    <button onClick={() => {
+                                        setViewMode('weekly');
+                                        const today = new Date();
+                                        goToDate(today);
+                                        
+                                        if (semesterStartDate) {
+                                            const semesterStart = new Date(semesterStartDate);
+                                            const todayDate = new Date();
+
+                                            semesterStart.setHours(0, 0, 0, 0);
+                                            todayDate.setHours(0, 0, 0, 0);
+
+                                            const semesterWeekStart = new Date(semesterStart);
+                                            semesterWeekStart.setDate(semesterStart.getDate() - semesterStart.getDay());
+
+                                            const diffTime = todayDate.getTime() - semesterWeekStart.getTime();
+                                            const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+                                            setSelectedWeek(diffWeeks + 1);
+                                        }
+                                    }} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
                                 </div>
                             </div>
                         </>
