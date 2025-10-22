@@ -32,6 +32,18 @@ interface Staff {
   note: string;
 }
 
+// 변환된 데이터 타입 (StudentList에서 사용)
+interface ConvertedData {
+  no_student: string;
+  name: string;
+  address: string;
+  phone_num: string;
+  email: string;
+  grade: string;
+  state: string;
+  council: string;
+}
+
 
 interface StaffProps {
   onPageChange: (pageName: string) => void;
@@ -39,6 +51,28 @@ interface StaffProps {
 }
 
 const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const handleAddCommittee = () => {
+    // For now, just a placeholder. In the future, this would open a modal.
+    console.log('Add new committee member');
+  };
+
+  const handleAddStaff = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddModalClose = () => {
+    setIsAddModalOpen(false);
+  };
+
+  const handleCreateStaff = (newStaff: any) => {
+    console.log('Creating new staff:', newStaff);
+    // Here you would typically call an API to create the staff member
+    // e.g., staffHook.addStaff(newStaff);
+    setIsAddModalOpen(false);
+  };
+
   // 교직원 전용 훅
   const staffHook = useStaffOnly(staffSpreadsheetId);
   
@@ -55,8 +89,9 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   const convertedStaff = staffHook.filteredStaff.map(staff => ({
     no_student: staff.no,
     name: staff.name,
-    address: staff.tel,
-    phone_num: staff.phone,
+    address: staff.tel,        // 내선번호
+    phone_num: staff.phone,    // 연락처
+    email: staff.email,        // 이메일 추가
     grade: staff.pos,
     state: staff.date,
     council: staff.note,
@@ -68,6 +103,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     name: committee.name,
     address: committee.location,
     phone_num: committee.tel,
+    email: committee.email,        // 이메일 추가
     grade: committee.sortation,
     state: committee.position,
     council: `${committee.company_name} / ${committee.representative} / ${committee.note}`,
@@ -91,7 +127,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     { key: 'grade', header: '구분', sortable: true },
     { key: 'name', header: '이름', sortable: true },
     { key: 'address', header: '내선번호', sortable: true },
-    { key: 'phone', header: '연락처', sortable: true },
+    { key: 'phone_num', header: '연락처', sortable: true },
     { key: 'email', header: '이메일', sortable: true },
     { key: 'state', header: '임용일', sortable: true },
     { key: 'council', header: '비고', sortable: false },
@@ -101,14 +137,15 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   const committeeColumns = [
     { key: 'no_student', header: '이름', sortable: true },
     { key: 'grade', header: '위원회 구분', sortable: true },
-    { key: 'name', header: '이름', sortable: true },
     { key: 'address', header: '소재지', sortable: true },
+    { key: 'phone_num', header: '연락처', sortable: true },
+    { key: 'email', header: '이메일', sortable: true },
     { key: 'state', header: '직책', sortable: true },
     { key: 'council', header: '업체명/대표자/비고', sortable: false },
   ];
 
   // 교직원 더블클릭 처리
-  const handleStaffDoubleClick = (student: any) => {
+  const handleStaffDoubleClick = (student: ConvertedData) => {
     // 변환된 데이터에서 원본 교직원 데이터 찾기
     const originalStaff = staffHook.staff.find(s => s.no === student.no_student);
     if (originalStaff) {
@@ -119,7 +156,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   };
 
   // 위원회 더블클릭 처리
-  const handleCommitteeDoubleClick = (student: any) => {
+  const handleCommitteeDoubleClick = (student: ConvertedData) => {
     // 변환된 데이터에서 원본 위원회 데이터 찾기
     const originalCommittee = committeeHook.committee.find(c => c.name === student.no_student);
     if (originalCommittee) {
@@ -137,7 +174,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   };
 
   // 모달 업데이트 처리
-  const handleModalUpdate = (updatedStudent: any) => {
+  const handleModalUpdate = (updatedStudent: ConvertedData) => {
     if (selectedStaff) {
       // 교직원 데이터 업데이트
       const updatedStaff: Staff = {
@@ -145,26 +182,29 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         no: updatedStudent.no_student,
         name: updatedStudent.name,
         tel: updatedStudent.address,
+        phone: updatedStudent.phone_num,
+        email: updatedStudent.email,
         pos: updatedStudent.grade,
         date: updatedStudent.state,
-        note: updatedStudent.council.split(' / ')[2] || '',
-        phone: updatedStudent.council.split(' / ')[0] || '',
-        email: updatedStudent.council.split(' / ')[1] || '',
+        note: updatedStudent.council,
       };
-      staffHook.updateStaff(updatedStaff);
+      staffHook.updateStaff(selectedStaff.no, updatedStaff);
     } else if (selectedCommittee) {
       // 위원회 데이터 업데이트
       const updatedCommittee: Committee = {
         ...selectedCommittee,
         name: updatedStudent.name,
         location: updatedStudent.address,
+        tel: updatedStudent.phone_num,
+        email: updatedStudent.email,
         sortation: updatedStudent.grade,
         position: updatedStudent.state,
         company_name: updatedStudent.council.split(' / ')[0] || '',
         representative: updatedStudent.council.split(' / ')[1] || '',
         note: updatedStudent.council.split(' / ')[2] || '',
+        career: updatedStudent.career || [],
       };
-      committeeHook.updateCommittee(updatedCommittee);
+      committeeHook.updateCommittee(selectedCommittee.name, updatedCommittee);
     }
     handleModalClose();
   };
@@ -187,14 +227,27 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         onSearchChange={currentHook.setSearchTerm}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
-        filters={currentHook.filters}
-        onFiltersChange={currentHook.setFilters}
+        filters={activeTab === 'staff' ? staffHook.filters : {
+          grade: '', // 위원회 탭에서는 사용하지 않음
+          state: committeeHook.filters.sortation,
+          council: committeeHook.filters.position,
+        }}
+        onFiltersChange={(newFilters) => {
+          if (activeTab === 'staff') {
+            staffHook.setFilters(newFilters);
+          } else {
+            committeeHook.setFilters({
+              sortation: newFilters.state,
+              position: newFilters.council,
+            });
+          }
+        }}
         filterOptions={activeTab === 'staff' ? {
           grades: staffHook.filterOptions.grades, // 교직원 구분 (전임교수, 조교, 외부강사 등)
           states: ['전체 상태', '재학', '졸업', '휴학', '자퇴'], // 교직원 상태 (사용하지 않음)
-          councilPositions: ['전체 직책', '학생장', '부학생장', '총무부장', '기획부장', '학술부장', '서기'] // 교직원 직책 (사용하지 않음)
+          councilPositions: ['전체 직책', '학생장', '부학생장', '총무부장', '기획부장', '학술부장', '서기'] // 교직원 직책 (사용하지 않지 않음)
         } : {
-          grades: ['전체 구분', '교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'], // 위원회 구분
+          grades: ['교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'], // 위원회 구분
           states: committeeHook.filterOptions.sortations, // 위원회 종류
           councilPositions: committeeHook.filterOptions.positions // 위원회 직책
         }}
@@ -218,6 +271,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
                 onSort={staffHook.handleSort}
                 onStudentDoubleClick={handleStaffDoubleClick}
                 isStaffMode={true}
+                onAddStaff={handleAddStaff}
+                staffTabType='staff'
               />
             ) : (
               <StudentList
@@ -227,6 +282,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
                 onSort={committeeHook.handleSort}
                 onStudentDoubleClick={handleCommitteeDoubleClick}
                 isStaffMode={true}
+                onAddCommittee={handleAddCommittee}
+                staffTabType='committee'
               />
             )}
 
@@ -236,25 +293,38 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
           name: selectedStaff.name,
           address: selectedStaff.tel,
           phone_num: selectedStaff.phone,
+          email: selectedStaff.email,  // 이메일 필드 추가
           grade: selectedStaff.pos,
           state: selectedStaff.date,
-          council: `${selectedStaff.phone} / ${selectedStaff.email} / ${selectedStaff.note}`,
+          council: selectedStaff.note,  // 비고만 포함
           parsedCouncil: [] as { year: string; position: string }[]
         } : (selectedCommittee ? {
           no_student: selectedCommittee.name,
           name: selectedCommittee.name,
           address: selectedCommittee.location,
           phone_num: selectedCommittee.tel,
+          email: selectedCommittee.email,  // 이메일 필드 추가
           grade: selectedCommittee.sortation,
           state: selectedCommittee.position,
           council: `${selectedCommittee.company_name} / ${selectedCommittee.representative} / ${selectedCommittee.note}`,
-          parsedCouncil: [] as { year: string; position: string }[]
+          parsedCouncil: [] as { year: string; position: string }[],
+          career: selectedCommittee.career
         } : null)}
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onUpdate={handleModalUpdate}
-        studentSpreadsheetId={staffSpreadsheetId}
+        studentSpreadsheetId={activeTab === 'staff' ? staffSpreadsheetId : staffSpreadsheetId}
         mode={selectedStaff ? 'staff' : selectedCommittee ? 'committee' : 'student'}
+      />
+
+      <StudentDetailModal
+        student={null}
+        isOpen={isAddModalOpen}
+        onClose={handleAddModalClose}
+        onUpdate={handleCreateStaff}
+        studentSpreadsheetId={staffSpreadsheetId}
+        mode='staff'
+        isAdding={true}
       />
     </div>
   );

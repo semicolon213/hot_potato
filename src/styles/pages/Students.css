@@ -16,7 +16,7 @@
   background-color: var(--primary);
   border-radius: var(--border-radius-lg);
   color: #f8f8f7;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); */
 }
 
 .header-left h1 {
@@ -721,4 +721,21 @@
     padding: 6px 12px;
     font-size: 12px;
   }
+}
+
+.add-staff-button {
+  background-color: #fff;
+  color: var(--primary);
+  border: 1px solid #fff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-staff-button:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--primary-dark);
 }
