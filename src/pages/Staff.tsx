@@ -66,10 +66,19 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     setIsAddModalOpen(false);
   };
 
-  const handleCreateStaff = (newStaff: any) => {
-    console.log('Creating new staff:', newStaff);
-    // Here you would typically call an API to create the staff member
-    // e.g., staffHook.addStaff(newStaff);
+  const handleCreateStaff = (newStaffData: StudentWithCouncil) => {
+    const newStaffMember: StaffMember = {
+      no: newStaffData.no_student,
+      pos: newStaffData.grade,
+      name: newStaffData.name,
+      tel: newStaffData.address, // 내선번호
+      phone: newStaffData.phone_num, // 연락처
+      email: newStaffData.email || '',
+      date: newStaffData.state,
+      note: newStaffData.council,
+    };
+
+    staffHook.addStaff(newStaffMember);
     setIsAddModalOpen(false);
   };
 

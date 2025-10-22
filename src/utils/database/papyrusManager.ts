@@ -1104,7 +1104,17 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
     
-    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff);
+    const newRow = [[
+      staff.no,
+      staff.pos,
+      staff.name,
+      staff.tel,
+      staff.phone,
+      staff.email,
+      staff.date,
+      staff.note
+    ]];
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, newRow);
   } catch (error) {
     console.error('Error adding staff:', error);
     throw error;

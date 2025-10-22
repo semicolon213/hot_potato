@@ -205,9 +205,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      setIsEditing(isAdding); // Reset editing state every time modal opens
       if (isAdding) {
         setEditedStudent(emptyStaff);
-        setIsEditing(true);
       } else if (student) {
         // 연락처 복호화 후 학생 데이터 설정
         const loadStudentData = async () => {
@@ -273,9 +273,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         { key: 'no_student', name: '교번' },
         { key: 'grade', name: '구분' },
         { key: 'name', name: '이름' },
+        { key: 'address', name: '내선번호' },
         { key: 'phone_num', name: '연락처' },
         { key: 'email', name: '이메일' },
-        { key: 'state', name: '임용일' },
       ];
 
       for (const field of requiredFields) {
@@ -502,7 +502,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>내선번호</label>
+                      <label>내선번호<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.address}
@@ -554,7 +554,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>임용일<span style={{color: 'red'}}>*</span></label>
+                      <label>임용일</label>
                       <input
                         type="date"
                         value={editedStudent.state}
