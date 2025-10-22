@@ -42,10 +42,10 @@
 }
 
 /* 검색 아이콘 색상 수정 */
-.search-container i {
-  color: #000000;
-  margin-right: 8px;
-  font-size: var(--font-size-md);
+.search-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
 }
 
 .header-actions {
@@ -460,8 +460,6 @@
 .icon {
   color: white;
   display: inline-block;
-  width: 30px;
-  height: 19px;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
