@@ -16,7 +16,7 @@
   background-color: var(--primary);
   border-radius: var(--border-radius-lg);
   color: #f8f8f7;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); */
 }
 
 .header-left h1 {
