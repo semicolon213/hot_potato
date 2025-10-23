@@ -31,29 +31,19 @@ import {
 
 interface TemplatePageProps {
   onPageChange: (pageName: string) => void;
-  customTemplates: Template[];
-  deleteTemplate: (rowIndex: number) => void;
   tags: string[];
   addTag: (newTag: string) => void;
   deleteTag: (tagToDelete: string) => void;
   updateTag: (oldTag: string, newTag: string) => void;
-  addTemplate: (newDocData: { title: string; description: string; tag: string; }) => void;
-  updateTemplate: (rowIndex: number, newDocData: { title: string; description:string; tag: string; }, oldTitle: string) => void;
-  updateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => void;
   isTemplatesLoading?: boolean;
 }
 
 function NewDocument({ 
     onPageChange, 
-    customTemplates, 
-    deleteTemplate, 
     tags, 
     addTag, 
     deleteTag, 
     updateTag, 
-    addTemplate,
-    updateTemplate,
-    updateTemplateFavorite,
     isTemplatesLoading
 }: TemplatePageProps) {
     
@@ -189,26 +179,6 @@ function NewDocument({
     };
 
     const [defaultTemplateItems, setDefaultTemplateItems] = useState<Template[]>([]);
-    const [customTemplateItems, setCustomTemplateItems] = useState(customTemplates);
-
-    // 즐겨찾기 로직 추가
-    const handleToggleFavorite = useCallback((toggledTemplate: Template) => {
-        const favoriteCount = customTemplateItems.filter(t => t.favoritesTag).length;
-        const isCurrentlyFavorite = !!toggledTemplate.favoritesTag;
-
-        if (!isCurrentlyFavorite && favoriteCount >= 3) {
-            alert("즐겨찾기는 최대 3개까지 추가할 수 있습니다.");
-            return;
-        }
-
-        const newFavoritesTag = isCurrentlyFavorite ? undefined : toggledTemplate.title;
-
-        // API 호출
-        if (toggledTemplate.rowIndex) {
-            updateTemplateFavorite(toggledTemplate.rowIndex, newFavoritesTag);
-        }
-
-    }, [customTemplateItems]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -230,17 +200,10 @@ function NewDocument({
         }
     };
 
+    // 시트 템플릿 제거로 인해 드래그 앤 드롭 비활성화
     const handleCustomDragEnd = (event: any) => {
-        const { active, over } = event;
-        if (active.id !== over.id) {
-            setCustomTemplateItems((items) => {
-                const oldIndex = items.findIndex((item) => (item.rowIndex ? item.rowIndex.toString() : item.title) === active.id);
-                const newIndex = items.findIndex((item) => (item.rowIndex ? item.rowIndex.toString() : item.title) === over.id);
-                const newItems = arrayMove(items, oldIndex, newIndex);
-                localStorage.setItem('customTemplateOrder', JSON.stringify(newItems.map(item => item.rowIndex ? item.rowIndex.toString() : item.title)));
-                return newItems;
-            });
-        }
+        // 개인 템플릿은 드래그 앤 드롭 비활성화
+        console.log('개인 템플릿은 드래그 앤 드롭을 지원하지 않습니다.');
     };
 
     // + 새 문서 모달 상태 추가 (3개 필드)
@@ -301,10 +264,9 @@ function NewDocument({
         }
     };
     
+    // 시트 템플릿 제거로 인해 편집 기능 비활성화
     const handleEditClick = (template: Template) => {
-        setOriginalTemplate(template);
-        setEditingTemplate(template);
-        setShowEditDocModal(true);
+        console.log('개인 템플릿은 편집 기능을 지원하지 않습니다.');
     };
 
     const handleEditDocCancel = () => {
@@ -341,14 +303,18 @@ function NewDocument({
         return true;
     });
 
-    // 2. Get filtered Custom Templates from the hook
+    // 2. Get templates from the hook
     const { 
-        filteredTemplates: filteredCustomTemplates, 
         onUseTemplate,
         allDefaultTemplates,
         isLoadingTemplates,
         templateError,
         loadDynamicTemplates,
+        // 개인 템플릿 관련
+        personalTemplates,
+        isLoadingPersonalTemplates,
+        personalTemplateError,
+        togglePersonalTemplateFavorite,
         testDriveApi,
         testTemplateFolderDebug,
         testSpecificFolder,
@@ -364,7 +330,7 @@ function NewDocument({
         individualEmails,
         setIndividualEmails,
         closePermissionModal,
-    } = useTemplateUI(customTemplateItems, onPageChange, searchTerm, activeTab);
+    } = useTemplateUI([], onPageChange, searchTerm, activeTab); // 빈 배열로 시트 템플릿 제거
 
     // 동적 템플릿이 로드되면 기본 템플릿 목록 업데이트
     useEffect(() => {
@@ -380,26 +346,45 @@ function NewDocument({
         }
     }, [allDefaultTemplates]);
 
-    useEffect(() => {
-        const storedCustomOrder = localStorage.getItem('customTemplateOrder');
-        if (storedCustomOrder) {
-            const orderedIds = JSON.parse(storedCustomOrder);
-            const baseTemplates = [...customTemplates];
-            const orderedTemplates = orderedIds
-                .map((id: string) => baseTemplates.find(t => (t.rowIndex ? t.rowIndex.toString() : t.title) === id))
-                .filter((t: any): t is Template => !!t);
-            
-            const newTemplates = baseTemplates.filter(t => !orderedIds.includes(t.rowIndex ? t.rowIndex.toString() : t.title));
-            setCustomTemplateItems([...orderedTemplates, ...newTemplates]);
+    // 시트 템플릿 제거로 인해 customTemplateItems 관련 useEffect 제거
 
+    // 즐겨찾기 로직 (개인 템플릿용)
+    const handleToggleFavorite = useCallback(async (toggledTemplate: Template) => {
+        if (toggledTemplate.isPersonal) {
+            // 개인 템플릿의 경우 파일명을 업데이트
+            try {
+                // PersonalTemplateData 형식으로 변환
+                const personalTemplateData = {
+                    id: toggledTemplate.documentId || toggledTemplate.type,
+                    name: toggledTemplate.title,
+                    modifiedTime: '',
+                    isPersonal: true,
+                    tag: toggledTemplate.tag,
+                    description: toggledTemplate.description,
+                    fileType: toggledTemplate.tag,
+                    isFavorite: !!toggledTemplate.favoritesTag
+                };
+                
+                const result = await togglePersonalTemplateFavorite(personalTemplateData);
+                if (result.success) {
+                    console.log('✅ 개인 템플릿 즐겨찾기 업데이트 성공');
+                } else {
+                    console.error('❌ 개인 템플릿 즐겨찾기 업데이트 실패:', result.error);
+                    alert('즐겨찾기 업데이트에 실패했습니다: ' + result.error);
+                }
+            } catch (error) {
+                console.error('❌ 개인 템플릿 즐겨찾기 토글 오류:', error);
+                alert('즐겨찾기 업데이트 중 오류가 발생했습니다.');
+            }
         } else {
-            setCustomTemplateItems(customTemplates);
+            // 기본 템플릿은 즐겨찾기 기능 비활성화
+            console.log('기본 템플릿은 즐겨찾기 기능을 지원하지 않습니다.');
         }
-    }, [customTemplates]);
+    }, [togglePersonalTemplateFavorite]);
 
     const handleUseTemplateClick = (type: string, title: string) => {
-        // 커스텀 템플릿의 경우 documentId를 찾아서 전달
-        const template = customTemplateItems.find(t => t.title === title);
+        // 개인 템플릿의 경우 documentId를 찾아서 전달
+        const template = personalTemplates.find(t => t.title === title);
         const templateType = template?.documentId || type;
         
         console.log('📄 템플릿 클릭:', { type, title, templateType, template });
@@ -510,6 +495,22 @@ function NewDocument({
                                 strategy={rectSortingStrategy}
                             >
                                 <div className="new-templates-container">
+                                    {/* 개인 템플릿 정보 표시 (개발용) */}
+                                    {personalTemplateError && (
+                                        <div style={{ 
+                                            padding: '10px', 
+                                            margin: '10px 0', 
+                                            backgroundColor: '#fee2e2', 
+                                            border: '1px solid #fca5a5', 
+                                            borderRadius: '8px',
+                                            color: '#dc2626',
+                                            gridColumn: '1 / -1'
+                                        }}>
+                                            <strong>개인 템플릿 오류:</strong> {personalTemplateError}
+                                        </div>
+                                    )}
+                                    
+                                    
                                     {filteredDefaultTemplates.map(template => (
                                         <SortableTemplateCard
                                             key={template.type}
@@ -528,11 +529,11 @@ function NewDocument({
                     </div>
                 </div>
 
-                {/* Right Main Area: Custom Templates */}
+                {/* Right Main Area: Personal Templates */}
                 <div className="layout-main">
                     <div className="template-section">
                         <h2 className="section-title" style={{ position: 'relative' }}>
-                            내 템플릿
+                            개인 템플릿
                             <span
                                 className="new-tab add-tag-button"
                                 onClick={() => setShowNewDocModal(true)}
@@ -548,28 +549,41 @@ function NewDocument({
                                 + 새 템플릿
                             </span>
                         </h2>
+                        <div style={{ 
+                            fontSize: '12px', 
+                            color: '#666', 
+                            marginBottom: '10px',
+                            padding: '8px',
+                            backgroundColor: '#f8f9fa',
+                            borderRadius: '4px',
+                            border: '1px solid #e9ecef'
+                        }}>
+                            💡 개인 드라이브의 "hot potato/문서/개인 양식" 폴더에서 자동으로 가져옵니다.<br/>
+                            📝 파일명 형식: "유형 / 템플릿명 / 템플릿설명 / 태그 / 즐찾"
+                        </div>
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCorners}
                             onDragEnd={handleCustomDragEnd}
                         >
                             <SortableContext
-                                items={filteredCustomTemplates.map(t => t.rowIndex ? t.rowIndex.toString() : t.title)}
+                                items={personalTemplates.map(t => t.type)}
                                 strategy={rectSortingStrategy}
                             >
                                 <TemplateList
-                                    templates={filteredCustomTemplates}
+                                    templates={personalTemplates}
                                     onUseTemplate={handleUseTemplateClick}
-                                    onDeleteTemplate={deleteTemplate}
+                                    onDeleteTemplate={() => {}} // 개인 템플릿은 삭제 불가
                                     onEditTemplate={handleEditClick} // Pass the handler here
                                     defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                     onToggleFavorite={handleToggleFavorite} // Pass down the function
-                                    isLoading={isTemplatesLoading}
+                                    isLoading={isTemplatesLoading || isLoadingPersonalTemplates}
                                 />
                             </SortableContext>
                         </DndContext>
                     </div>
                 </div>
+
             </div>
             {/* 새 문서 모달 - 개선된 UI */}
             {showNewDocModal && (

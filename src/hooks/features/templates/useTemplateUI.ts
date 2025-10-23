@@ -17,6 +17,7 @@ import {
 } from "../../../utils/google/googleSheetUtils";
 import { ENV_CONFIG } from "../../../config/environment";
 import { apiClient } from "../../../utils/api/apiClient";
+import { usePersonalTemplates } from "./usePersonalTemplates";
 
 /**
  * @brief 템플릿 데이터 타입 정의
@@ -31,6 +32,7 @@ export interface Template {
     partTitle?: string;    // For filtering
     documentId?: string;   // Google Doc ID
     favoritesTag?: string; // 즐겨찾기 태그
+    isPersonal?: boolean;  // 개인 템플릿 여부
 }
 
 /**
@@ -72,6 +74,15 @@ export function useTemplateUI(
   const [dynamicTemplates, setDynamicTemplates] = useState<Template[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  
+  // 개인 템플릿 훅 사용
+  const { 
+    personalTemplates, 
+    isLoading: isLoadingPersonalTemplates, 
+    error: personalTemplateError,
+    convertToTemplates,
+    togglePersonalTemplateFavorite
+  } = usePersonalTemplates();
   
   // 권한 설정 모달 상태
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
@@ -172,7 +183,12 @@ export function useTemplateUI(
         loadDynamicTemplates();
     }, [loadDynamicTemplates]);
 
-    // 기본 템플릿과 동적 템플릿 결합
+    // 개인 템플릿을 일반 템플릿 형식으로 변환
+    const convertedPersonalTemplates = useMemo(() => {
+        return convertToTemplates(personalTemplates);
+    }, [personalTemplates, convertToTemplates]);
+
+    // 기본 템플릿과 동적 템플릿만 결합 (개인 템플릿은 별도 처리)
     const allDefaultTemplates = useMemo(() => {
         return [...defaultTemplates, ...dynamicTemplates];
     }, [dynamicTemplates]);
@@ -323,10 +339,15 @@ export function useTemplateUI(
     return {
         filteredTemplates, // 필터링/정렬된 템플릿 목록
         onUseTemplate,     // 템플릿 사용 함수
-        allDefaultTemplates, // 모든 기본 템플릿 (정적 + 동적)
-        isLoadingTemplates, // 동적 템플릿 로딩 상태
-        templateError,     // 템플릿 로딩 오류
+        allDefaultTemplates, // 모든 기본 템플릿 (정적 + 동적 + 개인)
+        isLoadingTemplates: isLoadingTemplates || isLoadingPersonalTemplates, // 전체 템플릿 로딩 상태
+        templateError: templateError || personalTemplateError, // 템플릿 로딩 오류
         loadDynamicTemplates, // 동적 템플릿 다시 로드 함수
+        // 개인 템플릿 관련
+        personalTemplates: convertedPersonalTemplates, // 개인 템플릿 목록
+        isLoadingPersonalTemplates, // 개인 템플릿 로딩 상태
+        personalTemplateError, // 개인 템플릿 오류
+        togglePersonalTemplateFavorite, // 개인 템플릿 즐겨찾기 토글
         testDriveApi, // Drive API 테스트 함수
         testTemplateFolderDebug, // 템플릿 폴더 디버깅 테스트 함수
         testSpecificFolder, // 특정 폴더 ID 테스트 함수

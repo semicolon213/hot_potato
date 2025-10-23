@@ -167,6 +167,22 @@ margin-left: 0;
     margin-bottom: 12px;
 }
 
+/* 태그 컨테이너 */
+.new-card-tag-container {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+/* 개인 템플릿 태그 */
+.personal-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-weight: 600;
+    border: 1px solid #5a67d8;
+}
+
 .new-card-tag.new-meeting {
     background-color: #e8f1ff;
     color: #4285f4;

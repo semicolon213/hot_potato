@@ -24,6 +24,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
               </div>
             ) : templates.map((template) => {
                 const isFixed = fixedTemplateTypes.includes(template.type);
+                const isPersonal = template.isPersonal; // 개인 템플릿 여부 확인
                 const id = template.rowIndex ? template.rowIndex.toString() : template.title;
 
                 // Enhance template with documentId from localStorage if not already present
@@ -40,12 +41,12 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         id={id}
                         template={templateWithDocId} // Pass the enhanced template
                         onUse={onUseTemplate}
-                        onDelete={onDeleteTemplate}
-                        onEdit={onEditTemplate}
-                        isFixed={isFixed}
+                        onDelete={isPersonal ? () => {} : onDeleteTemplate} // 개인 템플릿은 삭제 불가
+                        onEdit={isPersonal ? undefined : onEditTemplate} // 개인 템플릿은 편집 불가
+                        isFixed={isFixed || isPersonal} // 개인 템플릿도 고정 템플릿으로 처리
                         defaultTags={defaultTags}
                         onToggleFavorite={onToggleFavorite}
-                        isFavorite={!!template.favoritesTag}
+                        isFavorite={!!template.favoritesTag || (template.isPersonal && template.favoritesTag)}
                     />
                 )
             })}
