@@ -1,7 +1,7 @@
 .announcements-container {
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 1400px;
+  margin: 30px auto 0;
 }
 
 .announcements-header {
@@ -12,9 +12,9 @@
 }
 
 .announcements-title {
-  font-size: 2.5em;
+  font-size: 2.2em;
   color: var(--text-dark);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .actions-bar {
@@ -30,12 +30,32 @@
   gap: 8px;
 }
 
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-top-color: var(--text-light);
+  transform: translateY(-25%);
+  pointer-events: none;
+}
+
 .search-criteria-select {
-  padding: 8px 12px;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 8px 30px 8px 12px; /* Right padding to make space for arrow */
   border-radius: var(--border-radius-sm);
   border: 1px solid var(--border-color);
   background-color: #fff;
   height: 38px; /* Match input height */
+  min-width: 100px; /* Give it a bit of width */
 }
 
 .search-box input {
@@ -46,19 +66,22 @@
   height: 38px;
 }
 
-.new-post-button {
-  background-color: var(--primary);
-  color: #f8f8f7;
-  padding: 10px 20px;
-  border: none;
+.announcements-container .new-post-button {
+  background-color: transparent;
+  color: #475569;
+  padding: 8px 16px;
+  border: 1px solid #475569;
   border-radius: var(--border-radius-sm);
   font-size: 1em;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
 }
 
-.new-post-button:hover {
-  background-color: var(--primary-dark);
+.announcements-container .new-post-button:hover {
+  opacity: 0.8;
 }
 
 .post-list {
@@ -115,27 +138,77 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 30px;
 }
 
-.pagination span {
-  font-size: 1em;
-  color: var(--text-medium);
-}
-
-.pagination button {
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
-  background-color: #fff;
+.page-link, .page-arrow-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--text-light); /* Changed to lighter grey */
   border-radius: var(--border-radius-sm);
   cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1em;
+  text-decoration: none;
 }
 
-.pagination button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.page-link {
+  min-width: 38px;
+  height: 38px;
 }
 
-.pagination button:hover:not(:disabled) {
+.page-arrow-link {
+  gap: 5px;
+  padding: 0 12px;
+  height: 38px;
+}
+
+.page-link:hover, .page-arrow-link:hover {
   background-color: var(--background-alt);
+}
+
+.page-link.active {
+  background-color: transparent;
+  color: var(--text-dark);
+  border-radius: 0; /* Remove radius for a flat underline look */
+  font-weight: 700; /* Bold for emphasis */
+  position: relative;
+}
+
+.page-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background-color: var(--text-dark);
+}
+
+.page-arrow-link:disabled, .page-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.arrow-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.arrow-left {
+  transform: rotate(180deg);
+}
+
+.page-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 5px;
+  color: var(--text-light);
 }
