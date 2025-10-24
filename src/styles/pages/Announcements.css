@@ -24,6 +24,18 @@
   margin-bottom: 20px;
 }
 
+.total-posts {
+  font-size: 1em;
+  color: var(--text-medium);
+  margin-top: 5px;
+}
+
+.actions-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .search-box {
   display: flex;
   align-items: center;

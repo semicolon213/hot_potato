@@ -92,36 +92,39 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
         <h1 className="announcements-title">공지사항</h1>
       </div>
       <div className="actions-bar">
-        <div className="search-box">
-          <div className="select-wrapper">
-            <select 
-              value={searchCriteria} 
-              onChange={(e) => setSearchCriteria(e.target.value)} 
-              className="search-criteria-select"
-            >
-              <option value="title">제목</option>
-              <option value="author">작성자</option>
-            </select>
+        <div className="total-posts">총 {filteredPosts.length}건</div>
+        <div className="actions-right">
+          <div className="search-box">
+            <div className="select-wrapper">
+              <select 
+                value={searchCriteria} 
+                onChange={(e) => setSearchCriteria(e.target.value)} 
+                className="search-criteria-select"
+              >
+                <option value="title">제목</option>
+                <option value="author">작성자</option>
+              </select>
+            </div>
+            <input
+              type="text"
+              placeholder={`${searchCriteria === 'title' ? '제목' : '작성자'}으로 검색...`}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on new search
+              }}
+            />
           </div>
-          <input
-            type="text"
-            placeholder={`${searchCriteria === 'title' ? '제목' : '작성자'}으로 검색...`}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on new search
-            }}
-          />
+          {isAuthenticated && (
+            <button 
+              className="new-post-button" 
+              onClick={() => onPageChange('new-announcement-post')}
+              disabled={!announcementSpreadsheetId}
+            >
+              {announcementSpreadsheetId ? <><BiPencil /> 새 공지</> : '불러오는 중...'}
+            </button>
+          )}
         </div>
-        {isAuthenticated && (
-          <button 
-            className="new-post-button" 
-            onClick={() => onPageChange('new-announcement-post')}
-            disabled={!announcementSpreadsheetId}
-          >
-            {announcementSpreadsheetId ? <><BiPencil /> 새 공지</> : '불러오는 중...'}
-          </button>
-        )}
       </div>
       
       <div className="post-list">
