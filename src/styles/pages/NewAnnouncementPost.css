@@ -1,101 +1,168 @@
-.new-post-container {
-    padding: 40px;
-    max-width: 900px;
-    margin: 40px auto;
-    background-color: #f8f8f7;
-    border-radius: var(--border-radius-md);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+:root {
+    --primary-color: #4a90e2;
+    --primary-dark: #357ABD;
+    --danger-color: #e24a4a;
+    --danger-dark: #c43a3a;
+    --light-gray: #f4f5f7;
+    --medium-gray: #e0e0e0;
+    --dark-gray: #888;
+    --text-color: #333;
+    --card-bg: transparent;
+    --card-shadow: none;
+    --border-radius: 12px;
 }
 
-.new-post-header {
+.new-announcement-page {
+    padding: 40px;
+    background-color: var(--light-gray);
+    min-height: 100vh;
+}
+
+.new-announcement-card {
+    max-width: 1100px;
+    margin: 0 auto;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+}
+
+.card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid var(--border-light);
-    padding-bottom: 20px;
-    margin-bottom: 30px;
+    padding: 25px 30px;
+    border-bottom: 1px solid var(--medium-gray);
 }
 
-.new-post-header h1 {
-    font-size: 28px;
-    color: var(--text-dark);
+.card-header h2 {
     margin: 0;
+    font-size: 24px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.header-buttons .save-button {
-    background-color: var(--primary);
-    color: #f8f8f7;
+.header-actions .action-button {
     border: none;
     padding: 10px 20px;
-    border-radius: var(--border-radius-sm);
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+    font-size: 15px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease-in-out;
 }
 
-.header-buttons .save-button:hover {
-    background-color: var(--primary-dark);
+.header-actions .save-button {
+    background-color: #475569;
+    color: white;
 }
 
-.header-buttons .save-button:disabled {
-    background-color: var(--text-light);
+.header-actions .save-button:hover {
+    background-color: #3a4656;
+}
+
+.header-actions .save-button:disabled {
+    background-color: var(--medium-gray);
     cursor: not-allowed;
 }
 
-.header-buttons .cancel-button {
-    background-color: var(--text-light);
-    color: #f8f8f7;
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    font-size: 16px;
+.header-actions .cancel-button {
+    background-color: transparent;
+    color: var(--dark-gray);
     margin-right: 10px;
-    transition: background-color 0.3s ease;
 }
 
-.header-buttons .cancel-button:hover {
-    background-color: var(--text-medium);
+.header-actions .cancel-button:hover {
+    background-color: var(--medium-gray);
+    color: var(--text-color);
 }
 
-
-.new-post-form .title-input {
-    width: 100%;
-    padding: 15px;
-    font-size: 22px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 20px;
+.card-body {
+    padding: 30px;
 }
 
-.author-info {
-    text-align: right;
-    margin-bottom: 20px;
-    color: var(--text-medium);
+.form-group {
+    margin-bottom: 25px;
 }
 
-.new-post-form .content-textarea {
-    width: 100%;
-    height: 400px;
-    padding: 15px;
-    font-size: 16px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    resize: vertical;
-    line-height: 1.6;
-}
-
-.file-upload {
-    margin-top: 20px;
+.form-group label {
+    display: block;
     font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.file-upload label {
-    font-weight: bold;
-    margin-right: 10px;
+.title-input, .content-textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--medium-gray);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.file-upload .file-name {
-    margin-left: 10px;
-    color: var(--primary);
+.title-input:focus, .content-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
+
+.content-textarea {
+    height: 400px;
+    resize: vertical;
+}
+
+.attachment-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.attachment-button {
+    background-color: #f0f0f0;
+    color: #555;
+    border: 1px dashed var(--medium-gray);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.attachment-button:hover {
+    background-color: #e0e0e0;
+    border-color: var(--primary-color);
+}
+
+.attachment-name {
+    font-size: 14px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.image-preview {
+    margin-top: 20px;
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    border: 1px solid var(--medium-gray);
+}
+
+.card-footer {
+    padding: 20px 30px;
+    background-color: var(--light-gray);
+    text-align: right;
+    font-size: 14px;
+    color: var(--dark-gray);
+    border-top: 1px solid var(--medium-gray);
+}
+
