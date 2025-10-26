@@ -26,9 +26,6 @@ import {
   deleteTemplate,
   updateTemplate,
   updateTemplateFavorite,
-  addTag,
-  deleteTag,
-  updateTag,
   saveAcademicScheduleToSheet,
     fetchPosts,
     fetchAnnouncements,
@@ -36,6 +33,12 @@ import {
     fetchCalendarEvents,
     updateCalendarEvent
   } from './utils/database/papyrusManager';
+import { 
+  addTag as addPersonalTag,
+  deleteTag as deletePersonalTag,
+  updateTag as updatePersonalTag,
+  fetchTags as fetchPersonalTags
+} from './utils/database/personalTagManager';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
 
@@ -275,9 +278,15 @@ const App: React.FC = () => {
   const handleAddTag = async (newTag: string) => {
     if (newTag && !tags.includes(newTag)) {
       try {
-        await addTag(newTag);
-        setTags([...tags, newTag]);
-        console.log('새로운 태그가 추가되었습니다.');
+        const success = await addPersonalTag(newTag);
+        if (success) {
+          // 태그 목록을 다시 로드
+          const updatedTags = await fetchPersonalTags();
+          setTags(updatedTags);
+          console.log('새로운 태그가 추가되었습니다.');
+        } else {
+          console.log('태그 추가에 실패했습니다.');
+        }
       } catch (error) {
         console.error('Error saving tag:', error);
         console.log('태그 저장 중 오류가 발생했습니다.');
@@ -300,9 +309,18 @@ const App: React.FC = () => {
 
     // Background database update
     try {
-      await deleteTag(tagToDelete);
+      const success = await deletePersonalTag(tagToDelete);
+      if (success) {
+        // 태그 목록을 다시 로드
+        const updatedTags = await fetchPersonalTags();
+        setTags(updatedTags);
+      } else {
+        console.log('태그 삭제에 실패했습니다.');
+        setCustomTemplates(oldTemplates);
+        setTags(oldTags);
+      }
     } catch (error) {
-      console.error('Error deleting tag from Papyrus DB:', error);
+      console.error('Error deleting tag from personal config:', error);
       console.log('백그라운드 저장 실패: 태그 삭제가 데이터베이스에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
       setCustomTemplates(oldTemplates);
       setTags(oldTags);
@@ -320,9 +338,18 @@ const App: React.FC = () => {
 
     // Background database update
     try {
-      await updateTag(oldTag, newTag);
+      const success = await updatePersonalTag(oldTag, newTag);
+      if (success) {
+        // 태그 목록을 다시 로드
+        const updatedTags = await fetchPersonalTags();
+        setTags(updatedTags);
+      } else {
+        console.log('태그 수정에 실패했습니다.');
+        setCustomTemplates(oldTemplates);
+        setTags(oldTags);
+      }
     } catch (error) {
-      console.error('Error updating tag in Papyrus DB:', error);
+      console.error('Error updating tag in personal config:', error);
       console.log('백그라운드 저장 실패: 태그 수정이 데이터베이스에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
       setCustomTemplates(oldTemplates);
       setTags(oldTags);

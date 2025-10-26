@@ -3,6 +3,7 @@ import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/f
 import type { Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
 import { apiClient } from "../utils/api/apiClient";
+import { BiLoaderAlt } from "react-icons/bi";
 import "../components/features/templates/TemplateUI.css";
 import "../styles/pages/NewDocument.css";
 import {
@@ -290,20 +291,7 @@ function NewDocument({
         }
     };
 
-    // --- Filtering Logic ---
-
-    // 1. Filter Default Templates
-    const filteredDefaultTemplates = defaultTemplateItems.filter(template => {
-        if (activeTab !== "전체" && template.tag !== activeTab) {
-            return false;
-        }
-        if (searchTerm && !template.title.toLowerCase().includes(searchTerm.toLowerCase()) && !template.description.toLowerCase().includes(searchTerm.toLowerCase())) {
-            return false;
-        }
-        return true;
-    });
-
-    // 2. Get templates from the hook
+    // Get templates from the hook first
     const { 
         onUseTemplate,
         allDefaultTemplates,
@@ -315,6 +303,10 @@ function NewDocument({
         isLoadingPersonalTemplates,
         personalTemplateError,
         togglePersonalTemplateFavorite,
+        // 기본 템플릿 즐겨찾기 관련
+        defaultTemplateFavorites,
+        isLoadingFavorites,
+        toggleDefaultTemplateFavorite,
         testDriveApi,
         testTemplateFolderDebug,
         testSpecificFolder,
@@ -345,6 +337,30 @@ function NewDocument({
             }
         }
     }, [allDefaultTemplates]);
+
+    // --- Filtering Logic ---
+
+    // 1. Filter Default Templates
+    const filteredDefaultTemplates = defaultTemplateItems.filter(template => {
+        if (activeTab !== "전체" && template.tag !== activeTab) {
+            return false;
+        }
+        if (searchTerm && !template.title.toLowerCase().includes(searchTerm.toLowerCase()) && !template.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return false;
+        }
+        return true;
+    });
+
+    // 2. Filter Personal Templates
+    const filteredPersonalTemplates = personalTemplates.filter(template => {
+        if (activeTab !== "전체" && template.tag !== activeTab) {
+            return false;
+        }
+        if (searchTerm && !template.title.toLowerCase().includes(searchTerm.toLowerCase()) && !template.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return false;
+        }
+        return true;
+    });
 
     // 시트 템플릿 제거로 인해 customTemplateItems 관련 useEffect 제거
 
@@ -435,7 +451,6 @@ function NewDocument({
                     <div className="template-section">
                         <h2 className="section-title">
                             기본 템플릿
-                            {isLoadingTemplates && <span style={{ fontSize: '12px', color: '#666', marginLeft: '8px' }}>로딩 중...</span>}
                         </h2>
                         {templateError && (
                             <div style={{ color: 'red', fontSize: '12px', marginBottom: '10px' }}>
@@ -495,34 +510,44 @@ function NewDocument({
                                 strategy={rectSortingStrategy}
                             >
                                 <div className="new-templates-container">
-                                    {/* 개인 템플릿 정보 표시 (개발용) */}
-                                    {personalTemplateError && (
-                                        <div style={{ 
-                                            padding: '10px', 
-                                            margin: '10px 0', 
-                                            backgroundColor: '#fee2e2', 
-                                            border: '1px solid #fca5a5', 
-                                            borderRadius: '8px',
-                                            color: '#dc2626',
-                                            gridColumn: '1 / -1'
-                                        }}>
-                                            <strong>개인 템플릿 오류:</strong> {personalTemplateError}
+                                    {isLoadingTemplates ? (
+                                        <div className="loading-cell" style={{ gridColumn: '1 / -1' }}>
+                                            <BiLoaderAlt className="spinner" />
+                                            <span>로딩 중...</span>
                                         </div>
+                                    ) : (
+                                        <>
+                                            {/* 개인 템플릿 정보 표시 (개발용) */}
+                                            {personalTemplateError && (
+                                                <div style={{ 
+                                                    padding: '10px', 
+                                                    margin: '10px 0', 
+                                                    backgroundColor: '#fee2e2', 
+                                                    border: '1px solid #fca5a5', 
+                                                    borderRadius: '8px',
+                                                    color: '#dc2626',
+                                                    gridColumn: '1 / -1'
+                                                }}>
+                                                    <strong>개인 템플릿 오류:</strong> {personalTemplateError}
+                                                </div>
+                                            )}
+                                            
+                                            {filteredDefaultTemplates.map(template => (
+                                                <SortableTemplateCard
+                                                    key={template.type}
+                                                    id={template.type}
+                                                    template={template}
+                                                    onUse={handleUseTemplateClick} // No delete for default templates
+                                                    onDelete={() => {}} // No delete for default templates
+                                                    onEdit={() => {}} // No edit for default templates
+                                                    isFixed={true}
+                                                    defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
+                                                    onToggleFavorite={toggleDefaultTemplateFavorite} // 기본 템플릿 즐겨찾기 토글
+                                                    isFavorite={defaultTemplateFavorites.includes(template.title)} // 즐겨찾기 상태
+                                                />
+                                            ))}
+                                        </>
                                     )}
-                                    
-                                    
-                                    {filteredDefaultTemplates.map(template => (
-                                        <SortableTemplateCard
-                                            key={template.type}
-                                            id={template.type}
-                                            template={template}
-                                            onUse={handleUseTemplateClick} // No delete for default templates
-                                            onDelete={() => {}} // No delete for default templates
-                                            onEdit={() => {}} // No edit for default templates
-                                            isFixed={true}
-                                            defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
-                                        />
-                                    ))}
                                 </div>
                             </SortableContext>
                         </DndContext>
@@ -549,29 +574,17 @@ function NewDocument({
                                 + 새 템플릿
                             </span>
                         </h2>
-                        <div style={{ 
-                            fontSize: '12px', 
-                            color: '#666', 
-                            marginBottom: '10px',
-                            padding: '8px',
-                            backgroundColor: '#f8f9fa',
-                            borderRadius: '4px',
-                            border: '1px solid #e9ecef'
-                        }}>
-                            💡 개인 드라이브의 "hot potato/문서/개인 양식" 폴더에서 자동으로 가져옵니다.<br/>
-                            📝 파일명 형식: "유형 / 템플릿명 / 템플릿설명 / 태그 / 즐찾"
-                        </div>
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCorners}
                             onDragEnd={handleCustomDragEnd}
                         >
                             <SortableContext
-                                items={personalTemplates.map(t => t.type)}
+                                items={filteredPersonalTemplates.map(t => t.type)}
                                 strategy={rectSortingStrategy}
                             >
                                 <TemplateList
-                                    templates={personalTemplates}
+                                    templates={filteredPersonalTemplates}
                                     onUseTemplate={handleUseTemplateClick}
                                     onDeleteTemplate={() => {}} // 개인 템플릿은 삭제 불가
                                     onEditTemplate={handleEditClick} // Pass the handler here

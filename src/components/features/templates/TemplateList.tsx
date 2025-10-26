@@ -20,7 +20,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
             {isLoading ? (
               <div className="loading-cell" style={{ gridColumn: '1 / -1' }}>
                 <BiLoaderAlt className="spinner" />
-                <span>템플릿을 가져오는 중입니다...</span>
+                <span>로딩 중...</span>
               </div>
             ) : templates.map((template) => {
                 const isFixed = fixedTemplateTypes.includes(template.type);

@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useEffect } from "react";
+import { fetchFavorites, addFavorite, removeFavorite } from "../../../utils/database/personalFavoriteManager";
 
 /**
  * @brief 템플릿 데이터 타입 정의 (개인 템플릿용)
@@ -60,7 +61,9 @@ export function usePersonalTemplates() {
             // 1단계: 루트에서 "hot potato" 폴더 찾기
             const hotPotatoResponse = await gapi.client.drive.files.list({
                 q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
-                fields: 'files(id,name)'
+                fields: 'files(id,name)',
+                spaces: 'drive',
+                orderBy: 'name'
             });
 
             if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
@@ -74,7 +77,9 @@ export function usePersonalTemplates() {
             // 2단계: hot potato 폴더에서 "문서" 폴더 찾기
             const documentResponse = await gapi.client.drive.files.list({
                 q: `'${hotPotatoFolder.id}' in parents and name='문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                fields: 'files(id,name)'
+                fields: 'files(id,name)',
+                spaces: 'drive',
+                orderBy: 'name'
             });
 
             if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
@@ -88,7 +93,9 @@ export function usePersonalTemplates() {
             // 3단계: 문서 폴더에서 "개인 양식" 폴더 찾기
             const personalTemplateResponse = await gapi.client.drive.files.list({
                 q: `'${documentFolder.id}' in parents and name='개인 양식' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                fields: 'files(id,name)'
+                fields: 'files(id,name)',
+                spaces: 'drive',
+                orderBy: 'name'
             });
 
             if (!personalTemplateResponse.result.files || personalTemplateResponse.result.files.length === 0) {
@@ -129,6 +136,7 @@ export function usePersonalTemplates() {
             const templatesResponse = await gapi.client.drive.files.list({
                 q: `'${folderId}' in parents and (mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet') and trashed=false`,
                 fields: 'files(id,name,modifiedTime,owners,mimeType)',
+                spaces: 'drive',
                 orderBy: 'name'
             });
 
@@ -138,31 +146,38 @@ export function usePersonalTemplates() {
                 return;
             }
 
+            // 즐겨찾기 목록 가져오기
+            const favorites = await fetchFavorites();
+            console.log('📄 현재 즐겨찾기 목록:', favorites);
+
             // 템플릿 데이터 변환 (개인 양식 전용 파싱 방식)
             const templates: PersonalTemplateData[] = templatesResponse.result.files.map(file => {
-                // 파일 제목 파싱: "유형 / 템플릿명 / 템플릿설명 / 태그 / 즐찾"
+                // 파일 제목 파싱: "유형 / 템플릿명 / 템플릿설명"
                 const titleParts = file.name.split(' / ');
                 
                 // 파싱된 데이터 추출
                 const fileType = titleParts.length > 0 ? titleParts[0] : '문서';
                 const templateName = titleParts.length > 1 ? titleParts[1] : file.name;
                 const templateDescription = titleParts.length > 2 ? titleParts[2] : '개인 템플릿 파일';
-                const tag = titleParts.length > 3 ? titleParts[3] : '개인';
-                const isFavorite = titleParts.length > 4 ? (titleParts[4] === 'O' || titleParts[4] === 'o' || titleParts[4] === 'true') : false;
 
                 // 파일 타입에 따른 설명 추가
-                const fileTypeSuffix = file.mimeType === 'application/vnd.google-apps.spreadsheet' ? ' (스프레드시트)' : ' (문서)';
+                const fileTypeSuffix = (file as any).mimeType === 'application/vnd.google-apps.spreadsheet' ? ' (스프레드시트)' : ' (문서)';
                 const finalDescription = templateDescription + fileTypeSuffix;
+
+                // 즐겨찾기 상태 확인
+                const isFavorite = favorites.some(
+                    fav => fav.type === '개인' && fav.favorite === templateName
+                );
 
                 return {
                     id: file.id,
                     name: templateName,
-                    modifiedTime: file.modifiedTime,
+                    modifiedTime: (file as any).modifiedTime,
                     isPersonal: true,
-                    tag,
+                    tag: fileType, // 유형이 태그 역할
                     description: finalDescription,
                     fileType,
-                    isFavorite
+                    isFavorite // 실제 즐겨찾기 상태
                 };
             });
 
@@ -222,67 +237,45 @@ export function usePersonalTemplates() {
 
     /**
      * @brief 개인 템플릿 즐겨찾기 토글
-     * @details 파일명을 수정하여 즐겨찾기 상태를 변경합니다.
+     * @details 개인 설정 파일을 사용하여 즐겨찾기 상태를 변경합니다.
      */
     const togglePersonalTemplateFavorite = useCallback(async (template: PersonalTemplateData) => {
         try {
             console.log('⭐ 개인 템플릿 즐겨찾기 토글:', template);
             
-            // 안전한 파일명 확인
-            if (!template.name || typeof template.name !== 'string') {
-                console.error('❌ 유효하지 않은 템플릿 이름:', template.name);
-                return { success: false, error: '유효하지 않은 템플릿 이름입니다.' };
-            }
-            
-            // 파일명을 올바른 형식으로 파싱하고 즐찾 부분만 바꾸기
-            const currentFileName = template.name;
-            const titleParts = currentFileName.split(' / ');
-            
+            // 개인 설정 파일을 사용한 즐겨찾기 관리
+            const favoriteData = {
+                type: '개인' as const,
+                favorite: template.name
+            };
+
             // 현재 즐겨찾기 상태 확인
-            const isCurrentlyFavorite = titleParts[titleParts.length - 1] === 'O' || titleParts[titleParts.length - 1] === 'o';
-            
-            let newFileName;
-            let newFavorite;
-            
-            if (titleParts.length >= 5) {
-                // 5부분 이상인 경우: 유형 / 템플릿명 / 템플릿설명 / 태그 / 즐찾
-                const fileType = titleParts[0];
-                const templateName = titleParts[1];
-                const templateDescription = titleParts[2];
-                const tag = titleParts[3];
-                
-                newFavorite = !isCurrentlyFavorite;
-                const favoriteStatus = newFavorite ? 'O' : 'X';
-                newFileName = `${fileType} / ${templateName} / ${templateDescription} / ${tag} / ${favoriteStatus}`;
+            const existingFavorites = await fetchFavorites();
+            const isCurrentlyFavorite = existingFavorites.some(
+                fav => fav.type === '개인' && fav.favorite === template.name
+            );
+
+            if (isCurrentlyFavorite) {
+                // 즐겨찾기 해제
+                const success = await removeFavorite(favoriteData);
+                if (success) {
+                    console.log('✅ 개인 템플릿 즐겨찾기 해제 완료');
+                    // 개인 템플릿 목록 다시 로드하여 UI 업데이트
+                    await loadPersonalTemplates();
+                    return { success: true };
+                }
             } else {
-                // 형식이 잘못된 경우 기본값으로 수정
-                newFavorite = !isCurrentlyFavorite;
-                const favoriteStatus = newFavorite ? 'O' : 'X';
-                newFileName = `문서 / ${template.name} / 개인 템플릿 파일 / 개인 / ${favoriteStatus}`;
+                // 즐겨찾기 추가
+                const success = await addFavorite(favoriteData);
+                if (success) {
+                    console.log('✅ 개인 템플릿 즐겨찾기 추가 완료');
+                    // 개인 템플릿 목록 다시 로드하여 UI 업데이트
+                    await loadPersonalTemplates();
+                    return { success: true };
+                }
             }
             
-            console.log('📝 원본 파일명:', template.name);
-            console.log('📝 새 파일명:', newFileName);
-            console.log('📝 현재 즐겨찾기 상태:', isCurrentlyFavorite);
-            
-            // Google Drive API로 파일명 업데이트
-            await gapi.client.drive.files.update({
-                fileId: template.id,
-                resource: {
-                    name: newFileName
-                }
-            });
-            
-            console.log('✅ 파일명 업데이트 성공');
-            
-            // 로컬 상태 업데이트
-            setPersonalTemplates(prev => prev.map(t => 
-                t.id === template.id 
-                    ? { ...t, isFavorite: newFavorite }
-                    : t
-            ));
-            
-            return { success: true };
+            return { success: false, error: '즐겨찾기 업데이트 실패' };
             
         } catch (error) {
             console.error('❌ 개인 템플릿 즐겨찾기 토글 실패:', error);

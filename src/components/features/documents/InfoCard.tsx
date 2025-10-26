@@ -49,6 +49,18 @@ const InfoCard: React.FC<InfoCardProps> = ({
               <div className="item-name">{item.name}</div>
               {item.time && <div className="item-time">{item.time}</div>}
             </div>
+            <div className="item-badges">
+              {item.tag && (
+                <span className="item-tag">
+                  {item.tag}
+                </span>
+              )}
+              {item.typeLabel && (
+                <span className={`item-type ${item.isPersonal ? 'personal' : 'public'}`}>
+                  {item.typeLabel}
+                </span>
+              )}
+            </div>
             <div className="item-arrow">
               <div className="icon icon-chevron-right"></div>
             </div>

@@ -9,6 +9,7 @@ import { getRecentDocuments, addRecentDocument } from "../utils/helpers/localSto
 import { formatRelativeTime } from "../utils/helpers/timeUtils";
 import { useTemplateUI, type Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
+import { fetchFavorites } from "../utils/database/personalFavoriteManager";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -33,7 +34,8 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [documents, setDocuments] = useState<FetchedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
-    const { onUseTemplate, allDefaultTemplates } = useTemplateUI(customTemplates, onPageChange, '', '전체');
+  const [favoriteTemplates, setFavoriteTemplates] = useState<InfoCardItem[]>([]);
+  const { onUseTemplate, allDefaultTemplates, personalTemplates } = useTemplateUI(customTemplates, onPageChange, '', '전체');
 
   const handleDocClick = (doc: { url?: string }) => {
     if (doc.url) {
@@ -45,6 +47,44 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       window.open(doc.url, '_blank');
     }
   };
+
+  // 즐겨찾기한 템플릿들 로드
+  useEffect(() => {
+    const loadFavoriteTemplates = async () => {
+      try {
+        console.log('⭐ 즐겨찾기 템플릿 로드 시작');
+        const favorites = await fetchFavorites();
+        console.log('⭐ 즐겨찾기 목록:', favorites);
+        
+        // 모든 템플릿에서 즐겨찾기된 것들 찾기 (기본 템플릿 + 개인 템플릿)
+        const allTemplates = [...customTemplates, ...allDefaultTemplates, ...personalTemplates];
+        const favoriteItems: InfoCardItem[] = [];
+        
+        for (const favorite of favorites) {
+          const template = allTemplates.find(t => t.title === favorite.favorite);
+          if (template) {
+            // 깔끔한 표시: 템플릿명만 표시하고 추가 정보는 별도 필드로
+            favoriteItems.push({
+              name: template.title,
+              type: template.type,
+              title: template.title,
+              tag: template.tag,
+              isPersonal: favorite.type === '개인',
+              originalName: template.title,
+              typeLabel: favorite.type === '개인' ? '개인' : '공용'
+            });
+          }
+        }
+        
+        console.log('⭐ 즐겨찾기 템플릿 아이템:', favoriteItems);
+        setFavoriteTemplates(favoriteItems);
+      } catch (error) {
+        console.error('❌ 즐겨찾기 템플릿 로드 오류:', error);
+      }
+    };
+    
+    loadFavoriteTemplates();
+  }, [customTemplates, allDefaultTemplates, personalTemplates]);
 
   useEffect(() => {
     const SPREADSHEET_NAME = ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
@@ -148,31 +188,28 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     };
   }, []);
 
-  const frequentlyUsedForms = Array.from(
-    [...customTemplates, ...allDefaultTemplates]
-      .filter(template => template.favoritesTag)
-      .reduce((map, template) => {
-        if (!map.has(template.favoritesTag!)) {
-          map.set(template.favoritesTag!, {
-            name: template.favoritesTag!,
-            type: template.type,
-            title: template.title,
-          });
-        }
-        return map;
-      }, new Map<string, { name: string; type: string; title: string; } >()).values()
-  );
+  // 즐겨찾기한 템플릿들을 사용 (frequentlyUsedForms 대신 favoriteTemplates 사용)
 
-    const handleFavoriteClick = (item: { name: string; type: string; title: string; }) => {
-        // 커스텀 템플릿 또는 동적 템플릿의 경우 documentId를 찾아서 전달
-        const customTemplate = customTemplates.find(t => t.title === item.title);
-        const dynamicTemplate = allDefaultTemplates.find(t => t.title === item.title);
-        const template = customTemplate || dynamicTemplate;
+    const handleFavoriteClick = (item: { name: string; type: string; title: string; originalName?: string; }) => {
+        // 원본 템플릿 이름 사용 (item.title이 원본 이름)
+        const templateName = item.title;
+        
+        // 모든 템플릿에서 찾기 (커스텀, 동적, 개인 템플릿)
+        const customTemplate = customTemplates.find(t => t.title === templateName);
+        const dynamicTemplate = allDefaultTemplates.find(t => t.title === templateName);
+        const personalTemplate = personalTemplates.find(t => t.title === templateName);
+        const template = customTemplate || dynamicTemplate || personalTemplate;
         const templateType = template?.documentId || item.type;
         
-        console.log('📄 즐겨찾기 템플릿 클릭:', { type: item.type, title: item.title, templateType, template });
+        console.log('📄 즐겨찾기 템플릿 클릭:', { 
+            type: item.type, 
+            title: templateName, 
+            templateType, 
+            template,
+            isPersonal: !!personalTemplate
+        });
         
-        onUseTemplate(templateType, item.title, 'user');
+        onUseTemplate(templateType, templateName, 'user');
     };
 
   const statCards = [
@@ -231,7 +268,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           subtitle="자주 사용하는 양식을 빠르게 접근하세요"
           icon="icon-star"
           backgroundColor="var(--table-header-bg)"
-          items={frequentlyUsedForms}
+          items={favoriteTemplates}
           onItemClick={(item: any) => handleFavoriteClick(item)}
         />
       </div>

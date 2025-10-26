@@ -105,9 +105,6 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                 <div className="new-card-content" {...attributes} {...listeners}>
                     <div className="new-card-tag-container">
                         <div className={`new-card-tag new-${tagClassName}`}>{template.tag}</div>
-                        {template.isPersonal && (
-                            <div className="new-card-tag personal-tag">개인</div>
-                        )}
                     </div>
                     <h3 className="new-card-title">{template.title}</h3>
                     <p className="new-card-description">{template.partTitle || template.description}</p>
