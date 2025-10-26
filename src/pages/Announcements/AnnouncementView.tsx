@@ -10,17 +10,19 @@ interface AnnouncementViewProps {
 
 const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, onBack }) => {
   return (
-    <div className="announcement-view-container">
-      <button onClick={onBack} className="back-button">목록으로</button>
-      <div className="announcement-view-header">
-        <h1 className="announcement-view-title">{post.title}</h1>
-        <div className="announcement-view-meta">
-          <span>작성자: {post.author}</span>
-          <span>작성일: {post.date}</span>
-          <span>조회수: {post.views}</span>
-        </div>
+    <div className="announcements-container">
+      <div className="post-view-header">
+        <h1 className="announcements-title">{post.title}</h1>
       </div>
-      <div className="announcement-view-content" dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div className="post-view-meta-details">
+        <span>작성자: {post.author}</span>
+        <span>작성일: {post.date}</span>
+        <span>조회수: {post.views}</span>
+      </div>
+      <div className="post-view-body" dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div className="post-view-footer">
+        <button onClick={onBack} className="back-to-list-button">목록으로</button>
+      </div>
     </div>
   );
 };
