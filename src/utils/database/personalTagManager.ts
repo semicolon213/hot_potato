@@ -10,7 +10,8 @@ import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { 
   initializePersonalConfigFile, 
-  getPersonalConfigSpreadsheetId 
+  getPersonalConfigSpreadsheetId,
+  findPersonalTemplateFolder
 } from './personalConfigManager';
 
 /**
@@ -276,8 +277,8 @@ export const findPersonalTemplatesByTag = async (tag: string): Promise<string[]>
       const fileName = file.name;
       const titleParts = fileName.split(' / ');
       
-      if (titleParts.length >= 4) {
-        const fileTag = titleParts[3]; // 태그는 4번째 부분
+      if (titleParts.length >= 1) {
+        const fileTag = titleParts[0]; // 태그는 첫 번째 부분 (유형)
         if (fileTag === tag) {
           matchingFiles.push(fileName);
         }
@@ -289,6 +290,99 @@ export const findPersonalTemplatesByTag = async (tag: string): Promise<string[]>
   } catch (error) {
     console.error('❌ 태그별 개인 양식 찾기 오류:', error);
     return [];
+  }
+};
+
+/**
+ * @brief 태그 수정 시 영향받는 개인 양식들 확인
+ * @param {string} oldTag - 기존 태그
+ * @param {string} newTag - 새 태그
+ * @returns {Promise<{canUpdate: boolean, affectedFiles: string[]}>} 수정 가능 여부와 영향받는 파일들
+ */
+export const checkTagUpdateImpact = async (oldTag: string, newTag: string): Promise<{canUpdate: boolean, affectedFiles: string[]}> => {
+  try {
+    const affectedFiles = await findPersonalTemplatesByTag(oldTag);
+    
+    // 해당 태그를 사용하는 파일들 찾기
+    const filesWithThisTag: string[] = [];
+    
+    for (const fileName of affectedFiles) {
+      const titleParts = fileName.split(' / ');
+      if (titleParts.length >= 1) {
+        const fileTag = titleParts[0]; // 파일명의 첫 번째 부분이 태그(유형)
+        if (fileTag === oldTag) {
+          filesWithThisTag.push(fileName);
+        }
+      }
+    }
+
+    return {
+      canUpdate: true, // 태그 수정은 항상 가능 (파일명만 변경)
+      affectedFiles: filesWithThisTag
+    };
+  } catch (error) {
+    console.error('❌ 태그 수정 영향 확인 오류:', error);
+    return {
+      canUpdate: false,
+      affectedFiles: []
+    };
+  }
+};
+
+/**
+ * @brief 태그 수정 시 개인 템플릿 파일명 업데이트
+ * @param {string} oldTag - 기존 태그
+ * @param {string} newTag - 새 태그
+ * @returns {Promise<boolean>} 성공 여부
+ */
+export const updatePersonalTemplateFileNames = async (oldTag: string, newTag: string): Promise<boolean> => {
+  try {
+    console.log('📝 태그 수정으로 인한 개인 템플릿 파일명 업데이트:', oldTag, '->', newTag);
+    
+    // 해당 태그를 사용하는 개인 템플릿들 찾기
+    const affectedFiles = await findPersonalTemplatesByTag(oldTag);
+    
+    if (affectedFiles.length === 0) {
+      console.log('업데이트할 파일이 없습니다.');
+      return true;
+    }
+
+    // 각 파일의 파일명 업데이트
+    for (const fileName of affectedFiles) {
+      const titleParts = fileName.split(' / ');
+      if (titleParts.length >= 1 && titleParts[0] === oldTag) {
+        // 파일명의 첫 번째 부분(태그)을 새 태그로 변경
+        titleParts[0] = newTag;
+        const newFileName = titleParts.join(' / ');
+        
+        // Google Drive에서 파일 ID 찾기
+        const filesResponse = await (gapi.client as any).drive.files.list({
+          q: `name='${fileName}' and parents in '${await findPersonalTemplateFolder()}'`,
+          fields: 'files(id,name)',
+          spaces: 'drive'
+        });
+
+        if (filesResponse.result.files && filesResponse.result.files.length > 0) {
+          const fileId = filesResponse.result.files[0].id;
+          
+          // 파일명 업데이트
+          await (gapi.client as any).drive.files.update({
+            fileId: fileId,
+            resource: {
+              name: newFileName
+            }
+          });
+          
+          console.log(`✅ 파일명 업데이트 완료: ${fileName} -> ${newFileName}`);
+        }
+      }
+    }
+
+    console.log('✅ 모든 개인 템플릿 파일명 업데이트 완료');
+    return true;
+  } catch (error) {
+    console.error('❌ 개인 템플릿 파일명 업데이트 오류:', error);
+    return false;
   }
 };
 
@@ -306,8 +400,8 @@ export const checkTagDeletionImpact = async (tag: string): Promise<{canDelete: b
     
     for (const fileName of affectedFiles) {
       const titleParts = fileName.split(' / ');
-      if (titleParts.length >= 4) {
-        const fileTag = titleParts[3];
+      if (titleParts.length >= 1) {
+        const fileTag = titleParts[0]; // 파일명의 첫 번째 부분이 태그(유형)
         // 해당 태그만 있는지 확인 (간단한 검증)
         if (fileTag === tag) {
           filesWithOnlyThisTag.push(fileName);

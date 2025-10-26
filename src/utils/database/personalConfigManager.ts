@@ -97,6 +97,70 @@ export const findPersonalConfigFile = async (): Promise<string | null> => {
 };
 
 /**
+ * @brief 개인 템플릿 폴더 ID 찾기
+ * @details hot potato/문서/개인 양식 폴더의 ID를 반환합니다.
+ * @returns {Promise<string | null>} 개인 템플릿 폴더 ID 또는 null
+ */
+export const findPersonalTemplateFolder = async (): Promise<string | null> => {
+  try {
+    console.log('🔍 개인 템플릿 폴더 찾기 시작');
+    
+    // 1단계: 루트에서 "hot potato" 폴더 찾기
+    const hotPotatoResponse = await gapi.client.drive.files.list({
+      q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
+
+    if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
+      console.log('❌ hot potato 폴더를 찾을 수 없습니다');
+      return null;
+    }
+
+    const hotPotatoFolder = hotPotatoResponse.result.files[0];
+    console.log('✅ hot potato 폴더 찾음:', hotPotatoFolder.id);
+
+    // 2단계: hot potato 폴더에서 "문서" 폴더 찾기
+    const documentResponse = await gapi.client.drive.files.list({
+      q: `'${hotPotatoFolder.id}' in parents and name='문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
+
+    if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
+      console.log('❌ 문서 폴더를 찾을 수 없습니다');
+      return null;
+    }
+
+    const documentFolder = documentResponse.result.files[0];
+    console.log('✅ 문서 폴더 찾음:', documentFolder.id);
+
+    // 3단계: 문서 폴더에서 "개인 양식" 폴더 찾기
+    const personalTemplateResponse = await gapi.client.drive.files.list({
+      q: `'${documentFolder.id}' in parents and name='개인 양식' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
+
+    if (!personalTemplateResponse.result.files || personalTemplateResponse.result.files.length === 0) {
+      console.log('❌ 개인 양식 폴더를 찾을 수 없습니다');
+      return null;
+    }
+
+    const personalTemplateFolder = personalTemplateResponse.result.files[0];
+    console.log('✅ 개인 양식 폴더 찾음:', personalTemplateFolder.id);
+
+    return personalTemplateFolder.id;
+  } catch (error) {
+    console.error('❌ 개인 템플릿 폴더 찾기 오류:', error);
+    return null;
+  }
+};
+
+/**
  * @brief 개인 설정 파일 생성
  * @details hot potato 폴더에 hp_potato_DB 파일을 생성합니다.
  * @returns {Promise<string | null>} 생성된 스프레드시트 ID 또는 null

@@ -162,9 +162,8 @@ export function usePersonalTemplates() {
                 const templateName = titleParts[1] || file.name;
                 const templateDescription = titleParts[2] || templateName; // 설명이 없으면 템플릿명 사용
 
-                // 파일 타입에 따른 설명 추가
-                const fileTypeSuffix = (file as any).mimeType === 'application/vnd.google-apps.spreadsheet' ? ' (스프레드시트)' : ' (문서)';
-                const finalDescription = templateDescription + fileTypeSuffix;
+                // 파일 타입 접미사 제거 - 순수한 설명만 사용
+                const finalDescription = templateDescription;
 
                 // 즐겨찾기 상태 확인
                 const isFavorite = favorites.some(

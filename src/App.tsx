@@ -296,6 +296,10 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTag = async (tagToDelete: string) => {
+    // Optimistic UI update를 위한 백업
+    const oldTemplates = customTemplates;
+    const oldTags = tags;
+
     try {
       // 태그 삭제 시 영향받는 개인 양식들 확인
       const impact = await checkTagDeletionImpact(tagToDelete);
@@ -314,10 +318,6 @@ const App: React.FC = () => {
           return;
         }
       }
-
-      // Optimistic UI update
-      const oldTemplates = customTemplates;
-      const oldTags = tags;
 
       setTags(tags.filter(tag => tag !== tagToDelete));
       setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
@@ -343,31 +343,53 @@ const App: React.FC = () => {
   };
 
   const handleUpdateTag = async (oldTag: string, newTag: string) => {
-    // Optimistic UI update
-    const oldTemplates = customTemplates;
-    const oldTags = tags;
-
-    setTags(tags.map(t => t === oldTag ? newTag : t));
-    setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
-    console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
-
-    // Background database update
     try {
-      const success = await updatePersonalTag(oldTag, newTag);
-      if (success) {
+      // 태그 수정 시 영향받는 개인 양식들 확인
+      const { checkTagUpdateImpact, updatePersonalTemplateFileNames } = await import('./utils/database/personalTagManager');
+      const impact = await checkTagUpdateImpact(oldTag, newTag);
+      
+      if (impact.affectedFiles.length > 0) {
+        // 영향받는 파일들이 있는 경우 상세한 확인 메시지 표시
+        const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
+        const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 개인 양식들의 파일명도 함께 변경됩니다:\n\n${affectedFilesList}\n\n정말로 수정하시겠습니까?`;
+        
+        if (!window.confirm(confirmMessage)) {
+          return;
+        }
+      } else {
+        // 영향받는 파일이 없는 경우 간단한 확인
+        if (!window.confirm(`'${oldTag}' 태그를 '${newTag}'로 수정하시겠습니까?`)) {
+          return;
+        }
+      }
+
+      // Optimistic UI update
+      const oldTemplates = customTemplates;
+      const oldTags = tags;
+
+      setTags(tags.map(t => t === oldTag ? newTag : t));
+      setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
+      console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
+
+      // Background database update
+      const [tagUpdateSuccess, fileUpdateSuccess] = await Promise.all([
+        updatePersonalTag(oldTag, newTag),
+        updatePersonalTemplateFileNames(oldTag, newTag)
+      ]);
+      
+      if (tagUpdateSuccess && fileUpdateSuccess) {
         // 태그 목록을 다시 로드
         const updatedTags = await fetchPersonalTags();
         setTags(updatedTags);
+        console.log('✅ 태그 수정 및 파일명 업데이트 완료');
       } else {
-        console.log('태그 수정에 실패했습니다.');
+        console.log('태그 수정 또는 파일명 업데이트에 실패했습니다.');
         setCustomTemplates(oldTemplates);
         setTags(oldTags);
       }
     } catch (error) {
       console.error('Error updating tag in personal config:', error);
       console.log('백그라운드 저장 실패: 태그 수정이 데이터베이스에 반영되지 않았을 수 있습니다. 페이지를 새로고침 해주세요.');
-      setCustomTemplates(oldTemplates);
-      setTags(oldTags);
     }
   };
 
