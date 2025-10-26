@@ -5,7 +5,7 @@ import { BiPencil, BiPaperclip, BiSave, BiX } from "react-icons/bi";
 
 interface NewAnnouncementPostProps {
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => void;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => void;
   user: User | null;
   isAuthenticated: boolean;
 }
@@ -32,8 +32,9 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
 
     onAddPost({
       title,
-      content: content, // Change contentPreview to content
+      content: content,
       author: user?.name || 'Unknown',
+      writer_id: user?.email || ''
     });
   };
 

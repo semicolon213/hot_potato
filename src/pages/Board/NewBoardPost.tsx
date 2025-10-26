@@ -4,7 +4,7 @@ import type { Post, User } from '../../types/app';
 
 interface NewBoardPostProps {
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => void;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => void;
   user: User | null;
   isAuthenticated: boolean;
 }
@@ -30,6 +30,7 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, us
       title,
       content: content,
       author: user?.name || 'Unknown',
+      writer_id: user?.email || ''
     });
   };
 

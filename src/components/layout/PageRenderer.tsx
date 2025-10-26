@@ -57,8 +57,8 @@ interface PageRendererProps {
   staff: Staff[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => Promise<void>;
-  onAddAnnouncement: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => Promise<void>;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;

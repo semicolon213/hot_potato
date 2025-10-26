@@ -251,6 +251,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
       date: row[5] || new Date().toISOString().slice(0, 10),
       views: 0,
       likes: 0,
+      writer_id: row[6] || ''
     })).reverse();
     
     console.log(`Loaded ${posts.length} posts`);
@@ -261,7 +262,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
   }
 };
 
-export const addPost = async (boardSpreadsheetId: string, postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addPost = async (boardSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
   try {
     if (!boardSpreadsheetId) {
       throw new Error('Board spreadsheet ID not found');
@@ -277,7 +278,8 @@ export const addPost = async (boardSpreadsheetId: string, postData: Omit<Post, '
       postData.title,
       postData.content,
       '',
-      new Date().toISOString().slice(0, 10)
+      new Date().toISOString().slice(0, 10),
+      postData.writer_id
     ];
 
     await append(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, [newPostForSheet]);
@@ -313,6 +315,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
       date: row[5] || new Date().toISOString().slice(0, 10),
       views: 0,
       likes: 0,
+      writer_id: row[6] || ''
     })).reverse();
     
     console.log(`Loaded ${announcements.length} announcements`);
@@ -323,7 +326,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
-export const addAnnouncement = async (announcementSpreadsheetId: string, postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
@@ -339,7 +342,8 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
       postData.title,
       postData.content,
       '', // Column E
-      new Date().toISOString().slice(0, 10) // Column F
+      new Date().toISOString().slice(0, 10), // Column F
+      postData.writer_id // Column G
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);

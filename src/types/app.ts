@@ -37,6 +37,7 @@ export interface Post {
   views: number;
   likes: number;
   content: string;
+  writer_id: string;
 }
 
 export interface User {
