@@ -37,7 +37,8 @@ import {
   addTag as addPersonalTag,
   deleteTag as deletePersonalTag,
   updateTag as updatePersonalTag,
-  fetchTags as fetchPersonalTags
+  fetchTags as fetchPersonalTags,
+  checkTagDeletionImpact
 } from './utils/database/personalTagManager';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
@@ -295,20 +296,34 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTag = async (tagToDelete: string) => {
-    if (!window.confirm(`'${tagToDelete}' 태그를 정말로 삭제하시겠습니까? 이 태그를 사용하는 모든 템플릿도 함께 삭제됩니다.`)) {
-      return;
-    }
-
-    // Optimistic UI update
-    const oldTemplates = customTemplates;
-    const oldTags = tags;
-
-    setTags(tags.filter(tag => tag !== tagToDelete));
-    setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
-    console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
-
-    // Background database update
     try {
+      // 태그 삭제 시 영향받는 개인 양식들 확인
+      const impact = await checkTagDeletionImpact(tagToDelete);
+      
+      if (impact.affectedFiles.length > 0) {
+        // 영향받는 파일들이 있는 경우 상세한 확인 메시지 표시
+        const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
+        const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 개인 양식들도 함께 삭제됩니다:\n\n${affectedFilesList}\n\n정말로 삭제하시겠습니까?`;
+        
+        if (!window.confirm(confirmMessage)) {
+          return;
+        }
+      } else {
+        // 영향받는 파일이 없는 경우 간단한 확인
+        if (!window.confirm(`'${tagToDelete}' 태그를 삭제하시겠습니까?`)) {
+          return;
+        }
+      }
+
+      // Optimistic UI update
+      const oldTemplates = customTemplates;
+      const oldTags = tags;
+
+      setTags(tags.filter(tag => tag !== tagToDelete));
+      setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
+      console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+
+      // Background database update
       const success = await deletePersonalTag(tagToDelete);
       if (success) {
         // 태그 목록을 다시 로드

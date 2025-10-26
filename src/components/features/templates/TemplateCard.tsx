@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { Template } from "../../../hooks/features/templates/useTemplateUI";
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
-import { BiTrash, BiDotsVerticalRounded } from "react-icons/bi";
+import { BiTrash, BiDotsVerticalRounded, BiEdit } from "react-icons/bi";
 
 interface Props {
     template: Template;
     onUse: (type: string, title: string) => void;
     onDelete: (rowIndex: number) => void;
     onEdit?: (template: Template) => void; // Make optional
+    onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     isFixed: boolean;
     defaultTags: string[];
     style?: React.CSSProperties;
@@ -37,7 +38,7 @@ function getCustomTagColorClass(tagName: string): string {
 }
 
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
-    ({ template, onUse, onDelete, onEdit, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite }, ref) => {
+    ({ template, onUse, onDelete, onEdit, onEditPersonal, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite }, ref) => {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const menuRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +81,13 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
 
         return (
             <div ref={ref} style={style} className="new-template-card">
+                {/* 개인 템플릿 파일 타입 표시 */}
+                {template.isPersonal && (
+                    <div className="file-type-badge" title={template.description.includes('스프레드시트') ? '스프레드시트' : '문서'}>
+                        {template.description.includes('스프레드시트') ? '📊' : '📄'}
+                    </div>
+                )}
+                
                 {!isFixed && template.rowIndex && (
                     <div className="card-icon-group">
                         <div className="options-menu-container" ref={menuRef}>
@@ -117,6 +125,15 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                             title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        </button>
+                    )}
+                    {template.isPersonal && onEditPersonal && (
+                        <button
+                            className="edit-personal-button"
+                            onClick={() => onEditPersonal(template)}
+                            title="개인 템플릿 수정"
+                        >
+                            <BiEdit />
                         </button>
                     )}
                     <button

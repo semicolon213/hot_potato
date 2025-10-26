@@ -7,6 +7,7 @@ interface Props {
     onUseTemplate: (type: string, title: string) => void;
     onDeleteTemplate: (rowIndex: number) => void;
     onEditTemplate?: (template: Template) => void;
+    onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     defaultTags: string[];
     onToggleFavorite: (template: Template) => void;
     isLoading?: boolean;
@@ -14,7 +15,7 @@ interface Props {
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);
 
-export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, defaultTags, onToggleFavorite, isLoading }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, onEditPersonal, defaultTags, onToggleFavorite, isLoading }: Props) {
     return (
         <div className="new-templates-container">
             {isLoading ? (
@@ -43,6 +44,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         onUse={onUseTemplate}
                         onDelete={isPersonal ? () => {} : onDeleteTemplate} // 개인 템플릿은 삭제 불가
                         onEdit={isPersonal ? undefined : onEditTemplate} // 개인 템플릿은 편집 불가
+                        onEditPersonal={isPersonal ? onEditPersonal : undefined} // 개인 템플릿 수정 함수
                         isFixed={isFixed || isPersonal} // 개인 템플릿도 고정 템플릿으로 처리
                         defaultTags={defaultTags}
                         onToggleFavorite={onToggleFavorite}

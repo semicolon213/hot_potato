@@ -36,7 +36,9 @@ export interface PersonalTemplateData {
     isPersonal: true;        // 개인 템플릿임을 표시
     tag?: string;           // 카테고리 태그 (파일명에서 추출)
     description?: string;   // 설명 (파일명에서 추출)
+    partTitle?: string;     // TemplateCard에서 사용하는 partTitle
     fileType?: string;     // 유형 (파일명에서 추출)
+    mimeType?: string;     // MIME 타입 (application/vnd.google-apps.document, application/vnd.google-apps.spreadsheet)
     isFavorite?: boolean;   // 즐겨찾기 여부 (파일명에서 추출)
 }
 
@@ -156,9 +158,9 @@ export function usePersonalTemplates() {
                 const titleParts = file.name.split(' / ');
                 
                 // 파싱된 데이터 추출
-                const fileType = titleParts.length > 0 ? titleParts[0] : '문서';
-                const templateName = titleParts.length > 1 ? titleParts[1] : file.name;
-                const templateDescription = titleParts.length > 2 ? titleParts[2] : '개인 템플릿 파일';
+                const fileType = titleParts[0] || '문서';
+                const templateName = titleParts[1] || file.name;
+                const templateDescription = titleParts[2] || templateName; // 설명이 없으면 템플릿명 사용
 
                 // 파일 타입에 따른 설명 추가
                 const fileTypeSuffix = (file as any).mimeType === 'application/vnd.google-apps.spreadsheet' ? ' (스프레드시트)' : ' (문서)';
@@ -172,11 +174,14 @@ export function usePersonalTemplates() {
                 return {
                     id: file.id,
                     name: templateName,
+                    title: templateName, // TemplateCard에서 사용하는 title 필드 추가
                     modifiedTime: (file as any).modifiedTime,
                     isPersonal: true,
                     tag: fileType, // 유형이 태그 역할
                     description: finalDescription,
+                    partTitle: titleParts[2] || templateName, // 순수한 설명만 (파일타입 접미사 제외)
                     fileType,
+                    mimeType: (file as any).mimeType, // MIME 타입 추가
                     isFavorite // 실제 즐겨찾기 상태
                 };
             });
@@ -215,7 +220,7 @@ export function usePersonalTemplates() {
             description: personalTemplate.description || '개인 템플릿 파일',
             tag: personalTemplate.fileType || personalTemplate.tag || '개인', // fileType을 우선 사용
             documentId: personalTemplate.id,
-            partTitle: personalTemplate.name,
+            partTitle: personalTemplate.partTitle, // PersonalTemplateData에서 설정된 partTitle 사용
             isPersonal: true, // 개인 템플릿임을 표시
             favoritesTag: personalTemplate.isFavorite ? personalTemplate.name : undefined // 즐겨찾기 정보 포함
         };

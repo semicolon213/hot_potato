@@ -27,11 +27,13 @@
   border-radius: 16px;
   width: 90%;
   max-width: 600px;
-  max-height: 85vh;
+  max-height: 90vh;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+  overflow-y: auto;
   animation: slideUp 0.3s ease-out;
   border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideUp {
@@ -96,7 +98,8 @@
 .document-modal-body {
   padding: 32px;
   overflow-y: auto;
-  max-height: calc(85vh - 140px);
+  max-height: calc(90vh - 140px);
+  flex: 1;
 }
 
 .form-section {
@@ -180,6 +183,8 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .action-btn {
@@ -1192,7 +1197,13 @@
   border-top: 1px solid #e2e8f0;
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-button-group {
+  display: flex;
+  gap: 12px;
 }
 
 .modal-button {
@@ -1203,6 +1214,16 @@
   cursor: pointer;
   transition: all 0.2s;
   border: none;
+}
+
+.modal-button.secondary {
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.modal-button.secondary:hover {
+  background-color: #e2e8f0;
 }
 
 .modal-button.cancel {
@@ -1222,4 +1243,166 @@
 
 .modal-button.confirm:hover {
   background-color: #2563eb;
+}
+
+/* 템플릿 생성 방식 선택 */
+.creation-mode-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.mode-button {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mode-button:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.mode-button.active {
+  border-color: #3b82f6;
+  background-color: #3b82f6;
+  color: white;
+}
+
+.mode-button.active:hover {
+  background-color: #2563eb;
+}
+
+/* 문서 타입 선택 */
+.document-type-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.type-button {
+  flex: 1;
+  padding: 16px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.type-button:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.type-button.active {
+  border-color: #3b82f6;
+  background-color: #3b82f6;
+  color: white;
+}
+
+.type-button.active:hover {
+  background-color: #2563eb;
+}
+
+/* 파일 업로드 영역 */
+.file-upload-area {
+  margin-top: 8px;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-upload-display {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.file-upload-display:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-icon {
+  font-size: 32px;
+  color: #94a3b8;
+}
+
+.upload-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 6px;
+}
+
+.file-icon {
+  font-size: 20px;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #0c4a6e;
+  flex: 1;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #0369a1;
+}
+
+/* 파일 업로드 모달 높이 조정 */
+.document-modal-content.has-file-upload {
+  max-height: 95vh;
+}
+
+.document-modal-content.has-file-upload .document-modal-body {
+  max-height: calc(95vh - 140px);
 }
