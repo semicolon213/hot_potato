@@ -36,7 +36,7 @@ export interface Post {
   date: string;
   views: number;
   likes: number;
-  contentPreview: string;
+  content: string;
 }
 
 export interface User {

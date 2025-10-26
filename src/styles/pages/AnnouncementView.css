@@ -1,0 +1,30 @@
+
+.announcement-view-container {
+  padding: 20px;
+}
+
+.back-button {
+  margin-bottom: 20px;
+}
+
+.announcement-view-header {
+  margin-bottom: 20px;
+}
+
+.announcement-view-title {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.announcement-view-meta {
+  font-size: 14px;
+  color: #666;
+}
+
+.announcement-view-meta span {
+  margin-right: 15px;
+}
+
+.announcement-view-content {
+  line-height: 1.6;
+}

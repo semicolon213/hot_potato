@@ -28,7 +28,7 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, us
 
     onAddPost({
       title,
-      contentPreview: content,
+      content: content,
       author: user?.name || 'Unknown',
     });
   };

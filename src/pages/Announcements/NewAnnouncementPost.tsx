@@ -32,7 +32,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
 
     onAddPost({
       title,
-      contentPreview: content,
+      content: content, // Change contentPreview to content
       author: user?.name || 'Unknown',
     });
   };

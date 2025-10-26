@@ -76,6 +76,8 @@ const App: React.FC = () => {
     // Announcements state
     announcements,
     setAnnouncements,
+    selectedAnnouncement,
+    setSelectedAnnouncement,
     isGoogleAuthenticatedForAnnouncements,
     isAnnouncementsLoading,
     announcementSpreadsheetId,
@@ -172,7 +174,10 @@ const App: React.FC = () => {
   // 게시글 추가 핸들러
   const handleAddPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     try {
-      await addPost(postData);
+      if (!boardSpreadsheetId) {
+        throw new Error("Board spreadsheet ID not found");
+      }
+      await addPost(boardSpreadsheetId, postData);
       // 게시글 목록 새로고침
       const updatedPosts = await fetchPosts();
       setPosts(updatedPosts);
@@ -185,7 +190,10 @@ const App: React.FC = () => {
   // 공지사항 추가 핸들러
   const handleAddAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
     try {
-      await addAnnouncement(postData);
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await addAnnouncement(announcementSpreadsheetId, postData);
       // 공지사항 목록 새로고침
       const updatedAnnouncements = await fetchAnnouncements();
       setAnnouncements(updatedAnnouncements);
@@ -193,6 +201,11 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error adding announcement:', error);
     }
+  };
+
+  const handleSelectAnnouncement = (post: Post) => {
+    setSelectedAnnouncement(post);
+    handlePageChange('announcement-view');
   };
 
   // 캘린더 이벤트 추가 핸들러
@@ -426,6 +439,7 @@ const App: React.FC = () => {
               user={user}
               posts={posts}
               announcements={announcements}
+              selectedAnnouncement={selectedAnnouncement}
               isGoogleAuthenticatedForBoard={isGoogleAuthenticatedForBoard}
               isGoogleAuthenticatedForAnnouncements={isGoogleAuthenticatedForAnnouncements}
               boardSpreadsheetId={boardSpreadsheetId}
@@ -450,6 +464,7 @@ const App: React.FC = () => {
               onPageChange={handlePageChange}
               onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
+              onSelectAnnouncement={handleSelectAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

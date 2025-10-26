@@ -6,6 +6,7 @@ import RightArrowIcon from '../../assets/Icons/right_black.svg';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
+  onSelectAnnouncement: (post: Post) => void;
   posts: Post[];
   isAuthenticated: boolean;
   announcementSpreadsheetId: string | null;
@@ -55,7 +56,7 @@ const getPaginationNumbers = (currentPage: number, totalPages: number) => {
 };
 
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, isAuthenticated, announcementSpreadsheetId, isLoading }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchCriteria, setSearchCriteria] = useState('title'); // 'title' or 'author'
   const [currentPage, setCurrentPage] = useState(1);
@@ -144,7 +145,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, posts, 
               </thead>
               <tbody>
                 {currentPosts.map((post, index) => (
-                  <tr key={post.id}>
+                  <tr key={post.id} onDoubleClick={() => onSelectAnnouncement(post)}>
                     <td className="col-number">{filteredPosts.length - (indexOfFirstPost + index)}</td>
                     <td className="col-title">{post.title}</td>
                     <td className="col-author">{post.author}</td>

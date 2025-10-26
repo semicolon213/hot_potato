@@ -247,8 +247,8 @@ export const fetchPosts = async (): Promise<Post[]> => {
       id: row[0] || '',
       author: row[1] || '',
       title: row[2] || '',
-      contentPreview: row[3] || '',
-      date: new Date().toISOString().slice(0, 10),
+      content: row[3] || '',
+      date: row[5] || new Date().toISOString().slice(0, 10),
       views: 0,
       likes: 0,
     })).reverse();
@@ -261,7 +261,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
   }
 };
 
-export const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addPost = async (boardSpreadsheetId: string, postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
   try {
     if (!boardSpreadsheetId) {
       throw new Error('Board spreadsheet ID not found');
@@ -275,8 +275,9 @@ export const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'li
       newPostId,
       postData.author,
       postData.title,
-      postData.contentPreview,
-      ''
+      postData.content,
+      '',
+      new Date().toISOString().slice(0, 10)
     ];
 
     await append(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, [newPostForSheet]);
@@ -308,8 +309,8 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
       id: row[0] || '',
       author: row[1] || '',
       title: row[2] || '',
-      contentPreview: row[3] || '',
-      date: new Date().toISOString().slice(0, 10),
+      content: row[3] || '',
+      date: row[5] || new Date().toISOString().slice(0, 10),
       views: 0,
       likes: 0,
     })).reverse();
@@ -322,7 +323,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
-export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addAnnouncement = async (announcementSpreadsheetId: string, postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
@@ -336,8 +337,9 @@ export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'view
       newPostId,
       postData.author,
       postData.title,
-      postData.contentPreview,
-      ''
+      postData.content,
+      '', // Column E
+      new Date().toISOString().slice(0, 10) // Column F
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
