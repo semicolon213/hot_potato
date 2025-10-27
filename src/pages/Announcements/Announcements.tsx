@@ -70,6 +70,9 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
     if (searchCriteria === 'author') {
       return post.author.toLowerCase().includes(term);
     }
+    if (searchCriteria === 'content') {
+      return post.content.toLowerCase().includes(term);
+    }
     return false;
   });
 
@@ -104,11 +107,12 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
               >
                 <option value="title">제목</option>
                 <option value="author">작성자</option>
+                <option value="content">내용</option>
               </select>
             </div>
             <input
               type="text"
-              placeholder={`${searchCriteria === 'title' ? '제목' : '작성자'}으로 검색...`}
+              placeholder={`${searchCriteria === 'title' ? '제목' : searchCriteria === 'author' ? '작성자' : '내용'}으로 검색...`}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
