@@ -310,12 +310,12 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
     const announcements = data.values.slice(1).map((row: string[]) => ({
       id: row[0] || '',
       author: row[1] || '',
-      title: row[2] || '',
-      content: row[3] || '',
+      writer_id: row[2] || '',
+      title: row[3] || '',
+      content: row[4] || '',
       date: row[5] || new Date().toISOString().slice(0, 10),
-      views: 0,
+      views: parseInt(row[6] || '0', 10),
       likes: 0,
-      writer_id: row[6] || ''
     })).reverse();
     
     console.log(`Loaded ${announcements.length} announcements`);
@@ -339,11 +339,12 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
     const newAnnouncementForSheet = [
       newPostId,
       postData.author,
+      postData.writer_id,
       postData.title,
       postData.content,
-      '', // Column E
-      new Date().toISOString().slice(0, 10), // Column F
-      postData.writer_id // Column G
+      new Date().toISOString().slice(0, 10),
+      0, // view_count
+      '' // file_notice
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
@@ -351,6 +352,43 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
   } catch (error) {
     console.error('Error saving announcement to Google Sheet:', error);
     throw error;
+  }
+};
+
+export const incrementViewCount = async (announcementId: string): Promise<void> => {
+  try {
+    if (!announcementSpreadsheetId) {
+      throw new Error('Announcement spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
+    if (!data || !data.values) {
+      throw new Error('Could not get sheet data');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === announcementId);
+    if (rowIndex === -1) {
+      // This is not an error, as the sheet may not have been updated yet.
+      console.log(`Announcement with ID ${announcementId} not found in sheet. It might be a new post.`);
+      return;
+    }
+
+    const currentViews = parseInt(data.values[rowIndex][6] || '0', 10);
+    const newViews = currentViews + 1;
+
+    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: announcementSpreadsheetId,
+        range: `${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}!G${rowIndex + 1}`,
+        valueInputOption: 'RAW',
+        resource: {
+            values: [[newViews]]
+        }
+    });
+
+    console.log(`View count for announcement ${announcementId} updated to ${newViews}`);
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+    // We don't throw error here as it is not critical.
   }
 };
 

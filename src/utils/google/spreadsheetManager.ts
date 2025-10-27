@@ -107,18 +107,19 @@ export const fetchAnnouncements = async (announcementSpreadsheetId: string, anno
     try {
         const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: announcementSpreadsheetId,
-            range: `${announcementSheetName}!A:E`,
+            range: `${announcementSheetName}!A:H`,
         });
 
         const data = response.result.values;
         if (data && data.length > 1) {
             const parsedAnnouncements: Post[] = data.slice(1).map((row: string[]) => ({
-                id: row[0],
-                author: row[1],
-                title: row[2],
-                contentPreview: row[3],
-                date: new Date().toISOString().slice(0, 10),
-                views: 0,
+                id: row[0] || '',
+                author: row[1] || '',
+                writer_id: row[2] || '',
+                title: row[3] || '',
+                content: row[4] || '',
+                date: row[5] || new Date().toISOString().slice(0, 10),
+                views: parseInt(row[6] || '0', 10),
                 likes: 0,
             })).reverse();
             return parsedAnnouncements;
@@ -147,9 +148,12 @@ export const addAnnouncement = async (
         const newPostForSheet = {
             'no_notice': newPostId,
             'writer_notice': postData.author,
+            'writer_id': postData.writer_id,
             'title_notice': postData.title,
-            'content_notice': postData.contentPreview,
-            'file_notice': '',
+            'content_notice': postData.content,
+            'date': new Date().toISOString().slice(0, 10),
+            'view_count': 0,
+            'file_notice': ''
         };
 
         await appendRow(announcementSpreadsheetId, announcementSheetName, newPostForSheet);
@@ -158,6 +162,43 @@ export const addAnnouncement = async (
         console.error('Error saving announcement to Google Sheet:', error);
         throw error;
     }
+};
+
+export const incrementViewCount = async (announcementSpreadsheetId: string, announcementSheetName: string, announcementId: string): Promise<void> => {
+  try {
+    const data = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: announcementSpreadsheetId,
+        range: `${announcementSheetName}!A:H`,
+    });
+
+    if (!data || !data.result.values) {
+      throw new Error('Could not get sheet data');
+    }
+
+    const rowIndex = data.result.values.findIndex(row => row[0] === announcementId);
+    if (rowIndex === -1) {
+      console.log(`Announcement with ID ${announcementId} not found in sheet. It might be a new post.`);
+      return;
+    }
+    
+    const sheetRowIndex = rowIndex + 1;
+
+    const currentViews = parseInt(data.result.values[rowIndex][6] || '0', 10);
+    const newViews = currentViews + 1;
+
+    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: announcementSpreadsheetId,
+        range: `${announcementSheetName}!G${sheetRowIndex}`,
+        valueInputOption: 'RAW',
+        resource: {
+            values: [[newViews]]
+        }
+    });
+
+    console.log(`View count for announcement ${announcementId} updated to ${newViews}`);
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+  }
 };
 
 // 템플릿 관련 함수들

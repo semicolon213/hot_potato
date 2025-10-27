@@ -34,7 +34,8 @@ import {
     fetchAnnouncements,
     fetchTemplates,
     fetchCalendarEvents,
-    updateCalendarEvent
+    updateCalendarEvent,
+    incrementViewCount
   } from './utils/database/papyrusManager';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
@@ -203,9 +204,22 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSelectAnnouncement = (post: Post) => {
-    setSelectedAnnouncement(post);
+  const handleSelectAnnouncement = async (post: Post) => {
+    // Optimistically update the UI
+    const updatedAnnouncements = announcements.map(a =>
+      a.id === post.id ? { ...a, views: a.views + 1 } : a
+    );
+    setAnnouncements(updatedAnnouncements);
+    setSelectedAnnouncement({ ...post, views: post.views + 1 });
+
     handlePageChange('announcement-view');
+
+    try {
+      await incrementViewCount(post.id);
+    } catch (error) {
+      console.error('Failed to increment view count:', error);
+      // Optionally, revert the optimistic update here
+    }
   };
 
   // 캘린더 이벤트 추가 핸들러
