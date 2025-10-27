@@ -334,7 +334,7 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
 
     const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
     const lastRow = data && data.values ? data.values.length : 0;
-    const newPostId = `an-${lastRow + 1}`;
+    const newPostId = `${lastRow + 1}`;
 
     const newAnnouncementForSheet = [
       newPostId,

@@ -142,7 +142,7 @@ export const addAnnouncement = async (
         });
 
         const lastRow = response.result.values ? response.result.values.length : 0;
-        const newPostId = `an-${lastRow + 1}`;
+        const newPostId = `${lastRow + 1}`;
 
         const newPostForSheet = {
             'no_notice': newPostId,
