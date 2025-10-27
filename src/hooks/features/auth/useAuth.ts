@@ -35,6 +35,7 @@ interface LoginResponse {
   isApproved: boolean;
   studentId?: string;
   isAdmin?: boolean;
+  userType?: string;
   error?: string;
   approvalStatus?: string;
   debug?: {
@@ -83,8 +84,9 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       isRegistered: data.isRegistered || false,
       isApproved: data.isApproved || false,
       approvalStatus: data.approvalStatus || 'not_requested',
-      studentId: data.studentId || data.memberNumber || '',
-      isAdmin: data.isAdmin || false,
+      studentId: data.user?.no_member || '',
+      isAdmin: data.user?.is_admin || false,
+      userType: data.user?.user_type || '',
       error: data.error,
       debug: data.debug
     } as LoginResponse;
