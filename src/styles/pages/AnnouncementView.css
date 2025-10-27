@@ -1,4 +1,3 @@
-
 .post-view-header {
   padding: 20px 0;
   border-top: 2px solid var(--text-dark);
@@ -25,7 +24,6 @@
   line-height: 1.8;
   font-size: 1.1em;
   color: var(--text-dark);
-  background-color: #f9fafb; /* A very light grey for the content area */
   border-radius: var(--border-radius-md);
 }
 
