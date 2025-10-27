@@ -9,6 +9,7 @@ interface User {
   studentId: string;
   isAdmin: boolean;
   isApproved: boolean;
+  userType?: string;
   accessToken?: string;
   googleAccessToken?: string;
 }
@@ -182,6 +183,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
             isApproved: true,
+            userType: result.userType || '',
             accessToken: accessToken,
             googleAccessToken: accessToken
           });
@@ -195,6 +197,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
             isApproved: false,
+            userType: result.userType || '',
             googleAccessToken: accessToken
           });
         }
