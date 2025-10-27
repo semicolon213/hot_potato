@@ -121,7 +121,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         }
     };
 
-    const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting', 'personal'];
+    const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
     const filterLabels: { [key: string]: string } = {
         all: '전체',
         holiday: '휴일/휴강',
@@ -131,7 +131,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         event: '행사',
         makeup: '보강',
         meeting: '회의',
-        personal: '개인일정',
     };
 
     useEffect(() => {

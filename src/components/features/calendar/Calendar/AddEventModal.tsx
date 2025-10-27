@@ -214,6 +214,12 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAttendeeSearchVisible, students, staff]);
 
+  useEffect(() => {
+    if (isAttendeeSearchVisible) {
+      setSaveTarget('sheet');
+    }
+  }, [isAttendeeSearchVisible]);
+
   const handleSave = () => {
     if (title.trim()) {
       const eventData: Partial<Event> & { rrule?: string; attendees?: string; } = {
@@ -318,7 +324,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
             {!isEditMode && (
                 <div className="save-target-group">
-                  <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
+                  {!isAttendeeSearchVisible && (
+                    <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
+                  )}
                   <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => setSaveTarget('sheet')}>공유</button>
                 </div>
             )}
@@ -326,7 +334,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             {saveTarget === 'sheet' && (
                 <>
                     <div className="tag-selection-group">
-                        {eventTypes.map(type => (
+                        {eventTypes
+                            .filter(type => {
+                                if (user?.userType === 'student') {
+                                    return type === 'meeting';
+                                }
+                                return true;
+                            })
+                            .map(type => (
                             <button
                                 key={type}
                                 type="button"
@@ -337,7 +352,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                 {tagLabels[type] || type}
                             </button>
                         ))}
-                        <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                        {user?.userType !== 'student' && (
+                            <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                        )}
                     </div>
                     {isCustomTag && (
                         <div className="custom-tag-container">

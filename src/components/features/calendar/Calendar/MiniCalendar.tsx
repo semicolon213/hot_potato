@@ -168,12 +168,14 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ selectedWeek, viewMode, onD
           if (isToday) {
               dayClasses += ' today';
               if (isInSelectedWeek) {
-                  dayStyle.color = '#F08080';
+                  dayStyle.color = 'rgba(255, 0, 0, 0.8)';
                   dayStyle.fontWeight = 'bold';
               } else {
-                  dayStyle.backgroundColor = '#F08080';
+                  dayStyle.backgroundColor = 'rgba(255, 0, 0, 0.8)';
                   dayStyle.color = 'white';
                   dayStyle.borderRadius = '50%';
+                  dayStyle.width = '80%';
+                  dayStyle.height = '80%';
               }
           }
 
