@@ -34,7 +34,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
       title,
       content: content,
       author: user?.name || 'Unknown',
-      writer_id: user?.email || ''
+      writer_id: user?.studentId || ''
     });
   };
 

@@ -34,6 +34,7 @@ interface LoginResponse {
   isApproved: boolean;
   studentId?: string;
   isAdmin?: boolean;
+  name?: string;
   error?: string;
   approvalStatus?: string;
   debug?: {
@@ -82,8 +83,9 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       isRegistered: data.isRegistered || false,
       isApproved: data.isApproved || false,
       approvalStatus: data.approvalStatus || 'not_requested',
-      studentId: data.studentId || data.memberNumber || '',
+      studentId: data.user?.no_member || data.studentId || data.memberNumber || '',
       isAdmin: data.isAdmin || false,
+      name: data.user?.name_member,
       error: data.error,
       debug: data.debug
     } as LoginResponse;
@@ -178,7 +180,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
           alert('이미 가입된 회원입니다. 로그인을 진행합니다.');
           onLogin({
             email: email,
-            name: name,
+            name: result.name || name,
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
             isApproved: true,
@@ -191,7 +193,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
           alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
           onLogin({
             email: email,
-            name: name,
+            name: result.name || name,
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
             isApproved: false,

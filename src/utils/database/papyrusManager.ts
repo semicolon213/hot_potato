@@ -327,6 +327,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
 };
 
 export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
+  setupPapyrusAuth();
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
