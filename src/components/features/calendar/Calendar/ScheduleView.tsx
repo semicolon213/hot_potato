@@ -10,7 +10,7 @@ const ScheduleView: React.FC = () => {
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+        return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
     };
 
     const handleBackClick = () => {
@@ -42,12 +42,14 @@ const ScheduleView: React.FC = () => {
                         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
                         let dDayText = '';
-                        if (diffDays === 0) {
-                            dDayText = 'D-day';
-                        } else if (diffDays > 0) {
-                            dDayText = `D-${diffDays}`;
-                        } else {
-                            dDayText = `D+${-diffDays}`;
+                        if (!isSearchResult) {
+                            if (diffDays === 0) {
+                                dDayText = 'D-day';
+                            } else if (diffDays > 0) {
+                                dDayText = `D-${diffDays}`;
+                            } else {
+                                dDayText = `D+${-diffDays}`;
+                            }
                         }
 
                         return (
@@ -84,7 +86,7 @@ const ScheduleView: React.FC = () => {
                                     <div className="schedule-item-title">{event.title}</div>
                                     <div className="schedule-item-description">{event.description}</div>
                                 </div>
-                                <div className="schedule-item-dday">{dDayText}</div>
+                                {!isSearchResult && <div className="schedule-item-dday">{dDayText}</div>}
                             </li>
                         );
                     })}

@@ -581,7 +581,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                         addRecentSearch(inputValue.trim());
 
                                         const lowerInputValue = inputValue.toLowerCase();
-                                        const results = unfilteredEvents.filter(event => 
+                                        const results = events.filter(event => 
                                             event.title.toLowerCase().includes(lowerInputValue) ||
                                             (event.type && event.type.toLowerCase().includes(lowerInputValue))
                                         );
@@ -605,7 +605,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                             key={index}
                                             onMouseDown={() => {
                                                 const lowerSuggestionTitle = suggestion.title.toLowerCase();
-                                                const results = unfilteredEvents.filter(event => 
+                                                const results = events.filter(event => 
                                                     event.title.toLowerCase().includes(lowerSuggestionTitle) ||
                                                     (event.type && event.type.toLowerCase().includes(lowerSuggestionTitle))
                                                 );
