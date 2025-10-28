@@ -114,14 +114,14 @@ const App: React.FC = () => {
 
   // 로그인 처리
   const handleLogin = (userData: User) => {
-    console.log('로그인 처리 시작:', userData);
+    // console.log('로그인 처리 시작:', userData);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     if (userData.accessToken) {
       localStorage.setItem('googleAccessToken', userData.accessToken);
       setGoogleAccessToken(userData.accessToken);
     }
-    console.log('✅ 로그인 완료 - 데이터 로딩은 useAppState에서 자동 처리됩니다');
+    // console.log('✅ 로그인 완료 - 데이터 로딩은 useAppState에서 자동 처리됩니다');
   };
 
   // 로그아웃 처리
@@ -142,7 +142,7 @@ const App: React.FC = () => {
     // Electron 환경에서만 실행
     if (window.electronAPI) {
       const handleAppBeforeQuit = () => {
-        console.log('앱 종료 감지 - 자동 로그아웃 실행');
+        // console.log('앱 종료 감지 - 자동 로그아웃 실행');
         handleLogout();
       };
 
@@ -252,8 +252,8 @@ const App: React.FC = () => {
 
   // 캘린더 이벤트 삭제 핸들러
   const handleDeleteCalendarEvent = async (eventId: string) => {
-    console.log("Deleting event", eventId);
-    console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
+    // console.log("Deleting event", eventId);
+    // console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
   };
 
   // 학사일정 저장 핸들러
@@ -296,7 +296,7 @@ const App: React.FC = () => {
       // 템플릿 목록 새로고침
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
-      console.log('템플릿이 성공적으로 삭제되었습니다.');
+      // console.log('템플릿이 성공적으로 삭제되었습니다.');
     } catch (error) {
       console.error('Error deleting template:', error);
       console.log('템플릿 삭제 중 오류가 발생했습니다.');
@@ -311,7 +311,7 @@ const App: React.FC = () => {
           // 태그 목록을 다시 로드
           const updatedTags = await fetchPersonalTags();
           setTags(updatedTags);
-          console.log('새로운 태그가 추가되었습니다.');
+          // console.log('새로운 태그가 추가되었습니다.');
         } else {
           console.log('태그 추가에 실패했습니다.');
         }
@@ -348,7 +348,7 @@ const App: React.FC = () => {
 
       setTags(tags.filter(tag => tag !== tagToDelete));
       setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
-      console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+      // console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
 
       // Background database update
       const success = await deletePersonalTag(tagToDelete);
@@ -396,7 +396,7 @@ const App: React.FC = () => {
 
       setTags(tags.map(t => t === oldTag ? newTag : t));
       setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
-      console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
+      // console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
 
       // Background database update
       const [tagUpdateSuccess, fileUpdateSuccess] = await Promise.all([
@@ -408,7 +408,7 @@ const App: React.FC = () => {
         // 태그 목록을 다시 로드
         const updatedTags = await fetchPersonalTags();
         setTags(updatedTags);
-        console.log('✅ 태그 수정 및 파일명 업데이트 완료');
+        // console.log('✅ 태그 수정 및 파일명 업데이트 완료');
       } else {
         console.log('태그 수정 또는 파일명 업데이트에 실패했습니다.');
         setCustomTemplates(oldTemplates);
@@ -426,7 +426,7 @@ const App: React.FC = () => {
       // 템플릿 목록 새로고침
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
-      console.log('문서가 성공적으로 저장되었습니다.');
+      // console.log('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
       console.error('Error creating document or saving to database:', error);
       console.log('문서 생성 또는 저장 중 오류가 발생했습니다.');
@@ -455,7 +455,7 @@ const App: React.FC = () => {
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
 
-      console.log('문서가 성공적으로 수정되었습니다.');
+      // console.log('문서가 성공적으로 수정되었습니다.');
     } catch (error) {
       console.error('Error updating document in database:', error);
       console.log('문서 수정 중 오류가 발생했습니다.');
@@ -465,7 +465,7 @@ const App: React.FC = () => {
   const handleUpdateTemplateFavorite = async (rowIndex: number, favoriteStatus: string | undefined) => {
     try {
       await updateTemplateFavorite(rowIndex, favoriteStatus);
-      console.log(`Template favorite status updated in database for row ${rowIndex}.`);
+      // console.log(`Template favorite status updated in database for row ${rowIndex}.`);
       // 템플릿 목록 새로고침
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);

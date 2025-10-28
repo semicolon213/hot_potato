@@ -133,17 +133,22 @@ function NewDocument({
                 title: selectedTemplate.title,
                 documentId: selectedTemplate.documentId,
                 type: selectedTemplate.type,
-                templateType: selectedTemplate.documentId || selectedTemplate.type
+                templateType: selectedTemplate.documentId || selectedTemplate.type,
+                tag: selectedTemplate.tag
             });
             
-            const result = await apiClient.createDocument({
+            const documentData = {
                 title: documentTitle, // 사용자가 입력한 제목 사용
                 templateType: selectedTemplate.documentId || selectedTemplate.type,
                 creatorEmail: creatorEmail,
                 editors: allEditors,
                 role: 'student', // 기본값으로 student 설정
                 tag: selectedTemplate.tag // 태그 추가
-            });
+            };
+            
+            console.log('📄 API로 전송할 데이터:', documentData);
+            
+            const result = await apiClient.createDocument(documentData);
 
             if (result.success) {
                 console.log('📄 문서 생성 성공:', result);
@@ -156,6 +161,14 @@ function NewDocument({
                     console.log('📝 권한 설정 메시지:', result.debug.permissionMessage);
                     console.log('✅ 권한 부여된 사용자:', result.debug.grantedUsers);
                     console.log('👥 현재 편집자 목록:', result.debug.currentEditors);
+                    
+                    // 메타데이터 디버깅 정보
+                    console.log('📄 메타데이터 상태:', result.debug.metadataStatus);
+                    console.log('📄 메타데이터 에러:', result.debug.metadataError);
+                    console.log('📄 전달된 태그:', result.debug.tag);
+                    console.log('📄 생성자 이메일:', result.debug.creatorEmail);
+                    console.log('📄 문서 ID:', result.debug.documentId);
+                    console.log('📄 실제 저장된 메타데이터:', result.debug.verifiedProperties);
                 }
                 
                 // 권한 설정 결과 확인
@@ -172,6 +185,16 @@ function NewDocument({
                 setCreatedDocumentUrl(result.data.documentUrl);
                 closePermissionModal();
                 setShowAfterCreateModal(true);
+                
+                // 메타데이터 상태 알림
+                if (result.debug) {
+                    if (result.debug.metadataStatus === 'success') {
+                        console.log('✅ 메타데이터 저장 성공');
+                    } else if (result.debug.metadataStatus === 'failed') {
+                        console.warn('⚠️ 메타데이터 저장 실패:', result.debug.metadataError);
+                        alert(`문서는 생성되었지만 메타데이터 저장에 실패했습니다: ${result.debug.metadataError}`);
+                    }
+                }
             } else {
                 console.error('📄 문서 생성 실패:', result);
                 alert('문서 생성에 실패했습니다: ' + result.message);

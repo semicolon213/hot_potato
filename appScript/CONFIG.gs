@@ -428,6 +428,9 @@
     // 템플릿 폴더 경로
     const TEMPLATE_FOLDER_PATH = 'hot potato/문서/양식';
     
+    // 공유 문서 폴더 경로
+    const SHARED_DOCUMENT_FOLDER_PATH = 'hot potato/문서/공유 문서';
+    
     // 역할별 스프레드시트 이름 매핑
     const ROLE_SPREADSHEET_MAP = {
         'student': '학생_문서관리',
@@ -470,6 +473,14 @@
      */
     function getTemplateFolderPath() {
         return TEMPLATE_FOLDER_PATH;
+    }
+    
+    /**
+     * 공유 문서 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getSharedDocumentFolderPath() {
+        return SHARED_DOCUMENT_FOLDER_PATH;
     }
     
     /**

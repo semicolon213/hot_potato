@@ -7,7 +7,7 @@
 // ===== 문서 권한 관련 함수들 =====
 
 /**
- * 문서 권한 설정 (DriveApp 사용 - 간단한 버전)
+ * 문서 권한 설정 (Drive API 사용 - 메일 알림 없음)
  * @param {string} documentId - 문서 ID
  * @param {string} creatorEmail - 생성자 이메일
  * @param {Array} editors - 편집자 이메일 배열
@@ -15,15 +15,12 @@
  */
 function setDocumentPermissions(documentId, creatorEmail, editors) {
   try {
-    console.log('🔐 문서 권한 설정 시작 (DriveApp):', { documentId, creatorEmail, editors });
+    console.log('🔐 문서 권한 설정 시작 (Drive API):', { documentId, creatorEmail, editors });
     
     // 입력 데이터 검증
     if (!documentId) {
       throw new Error('문서 ID가 필요합니다');
     }
-    
-    const file = DriveApp.getFileById(documentId);
-    console.log('📄 문서 정보:', { id: file.getId(), name: file.getName() });
     
     // 모든 사용자에게 편집 권한 부여 (생성자 + 편집자)
     const allUsers = [creatorEmail, ...(editors || [])].filter((email, index, arr) => 
@@ -44,8 +41,9 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
     }
     
     // 권한 설정 전 현재 상태 확인
-    const beforePermissions = file.getEditors();
-    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+    const permissions = Drive.Permissions.list(documentId);
+    const beforePermissions = permissions.items || [];
+    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.emailAddress));
     
     let successCount = 0;
     let failCount = 0;
@@ -56,16 +54,21 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
         console.log('🔐 권한 부여 시도:', userEmail);
         
         // 이미 권한이 있는지 확인
-        const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+        const hasPermission = beforePermissions.some(p => p.emailAddress === userEmail && p.role === 'writer');
         if (hasPermission) {
           console.log('✅ 이미 권한이 있는 사용자:', userEmail);
           successCount++;
           continue;
         }
         
-        // 권한 부여
-        file.addEditor(userEmail);
-        console.log('✅ 편집 권한 부여 완료:', userEmail);
+        // 권한 부여 (메일 알림 없이)
+        Drive.Permissions.insert({
+          role: 'writer',
+          type: 'user',
+          value: userEmail,
+          sendNotificationEmails: false
+        }, documentId);
+        console.log('✅ 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
         successCount++;
         
         // 잠시 대기 (API 제한 방지)
@@ -78,14 +81,14 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
     }
     
     // 권한 설정 후 결과 확인
-    const afterPermissions = file.getEditors();
-    console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+    const afterPermissions = Drive.Permissions.list(documentId);
+    console.log('🔐 권한 설정 후 편집자:', afterPermissions.items.map(p => p.emailAddress));
     
     const result = {
       success: successCount > 0,
       message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
       grantedUsers: allUsers,
-      currentEditors: afterPermissions.map(p => p.getEmail()),
+      currentEditors: afterPermissions.items.map(p => p.emailAddress),
       successCount: successCount,
       failCount: failCount
     };
@@ -101,7 +104,6 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
     };
   }
 }
-
 
 /**
  * 문서 권한 확인

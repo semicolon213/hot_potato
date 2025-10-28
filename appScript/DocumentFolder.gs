@@ -7,35 +7,82 @@
 // ===== 폴더 관리 관련 함수들 =====
 
 /**
- * 문서를 hot potato/문서/공유 문서 폴더로 이동
+ * 문서를 적절한 폴더로 이동 (문서 타입에 따라)
  * @param {string} documentId - 문서 ID
+ * @param {string} documentType - 문서 타입 ('template' 또는 'document')
  * @returns {Object} 이동 결과
  */
-function moveDocumentToFolder(documentId) {
+function moveDocumentToFolder(documentId, documentType = 'document') {
+  // CONFIG.gs에서 폴더 경로 가져오기
+  const folderPath = documentType === 'template' 
+    ? getTemplateFolderPath()  // 'hot potato/문서/양식'
+    : getSharedDocumentFolderPath();  // 'hot potato/문서/공유 문서'
+  
+  const debug = {
+    step: 'moveDocumentToFolder_start',
+    documentId: documentId,
+    documentType: documentType,
+    folderPath: folderPath,
+    configBased: true
+  };
+  
   try {
-    console.log('Document folder move start:', documentId);
+    console.log('📁 문서 폴더 이동 시작:', documentId, '타입:', documentType);
     
-    // hot potato/문서/공유 문서 폴더 찾기 또는 생성
-    const folder = findOrCreateFolder('hot potato/문서/공유 문서');
+    // 적절한 폴더 찾기 또는 생성
+    const folder = findOrCreateFolder(folderPath);
+    debug.step = 'folder_find_result';
+    debug.folderResult = folder;
+    
     if (!folder.success) {
-      return folder;
+      debug.step = 'folder_find_failed';
+      debug.error = folder.message;
+      return {
+        success: false,
+        message: '폴더 찾기/생성 실패: ' + folder.message,
+        debug: debug
+      };
     }
     
-    // 문서를 폴더로 이동
-    Drive.Files.update({
-      fileId: documentId,
-      addParents: folder.data.id,
-      removeParents: 'root'
-    });
+    debug.step = 'folder_found';
+    debug.targetFolderId = folder.data.id;
     
-    console.log('Document moved to shared documents folder');
-    return { success: true };
+    // 문서의 현재 부모 폴더들 확인
+    const currentFile = Drive.Files.get(documentId, {fields: 'parents'});
+    const currentParents = currentFile.parents ? currentFile.parents.map(p => p.id) : [];
+    
+    debug.currentParents = currentParents;
+    debug.targetFolderId = folder.data.id;
+    
+    // 문서를 폴더로 이동 (모든 기존 부모에서 제거하고 새 폴더에 추가)
+    const moveResult = Drive.Files.update(
+      {
+        addParents: folder.data.id,
+        removeParents: currentParents.join(',')
+      },
+      documentId
+    );
+    
+    debug.step = 'move_completed';
+    debug.moveResult = moveResult;
+    
+    console.log('📁 문서가 공유 문서 폴더로 이동 완료');
+    
+    return { 
+      success: true,
+      message: '문서가 성공적으로 폴더로 이동되었습니다.',
+      folderId: folder.data.id,
+      debug: debug
+    };
     
   } catch (error) {
-    console.error('Document folder move error:', error);
+    debug.step = 'move_error';
+    debug.error = error.message;
+    console.error('📁 문서 폴더 이동 오류:', error);
     return {
       success: false,
-      message: 'Document folder move failed: ' + error.message
+      message: '문서 폴더 이동 실패: ' + error.message,
+      debug: debug
     };
   }
 }
@@ -46,19 +93,26 @@ function moveDocumentToFolder(documentId) {
  * @returns {Object} 폴더 정보
  */
 function findOrCreateFolder(folderPath) {
-  console.log('findOrCreateFolder function start');
-  console.log('Input folder path:', folderPath);
-  console.log('Folder path type:', typeof folderPath);
+  const debug = {
+    step: 'findOrCreateFolder_start',
+    folderPath: folderPath,
+    pathType: typeof folderPath
+  };
+  
+  console.log('📁 findOrCreateFolder 함수 시작');
+  console.log('📁 입력 폴더 경로:', folderPath);
+  console.log('📁 폴더 경로 타입:', typeof folderPath);
   
   try {
-    console.log('Folder find/create start:', folderPath);
+    debug.step = 'validation_start';
+    console.log('📁 폴더 찾기/생성 시작:', folderPath);
     
     // Drive API 확인
     if (typeof Drive === 'undefined') {
-      console.error('Drive API is not defined');
+      console.error('📁 Drive API가 정의되지 않았습니다');
       return {
         success: false,
-        message: 'Drive API is not enabled. Please enable Drive API in Google Apps Script.'
+        message: 'Drive API가 활성화되지 않았습니다. Google Apps Script에서 Drive API를 활성화해주세요.'
       };
     }
     
@@ -72,11 +126,14 @@ function findOrCreateFolder(folderPath) {
     
     const pathParts = folderPath.split('/');
     let currentFolderId = 'root';
+    debug.step = 'path_parsing_complete';
+    debug.pathParts = pathParts;
+    debug.currentFolderId = currentFolderId;
     
     for (const part of pathParts) {
       if (!part) continue;
       
-      console.log('Searching folder:', part, 'in', currentFolderId);
+      console.log('📁 폴더 검색:', part, 'in', currentFolderId);
       
       // 더 안전한 폴더 검색 방법 사용
       let foundFolder = null;
@@ -88,28 +145,35 @@ function findOrCreateFolder(folderPath) {
           fields: 'files(id,name)'
         });
         
-        console.log('Search results:', folders);
+        console.log('📁 검색 결과:', folders);
         
         if (folders.files && folders.files.length > 0) {
+          console.log('📁 찾은 폴더 수:', folders.files.length);
           // 정확한 이름을 가진 폴더 찾기
           for (const folder of folders.files) {
+            console.log('📁 검색 중인 폴더:', folder.name, 'vs', part);
             if (folder.name === part) {
               foundFolder = folder;
+              console.log('📁 일치하는 폴더 발견:', folder.name, folder.id);
               break;
             }
           }
+        } else {
+          console.log('📁 검색된 폴더가 없습니다');
         }
       } catch (searchError) {
-        console.error('Folder search error:', searchError);
+        console.error('📁 폴더 검색 오류:', searchError);
         // 검색 실패 시 바로 폴더 생성
         foundFolder = null;
       }
       
       if (foundFolder) {
         currentFolderId = foundFolder.id;
-        console.log('Found existing folder:', part, currentFolderId);
+        debug[`folder_${part}_found`] = { id: foundFolder.id, name: foundFolder.name };
+        console.log('📁 기존 폴더 사용:', part, currentFolderId);
       } else {
-        console.log('Folder not found, creating new folder:', part);
+        debug[`folder_${part}_not_found`] = true;
+        console.log('📁 폴더 없음, 새 폴더 생성:', part);
         try {
           const newFolder = Drive.Files.create({
             name: part,
@@ -117,39 +181,48 @@ function findOrCreateFolder(folderPath) {
             parents: [currentFolderId]
           });
           currentFolderId = newFolder.id;
-          console.log('New folder created:', part, currentFolderId);
+          debug[`folder_${part}_created`] = { id: newFolder.id, name: newFolder.name };
+          console.log('📁 새 폴더 생성 완료:', part, currentFolderId);
         } catch (createError) {
-          console.error('Folder creation error:', createError);
+          debug[`folder_${part}_create_error`] = createError.message;
+          console.error('📁 폴더 생성 오류:', createError);
           return {
             success: false,
-            message: 'Folder creation failed: ' + createError.message
+            message: '폴더 생성 실패: ' + createError.message,
+            debug: debug
           };
         }
       }
     }
     
-    console.log('Folder find/create complete:', folderPath, currentFolderId);
+    debug.step = 'folder_creation_complete';
+    debug.finalFolderId = currentFolderId;
+    console.log('📁 폴더 찾기/생성 완료:', folderPath, currentFolderId);
     
     const result = {
       success: true,
       data: {
         id: currentFolderId,
         path: folderPath
-      }
+      },
+      debug: debug
     };
     
-    console.log('findOrCreateFolder return value:', result);
-    console.log('findOrCreateFolder return type:', typeof result);
+    console.log('📁 findOrCreateFolder 반환값:', result);
+    console.log('📁 findOrCreateFolder 반환 타입:', typeof result);
     
     return result;
     
   } catch (error) {
-    console.error('Folder find/create error:', error);
+    debug.step = 'folder_creation_error';
+    debug.error = error.message;
+    console.error('📁 폴더 찾기/생성 오류:', error);
     const errorResult = {
       success: false,
-      message: 'Folder find/create failed: ' + error.message
+      message: '폴더 찾기/생성 실패: ' + error.message,
+      debug: debug
     };
-    console.log('findOrCreateFolder error return:', errorResult);
+    console.log('📁 findOrCreateFolder 오류 반환:', errorResult);
     return errorResult;
   }
 }

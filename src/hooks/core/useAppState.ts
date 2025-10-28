@@ -87,7 +87,7 @@ export const useAppState = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const pageFromUrl = urlParams.get('page');
             if (pageFromUrl) {
-                console.log('URL에서 페이지 상태 복원:', pageFromUrl);
+                // console.log('URL에서 페이지 상태 복원:', pageFromUrl);
                 setCurrentPage(pageFromUrl as PageType);
             } else {
                 // URL에 페이지 파라미터가 없으면 기본값 사용
@@ -96,7 +96,7 @@ export const useAppState = () => {
             
             // 검색어 상태 복원
             if (savedSearchTerm) {
-                console.log('검색어 상태 복원:', savedSearchTerm);
+                // console.log('검색어 상태 복원:', savedSearchTerm);
                 setSearchTerm(savedSearchTerm);
             }
             
@@ -107,10 +107,10 @@ export const useAppState = () => {
                 
                 // 승인된 사용자인 경우 데이터 초기화
                 if (userData.isApproved) {
-                    console.log('새로고침 후 사용자 상태 복원 - 데이터 로딩 시작');
+                    // console.log('새로고침 후 사용자 상태 복원 - 데이터 로딩 시작');
                     
                     try {
-                        console.log("Google API 초기화 시작");
+                        // console.log("Google API 초기화 시작");
                         await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
                         
                         // 스프레드시트 ID들 초기화
@@ -129,7 +129,7 @@ export const useAppState = () => {
                         setIsGoogleAuthenticatedForAnnouncements(true);
                         setIsGoogleAuthenticatedForBoard(true);
                         
-                        console.log("✅ 새로고침 후 Papyrus DB 연결 완료");
+                        // console.log("✅ 새로고침 후 Papyrus DB 연결 완료");
                     } catch (error) {
                         console.error("Error during refresh initialization", error);
                         // Google API 초기화 실패해도 계속 진행
@@ -160,11 +160,11 @@ export const useAppState = () => {
     // 사용자 로그인 시 데이터 자동 로딩 (새로 로그인한 경우)
     useEffect(() => {
         if (user && user.isApproved && !isLoading) {
-            console.log('새로운 로그인 감지 - 데이터 로딩 시작');
+            // console.log('새로운 로그인 감지 - 데이터 로딩 시작');
             
             const initAndFetch = async () => {
                 try {
-                    console.log("로그인 후 Google API 초기화 시작");
+                    // console.log("로그인 후 Google API 초기화 시작");
                     await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
                     
                     // 스프레드시트 ID들 초기화 및 상태 업데이트
@@ -183,8 +183,8 @@ export const useAppState = () => {
                     setIsGoogleAuthenticatedForAnnouncements(true);
                     setIsGoogleAuthenticatedForBoard(true);
                     
-                    console.log("✅ 로그인 후 Papyrus DB 연결 완료");
-                    console.log("스프레드시트 ID들:", spreadsheetIds);
+                    // console.log("✅ 로그인 후 Papyrus DB 연결 완료");
+                    // console.log("스프레드시트 ID들:", spreadsheetIds);
                 } catch (error) {
                     console.error("Error during login initialization", error);
                     console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");

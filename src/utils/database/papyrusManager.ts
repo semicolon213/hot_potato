@@ -64,7 +64,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
         // 토큰을 gapi client에 설정
         try {
             (window as any).gapi.client.setToken({ access_token: token });
-            console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
+            // console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
         } catch (tokenError) {
             console.warn(`토큰 설정 실패:`, tokenError);
         }
@@ -75,7 +75,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
         
         while (attempts < maxAttempts) {
             try {
-                console.log(`스프레드시트 '${name}' 검색 중... (시도 ${attempts + 1}/${maxAttempts})`);
+                // console.log(`스프레드시트 '${name}' 검색 중... (시도 ${attempts + 1}/${maxAttempts})`);
                 
                 const response = await (window as any).gapi.client.drive.files.list({
                     q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
@@ -84,7 +84,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
                 
                 if (response.result.files && response.result.files.length > 0) {
                     const fileId = response.result.files[0].id;
-                    console.log(`✅ 스프레드시트 '${name}' 발견, ID:`, fileId);
+                    // console.log(`✅ 스프레드시트 '${name}' 발견, ID:`, fileId);
                     return fileId;
                 } else {
                     console.warn(`❌ 이름이 '${name}'인 스프레드시트를 찾을 수 없습니다.`);
@@ -123,7 +123,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
     studentSpreadsheetId: string | null;
     staffSpreadsheetId: string | null;
 }> => {
-    console.log('스프레드시트 ID 초기화 시작...');
+    // console.log('스프레드시트 ID 초기화 시작...');
     
     try {
         // Google API 인증 상태 확인 (더 안전한 방법)
@@ -144,42 +144,42 @@ export const initializeSpreadsheetIds = async (): Promise<{
         // 토큰을 gapi client에 설정
         try {
             (window as any).gapi.client.setToken({ access_token: token });
-            console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
+            // console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
         } catch (tokenError) {
             console.warn(`토큰 설정 실패:`, tokenError);
         }
 
         // 순차적으로 스프레드시트 ID 찾기 (안정성을 위해)
-        console.log('📋 스프레드시트 검색 시작...');
-        console.log('검색할 스프레드시트 이름들:', {
-            announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
-            calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
-            calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
-            board: ENV_CONFIG.BOARD_SPREADSHEET_NAME,
-            hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
-            student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
-        });
+        // console.log('📋 스프레드시트 검색 시작...');
+        // console.log('검색할 스프레드시트 이름들:', {
+        //     announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+        //     calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
+        //     calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
+        //     board: ENV_CONFIG.BOARD_SPREADSHEET_NAME,
+        //     hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
+        //     student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
+        // });
         
         const announcementId = await findSpreadsheetById(ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME);
-        console.log('📢 공지사항 스프레드시트 ID:', announcementId);
+        // console.log('📢 공지사항 스프레드시트 ID:', announcementId);
         
         const calendarProfessorId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME);
-        console.log('📅 교수 캘린더 스프레드시트 ID:', calendarProfessorId);
+        // console.log('📅 교수 캘린더 스프레드시트 ID:', calendarProfessorId);
         
         const calendarStudentId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME);
-        console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
+        // console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
         
         const boardId = await findSpreadsheetById(ENV_CONFIG.BOARD_SPREADSHEET_NAME);
-        console.log('📋 게시판 스프레드시트 ID:', boardId);
+        // console.log('📋 게시판 스프레드시트 ID:', boardId);
         
         const hotPotatoDBId = await findSpreadsheetById(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-        console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
+        // console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
         
         const studentId = await findSpreadsheetById(ENV_CONFIG.STUDENT_SPREADSHEET_NAME);
-        console.log('👥 학생 스프레드시트 ID:', studentId);
+        // console.log('👥 학생 스프레드시트 ID:', studentId);
 
         const staffId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-        console.log('👥 교직원 스프레드시트 ID:', staffId);
+        // console.log('👥 교직원 스프레드시트 ID:', staffId);
 
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;

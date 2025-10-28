@@ -205,6 +205,7 @@ export class ApiClient {
     creatorEmail: string;
     editors?: string[];
     role?: string;
+    tag?: string;
   }) {
     return this.request('createDocument', documentData);
   }
