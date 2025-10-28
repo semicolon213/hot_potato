@@ -36,7 +36,8 @@ export interface Post {
   date: string;
   views: number;
   likes: number;
-  contentPreview: string;
+  content: string;
+  writer_id: string;
 }
 
 export interface User {

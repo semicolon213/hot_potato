@@ -13,15 +13,15 @@ import {
   updateStaff as updateStaffInPapyrus,
   deleteStaff as deleteStaffFromPapyrus
 } from '../../../utils/database/papyrusManager';
-import { useAppState } from '../../core/useAppState';
+// useAppState 의존성 제거 - 교직원 전용 데이터만 로드
 import type { StaffMember } from '../../../types/features/staff';
 
 interface StaffFilters {
   grade: string; // 교직원의 'pos'에 해당
 }
 
-export const useStaffOnly = (staffSpreadsheetId: string | null) => {
-  const { hotPotatoDBSpreadsheetId } = useAppState();
+export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
+  // useAppState 의존성 제거 - 교직원 전용 데이터만 로드
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,70 +36,9 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
 
-  // 암호화된 데이터 복호화 (통합 App Script API 사용)
-  const decryptData = useCallback(async (dataList: any[]) => {
-    try {
-      const isDevelopment = import.meta.env.DEV;
-      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
-
-      // 각 교직원의 전화번호와 이메일을 개별적으로 복호화
-      const decryptedList = await Promise.all(
-        dataList.map(async (staff) => {
-          const decryptedStaff = { ...staff };
-          
-          // 전화번호 복호화
-          if (staff.tel && staff.tel.trim() !== '') {
-            try {
-              const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'decryptEmail', data: staff.tel })
-              });
-              
-              if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                  decryptedStaff.tel = result.data;
-                }
-              }
-            } catch (error) {
-              console.warn('전화번호 복호화 실패:', error);
-            }
-          }
-          
-          // 이메일 복호화
-          if (staff.email && staff.email.trim() !== '') {
-            try {
-              const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'decryptEmail', data: staff.email })
-              });
-              
-              if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                  decryptedStaff.email = result.data;
-                }
-              }
-            } catch (error) {
-              console.warn('이메일 복호화 실패:', error);
-            }
-          }
-          
-          return decryptedStaff;
-        })
-      );
-      
-      return decryptedList;
-    } catch (error) {
-      console.warn('데이터 복호화 실패, 원본 데이터를 사용합니다:', error);
-      return dataList;
-    }
-  }, []);
 
   // 데이터 암호화 (통합 App Script API 사용)
-  const encryptData = useCallback(async (dataItem: any) => {
+  const encryptData = useCallback(async (dataItem: StaffMember) => {
     try {
       const isDevelopment = import.meta.env.DEV;
       const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
@@ -153,26 +92,104 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
     }
   }, []);
 
+  // 전화번호 복호화 함수 (학생관리와 동일한 방식)
+  const decryptPhone = async (encryptedPhone: string): Promise<string> => {
+    if (!encryptedPhone || encryptedPhone.trim() === '') {
+      return '';
+    }
+
+    try {
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decryptEmail', data: encryptedPhone })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          return result.data;
+        }
+      }
+      return encryptedPhone;
+    } catch (error) {
+      console.warn('전화번호 복호화 실패:', error);
+      return encryptedPhone;
+    }
+  };
+
+  // 이메일 복호화 함수
+  const decryptEmail = async (encryptedEmail: string): Promise<string> => {
+    if (!encryptedEmail || encryptedEmail.trim() === '') {
+      return '';
+    }
+
+    try {
+      const isDevelopment = import.meta.env.DEV;
+      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decryptEmail', data: encryptedEmail })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          return result.data;
+        }
+      }
+      return encryptedEmail;
+    } catch (error) {
+      console.warn('이메일 복호화 실패:', error);
+      return encryptedEmail;
+    }
+  };
+
   // 교직원 목록 조회
   const fetchStaff = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const staffData = await fetchStaffFromPapyrus(hotPotatoDBSpreadsheetId!);
-      const decryptedStaff = await decryptData(staffData);
+      const staffData = await fetchStaffFromPapyrus(staffSpreadsheetId!);
+      console.log('Papyrus DB에서 받은 교직원 데이터:', staffData);
+      
+      // 전화번호와 이메일 복호화 처리 (학생관리와 동일한 방식)
+      const decryptedStaff = await Promise.all(
+        staffData.map(async (staff: StaffMember) => {
+          const decryptedTel = await decryptPhone(staff.tel || '');
+          const decryptedPhone = await decryptPhone(staff.phone || '');
+          const decryptedEmail = await decryptEmail(staff.email || '');
+          
+          console.log(`교직원 ${staff.name}: tel=${staff.tel} -> ${decryptedTel}, phone=${staff.phone} -> ${decryptedPhone}, email=${staff.email} -> ${decryptedEmail}`);
+          
+          return {
+            ...staff,
+            tel: decryptedTel,
+            phone: decryptedPhone,
+            email: decryptedEmail
+          };
+        })
+      );
+      
+      console.log('복호화된 교직원 데이터:', decryptedStaff);
       setStaff(decryptedStaff);
     } catch (err) {
       setError(err instanceof Error ? err.message : '교직원 목록 조회 실패');
     } finally {
       setIsLoading(false);
     }
-  }, [hotPotatoDBSpreadsheetId, decryptData]);
+  }, [staffSpreadsheetId]);
 
   useEffect(() => {
-    if (hotPotatoDBSpreadsheetId) {
+    if (staffSpreadsheetId) {
       fetchStaff();
     }
-  }, [hotPotatoDBSpreadsheetId, fetchStaff]);
+  }, [staffSpreadsheetId, fetchStaff]);
 
   // 필터링된 교직원 목록
   const filteredStaff = useMemo(() => {
@@ -224,7 +241,7 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
 
   // 필터 옵션들 (교직원 전용)
   const filterOptions = {
-    grades: ['전체 구분', '전임교수', '조교', '외부강사', '겸임교수', '시간강사']
+    grades: ['전임교수', '조교', '외부강사', '겸임교수', '시간강사']
   };
 
   // CSV 내보내기
@@ -286,7 +303,7 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
       setIsLoading(true);
       try {
         const encryptedStaff = await encryptData(newStaff);
-        await addStaffToPapyrus(hotPotatoDBSpreadsheetId!, encryptedStaff);
+        await addStaffToPapyrus(staffSpreadsheetId!, encryptedStaff);
         await fetchStaff();
       } catch (err) {
         setError(err instanceof Error ? err.message : '교직원 추가 실패');
@@ -294,11 +311,11 @@ export const useStaffOnly = (staffSpreadsheetId: string | null) => {
         setIsLoading(false);
       }
     },
-    updateStaff: async (updatedStaff: StaffMember) => {
+    updateStaff: async (staffNo: string, updatedStaff: StaffMember) => {
       setIsLoading(true);
       try {
         const encryptedStaff = await encryptData(updatedStaff);
-        await updateStaffInPapyrus(hotPotatoDBSpreadsheetId!, encryptedStaff);
+        await updateStaffInPapyrus(staffSpreadsheetId!, staffNo, encryptedStaff);
         await fetchStaff();
       } catch (err) {
         setError(err instanceof Error ? err.message : '교직원 업데이트 실패');

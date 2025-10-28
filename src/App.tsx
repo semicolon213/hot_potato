@@ -34,7 +34,8 @@ import {
     fetchAnnouncements,
     fetchTemplates,
     fetchCalendarEvents,
-    updateCalendarEvent
+    updateCalendarEvent,
+    incrementViewCount
   } from './utils/database/papyrusManager';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
@@ -76,6 +77,8 @@ const App: React.FC = () => {
     // Announcements state
     announcements,
     setAnnouncements,
+    selectedAnnouncement,
+    setSelectedAnnouncement,
     isGoogleAuthenticatedForAnnouncements,
     isAnnouncementsLoading,
     announcementSpreadsheetId,
@@ -170,9 +173,12 @@ const App: React.FC = () => {
   };
 
   // 게시글 추가 핸들러
-  const handleAddPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
+  const handleAddPost = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
     try {
-      await addPost(postData);
+      if (!boardSpreadsheetId) {
+        throw new Error("Board spreadsheet ID not found");
+      }
+      await addPost(boardSpreadsheetId, postData);
       // 게시글 목록 새로고침
       const updatedPosts = await fetchPosts();
       setPosts(updatedPosts);
@@ -183,15 +189,36 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
     try {
-      await addAnnouncement(postData);
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await addAnnouncement(announcementSpreadsheetId, postData);
       // 공지사항 목록 새로고침
       const updatedAnnouncements = await fetchAnnouncements();
       setAnnouncements(updatedAnnouncements);
       handlePageChange('announcements');
     } catch (error) {
       console.error('Error adding announcement:', error);
+    }
+  };
+
+  const handleSelectAnnouncement = async (post: Post) => {
+    // Optimistically update the UI
+    const updatedAnnouncements = announcements.map(a =>
+      a.id === post.id ? { ...a, views: a.views + 1 } : a
+    );
+    setAnnouncements(updatedAnnouncements);
+    setSelectedAnnouncement({ ...post, views: post.views + 1 });
+
+    handlePageChange('announcement-view');
+
+    try {
+      await incrementViewCount(post.id);
+    } catch (error) {
+      console.error('Failed to increment view count:', error);
+      // Optionally, revert the optimistic update here
     }
   };
 
@@ -426,6 +453,7 @@ const App: React.FC = () => {
               user={user}
               posts={posts}
               announcements={announcements}
+              selectedAnnouncement={selectedAnnouncement}
               isGoogleAuthenticatedForBoard={isGoogleAuthenticatedForBoard}
               isGoogleAuthenticatedForAnnouncements={isGoogleAuthenticatedForAnnouncements}
               boardSpreadsheetId={boardSpreadsheetId}
@@ -450,6 +478,7 @@ const App: React.FC = () => {
               onPageChange={handlePageChange}
               onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
+              onSelectAnnouncement={handleSelectAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

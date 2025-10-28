@@ -74,30 +74,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
       <div className="menu-section">
         <div className="menu-container">
           <div
-            className={`menu-item menu-item-with-submenu ${activeMenu === "board" ? "active" : ""} ${currentPage === 'board' ? 'active' : ''}`}
-            onClick={() => handleMenuClick("board", true)}
+            className={`menu-item ${currentPage === 'announcements' ? 'active' : ''}`}
+            onClick={() => handleMenuClick("announcements")}
           >
             <MessageIcon className="menu-icon" />
-            <div className="menu-text">게시판</div>
-            <ChevronIcon className={`submenu-arrow ${activeMenu === "board" ? "rotated" : ""}`} />
-            {activeMenu === "board" && (
-              <div className="submenu">
-                <div
-                  className="submenu-item"
-                  onClick={() => onPageChange("board")}
-                >
-                  <span className="submenu-bullet">•</span>
-                  자유 게시판
-                </div>
-                <div
-                  className="submenu-item"
-                  onClick={() => onPageChange("announcements")}
-                >
-                  <span className="submenu-bullet">•</span>
-                  공지사항
-                </div>
-              </div>
-            )}
+            <div className="menu-text">공지사항</div>
           </div>
 
           <div

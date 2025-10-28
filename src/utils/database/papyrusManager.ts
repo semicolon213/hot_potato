@@ -247,10 +247,11 @@ export const fetchPosts = async (): Promise<Post[]> => {
       id: row[0] || '',
       author: row[1] || '',
       title: row[2] || '',
-      contentPreview: row[3] || '',
-      date: new Date().toISOString().slice(0, 10),
+      content: row[3] || '',
+      date: row[5] || new Date().toISOString().slice(0, 10),
       views: 0,
       likes: 0,
+      writer_id: row[6] || ''
     })).reverse();
     
     console.log(`Loaded ${posts.length} posts`);
@@ -261,7 +262,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
   }
 };
 
-export const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addPost = async (boardSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
   try {
     if (!boardSpreadsheetId) {
       throw new Error('Board spreadsheet ID not found');
@@ -275,8 +276,10 @@ export const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'li
       newPostId,
       postData.author,
       postData.title,
-      postData.contentPreview,
-      ''
+      postData.content,
+      '',
+      new Date().toISOString().slice(0, 10),
+      postData.writer_id
     ];
 
     await append(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, [newPostForSheet]);
@@ -307,10 +310,11 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
     const announcements = data.values.slice(1).map((row: string[]) => ({
       id: row[0] || '',
       author: row[1] || '',
-      title: row[2] || '',
-      contentPreview: row[3] || '',
-      date: new Date().toISOString().slice(0, 10),
-      views: 0,
+      writer_id: row[2] || '',
+      title: row[3] || '',
+      content: row[4] || '',
+      date: row[5] || new Date().toISOString().slice(0, 10),
+      views: parseInt(row[6] || '0', 10),
       likes: 0,
     })).reverse();
     
@@ -322,7 +326,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
-export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
@@ -330,14 +334,17 @@ export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'view
 
     const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
     const lastRow = data && data.values ? data.values.length : 0;
-    const newPostId = `an-${lastRow + 1}`;
+    const newPostId = `${lastRow + 1}`;
 
     const newAnnouncementForSheet = [
       newPostId,
       postData.author,
+      postData.writer_id,
       postData.title,
-      postData.contentPreview,
-      ''
+      postData.content,
+      new Date().toISOString().slice(0, 10),
+      0, // view_count
+      '' // file_notice
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
@@ -345,6 +352,43 @@ export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'view
   } catch (error) {
     console.error('Error saving announcement to Google Sheet:', error);
     throw error;
+  }
+};
+
+export const incrementViewCount = async (announcementId: string): Promise<void> => {
+  try {
+    if (!announcementSpreadsheetId) {
+      throw new Error('Announcement spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
+    if (!data || !data.values) {
+      throw new Error('Could not get sheet data');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === announcementId);
+    if (rowIndex === -1) {
+      // This is not an error, as the sheet may not have been updated yet.
+      console.log(`Announcement with ID ${announcementId} not found in sheet. It might be a new post.`);
+      return;
+    }
+
+    const currentViews = parseInt(data.values[rowIndex][6] || '0', 10);
+    const newViews = currentViews + 1;
+
+    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: announcementSpreadsheetId,
+        range: `${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}!G${rowIndex + 1}`,
+        valueInputOption: 'RAW',
+        resource: {
+            values: [[newViews]]
+        }
+    });
+
+    console.log(`View count for announcement ${announcementId} updated to ${newViews}`);
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+    // We don't throw error here as it is not critical.
   }
 };
 
@@ -1040,10 +1084,26 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
     
     const headers = data.values[0];
     const committeeData: Committee[] = data.values.slice(1).map((row: any[]) => {
-      const committee: Partial<Committee> = {};
+      const committee: { [key: string]: any } = {};
       headers.forEach((header: string, index: number) => {
-        (committee as any)[header] = row[index];
+        committee[header] = row[index];
       });
+
+      // career 필드가 문자열일 경우 JSON으로 파싱 (더욱 안전하게)
+      let parsedCareer: CommitteeType['career'] = [];
+      if (committee.career && typeof committee.career === 'string') {
+        try {
+          const parsed = JSON.parse(committee.career);
+          if (Array.isArray(parsed)) {
+            parsedCareer = parsed;
+          }
+        } catch (e) {
+          console.error('경력 정보 파싱 실패:', e);
+          // 파싱 실패 시 빈 배열로 유지
+        }
+      }
+      committee.career = parsedCareer;
+
       return committee as Committee;
     });
     
@@ -1088,7 +1148,17 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
     
-    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff);
+    const newRow = [[
+      staff.no,
+      staff.pos,
+      staff.name,
+      staff.tel,
+      staff.phone,
+      staff.email,
+      staff.date,
+      staff.note
+    ]];
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, newRow);
   } catch (error) {
     console.error('Error adding staff:', error);
     throw error;
@@ -1101,21 +1171,53 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
  * @param {StaffMember} staff - 업데이트할 교직원 정보
  * @returns {Promise<void>}
  */
-export const updateStaff = async (spreadsheetId: string, staff: StaffMember): Promise<void> => {
+export const updateStaff = async (spreadsheetId: string, staffNo: string, staff: StaffMember): Promise<void> => {
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff.no, staff);
+
+    const sheetName = ENV_CONFIG.STAFF_INFO_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === staffNo);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 교직원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const range = `${sheetName}!A${rowIndex + 1}:H${rowIndex + 1}`;
+    const values = [[
+      staff.no,
+      staff.pos,
+      staff.name,
+      staff.tel,
+      staff.phone,
+      staff.email,
+      staff.date,
+      staff.note
+    ]];
+
+    const gapi = (window as any).gapi;
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: effectiveSpreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      resource: {
+        values: values
+      }
+    });
+
   } catch (error) {
-    console.error('Error updating staff:', error);
+    console.error('Error updating staff in papyrusManager:', error);
+    // 에러를 다시 던져서 상위 호출자가 처리할 수 있도록 함
     throw error;
   }
 };
@@ -1164,7 +1266,21 @@ export const addCommittee = async (spreadsheetId: string, committee: CommitteeTy
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
     
-    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee);
+    const newRow = [[
+      committee.sortation,
+      committee.name,
+      committee.tel,
+      committee.email,
+      committee.position,
+      JSON.stringify(committee.career), // career는 JSON 문자열로 저장
+      committee.company_name,
+      committee.company_position,
+      committee.location,
+      committee.is_family,
+      committee.representative,
+      committee.note
+    ]];
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, newRow);
   } catch (error) {
     console.error('Error adding committee:', error);
     throw error;
@@ -1177,21 +1293,57 @@ export const addCommittee = async (spreadsheetId: string, committee: CommitteeTy
  * @param {Committee} committee - 업데이트할 위원회 정보
  * @returns {Promise<void>}
  */
-export const updateCommittee = async (spreadsheetId: string, committee: CommitteeType): Promise<void> => {
+export const updateCommittee = async (spreadsheetId: string, committeeName: string, committee: CommitteeType): Promise<void> => {
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee.name, committee);
+
+    const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    // 학과 위원회는 이름(name)을 고유 키로 사용 (두 번째 컬럼)
+    const rowIndex = data.values.findIndex(row => row[1] === committeeName);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const range = `${sheetName}!A${rowIndex + 1}:L${rowIndex + 1}`;
+    const values = [[
+      committee.sortation,
+      committee.name,
+      committee.tel,
+      committee.email,
+      committee.position,
+      JSON.stringify(committee.career), // career는 JSON 문자열로 저장
+      committee.company_name,
+      committee.company_position,
+      committee.location,
+      committee.is_family,
+      committee.representative,
+      committee.note
+    ]];
+
+    const gapi = (window as any).gapi;
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: effectiveSpreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      resource: {
+        values: values
+      }
+    });
+
   } catch (error) {
-    console.error('Error updating committee:', error);
+    console.error('Error updating committee in papyrusManager:', error);
     throw error;
   }
 };

@@ -83,6 +83,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
       {showFilters && (
         <div className="filters-panel">
           <div className="filter-row">
+          {(!isStaffMode || activeTab !== 'committee') && (
             <div className="filter-group">
               <label>{isStaffMode ? '👔 구분' : '🎓 학년'}</label>
               <select
@@ -96,6 +97,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
                 )) || []}
               </select>
             </div>
+          )}
 
             {!isStaffMode && (
               <div className="filter-group">

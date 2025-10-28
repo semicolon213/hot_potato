@@ -1,5 +1,7 @@
 /* ===== 문서함 테이블 영역 ===== */
 .document-container {
+  position: relative;
+  z-index: 5;
   border: 1px solid var(--border-color);
   margin-top: 15px;
   margin-bottom: 1px;
