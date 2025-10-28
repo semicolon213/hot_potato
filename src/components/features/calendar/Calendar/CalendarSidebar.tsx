@@ -31,7 +31,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, onDateS
                 <MiniCalendar selectedWeek={selectedWeek} viewMode={viewMode} onDateSelect={onDateSelect} />
             </div>
 
-            <div className="sidebar-section">
+            <div className="sidebar-section week-list-section">
                 <h3>주차별 보기</h3>
                 <ul className="week-navigation-list">
                     {Array.from({ length: 16 }, (_, i) => i + 1).map(weekNum => (

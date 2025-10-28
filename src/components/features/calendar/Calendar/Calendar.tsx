@@ -563,7 +563,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
 
             <div className="calendar-header-container">
-                <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className='calendar-header-top' style={{ display: 'flex', alignItems: 'center' }}>
                     {isSearchVisible ? (
                         <div className="calendar-search-bar-wrapper" ref={searchContainerRef}>
                             <BiSearchAlt2 color="black" />

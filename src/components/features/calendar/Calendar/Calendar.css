@@ -213,8 +213,6 @@
   display: flex;
   align-items: center;
   gap: 20px; /* Adjust as needed */
-  position: relative;
-  right: 50px;
   margin-left: auto; /* Push to the right */
 }
 
