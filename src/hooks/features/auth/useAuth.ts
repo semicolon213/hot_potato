@@ -84,7 +84,7 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       isApproved: data.isApproved || false,
       approvalStatus: data.approvalStatus || 'not_requested',
       studentId: data.user?.no_member || data.studentId || data.memberNumber || '',
-      isAdmin: data.isAdmin || false,
+      isAdmin: data.user?.isAdmin || false,
       name: data.user?.name_member,
       error: data.error,
       debug: data.debug
