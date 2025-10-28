@@ -120,10 +120,10 @@ export function usePersonalTemplates() {
                 return;
             }
 
-            // 개인 양식 폴더의 Google Docs와 Sheets 파일들 가져오기
+            // 개인 양식 폴더의 Google Docs와 Sheets 파일들 가져오기 (메타데이터 포함)
             const templatesResponse = await gapi.client.drive.files.list({
                 q: `'${folderId}' in parents and (mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet') and trashed=false`,
-                fields: 'files(id,name,modifiedTime,owners,mimeType)',
+                fields: 'files(id,name,modifiedTime,owners,mimeType,description,properties)',
                 spaces: 'drive',
                 orderBy: 'name'
             });
@@ -138,34 +138,27 @@ export function usePersonalTemplates() {
             const favorites = await fetchFavorites();
             console.log('📄 현재 즐겨찾기 목록:', favorites);
 
-            // 템플릿 데이터 변환 (개인 양식 전용 파싱 방식)
+            // 템플릿 데이터 변환 (메타데이터 방식)
             const templates: PersonalTemplateData[] = templatesResponse.result.files.map(file => {
-                // 파일 제목 파싱: "유형 / 템플릿명 / 템플릿설명"
-                const titleParts = file.name.split(' / ');
+                // 메타데이터에서 정보 추출
+                const metadataTag = file.properties?.tag;
+                const metadataDescription = file.properties?.description;
                 
-                // 파싱된 데이터 추출
-                const fileType = titleParts[0] || '문서';
-                const templateName = titleParts[1] || file.name;
-                const templateDescription = titleParts[2] || templateName; // 설명이 없으면 템플릿명 사용
-
-                // 파일 타입 접미사 제거 - 순수한 설명만 사용
-                const finalDescription = templateDescription;
-
                 // 즐겨찾기 상태 확인
                 const isFavorite = favorites.some(
-                    fav => fav.type === '개인' && fav.favorite === templateName
+                    fav => fav.type === '개인' && fav.favorite === file.name
                 );
 
                 return {
                     id: file.id,
-                    name: templateName,
-                    title: templateName, // TemplateCard에서 사용하는 title 필드 추가
+                    name: file.name, // 원본 파일명 그대로 사용
+                    title: file.name, // TemplateCard에서 사용하는 title 필드
                     modifiedTime: (file as GoogleFile).modifiedTime,
                     isPersonal: true,
-                    tag: fileType, // 유형이 태그 역할
-                    description: finalDescription,
-                    partTitle: titleParts[2] || templateName, // 순수한 설명만 (파일타입 접미사 제외)
-                    fileType,
+                    tag: metadataTag || '개인', // 메타데이터 태그 또는 기본 '개인' 태그
+                    description: metadataDescription || file.name, // 메타데이터 설명 또는 파일명
+                    partTitle: metadataDescription || file.name, // 메타데이터 설명 또는 파일명
+                    fileType: metadataTag || '문서', // 태그가 파일타입 역할
                     mimeType: (file as GoogleFile).mimeType, // MIME 타입 추가
                     isFavorite // 실제 즐겨찾기 상태
                 };

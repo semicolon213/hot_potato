@@ -37,6 +37,15 @@ declare global {
         load: (api: string, version: string) => Promise<void>;
         setApiKey: (apiKey: string) => void;
         getToken: () => any;
+        drive: {
+          files: {
+            list: (params: any) => Promise<any>;
+            copy: (params: any) => Promise<any>;
+            create: (params: any) => Promise<any>;
+            update: (params: any) => Promise<any>;
+            get: (params: any) => Promise<any>;
+          };
+        };
         sheets: {
           spreadsheets: {
             get: (params: any) => Promise<any>;

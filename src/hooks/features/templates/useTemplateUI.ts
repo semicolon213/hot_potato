@@ -289,7 +289,10 @@ export function useTemplateUI(
         console.log('📄 템플릿 사용 시작:', { type, title, role });
         
         const isDefault = allDefaultTemplates.some(t => t.type === type);
-
+        
+        // 템플릿 찾기 (type이 Google Doc ID이므로 title로도 검색)
+        const foundTemplate = allDefaultTemplates.find(t => t.type === type || t.title === title);
+        
         // 특별한 처리가 필요한 템플릿들 (스프레드시트 등)
         const specialTemplateUrls: { [key: string]: string } = {
             "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
@@ -307,13 +310,13 @@ export function useTemplateUI(
             return;
         }
 
-        // 템플릿 정보를 모달에 전달하고 모달 열기
+        // 템플릿 정보를 모달에 전달하고 모달 열기 (tag 포함)
         const template: Template = {
             type,
             title,
-            description: allDefaultTemplates.find(t => t.type === type)?.description || '',
-            tag: allDefaultTemplates.find(t => t.type === type)?.tag || '기본',
-            documentId: type.length > 20 ? type : undefined // documentId는 보통 20자 이상
+            description: foundTemplate?.description || '',
+            tag: foundTemplate?.tag || '기본',  // 템플릿의 tag 사용
+            documentId: type.length > 20 ? type : undefined
         };
         
         setSelectedTemplate(template);
@@ -341,8 +344,8 @@ export function useTemplateUI(
                 console.log('📄 개인 드라이브에 문서 생성:', selectedTemplate);
                 
                 if (selectedTemplate.documentId) {
-                    // 커스텀 템플릿 복사
-                    const copyResult = await copyGoogleDocument(selectedTemplate.documentId, selectedTemplate.title);
+                    // 커스텀 템플릿 복사 (태그 포함)
+                    const copyResult = await copyGoogleDocument(selectedTemplate.documentId, selectedTemplate.title, selectedTemplate.tag);
                     if (copyResult && copyResult.webViewLink) {
                         window.open(copyResult.webViewLink, '_blank');
                         alert('문서가 개인 드라이브에 생성되었습니다!');
@@ -381,7 +384,8 @@ export function useTemplateUI(
                     templateType: selectedTemplate.documentId || selectedTemplate.type,
                     creatorEmail: creatorEmail,
                     editors: allEditors,
-                    role: 'student' // 기본값으로 student 설정
+                    role: 'student', // 기본값으로 student 설정
+                    tag: selectedTemplate.tag // 태그 추가
                 });
 
                 if (result.success && result.data) {

@@ -141,7 +141,8 @@ function NewDocument({
                 templateType: selectedTemplate.documentId || selectedTemplate.type,
                 creatorEmail: creatorEmail,
                 editors: allEditors,
-                role: 'student' // 기본값으로 student 설정
+                role: 'student', // 기본값으로 student 설정
+                tag: selectedTemplate.tag // 태그 추가
             });
 
             if (result.success) {
@@ -280,8 +281,8 @@ function NewDocument({
         try {
             console.log('📁 파일을 Google Drive에 업로드 중...');
             
-            // 파일명 생성: "유형 / 템플릿명 / 템플릿설명"
-            const fileName = `${templateData.tag} / ${templateData.title} / ${templateData.description}`;
+            // 파일명은 원본 그대로 사용 (사용자가 자유롭게 변경 가능)
+            const fileName = templateData.title;
             
             // 개인 템플릿 폴더 찾기
             const folderId = await findPersonalTemplateFolder();
@@ -311,6 +312,48 @@ function NewDocument({
             const result = await response.json();
             console.log('✅ 파일 업로드 완료:', result);
             
+            // 업로드된 파일에 메타데이터 추가
+            try {
+                const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+                const creatorEmail = userInfo.email || '';
+                
+                const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        properties: {
+                            creator: creatorEmail,
+                            createdDate: new Date().toLocaleString('ko-KR'),
+                            tag: templateData.tag,
+                            description: templateData.description
+                        }
+                    })
+                });
+                
+                if (metadataResponse.ok) {
+                    console.log('✅ 메타데이터 추가 완료');
+                    
+                    // 메타데이터 저장 확인
+                    const verifyResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}?fields=properties`, {
+                        headers: {
+                            'Authorization': `Bearer ${gapi.client.getToken().access_token}`
+                        }
+                    });
+                    
+                    if (verifyResponse.ok) {
+                        const verifyData = await verifyResponse.json();
+                        console.log('✅ 메타데이터 확인:', verifyData.properties);
+                    }
+                } else {
+                    console.warn('⚠️ 메타데이터 추가 실패:', await metadataResponse.text());
+                }
+            } catch (metadataError) {
+                console.warn('⚠️ 메타데이터 추가 오류:', metadataError);
+            }
+            
         } catch (error) {
             console.error('❌ 파일 업로드 오류:', error);
             throw error;
@@ -322,8 +365,8 @@ function NewDocument({
         try {
             console.log('📄 새 문서 생성 중...', documentType);
             
-            // 파일명 생성: "유형 / 템플릿명 / 템플릿설명"
-            const fileName = `${templateData.tag} / ${templateData.title} / ${templateData.description}`;
+            // 파일명은 원본 제목 그대로 사용 (사용자가 자유롭게 변경 가능)
+            const fileName = templateData.title;
             
             // 개인 템플릿 폴더 찾기
             const folderId = await findPersonalTemplateFolder();
@@ -360,6 +403,36 @@ function NewDocument({
                 });
 
                 console.log('✅ 새 문서 생성 완료:', documentId);
+                
+                // 생성된 문서에 메타데이터 추가
+                try {
+                    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+                    const creatorEmail = userInfo.email || '';
+                    
+                    const metadataResult = await gapi.client.drive.files.update({
+                        fileId: documentId,
+                        resource: {
+                            properties: {
+                                creator: creatorEmail,
+                                createdDate: new Date().toLocaleString('ko-KR'),
+                                tag: templateData.tag,
+                                description: templateData.description
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ 메타데이터 추가 완료:', metadataResult);
+                    
+                    // 메타데이터 저장 확인
+                    const verifyResult = await gapi.client.drive.files.get({
+                        fileId: documentId,
+                        fields: 'properties'
+                    });
+                    console.log('✅ 메타데이터 확인:', verifyResult.result.properties);
+                    
+                } catch (metadataError) {
+                    console.warn('⚠️ 메타데이터 추가 실패:', metadataError);
+                }
                 
                 // 생성된 문서 바로 열기
                 const fileResponse = await gapi.client.drive.files.get({

@@ -330,14 +330,14 @@ export const checkTagUpdateImpact = async (oldTag: string, newTag: string): Prom
 };
 
 /**
- * @brief 태그 수정 시 개인 템플릿 파일명 업데이트
+ * @brief 태그 수정 시 개인 템플릿 메타데이터 업데이트
  * @param {string} oldTag - 기존 태그
  * @param {string} newTag - 새 태그
  * @returns {Promise<boolean>} 성공 여부
  */
-export const updatePersonalTemplateFileNames = async (oldTag: string, newTag: string): Promise<boolean> => {
+export const updatePersonalTemplateMetadata = async (oldTag: string, newTag: string): Promise<boolean> => {
   try {
-    console.log('📝 태그 수정으로 인한 개인 템플릿 파일명 업데이트:', oldTag, '->', newTag);
+    console.log('📝 태그 수정으로 인한 개인 템플릿 메타데이터 업데이트:', oldTag, '->', newTag);
     
     // 해당 태그를 사용하는 개인 템플릿들 찾기
     const affectedFiles = await findPersonalTemplatesByTag(oldTag);
@@ -347,41 +347,36 @@ export const updatePersonalTemplateFileNames = async (oldTag: string, newTag: st
       return true;
     }
 
-    // 각 파일의 파일명 업데이트
+    // 각 파일의 메타데이터 업데이트
     for (const fileName of affectedFiles) {
-      const titleParts = fileName.split(' / ');
-      if (titleParts.length >= 1 && titleParts[0] === oldTag) {
-        // 파일명의 첫 번째 부분(태그)을 새 태그로 변경
-        titleParts[0] = newTag;
-        const newFileName = titleParts.join(' / ');
-        
-        // Google Drive에서 파일 ID 찾기
-        const filesResponse = await (gapi.client as any).drive.files.list({
-          q: `name='${fileName}' and parents in '${await findPersonalTemplateFolder()}'`,
-          fields: 'files(id,name)',
-          spaces: 'drive'
-        });
+      // Google Drive에서 파일 ID 찾기
+      const filesResponse = await (gapi.client as any).drive.files.list({
+        q: `name='${fileName}' and parents in '${await findPersonalTemplateFolder()}'`,
+        fields: 'files(id,name)',
+        spaces: 'drive'
+      });
 
-        if (filesResponse.result.files && filesResponse.result.files.length > 0) {
-          const fileId = filesResponse.result.files[0].id;
-          
-          // 파일명 업데이트
-          await (gapi.client as any).drive.files.update({
-            fileId: fileId,
-            resource: {
-              name: newFileName
+      if (filesResponse.result.files && filesResponse.result.files.length > 0) {
+        const fileId = filesResponse.result.files[0].id;
+        
+        // 메타데이터 업데이트 (태그만 변경)
+        await (gapi.client as any).drive.files.update({
+          fileId: fileId,
+          resource: {
+            properties: {
+              tag: newTag
             }
-          });
-          
-          console.log(`✅ 파일명 업데이트 완료: ${fileName} -> ${newFileName}`);
-        }
+          }
+        });
+        
+        console.log(`✅ 메타데이터 업데이트 완료: ${fileName} (태그: ${oldTag} -> ${newTag})`);
       }
     }
 
-    console.log('✅ 모든 개인 템플릿 파일명 업데이트 완료');
+    console.log('✅ 모든 개인 템플릿 메타데이터 업데이트 완료');
     return true;
   } catch (error) {
-    console.error('❌ 개인 템플릿 파일명 업데이트 오류:', error);
+    console.error('❌ 개인 템플릿 메타데이터 업데이트 오류:', error);
     return false;
   }
 };

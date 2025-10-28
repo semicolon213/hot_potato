@@ -38,17 +38,18 @@ export interface GoogleFile {
 }
 
 /**
- * 문서 정보 타입
+ * 문서 정보 타입 (새로운 필드 구조)
  */
 export interface DocumentInfo {
   id: string;
-  title: string;
-  author: string;
-  lastModified: string;
+  documentNumber: string; // 문서고유번호 (생성날짜+파일타입+유형 조합)
+  title: string; // 문서이름
+  creator: string; // 생성자
+  lastModified: string; // 수정시간
   url: string;
-  documentNumber: string;
-  approvalDate: string;
-  status: string;
+  documentType: 'shared' | 'personal'; // 공유문서/개인문서 구분
+  mimeType?: string; // 파일 타입
+  tag?: string; // 문서 태그
   originalIndex: number;
 }
 

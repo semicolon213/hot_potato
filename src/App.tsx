@@ -345,7 +345,7 @@ const App: React.FC = () => {
   const handleUpdateTag = async (oldTag: string, newTag: string) => {
     try {
       // 태그 수정 시 영향받는 개인 양식들 확인
-      const { checkTagUpdateImpact, updatePersonalTemplateFileNames } = await import('./utils/database/personalTagManager');
+      const { checkTagUpdateImpact, updatePersonalTemplateMetadata } = await import('./utils/database/personalTagManager');
       const impact = await checkTagUpdateImpact(oldTag, newTag);
       
       if (impact.affectedFiles.length > 0) {
@@ -374,7 +374,7 @@ const App: React.FC = () => {
       // Background database update
       const [tagUpdateSuccess, fileUpdateSuccess] = await Promise.all([
         updatePersonalTag(oldTag, newTag),
-        updatePersonalTemplateFileNames(oldTag, newTag)
+        updatePersonalTemplateMetadata(oldTag, newTag)
       ]);
       
       if (tagUpdateSuccess && fileUpdateSuccess) {
