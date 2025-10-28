@@ -53,6 +53,7 @@ interface PageRendererProps {
   customPeriods: CustomPeriod[];
   hotPotatoDBSpreadsheetId: string | null;
   studentSpreadsheetId: string | null;
+  staffSpreadsheetId: string | null;
   students: Student[];
   staff: Staff[];
   searchTerm: string;
@@ -108,6 +109,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   customPeriods,
   hotPotatoDBSpreadsheetId,
   studentSpreadsheetId,
+  staffSpreadsheetId,
   students,
   staff,
   searchTerm,
@@ -243,7 +245,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'staff':
         return <Staff 
           onPageChange={onPageChange} 
-          staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+          staffSpreadsheetId={staffSpreadsheetId} />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':

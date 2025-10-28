@@ -104,8 +104,7 @@ const App: React.FC = () => {
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
-    calendarStudentSpreadsheetId,
-    calendarProfessorSpreadsheetId,
+    staffSpreadsheetId,
 
     // Attendees
     students,
@@ -536,6 +535,7 @@ const App: React.FC = () => {
               customPeriods={customPeriods}
               hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
               studentSpreadsheetId={studentSpreadsheetId}
+              staffSpreadsheetId={staffSpreadsheetId}
               students={students}
               staff={staff}
               searchTerm={searchTerm}
