@@ -46,6 +46,7 @@ export const useAppState = () => {
 
     // State for Announcements
     const [announcements, setAnnouncements] = useState<Post[]>([]);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<Post | null>(null);
     const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
     const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
     const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
@@ -334,6 +335,8 @@ export const useAppState = () => {
         // Announcements state
         announcements,
         setAnnouncements,
+        selectedAnnouncement,
+        setSelectedAnnouncement,
         isGoogleAuthenticatedForAnnouncements,
         setIsGoogleAuthenticatedForAnnouncements,
         isAnnouncementsLoading,

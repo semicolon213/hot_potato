@@ -65,14 +65,15 @@
 
 .tab-button {
   padding: 8px 16px;
-  border: 2px solid var(--border-color);
-  background-color: #f8f8f7;
-  color: var(--text-dark);
+  border: 2px solid var(--primary);
+  background-color: var(--primary);
+  color: #f8f8f7;
   border-radius: var(--border-radius-lg);
   cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .tab-button:hover {
@@ -81,13 +82,12 @@
 }
 
 .tab-button.active {
-  background-color: var(--primary);
-  color: #f8f8f7;
-  border-color: var(--primary);
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  background-color: #f8f8f7;
+  color: var(--text-dark);
+  border: 2px solid var(--border-color);
+  font-weight: 600;
+  box-shadow: none;
 }
-
 .students-list {
   margin-top: 20px;
 }
