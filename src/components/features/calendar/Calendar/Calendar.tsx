@@ -14,6 +14,7 @@ import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import HelpModal from './HelpModal';
 import SemesterPickerModal from './SemesterPickerModal';
+
 import { RRule } from 'rrule';
 import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
@@ -68,10 +69,6 @@ interface CalendarProps {
     onAddEvent: () => void;
     onSelectEvent: (event: Event, rect: DOMRect) => void;
     onMoreClick: (events: Event[], date: string, e: React.MouseEvent) => void;
-    viewMode: 'monthly' | 'weekly';
-    setViewMode: (mode: 'monthly' | 'weekly') => void;
-    selectedWeek: number;
-    setSelectedWeek: (week: number) => void;
     onSave: (scheduleData: {
         semesterStartDate: Date;
         finalExamsPeriod: DateRange;
@@ -81,7 +78,7 @@ interface CalendarProps {
     }) => Promise<void>;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreClick, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreClick, onSave}) => {
 
     const {
         dispatch,
@@ -107,6 +104,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         goToDate,
         searchTerm,
         setSearchTerm,
+        setSearchResults,
+        viewMode,
+        setViewMode,
+        selectedWeek,
+        setSelectedWeek,
+        calendarViewMode,
+        setCalendarViewMode,
+        isSearchVisible,
+        setIsSearchVisible,
+        setSearchOriginView,
         filterLabels,
         unfilteredEvents,
         formatDate,
@@ -123,19 +130,25 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
 
-    const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
+
     const [inputValue, setInputValue] = useState('');
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
-    const [isSearchVisible, setIsSearchVisible] = useState(false);
+
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isSearchVisible) {
+            searchInputRef.current?.focus();
+        }
+    }, [isSearchVisible]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-                setIsSearchVisible(false);
-                setSearchTerm('');
+                setIsSuggestionsVisible(false);
             }
         };
 
@@ -143,7 +156,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [searchContainerRef, setIsSearchVisible, setSearchTerm]);
+    }, [searchContainerRef]);
+
+
 
     const getRecentSearches = (): string[] => {
         const searches = localStorage.getItem('recentSearchTerms');
@@ -520,13 +535,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         return `${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
-    const handleRemoveTerm = (termToRemove: string) => {
-        const newSearchTerm = searchTerm
-            .split(' ')
-            .filter(t => t !== termToRemove)
-            .join(' ');
-        setSearchTerm(newSearchTerm);
-    };
 
     const handleTodayClick = () => {
         const today = new Date();
@@ -552,12 +560,15 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
     return (
         <>
+
+
             <div className="calendar-header-container">
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {isSearchVisible ? (
                         <div className="calendar-search-bar-wrapper" ref={searchContainerRef}>
                             <BiSearchAlt2 color="black" />
                             <input
+                                ref={searchInputRef}
                                 type="text"
                                 placeholder="일정 검색..."
                                 className={"calendar-search-input-active"}
@@ -565,33 +576,27 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onFocus={() => setIsSuggestionsVisible(true)}
                                 onKeyDown={(e) => {
-                                    console.log('onKeyDown event:', e.key, 'suggestions:', suggestions);
                                     if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
                                         e.preventDefault();
                                         addRecentSearch(inputValue.trim());
 
-                                        if (suggestions.length > 0) {
-                                            const bestMatch = suggestions[0];
-                                            if (bestMatch.startDate) {
-                                                goToDate(new Date(bestMatch.startDate));
-                                            }
-                                            const formattedTerm = `#${bestMatch.title}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(formattedTerm)) {
-                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                            }
-                                        } else {
-                                            const newTerm = `#${inputValue.trim()}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(newTerm)) {
-                                                setSearchTerm([...existingTerms, newTerm].join(' '));
-                                            }
-                                        }
+                                        const lowerInputValue = inputValue.toLowerCase();
+                                        const results = unfilteredEvents.filter(event => 
+                                            event.title.toLowerCase().includes(lowerInputValue) ||
+                                            (event.type && event.type.toLowerCase().includes(lowerInputValue))
+                                        );
+
+                                        setSearchOriginView(calendarViewMode === 'calendar' ? viewMode : 'schedule');
+                                        setSearchResults(results);
+                                        setCalendarViewMode('schedule');
+
                                         setInputValue('');
                                         setSuggestions([]);
+                                        setIsSuggestionsVisible(false);
                                     }
                                 }}
                             />
+                            <button className="close-search-button" onClick={() => { setIsSearchVisible(false); setInputValue(''); }}>×</button>
 
                             {isSuggestionsVisible && suggestions.length > 0 && (
                                 <ul className="search-suggestions">
@@ -599,18 +604,19 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                         <li
                                             key={index}
                                             onMouseDown={() => {
-                                                const formattedTerm = `#${suggestion.title}`;
-                                                const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                if (!existingTerms.includes(formattedTerm)) {
-                                                    setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                }
+                                                const lowerSuggestionTitle = suggestion.title.toLowerCase();
+                                                const results = unfilteredEvents.filter(event => 
+                                                    event.title.toLowerCase().includes(lowerSuggestionTitle) ||
+                                                    (event.type && event.type.toLowerCase().includes(lowerSuggestionTitle))
+                                                );
 
-                                                if (suggestion.startDate) {
-                                                    goToDate(new Date(suggestion.startDate));
-                                                }
+                                                setSearchOriginView(calendarViewMode === 'calendar' ? viewMode : 'schedule');
+                                                setSearchResults(results);
+                                                setCalendarViewMode('schedule');
 
                                                 setInputValue('');
                                                 setSuggestions([]);
+                                                setIsSuggestionsVisible(false);
                                             }}
                                         >
                                             <span className="suggestion-title">{suggestion.title}</span>
@@ -653,8 +659,8 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                     <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                                 )}
                                 <div className="view-switcher">
-                                    <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
-                                    <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
+                                    <button onClick={() => { setCalendarViewMode('schedule'); setSearchResults(null); }} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
+                                    <button onClick={() => { setCalendarViewMode('calendar'); setSearchResults(null); }} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
                                 </div>
                                 <div className="view-switcher">
                                     <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
@@ -684,14 +690,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         </>
                     )}
                 </div>
-                <div className="search-tags-container">
-                    {searchTerm.split(' ').filter(Boolean).map(term => (
-                        <div key={term} className="search-tag">
-                            {term}
-                            <button onClick={() => handleRemoveTerm(term)}>x</button>
-                        </div>
-                    ))}
-                </div>
+
             </div>
             {calendarViewMode === 'calendar' ? (
                 viewMode === 'monthly' ? (

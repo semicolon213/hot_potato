@@ -3,30 +3,36 @@ import useCalendarContext from '../../../../hooks/features/calendar/useCalendarC
 import './ScheduleView.css';
 
 const ScheduleView: React.FC = () => {
-    const { events, isFetchingGoogleEvents, setSelectedEvent } = useCalendarContext();
+    const { events, isFetchingGoogleEvents, setSelectedEvent, searchResults, setSearchResults, searchOriginView, setSearchOriginView, setCalendarViewMode, setViewMode, setIsSearchVisible } = useCalendarContext();
 
     const today = new Date();
     const todayUTCStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-
-    const futureEvents = events
-        .filter(event => {
-            const eventDateParts = event.startDate.split('-').map(Number);
-            const eventStartDateUTC = new Date(Date.UTC(eventDateParts[0], eventDateParts[1] - 1, eventDateParts[2]));
-            return eventStartDateUTC.getTime() >= todayUTCStart.getTime() && !event.isHoliday;
-        })
-        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-    const sheetEvents = futureEvents.filter(event => event.id.includes('-'));
-    const googleCalendarEvents = futureEvents.filter(event => !event.id.includes('-'));
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return `${date.getMonth() + 1}월 ${date.getDate()}일`;
     };
 
-    const renderEventList = (eventList: typeof futureEvents, title: string) => (
+    const handleBackClick = () => {
+        if (searchOriginView) {
+            if (searchOriginView === 'monthly' || searchOriginView === 'weekly') {
+                setCalendarViewMode('calendar');
+                setViewMode(searchOriginView);
+            } else {
+                setCalendarViewMode('schedule');
+            }
+        }
+        setSearchResults(null);
+        setSearchOriginView(null);
+        setIsSearchVisible(false);
+    };
+
+    const renderEventList = (eventList: typeof events, title: string, isSearchResult: boolean = false) => (
         <div className="schedule-column">
-            <h2>{title}</h2>
+            <div className="schedule-column-header">
+                <h2>{title}</h2>
+                {isSearchResult && <button onClick={handleBackClick}>뒤로가기</button>}
+            </div>
             {eventList.length > 0 ? (
                 <ul className="schedule-list">
                     {eventList.map(event => {
@@ -85,7 +91,7 @@ const ScheduleView: React.FC = () => {
                 </ul>
             ) : (
                 <div className="no-events-message">
-                    앞으로의 일정이 없습니다.
+                    {isSearchResult ? '검색 결과가 없습니다.' : '앞으로의 일정이 없습니다.'}
                 </div>
             )}
         </div>
@@ -98,6 +104,25 @@ const ScheduleView: React.FC = () => {
             </div>
         );
     }
+
+    if (searchResults) {
+        return (
+            <div className="schedule-view-container">
+                {renderEventList(searchResults, "검색 결과", true)}
+            </div>
+        );
+    }
+
+    const futureEvents = events
+        .filter(event => {
+            const eventDateParts = event.startDate.split('-').map(Number);
+            const eventStartDateUTC = new Date(Date.UTC(eventDateParts[0], eventDateParts[1] - 1, eventDateParts[2]));
+            return eventStartDateUTC.getTime() >= todayUTCStart.getTime() && !event.isHoliday;
+        })
+        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+    const sheetEvents = futureEvents.filter(event => event.id.includes('-'));
+    const googleCalendarEvents = futureEvents.filter(event => !event.id.includes('-'));
 
     return (
         <div className="schedule-view-container">

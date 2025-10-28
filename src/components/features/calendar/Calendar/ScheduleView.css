@@ -12,9 +12,31 @@
 .schedule-column h2 {
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 2px solid #eee;
+}
+
+.schedule-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.schedule-column-header h2 {
+    margin-bottom: 0;
+}
+
+.schedule-column-header button {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+}
+
+.schedule-column-header button:hover {
+    background-color: #e0e0e0;
 }
 
 .schedule-list {

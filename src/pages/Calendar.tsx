@@ -47,16 +47,13 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 }) => Promise<void> }> = ({onSaveAcademicSchedule}) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
-    const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition, goToDate, semesterStartDate} = useCalendarContext();
+    const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition, goToDate, semesterStartDate, viewMode, setViewMode, selectedWeek, setSelectedWeek} = useCalendarContext();
     const [moreEventsModal, setMoreEventsModal] = useState<{
         isOpen: boolean;
         events: Event[];
         date: string;
         position: { top: number; left: number };
     }>({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
-
-    const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
-    const [selectedWeek, setSelectedWeek] = useState(1);
 
     const handleSelectWeek = (week: number) => {
         setSelectedWeek(week);
@@ -145,7 +142,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 
     return (
         <>
-            <CalendarSidebar onSelectWeek={handleSelectWeek} selectedWeek={selectedWeek} viewMode={viewMode} onDateSelect={handleDateSelect}/>
+            <CalendarSidebar onSelectWeek={handleSelectWeek} onDateSelect={handleDateSelect}/>
             <main className="calendar-main-content">
                 <Calendar
                     onAddEvent={() => {
@@ -156,10 +153,6 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
                     onSelectEvent={handleSelectEvent}
                     onMoreClick={handleMoreClick}
                     onSave={onSaveAcademicSchedule}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
-                    selectedWeek={selectedWeek}
-                    setSelectedWeek={setSelectedWeek}
                 />
             </main>
             {isAddModalOpen && (

@@ -96,6 +96,18 @@ interface CalendarContextType {
     formatDate: (date: Date) => string;
     students: Student[];
     staff: Staff[];
+    searchResults: Event[] | null;
+    setSearchResults: (results: Event[] | null) => void;
+    calendarViewMode: 'schedule' | 'calendar';
+    setCalendarViewMode: (mode: 'schedule' | 'calendar') => void;
+    viewMode: 'monthly' | 'weekly';
+    setViewMode: (mode: 'monthly' | 'weekly') => void;
+    selectedWeek: number;
+    setSelectedWeek: (week: number) => void;
+    searchOriginView: 'monthly' | 'weekly' | 'schedule' | null;
+    setSearchOriginView: (view: 'monthly' | 'weekly' | 'schedule' | null) => void;
+    isSearchVisible: boolean;
+    setIsSearchVisible: (isVisible: boolean) => void;
 }
 
 export const CalendarContext = createContext<CalendarContextType | null>(null);

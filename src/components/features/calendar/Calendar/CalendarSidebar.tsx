@@ -5,13 +5,11 @@ import { MiniCalendar } from './MiniCalendar';
 
 interface CalendarSidebarProps {
     onSelectWeek: (week: number) => void;
-    selectedWeek: number;
-    viewMode: 'monthly' | 'weekly';
     onDateSelect: (date: Date) => void;
 }
 
-const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek, viewMode, onDateSelect }) => {
-    const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels } = useCalendarContext();
+const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, onDateSelect }) => {
+    const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels, selectedWeek, viewMode } = useCalendarContext();
 
 
     const getWeekDates = (weekNum: number) => {
