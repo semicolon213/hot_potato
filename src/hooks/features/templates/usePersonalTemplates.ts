@@ -8,22 +8,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { fetchFavorites, addFavorite, removeFavorite } from "../../../utils/database/personalFavoriteManager";
-
-/**
- * @brief 템플릿 데이터 타입 정의 (개인 템플릿용)
- * @details Google Sheets와 연동되는 템플릿 데이터의 구조를 정의합니다.
- */
-export interface Template {
-    rowIndex?: number;      // Google Sheet row index, optional for initial templates
-    type: string;          // 템플릿 종류 (예: meeting, finance 등)
-    title: string;         // 템플릿 제목
-    description: string;   // 템플릿 설명
-    tag: string;           // 카테고리 태그 (예: 회의, 재정 등)
-    partTitle?: string;    // For filtering
-    documentId?: string;   // Google Doc ID
-    favoritesTag?: string; // 즐겨찾기 태그
-    isPersonal?: boolean;  // 개인 템플릿 여부
-}
+import type { Template } from "./useTemplateUI";
+import type { GoogleFile } from "../../../types/documents";
 
 /**
  * @brief 개인 템플릿 데이터 타입 정의
@@ -174,13 +160,13 @@ export function usePersonalTemplates() {
                     id: file.id,
                     name: templateName,
                     title: templateName, // TemplateCard에서 사용하는 title 필드 추가
-                    modifiedTime: (file as any).modifiedTime,
+                    modifiedTime: (file as GoogleFile).modifiedTime,
                     isPersonal: true,
                     tag: fileType, // 유형이 태그 역할
                     description: finalDescription,
                     partTitle: titleParts[2] || templateName, // 순수한 설명만 (파일타입 접미사 제외)
                     fileType,
-                    mimeType: (file as any).mimeType, // MIME 타입 추가
+                    mimeType: (file as GoogleFile).mimeType, // MIME 타입 추가
                     isFavorite // 실제 즐겨찾기 상태
                 };
             });
@@ -221,7 +207,8 @@ export function usePersonalTemplates() {
             documentId: personalTemplate.id,
             partTitle: personalTemplate.partTitle, // PersonalTemplateData에서 설정된 partTitle 사용
             isPersonal: true, // 개인 템플릿임을 표시
-            favoritesTag: personalTemplate.isFavorite ? personalTemplate.name : undefined // 즐겨찾기 정보 포함
+            favoritesTag: personalTemplate.isFavorite ? personalTemplate.name : undefined, // 즐겨찾기 정보 포함
+            mimeType: personalTemplate.mimeType // MIME 타입 추가 (스프레드시트/문서 구분용)
         };
     }, []);
 

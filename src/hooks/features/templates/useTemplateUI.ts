@@ -39,6 +39,7 @@ export interface Template {
     documentId?: string;   // Google Doc ID
     favoritesTag?: string; // 즐겨찾기 태그
     isPersonal?: boolean;  // 개인 템플릿 여부
+    mimeType?: string;    // 파일 MIME 타입 (문서/스프레드시트 구분용)
 }
 
 /**

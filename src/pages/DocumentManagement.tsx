@@ -10,6 +10,7 @@ import { formatRelativeTime } from "../utils/helpers/timeUtils";
 import { useTemplateUI, type Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
 import { fetchFavorites } from "../utils/database/personalFavoriteManager";
+import type { DocumentMap } from "../types/documents";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -102,7 +103,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
       const header = data[0];
       const initialDocs: FetchedDocument[] = data.slice(1).map((row, index) => {
-        const doc: any = {};
+        const doc: DocumentMap = {};
         header.forEach((key, hIndex) => {
           doc[key] = row[hIndex];
         });
@@ -119,7 +120,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         };
       }).filter(doc => doc.id);
 
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
       if (!gapi?.client?.drive || initialDocs.length === 0) {
         setDocuments(initialDocs);
         return;
@@ -269,7 +270,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           icon="icon-star"
           backgroundColor="var(--table-header-bg)"
           items={favoriteTemplates}
-          onItemClick={(item: any) => handleFavoriteClick(item)}
+          onItemClick={(item: InfoCardItem) => handleFavoriteClick(item)}
         />
       </div>
 

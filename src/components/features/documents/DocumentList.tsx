@@ -97,7 +97,7 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
             >
               {columns.map((col) => (
                 <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
-                  {col.render ? col.render(row) : (row as any)[col.key] as React.ReactNode}
+                  {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '') as React.ReactNode}
                 </div>
               ))}
             </div>

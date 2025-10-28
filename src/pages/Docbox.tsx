@@ -4,25 +4,15 @@ import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsBy
 import { addRecentDocument } from "../utils/helpers/localStorageUtils";
 import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
 import { ENV_CONFIG } from "../config/environment";
+import type { DocumentMap, DocumentInfo } from "../types/documents";
 
-interface Document {
-  id: string;
-  title: string;
-  author: string;
-  lastModified: string;
-  url: string;
-  documentNumber: string;
-  approvalDate: string;
-  status: string;
-  originalIndex: number;
-}
 
 interface DocboxProps {
   searchTerm: string;
 }
 
 const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
   const [selectedSort, setSelectedSort] = useState<string>("최신순");
@@ -50,8 +40,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       }
 
       const header = data[0];
-      const initialDocs: Document[] = data.slice(1).map((row, index) => {
-        const doc: any = {};
+      const initialDocs: DocumentInfo[] = data.slice(1).map((row, index) => {
+        const doc: DocumentMap = {};
         header.forEach((key, hIndex) => {
           doc[key] = row[hIndex];
         });
@@ -68,7 +58,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         };
       }).filter(doc => doc.id); // Ensure documents have an ID
 
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
       if (!gapi?.client?.drive || initialDocs.length === 0) {
         setDocuments(initialDocs);
         return;

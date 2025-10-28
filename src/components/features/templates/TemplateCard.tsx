@@ -83,8 +83,14 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
             <div ref={ref} style={style} className="new-template-card">
                 {/* 개인 템플릿 파일 타입 표시 */}
                 {template.isPersonal && (
-                    <div className="file-type-badge" title={template.description.includes('스프레드시트') ? '스프레드시트' : '문서'}>
-                        {template.description.includes('스프레드시트') ? '📊' : '📄'}
+                    <div className="file-type-badge" title={
+                        template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
+                            ? '스프레드시트' 
+                            : '문서'
+                    }>
+                        {template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
+                            ? '📊' 
+                            : '📄'}
                     </div>
                 )}
                 

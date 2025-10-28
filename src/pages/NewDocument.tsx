@@ -14,12 +14,14 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import type { TemplateData } from '../types/documents';
 
 // UI Components
 import {
@@ -188,7 +190,7 @@ function NewDocument({
         })
     );
 
-    const handleDefaultDragEnd = (event: any) => {
+    const handleDefaultDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (active.id !== over.id) {
             setDefaultTemplateItems((items) => {
@@ -202,7 +204,7 @@ function NewDocument({
     };
 
     // 시트 템플릿 제거로 인해 드래그 앤 드롭 비활성화
-    const handleCustomDragEnd = (event: any) => {
+    const handleCustomDragEnd = (event: DragEndEvent) => {
         // 개인 템플릿은 드래그 앤 드롭 비활성화
         console.log('개인 템플릿은 드래그 앤 드롭을 지원하지 않습니다.');
     };
@@ -274,7 +276,7 @@ function NewDocument({
     };
 
     // 파일을 Google Drive에 업로드
-    const handleFileUploadToDrive = async (file: File, templateData: any) => {
+    const handleFileUploadToDrive = async (file: File, templateData: TemplateData) => {
         try {
             console.log('📁 파일을 Google Drive에 업로드 중...');
             
@@ -316,7 +318,7 @@ function NewDocument({
     };
 
     // 새 문서 생성
-    const handleCreateNewDocument = async (templateData: any) => {
+    const handleCreateNewDocument = async (templateData: TemplateData) => {
         try {
             console.log('📄 새 문서 생성 중...', documentType);
             

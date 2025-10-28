@@ -1,12 +1,8 @@
 import React from "react";
 import "./InfoCard.css";
+import type { InfoCardItem } from "../../../types/documents";
 
-export interface Item {
-  name: string;
-  time?: string;
-  [key: string]: any;
-  url?: string;
-}
+export type Item = InfoCardItem;
 
 interface InfoCardProps {
   title: string;
