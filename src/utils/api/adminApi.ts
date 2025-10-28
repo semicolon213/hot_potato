@@ -41,6 +41,7 @@ export interface ApprovalResponse {
 // 새로운 API 클라이언트를 사용하는 래퍼 함수들
 export { 
   sendAdminKeyEmail, 
+  fetchAllUsers,
   fetchPendingUsers, 
   approveUser, 
   rejectUser,

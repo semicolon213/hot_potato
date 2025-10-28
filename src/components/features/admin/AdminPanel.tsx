@@ -8,6 +8,8 @@ import './AdminPanel.css';
 const AdminPanel: React.FC = () => {
   const {
     users,
+    pendingUsers,
+    approvedUsers,
     emailToSend,
     setEmailToSend,
     isLoading,
@@ -33,6 +35,8 @@ const AdminPanel: React.FC = () => {
 
       <UserList
         users={users}
+        pendingUsers={pendingUsers}
+        approvedUsers={approvedUsers}
         isLoading={isLoading}
         onApproveUser={handleApproveUser}
         onRejectUser={handleRejectUser}

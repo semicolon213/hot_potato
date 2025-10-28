@@ -71,19 +71,45 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
     const data = await response.json();
     console.log('사용자 등록 상태 확인 응답:', data);
     
+    // 데이터 구조 디버깅
+    console.log('🔍 전체 데이터 구조 분석:', {
+      'data 전체': data,
+      'data.user': data.user,
+      'data.user?.isAdmin': data.user?.isAdmin,
+      'data.user?.is_admin': data.user?.is_admin,
+      'data.isAdmin': data.isAdmin,
+      'data.is_admin': data.is_admin,
+      'data의 모든 키': Object.keys(data)
+    });
+    
     // 디버그 정보 출력
     if (data.debug) {
       console.log('🔍 App Script 디버그 정보:', data.debug);
     }
     
     // 응답 구조 변환 (UserManagement.gs의 응답을 LoginResponse 형식으로)
+    // isAdmin은 boolean이거나 is_admin 문자열 "0"도 관리자로 인식
+    // data.user 객체에서 관리자 권한 정보를 가져옴
+    const userData = data.user || data;
+    const isAdminValue = userData.isAdmin || userData.is_admin === "0" || userData.is_admin === 0;
+    
+    console.log('🔍 관리자 권한 확인:', {
+      'userData.isAdmin': userData.isAdmin,
+      'userData.is_admin': userData.is_admin,
+      '최종 isAdminValue': isAdminValue,
+      '타입 확인': {
+        'isAdmin 타입': typeof userData.isAdmin,
+        'is_admin 타입': typeof userData.is_admin
+      }
+    });
+    
     return {
       success: data.success || false,
       isRegistered: data.isRegistered || false,
       isApproved: data.isApproved || false,
       approvalStatus: data.approvalStatus || 'not_requested',
       studentId: data.studentId || data.memberNumber || '',
-      isAdmin: data.isAdmin || false,
+      isAdmin: isAdminValue,
       error: data.error,
       debug: data.debug
     } as LoginResponse;

@@ -152,6 +152,10 @@ export class ApiClient {
   }
 
   // 사용자 관리 API
+  async getAllUsers() {
+    return this.request(API_ACTIONS.GET_ALL_USERS);
+  }
+
   async getPendingUsers() {
     return this.request(API_ACTIONS.GET_PENDING_USERS);
   }
@@ -271,6 +275,9 @@ export const apiClient = new ApiClient();
 // 기존 API 함수들과의 호환성을 위한 래퍼 함수들
 export const sendAdminKeyEmail = (userEmail: string, adminAccessToken: string) =>
   apiClient.sendAdminKeyEmail(userEmail, adminAccessToken);
+
+export const fetchAllUsers = () =>
+  apiClient.getAllUsers();
 
 export const fetchPendingUsers = () =>
   apiClient.getPendingUsers();

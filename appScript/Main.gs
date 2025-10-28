@@ -387,9 +387,11 @@ function doPost(e) {
     // 인증 관련 액션 처리
     if (req.action === 'checkApprovalStatus') {
       console.log('사용자 승인 상태 확인 요청:', req.email);
-      const result = callUserManagementPost(req);
+      const result = checkUserStatus(req.email);
       console.log('사용자 승인 상태 확인 응답:', result);
-      return result;
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
     }
     
     // UserManagement.gs의 doPostAuthInternal 함수 호출
@@ -445,8 +447,77 @@ function parseRequest(e) {
 // ===== UserManagement.gs 함수 호출 래퍼 =====
 function callUserManagementPost(req) {
   try {
-    // UserManagement.gs의 doPostAuthInternal 함수를 직접 호출
-    return doPostAuthInternal(req);
+    console.log('🔍 요청 액션:', req.action);
+    
+    // 관리자 관련 액션 처리 - 기존 함수들 호출
+    if (req.action === 'getAllUsers') {
+      console.log('👥 모든 사용자 목록 조회 요청');
+      const result = getAllUsers();
+      console.log('👥 모든 사용자 목록 조회 결과:', result);
+      console.log('👥 응답 타입:', typeof result);
+      console.log('👥 응답 success:', result.success);
+      console.log('👥 응답 users 길이:', result.users ? result.users.length : 'undefined');
+      const response = ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+      console.log('👥 ContentService 응답 생성 완료');
+      return response;
+    }
+    
+    if (req.action === 'getPendingUsers') {
+      console.log('👥 대기 중인 사용자 목록 조회 요청');
+      const result = getPendingUsers();
+      console.log('👥 대기 중인 사용자 목록 조회 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'approveUser') {
+      console.log('✅ 사용자 승인 요청:', req.studentId);
+      const result = approveUser(req.studentId);
+      console.log('✅ 사용자 승인 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'rejectUser') {
+      console.log('❌ 사용자 거부 요청:', req.studentId);
+      const result = rejectUser(req.studentId);
+      console.log('❌ 사용자 거부 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'clearUserCache') {
+      console.log('🗑️ 사용자 캐시 초기화 요청');
+      const result = clearUserCache();
+      console.log('🗑️ 사용자 캐시 초기화 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (req.action === 'sendAdminKeyEmail') {
+      console.log('📧 관리자 키 이메일 전송 요청:', req.userEmail);
+      const result = sendAdminKeyEmail(req.userEmail);
+      console.log('📧 관리자 키 이메일 전송 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 알 수 없는 액션
+    console.log('❌ 알 수 없는 액션:', req.action);
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: '알 수 없는 액션입니다: ' + req.action 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
   } catch (error) {
     console.error('UserManagement.gs 호출 오류:', error);
     return ContentService
@@ -474,8 +545,14 @@ function doGet(e) {
 // ===== UserManagement.gs GET 함수 호출 래퍼 =====
 function callUserManagementGet(e) {
   try {
-    // UserManagement.gs의 doGetAuthInternal 함수를 직접 호출
-    return doGetAuthInternal(e);
+    // 간단한 연결 테스트 응답
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        success: true, 
+        message: 'Hot Potato App Script is running',
+        timestamp: new Date().toISOString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     console.error('UserManagement.gs GET 호출 오류:', error);
     return ContentService

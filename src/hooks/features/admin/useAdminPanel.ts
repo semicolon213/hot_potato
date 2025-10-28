@@ -13,12 +13,14 @@ interface AdminUser {
 }
 
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
-import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
+import { fetchAllUsers, sendAdminKeyEmail, approveUser, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
 import type { ApiResponse } from '../../../config/api';
 
 export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
+  const [approvedUsers, setApprovedUsers] = useState<AdminUser[]>([]);
   const [emailToSend, setEmailToSend] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -29,31 +31,72 @@ export const useAdminPanel = () => {
   // 사용자 목록 가져오기
   const loadUsers = async () => {
     try {
-      console.log('loadUsers 함수 시작');
+      console.log('🔍 관리자 패널 - 모든 사용자 목록 로딩 시작');
       setIsLoading(true);
-      console.log('fetchPendingUsers 호출 중...');
-      const result = await fetchPendingUsers() as ApiResponse<{ users: AdminUser[] }>;
-      console.log('fetchPendingUsers 응답:', result);
+      console.log('fetchAllUsers 호출 중...');
+      const result = await fetchAllUsers() as ApiResponse<{ users: AdminUser[] }>;
+      console.log('🔍 fetchAllUsers 응답 전체:', result);
+      console.log('🔍 응답 구조 분석:', {
+        'result.success': result.success,
+        'result.users': result.users,
+        'result.data': result.data,
+        'result.message': result.message,
+        'result.error': result.error,
+        'result.debug': result.debug,
+        'result의 모든 키': Object.keys(result)
+      });
+      
+      // 디버그 정보 출력
+      if (result.debug) {
+        console.log('🔍 앱스크립트 디버그 정보:', result.debug);
+        console.log('📊 스프레드시트 ID:', result.debug.spreadsheetId);
+        console.log('📊 시트 이름:', result.debug.sheetName);
+        console.log('📊 원본 데이터 길이:', result.debug.rawDataLength);
+        console.log('📊 헤더:', result.debug.header);
+        console.log('📊 사용자 데이터 샘플:', result.debug.userDataSample);
+        console.log('📊 분류 결과:', result.debug.classification);
+      }
       
       if (result.success && Array.isArray(result.users)) {
-        console.log('=== 사용자 목록 받음 ===');
-        console.log('사용자 수:', result.users.length);
+        console.log('=== 모든 사용자 목록 받음 ===');
+        console.log('전체 사용자 수:', result.users.length);
+        console.log('승인 대기 사용자 수:', result.pendingUsers?.length || 0);
+        console.log('승인된 사용자 수:', result.approvedUsers?.length || 0);
+        
         console.log('사용자 목록:', result.users.map((user: AdminUser) => ({
           id: user.id,
           studentId: user.studentId,
           name: user.name,
           email: user.email,
-          isApproved: user.isApproved
+          isApproved: user.isApproved,
+          isAdmin: user.isAdmin
         })));
+        
         console.log('setUsers 호출 전 현재 users 상태:', users);
         setUsers(result.users);
+        setPendingUsers(result.pendingUsers || []);
+        setApprovedUsers(result.approvedUsers || []);
         console.log('setUsers 호출 완료');
       } else {
+        console.log('❌ 사용자 목록 로딩 실패:', {
+          success: result.success,
+          hasUsers: Array.isArray(result.users),
+          usersLength: result.users?.length,
+          error: result.error,
+          message: result.message,
+          debug: result.debug
+        });
+        
+        // 에러 디버그 정보 출력
+        if (result.debug) {
+          console.log('❌ 에러 디버그 정보:', result.debug);
+        }
+        
         setUsers([]);
         setMessage('사용자 목록을 가져오는데 실패했습니다.');
       }
     } catch (error) {
-      console.error('사용자 목록 조회 실패:', error);
+      console.error('❌ 사용자 목록 조회 실패:', error);
       setUsers([]);
       setMessage('사용자 목록을 가져오는데 실패했습니다.');
     } finally {
@@ -298,6 +341,8 @@ export const useAdminPanel = () => {
 
   return {
     users,
+    pendingUsers,
+    approvedUsers,
     emailToSend,
     setEmailToSend,
     isLoading,

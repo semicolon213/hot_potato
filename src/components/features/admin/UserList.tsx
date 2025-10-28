@@ -13,6 +13,8 @@ interface AdminUser {
 
 interface UserListProps {
   users: AdminUser[];
+  pendingUsers: AdminUser[];
+  approvedUsers: AdminUser[];
   isLoading: boolean;
   onApproveUser: (userId: string) => void;
   onRejectUser: (userId: string) => void;
@@ -20,6 +22,8 @@ interface UserListProps {
 
 const UserList: React.FC<UserListProps> = ({
   users,
+  pendingUsers,
+  approvedUsers,
   isLoading,
   onApproveUser,
   onRejectUser
@@ -27,16 +31,11 @@ const UserList: React.FC<UserListProps> = ({
   console.log('=== UserList 렌더링 ===');
   console.log('받은 users 배열:', users);
   console.log('users 배열 길이:', users?.length || 0);
+  console.log('승인 대기 사용자 수:', pendingUsers?.length || 0);
+  console.log('승인 대기 사용자 목록:', pendingUsers);
+  console.log('승인된 사용자 수:', approvedUsers?.length || 0);
+  console.log('승인된 사용자 목록:', approvedUsers);
   
-  const pendingUsers = users?.filter(user => !user.isApproved) || [];
-  const approvedUsers = users?.filter(user => user.isApproved) || [];
-  
-  console.log('승인 대기 사용자 수:', pendingUsers.length);
-  console.log('승인 대기 사용자 목록:', pendingUsers.map(u => ({ id: u.id, name: u.name, isApproved: u.isApproved })));
-  
-  console.log('승인된 사용자 수:', approvedUsers.length);
-  console.log('승인된 사용자 목록:', approvedUsers.map(u => ({ id: u.id, name: u.name, isApproved: u.isApproved })));
-
   return (
     <>
       {/* 승인 대기 사용자 */}
