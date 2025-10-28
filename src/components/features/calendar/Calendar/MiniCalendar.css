@@ -1,4 +1,3 @@
-
 .mini-calendar {
   width: 100%;
   background-color: transparent; /* 사이드바와 동일한 배경색 사용 */
@@ -58,26 +57,4 @@
 
 .mini-calendar-day.not-current-month {
   color: var(--text-disabled);
-}
-
-.mini-calendar-day.today {
-  background-color: var(--border-light);
-}
-
-.mini-calendar-day.in-selected-week {
-  background-color: #C2E7FF;
-  color: var(--primary);
-  font-weight: 600;
-  border-radius: 0;
-  height: 80%;
-}
-
-.mini-calendar-day.week-start {
-    border-top-left-radius: 50%;
-    border-bottom-left-radius: 50%;
-}
-
-.mini-calendar-day.week-end {
-    border-top-right-radius: 50%;
-    border-bottom-right-radius: 50%;
 }

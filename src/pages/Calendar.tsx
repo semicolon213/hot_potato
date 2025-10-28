@@ -47,7 +47,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 }) => Promise<void> }> = ({onSaveAcademicSchedule}) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
-    const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition} = useCalendarContext();
+    const {selectedEvent, setSelectedEvent, deleteEvent, selectedEventPosition, goToDate, semesterStartDate, viewMode, setViewMode, selectedWeek, setSelectedWeek} = useCalendarContext();
     const [moreEventsModal, setMoreEventsModal] = useState<{
         isOpen: boolean;
         events: Event[];
@@ -55,12 +55,33 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
         position: { top: number; left: number };
     }>({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
 
-    const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
-    const [selectedWeek, setSelectedWeek] = useState(1);
-
     const handleSelectWeek = (week: number) => {
         setSelectedWeek(week);
         setViewMode('weekly');
+    };
+
+    const handleDateSelect = (date: Date) => {
+        if (goToDate) {
+            goToDate(date);
+        }
+
+        setViewMode('weekly');
+
+        if (semesterStartDate) {
+            const semesterStart = new Date(semesterStartDate);
+            const selected = new Date(date);
+
+            semesterStart.setHours(0, 0, 0, 0);
+            selected.setHours(0, 0, 0, 0);
+
+            const semesterWeekStart = new Date(semesterStart);
+            semesterWeekStart.setDate(semesterStart.getDate() - semesterStart.getDay());
+
+            const diffTime = selected.getTime() - semesterWeekStart.getTime();
+            const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+            setSelectedWeek(diffWeeks + 1);
+        }
     };
 
     const handleMoreClick = (events: Event[], date: string, e: React.MouseEvent) => {
@@ -121,7 +142,7 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
 
     return (
         <>
-            <CalendarSidebar onSelectWeek={handleSelectWeek} selectedWeek={selectedWeek}/>
+            <CalendarSidebar onSelectWeek={handleSelectWeek} onDateSelect={handleDateSelect}/>
             <main className="calendar-main-content">
                 <Calendar
                     onAddEvent={() => {
@@ -132,10 +153,6 @@ const CalendarContent: React.FC<{ onSaveAcademicSchedule: (scheduleData: {
                     onSelectEvent={handleSelectEvent}
                     onMoreClick={handleMoreClick}
                     onSave={onSaveAcademicSchedule}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
-                    selectedWeek={selectedWeek}
-                    setSelectedWeek={setSelectedWeek}
                 />
             </main>
             {isAddModalOpen && (

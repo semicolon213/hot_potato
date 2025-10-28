@@ -46,6 +46,7 @@ export interface User {
   studentId: string;
   isAdmin: boolean;
   isApproved: boolean;
+  userType?: string;
   accessToken?: string;
 }
 

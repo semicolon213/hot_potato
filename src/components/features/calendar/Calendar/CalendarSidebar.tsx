@@ -1,15 +1,15 @@
 import React, {useState} from 'react';
 import useCalendarContext from '../../../../hooks/features/calendar/useCalendarContext.ts';
 import './CalendarSidebar.css';
-import MiniCalendar from './MiniCalendar';
+import { MiniCalendar } from './MiniCalendar';
 
 interface CalendarSidebarProps {
     onSelectWeek: (week: number) => void;
-    selectedWeek: number;
+    onDateSelect: (date: Date) => void;
 }
 
-const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selectedWeek }) => {
-    const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels } = useCalendarContext();
+const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, onDateSelect }) => {
+    const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels, selectedWeek, viewMode } = useCalendarContext();
 
 
     const getWeekDates = (weekNum: number) => {
@@ -28,7 +28,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, selecte
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
-                <MiniCalendar selectedWeek={selectedWeek} />
+                <MiniCalendar selectedWeek={selectedWeek} viewMode={viewMode} onDateSelect={onDateSelect} />
             </div>
 
             <div className="sidebar-section">

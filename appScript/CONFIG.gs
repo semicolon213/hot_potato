@@ -40,15 +40,17 @@
     // ===== 사용자 관리 설정 =====
     // 사용자 시트 컬럼 설정
     const USER_SHEET_COLUMNS = {
-    EMAIL: 0,           // A열 - 이메일
-    APPROVAL_STATUS: 1, // B열 - 승인상태
-    IS_ADMIN: 2,        // C열 - 관리자여부
-    STUDENT_ID: 3,      // D열 - 학생번호
-    REGISTERED_AT: 4    // E열 - 등록일시
+      NO_MEMBER: 0,       // A열 - 학번/교번
+      USER_TYPE: 1,       // B열 - 사용자 유형
+      NAME_MEMBER: 2,     // C열 - 이름
+      GOOGLE_MEMBER: 3,   // D열 - Google 계정 이메일 (암호화)
+      APPROVAL: 4,        // E열 - 승인 상태
+      IS_ADMIN: 5,        // F열 - 관리자 여부
+      APPROVAL_DATE: 6    // G열 - 승인 날짜
     };
-    
+
     // 사용자 시트 헤더
-    const USER_SHEET_HEADERS = ['이메일', '승인상태', '관리자여부', '학생번호', '등록일시'];
+    const USER_SHEET_HEADERS = ['no_member', 'user_type', 'name_member', 'google_member', 'Approval', 'is_admin', 'approval_date'];
     
     // 승인 상태 상수
     const APPROVAL_STATUS = {

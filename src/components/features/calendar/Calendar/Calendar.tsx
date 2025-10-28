@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { IoSettingsSharp } from "react-icons/io5";
 import { BiSearchAlt2, BiHelpCircle, BiPlus } from "react-icons/bi";
 import useCalendarContext, { type Event, type DateRange, type CustomPeriod } from '../../../../hooks/features/calendar/useCalendarContext.ts';
@@ -13,6 +13,8 @@ import WeeklyCalendar from "./WeeklyCalendar";
 import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import HelpModal from './HelpModal';
+import SemesterPickerModal from './SemesterPickerModal';
+
 import { RRule } from 'rrule';
 import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
 import { initializeGoogleAPIOnce } from '../../../../utils/google/googleApiInitializer';
@@ -67,10 +69,6 @@ interface CalendarProps {
     onAddEvent: () => void;
     onSelectEvent: (event: Event, rect: DOMRect) => void;
     onMoreClick: (events: Event[], date: string, e: React.MouseEvent) => void;
-    viewMode: 'monthly' | 'weekly';
-    setViewMode: (mode: 'monthly' | 'weekly') => void;
-    selectedWeek: number;
-    setSelectedWeek: (week: number) => void;
     onSave: (scheduleData: {
         semesterStartDate: Date;
         finalExamsPeriod: DateRange;
@@ -80,7 +78,7 @@ interface CalendarProps {
     }) => Promise<void>;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreClick, viewMode, setViewMode, selectedWeek, setSelectedWeek, onSave}) => {
+const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreClick, onSave}) => {
 
     const {
         dispatch,
@@ -106,6 +104,16 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         goToDate,
         searchTerm,
         setSearchTerm,
+        setSearchResults,
+        viewMode,
+        setViewMode,
+        selectedWeek,
+        setSelectedWeek,
+        calendarViewMode,
+        setCalendarViewMode,
+        isSearchVisible,
+        setIsSearchVisible,
+        setSearchOriginView,
         filterLabels,
         unfilteredEvents,
         formatDate,
@@ -121,13 +129,36 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     }>({ isOpen: false, events: [], date: '', position: { top: 0, left: 0 } });
 
     const [isSemesterPickerOpen, setIsSemesterPickerOpen] = useState(false);
-    const [newPeriodName, setNewPeriodName] = useState("");
-    const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
+
+
     const [inputValue, setInputValue] = useState('');
     const [suggestions, setSuggestions] = useState<{ title: string; tag: string }[]>([]);
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
-    const [isSearchVisible, setIsSearchVisible] = useState(false);
+
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isSearchVisible) {
+            searchInputRef.current?.focus();
+        }
+    }, [isSearchVisible]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                setIsSuggestionsVisible(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [searchContainerRef]);
+
+
 
     const getRecentSearches = (): string[] => {
         const searches = localStorage.getItem('recentSearchTerms');
@@ -270,148 +301,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         onSelectEvent(event, e.currentTarget.getBoundingClientRect());
     };
 
-    const formatDateForInput = (date: Date | null) => {
-        if (!date || isNaN(date.getTime())) return '';
-        return date.toISOString().split('T')[0];
-    };
 
-    const handleAddCustomPeriod = () => {
-        if (!newPeriodName.trim()) {
-            alert('추가할 항목의 이름을 입력해주세요.');
-            return;
-        }
-        const newPeriod = {
-            id: `custom-${Date.now()}`,
-            name: newPeriodName,
-            period: { start: null, end: null },
-        };
-        setCustomPeriods([...customPeriods, newPeriod]);
-        setNewPeriodName("");
-    };
-
-    const handleAddMakeupPeriod = () => {
-        const newPeriod = {
-            id: `custom-${Date.now()}`,
-            name: "보강기간",
-            period: { start: null, end: null },
-            type: "makeup",
-        };
-        setCustomPeriods([...customPeriods, newPeriod]);
-    };
-
-    const handleDateChange = (setter: (date: Date) => void, value: string) => {
-        if (value) {
-            const newDate = new Date(value);
-            if (!isNaN(newDate.getTime())) {
-                setter(newDate);
-            }
-        }
-    };
-
-    const handleCustomPeriodTagChange = (id: string, value: string) => {
-        const updatedPeriods = customPeriods.map(p => {
-            if (p.id === id) {
-                return { ...p, type: value };
-            }
-            return p;
-        });
-        setCustomPeriods(updatedPeriods);
-    };
-
-
-    const handleCustomPeriodChange = (id: string, part: 'start' | 'end', value: string) => {
-        if (!value) return;
-        const newDate = new Date(value);
-        if (isNaN(newDate.getTime())) return;
-
-        const periodToUpdate = customPeriods.find(p => p.id === id);
-        if (!periodToUpdate) return;
-
-        const updatedPeriods = customPeriods.map(p => {
-            if (p.id === id) {
-                return { ...p, period: { ...p.period, [part]: newDate } };
-            }
-            return p;
-        });
-        setCustomPeriods(updatedPeriods);
-    };
-
-    const handleFinalExamsPeriodChange = (part: 'start' | 'end', value: string) => {
-        if (!value) return;
-        const newDate = new Date(value);
-        if (isNaN(newDate.getTime())) return;
-
-        setFinalExamsPeriod({ ...finalExamsPeriod, [part]: newDate });
-    };
-
-    const handleMidtermExamsPeriodChange = (part: 'start' | 'end', value: string) => {
-        if (!value) return;
-        const newDate = new Date(value);
-        if (isNaN(newDate.getTime())) return;
-
-        setMidtermExamsPeriod({ ...midtermExamsPeriod, [part]: newDate });
-    };
-
-    const handleGradeEntryPeriodChange = (part: 'start' | 'end', value: string) => {
-        if (!value) return;
-        const newDate = new Date(value);
-        if (isNaN(newDate.getTime())) return;
-
-        setGradeEntryPeriod({ ...gradeEntryPeriod, [part]: newDate });
-    };
-
-    const handleDeleteCustomPeriod = (id: string) => {
-        if (window.confirm('이 항목을 정말로 삭제하시겠습니까?')) {
-            const updatedPeriods = customPeriods.filter(p => p.id !== id);
-            setCustomPeriods(updatedPeriods);
-        }
-    };
-
-    const handleSave = async () => {
-        try {
-            // Validate custom periods before saving
-            for (const p of customPeriods) {
-                if (!p.period.start || !p.period.end) {
-                    alert(`'${p.name}' 기간의 시작일과 종료일을 모두 설정해주세요.`);
-                    return;
-                }
-            }
-
-            // Validate all periods before saving
-            const allPeriods = [
-                { name: '중간고사', period: midtermExamsPeriod },
-                { name: '기말고사', period: finalExamsPeriod },
-                { name: '성적입력 및 강의평가', period: gradeEntryPeriod },
-                ...customPeriods.map(p => ({ name: p.name, period: p.period }))
-            ];
-
-            for (const item of allPeriods) {
-                const { start, end } = item.period;
-                if (start && end && start > end) {
-                    alert(`'${item.name}' 기간의 종료일은 시작일보다 빠를 수 없습니다.`);
-                    return; // Stop saving
-                }
-            }
-
-            await onSave({
-                semesterStartDate,
-                finalExamsPeriod,
-                midtermExamsPeriod,
-                gradeEntryPeriod,
-                customPeriods
-            });
-            setIsSemesterPickerOpen(false);
-        } catch (error) {
-            console.error("학사일정 저장 중 오류 발생:", error);
-            alert("학사일정 저장 중 오류가 발생했습니다. 자세한 내용은 콘솔을 확인해주세요.");
-        }
-    };
-
-    const handleCloseWithoutSaving = () => {
-        if (window.confirm('저장 되지 않습니다. 그래도 닫겠습니까?')) {
-            setIsSemesterPickerOpen(false);
-        }
-    };
 
     const weeksInMonth = useMemo(() => {
         const weeksArr: DateInfo[][] = [];
@@ -645,13 +535,6 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         return `${start.getMonth() + 1}월 ${start.getDate()}일 ~ ${end.getMonth() + 1}월 ${end.getDate()}일`;
     };
 
-    const handleRemoveTerm = (termToRemove: string) => {
-        const newSearchTerm = searchTerm
-            .split(' ')
-            .filter(t => t !== termToRemove)
-            .join(' ');
-        setSearchTerm(newSearchTerm);
-    };
 
     const handleTodayClick = () => {
         const today = new Date();
@@ -677,68 +560,63 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
     return (
         <>
+
+
             <div className="calendar-header-container">
                 <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {isSearchVisible ? (
-                        <div className="calendar-search-bar-wrapper">
+                        <div className="calendar-search-bar-wrapper" ref={searchContainerRef}>
                             <BiSearchAlt2 color="black" />
                             <input
+                                ref={searchInputRef}
                                 type="text"
                                 placeholder="일정 검색..."
                                 className={"calendar-search-input-active"}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onFocus={() => setIsSuggestionsVisible(true)}
-                                onBlur={() => {
-                                    setTimeout(() => setIsSuggestionsVisible(false), 150);
-                                }}
                                 onKeyDown={(e) => {
-                                    console.log('onKeyDown event:', e.key, 'suggestions:', suggestions);
                                     if (e.key === 'Enter' && !e.nativeEvent.isComposing && inputValue.trim() !== '') {
                                         e.preventDefault();
                                         addRecentSearch(inputValue.trim());
 
-                                        if (suggestions.length > 0) {
-                                            const bestMatch = suggestions[0];
-                                            if (bestMatch.startDate) {
-                                                goToDate(new Date(bestMatch.startDate));
-                                            }
-                                            const formattedTerm = `#${bestMatch.title}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(formattedTerm)) {
-                                                setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                            }
-                                        } else {
-                                            const newTerm = `#${inputValue.trim()}`;
-                                            const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                            if (!existingTerms.includes(newTerm)) {
-                                                setSearchTerm([...existingTerms, newTerm].join(' '));
-                                            }
-                                        }
+                                        const lowerInputValue = inputValue.toLowerCase();
+                                        const results = events.filter(event => 
+                                            event.title.toLowerCase().includes(lowerInputValue) ||
+                                            (event.type && event.type.toLowerCase().includes(lowerInputValue))
+                                        );
+
+                                        setSearchOriginView(calendarViewMode === 'calendar' ? viewMode : 'schedule');
+                                        setSearchResults(results);
+                                        setCalendarViewMode('schedule');
+
                                         setInputValue('');
                                         setSuggestions([]);
+                                        setIsSuggestionsVisible(false);
                                     }
                                 }}
                             />
-                            <button onClick={() => setIsSearchVisible(false)}>닫기</button>
+                            <button className="close-search-button" onClick={() => { setIsSearchVisible(false); setInputValue(''); }}>×</button>
+
                             {isSuggestionsVisible && suggestions.length > 0 && (
                                 <ul className="search-suggestions">
                                     {suggestions.map((suggestion, index) => (
                                         <li
                                             key={index}
                                             onMouseDown={() => {
-                                                const formattedTerm = `#${suggestion.title}`;
-                                                const existingTerms = searchTerm.split(' ').filter(Boolean);
-                                                if (!existingTerms.includes(formattedTerm)) {
-                                                    setSearchTerm([...existingTerms, formattedTerm].join(' '));
-                                                }
+                                                const lowerSuggestionTitle = suggestion.title.toLowerCase();
+                                                const results = events.filter(event => 
+                                                    event.title.toLowerCase().includes(lowerSuggestionTitle) ||
+                                                    (event.type && event.type.toLowerCase().includes(lowerSuggestionTitle))
+                                                );
 
-                                                if (suggestion.startDate) {
-                                                    goToDate(new Date(suggestion.startDate));
-                                                }
+                                                setSearchOriginView(calendarViewMode === 'calendar' ? viewMode : 'schedule');
+                                                setSearchResults(results);
+                                                setCalendarViewMode('schedule');
 
                                                 setInputValue('');
                                                 setSuggestions([]);
+                                                setIsSuggestionsVisible(false);
                                             }}
                                         >
                                             <span className="suggestion-title">{suggestion.title}</span>
@@ -752,7 +630,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         <>
                             <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
                                 <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                                <h2 style={{textAlign: 'center', flexGrow: 1}}>
+                                <h2 className="calendar-month-year" style={{textAlign: 'center', flexGrow: 1}}>
                                     {viewMode === 'monthly' ? (
                                         `${currentDate.year}년 ${currentDate.month}월`
                                     ) : (
@@ -777,29 +655,42 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                         style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }}
                                     />
                                 </div>
-                                {user && user.isAdmin && (
+                                {user && user.userType === 'admin' && (
                                     <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
                                 )}
                                 <div className="view-switcher">
-                                    <button onClick={() => setCalendarViewMode('schedule')} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
-                                    <button onClick={() => setCalendarViewMode('calendar')} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
+                                    <button onClick={() => { setCalendarViewMode('schedule'); setSearchResults(null); }} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
+                                    <button onClick={() => { setCalendarViewMode('calendar'); setSearchResults(null); }} className={calendarViewMode === 'calendar' ? 'active' : ''}>달력</button>
                                 </div>
                                 <div className="view-switcher">
                                     <button onClick={() => setViewMode('monthly')} className={viewMode === 'monthly' ? 'active' : ''}>월간</button>
-                                    <button onClick={() => setViewMode('weekly')} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
+                                    <button onClick={() => {
+                                        setViewMode('weekly');
+                                        const today = new Date();
+                                        goToDate(today);
+                                        
+                                        if (semesterStartDate) {
+                                            const semesterStart = new Date(semesterStartDate);
+                                            const todayDate = new Date();
+
+                                            semesterStart.setHours(0, 0, 0, 0);
+                                            todayDate.setHours(0, 0, 0, 0);
+
+                                            const semesterWeekStart = new Date(semesterStart);
+                                            semesterWeekStart.setDate(semesterStart.getDate() - semesterStart.getDay());
+
+                                            const diffTime = todayDate.getTime() - semesterWeekStart.getTime();
+                                            const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+                                            setSelectedWeek(diffWeeks + 1);
+                                        }
+                                    }} className={viewMode === 'weekly' ? 'active' : ''}>주간</button>
                                 </div>
                             </div>
                         </>
                     )}
                 </div>
-                <div className="search-tags-container">
-                    {searchTerm.split(' ').filter(Boolean).map(term => (
-                        <div key={term} className="search-tag">
-                            {term}
-                            <button onClick={() => handleRemoveTerm(term)}>x</button>
-                        </div>
-                    ))}
-                </div>
+
             </div>
             {calendarViewMode === 'calendar' ? (
                 viewMode === 'monthly' ? (
@@ -844,108 +735,11 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                 <ScheduleView />
             )}
 
-            {isSemesterPickerOpen && (
-                <div className="semester-picker-overlay" onClick={handleCloseWithoutSaving}>
-                    <div className="semester-picker-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="date-selector-row">
-                            <label htmlFor="semester-start-date">개강일</label>
-                            <input
-                                id="semester-start-date"
-                                type="date"
-                                value={formatDateForInput(semesterStartDate)}
-                                onChange={(e) => handleDateChange(setSemesterStartDate, e.target.value)}
-                            />
-                        </div>
-                        <div className="date-selector-row">
-                            <label>중간고사</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(midtermExamsPeriod.start)}
-                                onChange={(e) => handleMidtermExamsPeriodChange('start', e.target.value)}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(midtermExamsPeriod.end)}
-                                onChange={(e) => handleMidtermExamsPeriodChange('end', e.target.value)}
-                            />
-                        </div>
-                        <div className="date-selector-row">
-                            <label>기말고사</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(finalExamsPeriod.start)}
-                                onChange={(e) => handleFinalExamsPeriodChange('start', e.target.value)}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(finalExamsPeriod.end)}
-                                onChange={(e) => handleFinalExamsPeriodChange('end', e.target.value)}
-                            />
-                        </div>
-                        <div className="date-selector-row">
-                            <label>성적입력 및 강의평가</label>
-                            <input
-                                type="date"
-                                value={formatDateForInput(gradeEntryPeriod.start)}
-                                onChange={(e) => handleGradeEntryPeriodChange('start', e.target.value)}
-                            />
-                            <span>~</span>
-                            <input
-                                type="date"
-                                value={formatDateForInput(gradeEntryPeriod.end)}
-                                onChange={(e) => handleGradeEntryPeriodChange('end', e.target.value)}
-                            />
-                        </div>
-
-                        {customPeriods.map(p => (
-                            <div key={p.id} className="date-selector-row">
-                                <label>{p.name}</label>
-                                <input
-                                    type="date"
-                                    value={formatDateForInput(p.period.start)}
-                                    onChange={(e) => handleCustomPeriodChange(p.id, 'start', e.target.value)}
-                                />
-                                <span>~</span>
-                                <input
-                                    type="date"
-                                    value={formatDateForInput(p.period.end)}
-                                    onChange={(e) => handleCustomPeriodChange(p.id, 'end', e.target.value)}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="태그"
-                                    className="tag-input"
-                                    value={p.type || ''}
-                                    onChange={(e) => handleCustomPeriodTagChange(p.id, e.target.value)}
-                                />
-                                <button onClick={() => handleDeleteCustomPeriod(p.id)} className="delete-period-btn">삭제</button>
-                            </div>
-                        ))}
-
-                        <div className="add-period-form" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input
-                                    type="text"
-                                    placeholder="항목 이름"
-                                    value={newPeriodName}
-                                    onChange={(e) => setNewPeriodName(e.target.value)}
-                                />
-                                <button onClick={handleAddCustomPeriod}>추가</button>
-                            </div>
-                            <div style={{ position: 'absolute', right: 0 }}>
-                                <button onClick={handleAddMakeupPeriod}>보강</button>
-                            </div>
-                        </div>
-
-                        <div className="modal-actions">
-                            <button onClick={handleSave} className="done-btn">완료</button>
-                            <button onClick={handleCloseWithoutSaving} className="close-btn">닫기</button>
-                        </div>
-                    </div>
-                </div>
-                        )}
+            <SemesterPickerModal
+                isOpen={isSemesterPickerOpen}
+                onClose={() => setIsSemesterPickerOpen(false)}
+                onSave={onSave}
+            />
 
                         {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
                     </>

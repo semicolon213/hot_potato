@@ -100,6 +100,12 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
     const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<Event[] | null>(null);
+    const [calendarViewMode, setCalendarViewMode] = useState<'schedule' | 'calendar'>('calendar');
+    const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
+    const [selectedWeek, setSelectedWeek] = useState(1);
+    const [searchOriginView, setSearchOriginView] = useState<'monthly' | 'weekly' | 'schedule' | null>(null);
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
 
     const handleFilterChange = (filter: string) => {
         if (filter === 'all') {
@@ -121,7 +127,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         }
     };
 
-    const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting', 'personal'];
+    const eventTypes = ['holiday', 'exam', 'event', 'makeup', 'meeting'];
     const filterLabels: { [key: string]: string } = {
         all: '전체',
         holiday: '휴일/휴강',
@@ -131,7 +137,6 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         event: '행사',
         makeup: '보강',
         meeting: '회의',
-        personal: '개인일정',
     };
 
     useEffect(() => {
@@ -679,6 +684,18 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         addSheetEvent, // Correctly pass the prop function
         students,
         staff,
+        searchResults,
+        setSearchResults,
+        calendarViewMode,
+        setCalendarViewMode,
+        viewMode,
+        setViewMode,
+        selectedWeek,
+        setSelectedWeek,
+        searchOriginView,
+        setSearchOriginView,
+        isSearchVisible,
+        setIsSearchVisible,
         extraWeeks: 0,
         setExtraWeeks: (weeks: number) => {
             console.log('Set extra weeks:', weeks);
