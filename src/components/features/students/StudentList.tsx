@@ -31,6 +31,7 @@ interface StudentListProps {
   isStaffMode?: boolean; // 교직원 모드 추가
   onAddStaff?: () => void;
   onAddCommittee?: () => void;
+  onAddStudent?: () => void; // 학생 추가 버튼
   staffTabType?: 'staff' | 'committee';
 }
 
@@ -43,6 +44,7 @@ const StudentList: React.FC<StudentListProps> = ({
   isStaffMode = false,
   onAddStaff,
   onAddCommittee,
+  onAddStudent, // 학생 추가 버튼
   staffTabType = 'staff'
 }) => {
   const enhancedColumns = columns.map(col => ({
@@ -80,6 +82,10 @@ const StudentList: React.FC<StudentListProps> = ({
         + 위원 추가
         </button>
     ) : undefined
+) : onAddStudent ? (
+    <button className="add-staff-button" onClick={onAddStudent}>
+    + 학생 추가
+    </button>
 ) : undefined;
 
   return (

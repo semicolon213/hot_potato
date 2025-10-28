@@ -213,6 +213,15 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     handleModalClose();
   };
 
+  const handleModalDelete = (studentToDelete: StudentWithCouncil) => {
+    if (selectedStaff) {
+      staffHook.deleteStaff(selectedStaff.no);
+    } else if (selectedCommittee) {
+      committeeHook.deleteCommittee(selectedCommittee.name);
+    }
+    handleModalClose();
+  };
+
   if (currentHook.isLoading) return <div className="staff-loading">데이터를 불러오는 중...</div>;
   if (currentHook.error) return <div className="staff-error">오류: {currentHook.error}</div>;
 
@@ -317,6 +326,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onUpdate={handleModalUpdate}
+        onDelete={handleModalDelete}
         studentSpreadsheetId={staffSpreadsheetId}
         mode={selectedStaff ? 'staff' : selectedCommittee ? 'committee' : 'student'}
       />

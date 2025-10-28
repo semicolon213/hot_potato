@@ -13,6 +13,7 @@ interface StudentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedStudent: StudentWithCouncil) => void;
+  onDelete: (studentToDelete: StudentWithCouncil) => void;
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
   isAdding?: boolean;
@@ -45,6 +46,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   isOpen,
   onClose,
   onUpdate,
+  onDelete,
   studentSpreadsheetId,
   mode = 'student',
   isAdding = false,
@@ -61,6 +63,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     content_issue: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleDelete = () => {
+    if (window.confirm('정말로 이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      if (editedStudent) {
+        onDelete(editedStudent);
+        onClose();
+      }
+    }
+  };
 
   // App Script를 통한 암복호화 함수들
   const decryptPhone = async (encryptedPhone: string): Promise<string> => {
@@ -268,6 +279,19 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const handleSave = async () => {
     if (!editedStudent) return;
 
+    // 연락처와 이메일 유효성 검사
+    if (mode === 'staff' || mode === 'committee') {
+      const phone = editedStudent.phone_num;
+      if (!/^\d{3}-\d{3,4}-\d{4}$/.test(phone)) {
+        alert('연락처는 하이픈(-)을 포함한 12~13자리 숫자로 입력해야 합니다.');
+        return;
+      }
+      if (!editedStudent.email.includes('@')) {
+        alert('이메일 형식이 올바르지 않습니다. "@"를 포함해야 합니다.');
+        return;
+      }
+    }
+
     if (mode === 'staff') {
       const requiredFields = [
         { key: 'no_student', name: '교번' },
@@ -295,6 +319,25 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         { key: 'phone_num', name: '연락처' },
         { key: 'email', name: '이메일' },
         { key: 'state', name: '직책' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        if (typeof value !== 'string' || !value.trim()) {
+          alert(`${field.name}은(는) 필수 입력 항목입니다.`);
+          return; // 저장 중단
+        }
+      }
+    }
+
+    // 학생 필수 항목 유효성 검사
+    if (mode === 'student') {
+      const requiredFields = [
+        { key: 'no_student', name: '학번' },
+        { key: 'name', name: '이름' },
+        { key: 'phone_num', name: '연락처' },
+        { key: 'grade', name: '학년' },
+        { key: 'address', name: '주소' },
       ];
 
       for (const field of requiredFields) {
@@ -417,9 +460,14 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           </h2>
           <div className="header-actions">
             {!isEditing ? (
-              <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                수정
-              </button>
+              <>
+                <button className="delete-btn" onClick={handleDelete}>
+                  삭제
+                </button>
+                <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                  수정
+                </button>
+              </>
             ) : (
               <div className="edit-actions">
                 <button className="save-btn" onClick={handleSave}>
@@ -770,7 +818,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   // 학생 필드들 (기존)
                   <>
                     <div className="form-group">
-                      <label>학번</label>
+                      <label>학번<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.no_student}
@@ -781,7 +829,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이름</label>
+                      <label>이름<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.name}
@@ -792,7 +840,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>연락처</label>
+                      <label>연락처<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.phone_num}
@@ -804,7 +852,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>학년</label>
+                      <label>학년<span style={{color: 'red'}}>*</span></label>
                       <select
                         value={editedStudent.grade}
                         onChange={(e) => handleInputChange('grade', e.target.value)}
@@ -836,7 +884,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group full-width">
-                      <label>주소</label>
+                      <label>주소<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.address}

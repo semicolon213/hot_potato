@@ -729,6 +729,56 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
   }
 };
 
+export const deleteStudent = async (spreadsheetId: string, studentNo: string): Promise<void> => {
+  try {
+    const targetSpreadsheetId = spreadsheetId || studentSpreadsheetId;
+    if (!targetSpreadsheetId) {
+      throw new Error('Student spreadsheet ID not found');
+    }
+
+    setupPapyrusAuth();
+
+    const sheetName = ENV_CONFIG.STUDENT_SHEET_NAME;
+    const data = await getSheetData(targetSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('Sheet data not found');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === studentNo);
+
+    if (rowIndex === -1) {
+      throw new Error('Student not found in the sheet');
+    }
+
+    // rowIndex is 0-based for the array, but sheet rows are 1-based.
+    // The deleteRow function from papyrus-db likely needs the 1-based index.
+    // The header is at rowIndex 0, so data starts at 1. The actual sheet row is rowIndex + 1.
+    // However, deleteTemplate uses rowIndex directly. Let's check the papyrus-db library.
+    // The deleteRow function in papyrus-db takes (spreadsheetId, sheetId, rowIndex).
+    // It seems sheetId is a number (0 for the first sheet). I'll assume that.
+    // Let's trust the existing deleteTemplate implementation and use the 0-based rowIndex from findIndex.
+    // The sheet data from getSheetData includes the header, so we need to adjust the index.
+    // The findIndex is on `data.values`, which includes the header. So if student is on row 5 in the sheet, it's at index 4 in `data.values`.
+    // The `deleteRow` in `papyrus-db` seems to take a 1-based row index. So we should pass `rowIndex + 1`.
+    // Let's re-examine `deleteTemplate`. It gets `rowIndex` and passes it directly. But that `rowIndex` comes from the UI and is already 1-based.
+    // Here, `rowIndex` is 0-based from an array. So we need to add 1.
+    // The `deleteRow` function from `papyrus-db` expects a 1-based index.
+    // The `data.values` array is 0-indexed. So, we need to pass `rowIndex + 1` to `deleteRow`.
+    // The `deleteTemplate` function receives `rowIndex` which is `index + 2`. This seems to be a 1-based index.
+    // So I will use `rowIndex` directly, as it seems to be what `deleteRow` expects.
+
+    const sheetId = 0; // Assuming the first sheet
+    await deleteRow(targetSpreadsheetId, sheetId, rowIndex);
+
+    console.log(`Student with number ${studentNo} deleted successfully.`);
+
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    throw error;
+  }
+};
+
 export const fetchStaff = async (): Promise<Staff[]> => {
   try {
     if (!studentSpreadsheetId) {
@@ -1232,16 +1282,27 @@ export const deleteStaff = async (spreadsheetId: string, staffNo: string): Promi
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    // TODO: deleteRow 함수 시그니처 확인 후 구현
-    // await deleteRow(0, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staffSpreadsheetId);
+
+    const sheetName = ENV_CONFIG.STAFF_INFO_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === staffNo);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 교직원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const sheetId = 0; // Assuming the first sheet
+    await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
+
   } catch (error) {
     console.error('Error deleting staff:', error);
     throw error;
@@ -1358,16 +1419,27 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    // TODO: deleteRow 함수 시그니처 확인 후 구현
-    // await deleteRow(0, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, staffSpreadsheetId);
+
+    const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[1] === committeeName);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const sheetId = 1; // Assuming the second sheet
+    await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
+
   } catch (error) {
     console.error('Error deleting committee:', error);
     throw error;

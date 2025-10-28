@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { fetchStudents as fetchStudentsFromPapyrus } from '../../../utils/database/papyrusManager';
+import { fetchStudents as fetchStudentsFromPapyrus, deleteStudent as deleteStudentFromPapyrus } from '../../../utils/database/papyrusManager';
 import type { Student, StudentWithCouncil, CouncilPosition } from '../../../types/features/students/student';
 
 /**
@@ -401,6 +401,59 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     });
   };
 
+  // 학생 추가 함수
+  const addStudent = async (newStudent: StudentWithCouncil) => {
+    if (!studentSpreadsheetId) return;
+
+    try {
+      // 중복 검증 (학번 기준)
+      if (students.some(s => s.no_student === newStudent.no_student)) {
+        alert(`이미 존재하는 학번입니다: ${newStudent.no_student}`);
+        return;
+      }
+
+      const values = [
+        [
+          newStudent.no_student,
+          newStudent.name,
+          newStudent.address,
+          newStudent.grade,
+          newStudent.state,
+          newStudent.council
+        ]
+      ];
+
+      await (window as any).gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: studentSpreadsheetId,
+        range: 'A:F',
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        resource: { values }
+      });
+
+      // 로컬 상태 업데이트
+      setStudents(prev => [...prev, newStudent]);
+      alert('학생이 성공적으로 추가되었습니다.');
+
+    } catch (error) {
+      console.error('학생 추가 실패:', error);
+      alert('학생 추가에 실패했습니다.');
+    }
+  };
+
+  const deleteStudent = async (studentNo: string) => {
+    if (!studentSpreadsheetId) return;
+
+    try {
+      await deleteStudentFromPapyrus(studentSpreadsheetId, studentNo);
+      setStudents(prev => prev.filter(s => s.no_student !== studentNo));
+      alert('학생이 성공적으로 삭제되었습니다.');
+    } catch (error) {
+      console.error('학생 삭제 실패:', error);
+      alert('학생 삭제에 실패했습니다.');
+    }
+  };
+
   useEffect(() => {
     if (studentSpreadsheetId) {
       fetchStudents();
@@ -422,6 +475,8 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     exportToCSV,
     downloadExcelTemplate,
     handleExcelUpload,
+    addStudent, // addStudent 추가
+    deleteStudent,
     fetchStudents,
     getCouncilByYear,
     getAllYears,

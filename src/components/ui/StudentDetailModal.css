@@ -54,7 +54,7 @@
   align-items: center;
 }
 
-.edit-btn, .save-btn, .cancel-btn, .close-btn {
+.edit-btn, .save-btn, .cancel-btn, .close-btn, .delete-btn {
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
@@ -71,6 +71,15 @@
 
 .edit-btn:hover {
   background: #0056b3;
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #c82333;
 }
 
 .save-btn {

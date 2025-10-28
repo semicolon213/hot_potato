@@ -125,7 +125,8 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, userInfo, onLogout, searc
           <img
               src={searchIcon}
               alt="Search Icon"
-              className="icon"
+              className="icon search-icon"
+              onClick={onSearchSubmit}
               data-oid="i8vx3cc"
           />
 
