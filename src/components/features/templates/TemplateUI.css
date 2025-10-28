@@ -94,6 +94,49 @@ transition: background-color 0.2s;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* 태그 관리 레이아웃 개선 */
+.category-tabs-wrapper {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-left: 30px;
+}
+
+.tabs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.tag-management-toggle {
+    padding: 8px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #f8fafc;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
+}
+
+.tag-management-toggle:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+}
+
+.tag-management-toggle.active {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+    color: white;
+}
+
+.tag-management-toggle.active:hover {
+    background-color: #2563eb;
+}
+
 /* 무선 탭 스타일 */
 .new-tabs-container {
 display: flex;
@@ -109,12 +152,15 @@ position: relative;
 
 .new-tab {
 position: relative;
-margin-right: 30px;
-padding: 8px 0;
+margin-right: 20px;
+padding: 6px 0;
 font-size: 14px;
 color: #6b7280;
 cursor: pointer;
 transition: color 0.2s;
+display: flex;
+align-items: center;
+gap: 4px;
 }
 
 .new-tab.new-active {
@@ -165,6 +211,22 @@ margin-left: 0;
     font-size: 12px;
     font-weight: 500;
     margin-bottom: 12px;
+}
+
+/* 태그 컨테이너 */
+.new-card-tag-container {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+/* 개인 템플릿 태그 */
+.personal-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-weight: 600;
+    border: 1px solid #5a67d8;
 }
 
 .new-card-tag.new-meeting {
@@ -256,6 +318,57 @@ margin-left: 0;
 
 .favorite-button.favorited svg {
     fill: #facc15; /* 즐겨찾기 노란색 */
+}
+
+.edit-personal-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+}
+
+.edit-personal-button:hover {
+    background-color: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+.edit-personal-button svg {
+    width: 18px;
+    height: 18px;
+    color: #6b7280;
+    transition: color 0.2s ease-in-out;
+}
+
+.edit-personal-button:hover svg {
+    color: #374151;
+}
+
+.file-type-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.file-type-badge:hover {
+    background-color: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+    transition: all 0.2s ease-in-out;
 }
 
 .new-usage-count {
@@ -382,37 +495,50 @@ margin-left: 0;
     background-color: #6c757d;
 }
 
-.manage-tag-button {
-    margin-left: auto; /* Pushes the button to the far right */
-    color: #6c757d;
-}
-
 .delete-tag-button {
-    margin-left: 8px;
+    margin-left: 4px;
     background: #dc3545;
-    color: #f8f8f7;
+    color: white;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
-    font-size: 12px;
-    line-height: 20px;
+    font-size: 10px;
+    line-height: 18px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.delete-tag-button:hover {
+    background: #c82333;
+    transform: scale(1.1);
 }
 
 .edit-tag-button {
-    margin-left: 8px;
+    margin-left: 4px;
     background: #ffc107;
-    color: #f8f8f7;
+    color: #212529;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
-    font-size: 12px;
-    line-height: 20px;
+    font-size: 10px;
+    line-height: 18px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.edit-tag-button:hover {
+    background: #e0a800;
+    transform: scale(1.1);
 }
 
 .template-section {

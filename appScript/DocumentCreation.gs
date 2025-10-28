@@ -109,7 +109,7 @@ function handleCreateDocument(req) {
   try {
     console.log('📄 문서 생성 시작:', req);
     
-    const { title, templateType, creatorEmail, editors, role } = req;
+    const { title, templateType, creatorEmail, editors, role, tag } = req;
     
     if (!title || !creatorEmail) {
       return {
@@ -126,6 +126,63 @@ function handleCreateDocument(req) {
     
     const documentId = document.data.id;
     const documentUrl = document.data.webViewLink;
+    
+    // 파일 객체 가져오기 (한 번만 가져와서 재사용)
+    const file = DriveApp.getFileById(documentId);
+    
+    // 문서명은 원래 제목 그대로 유지 (사용자가 변경 가능)
+    
+    // 문서 메타데이터에 생성자 정보 및 태그 추가 (Google Drive API 사용)
+    let metadataStatus = '';
+    let metadataError = null;
+    try {
+      const properties = {
+        'creator': creatorEmail,
+        'createdDate': new Date().toLocaleString('ko-KR')
+      };
+      
+      if (tag) {
+        properties['tag'] = tag;
+      }
+      
+      // Google Drive API로 메타데이터 업데이트
+      const updateResult = Drive.Files.update({
+        fileId: documentId,
+        resource: {
+          properties: properties
+        }
+      });
+      
+      metadataStatus = 'success';
+      Logger.log('문서 메타데이터 설정 성공: ' + JSON.stringify(properties));
+      Logger.log('업데이트 결과: ' + JSON.stringify(updateResult));
+    } catch (metadataErr) {
+      metadataStatus = 'failed';
+      metadataError = metadataErr.message;
+      Logger.log('문서 메타데이터 설정 실패: ' + metadataErr.message);
+    }
+    
+    // 문서 설명에도 추가 (백업용)
+    let descriptionStatus = '';
+    let descriptionError = null;
+    try {
+      const description = `생성자: ${creatorEmail} | 생성일: ${new Date().toLocaleString('ko-KR')}${tag ? ` | Tag: ${tag}` : ''}`;
+      
+      // Google Drive API로 설명 업데이트
+      Drive.Files.update({
+        fileId: documentId,
+        resource: {
+          description: description
+        }
+      });
+      
+      descriptionStatus = 'success';
+      Logger.log('문서 설명 설정 성공: ' + description);
+    } catch (descError) {
+      descriptionStatus = 'failed';
+      descriptionError = descError.message;
+      Logger.log('문서 설명 설정 실패: ' + descError.message);
+    }
     
     // 2. 문서 권한 설정 (소유자: 앱스크립트 소유자, 편집자: 요청자 + 지정된 편집자들)
     const permissionResult = DocumentPermissions.setDocumentPermissions(documentId, creatorEmail, editors || []);
@@ -156,7 +213,14 @@ function handleCreateDocument(req) {
         creatorEmail: creatorEmail,
         editors: editors || []
       },
-      message: '문서가 성공적으로 생성되었습니다.'
+      message: '문서가 성공적으로 생성되었습니다.',
+      debug: {
+        metadataStatus: metadataStatus,
+        metadataError: metadataError,
+        descriptionStatus: descriptionStatus,
+        descriptionError: descriptionError,
+        tag: tag
+      }
     };
     
   } catch (error) {

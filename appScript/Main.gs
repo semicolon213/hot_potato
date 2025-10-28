@@ -1042,3 +1042,92 @@ function verifyAdminKeyData(adminKey) {
     return { success: false, isValid: false, error: error.message };
   }
 }
+
+/**
+ * 일일 관리자 키 갱신 트리거 함수
+ * 매일 자정에 자동으로 실행되어 관리자 키를 갱신합니다.
+ */
+function handleDailyKeyUpdate() {
+  try {
+    console.log('🔄 === 일일 관리자 키 갱신 시작 ===');
+    console.log('⏰ 실행 시간:', new Date().toISOString());
+    
+    // 1. 새로운 관리자 키 생성
+    console.log('🔑 새로운 관리자 키 생성 중...');
+    const keyResult = generateNewAdminKey();
+    
+    if (!keyResult.success) {
+      throw new Error('관리자 키 생성 실패: ' + keyResult.message);
+    }
+    
+    console.log('✅ 관리자 키 생성 완료');
+    console.log('🔑 생성된 키 (처음 20자):', keyResult.key.substring(0, 20) + '...');
+    console.log('🔐 사용된 레이어:', keyResult.layers);
+    
+    // 2. 기존 키 백업 생성
+    console.log('💾 기존 키 백업 생성 중...');
+    const backupResult = createKeyBackup(keyResult.key, keyResult.layers);
+    
+    if (backupResult.success) {
+      console.log('✅ 키 백업 생성 완료');
+    } else {
+      console.warn('⚠️ 키 백업 생성 실패:', backupResult.message);
+    }
+    
+    // 3. 스프레드시트에 새 키 업데이트
+    console.log('📊 스프레드시트에 새 키 업데이트 중...');
+    const updateResult = updateAdminKey(keyResult.key, keyResult.layers);
+    
+    if (!updateResult.success) {
+      throw new Error('키 업데이트 실패: ' + updateResult.message);
+    }
+    
+    console.log('✅ 스프레드시트 업데이트 완료');
+    console.log('⏰ 업데이트 시간:', updateResult.timestamp);
+    
+    // 4. 성공 로그 기록
+    console.log('🎉 === 일일 관리자 키 갱신 완료 ===');
+    console.log('🔑 새 키:', keyResult.key.substring(0, 20) + '...');
+    console.log('🔐 레이어:', keyResult.layers.join(', '));
+    console.log('⏰ 완료 시간:', new Date().toISOString());
+    
+    return {
+      success: true,
+      message: '관리자 키가 성공적으로 갱신되었습니다.',
+      key: keyResult.key,
+      layers: keyResult.layers,
+      timestamp: updateResult.timestamp,
+      backupCreated: backupResult.success
+    };
+    
+  } catch (error) {
+    console.error('❌ 일일 관리자 키 갱신 실패:', error);
+    console.error('❌ 오류 상세:', error.message);
+    console.error('❌ 스택 트레이스:', error.stack);
+    
+    // 오류 발생 시 이메일 알림 (선택사항)
+    try {
+      const errorMessage = `
+일일 관리자 키 갱신에 실패했습니다.
+
+오류: ${error.message}
+시간: ${new Date().toISOString()}
+
+시스템 관리자에게 문의하세요.
+      `;
+      
+      // 관리자 이메일로 오류 알림 (필요시)
+      // GmailApp.sendEmail('admin@example.com', '관리자 키 갱신 실패', errorMessage);
+      
+    } catch (emailError) {
+      console.error('이메일 알림 전송 실패:', emailError);
+    }
+    
+    return {
+      success: false,
+      message: '관리자 키 갱신에 실패했습니다: ' + error.message,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+}

@@ -15,10 +15,10 @@ import {
     fetchPosts, 
     fetchAnnouncements, 
     fetchTemplates, 
-    fetchTags,
     fetchCalendarEvents,
     fetchAttendees
 } from '../../utils/database/papyrusManager';
+import { fetchTags as fetchPersonalTags } from '../../utils/database/personalTagManager';
 import { ENV_CONFIG } from '../../config/environment';
 
 /**
@@ -262,18 +262,19 @@ export const useAppState = () => {
     }, [isGapiReady, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
 
     useEffect(() => {
-        if (isGapiReady && hotPotatoDBSpreadsheetId) {
+        if (isGapiReady) {
             const fetchTemplateData = async () => {
                 try {
                     console.log('템플릿 데이터 로딩 시작...');
                     const [templates, tags] = await Promise.all([
                         fetchTemplates(),
-                        fetchTags()
+                        fetchPersonalTags()
                     ]);
                     
                     setCustomTemplates(templates);
                     setTags(tags);
                     console.log('템플릿 데이터 로딩 완료:', templates.length, '개');
+                    console.log('태그 데이터 로딩 완료:', tags.length, '개');
                 } catch (error) {
                     console.error("Error during template data fetch", error);
                 } finally {
@@ -282,7 +283,7 @@ export const useAppState = () => {
             };
             fetchTemplateData();
         }
-    }, [isGapiReady, hotPotatoDBSpreadsheetId]);
+    }, [isGapiReady]);
 
     useEffect(() => {
         if (isGapiReady && studentSpreadsheetId && staffSpreadsheetId) {

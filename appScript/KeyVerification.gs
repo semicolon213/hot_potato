@@ -90,7 +90,7 @@ function decryptAndVerifyKey(encryptedKey, layers) {
     for (let i = layerArray.length - 1; i >= 0; i--) {
       const layer = layerArray[i];
       const beforeDecrypt = decryptedKey;
-      decryptedKey = EncryptionCore.applyDecryption(decryptedKey, layer, '');
+      decryptedKey = applyDecryption(decryptedKey, layer, '');
       console.log(`복호화 ${layerArray.length - i}/${layerArray.length} (${layer}):`, beforeDecrypt.substring(0, 20) + '...', '->', decryptedKey.substring(0, 20) + '...');
     }
     

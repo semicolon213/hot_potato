@@ -17,6 +17,13 @@ import {
 } from "../../../utils/google/googleSheetUtils";
 import { ENV_CONFIG } from "../../../config/environment";
 import { apiClient } from "../../../utils/api/apiClient";
+import { usePersonalTemplates } from "./usePersonalTemplates";
+import { 
+  addFavorite,
+  removeFavorite,
+  isFavorite as checkIsFavorite
+} from "../../../utils/database/personalFavoriteManager";
+import { initializePersonalConfigFile } from "../../../utils/database/personalConfigManager";
 
 /**
  * @brief 템플릿 데이터 타입 정의
@@ -31,6 +38,8 @@ export interface Template {
     partTitle?: string;    // For filtering
     documentId?: string;   // Google Doc ID
     favoritesTag?: string; // 즐겨찾기 태그
+    isPersonal?: boolean;  // 개인 템플릿 여부
+    mimeType?: string;    // 파일 MIME 타입 (문서/스프레드시트 구분용)
 }
 
 /**
@@ -73,12 +82,26 @@ export function useTemplateUI(
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
   
+  // 개인 템플릿 훅 사용
+  const { 
+    personalTemplates, 
+    isLoading: isLoadingPersonalTemplates, 
+    error: personalTemplateError,
+    convertToTemplates,
+    togglePersonalTemplateFavorite,
+    generateFileNameFromTemplate
+  } = usePersonalTemplates();
+  
   // 권한 설정 모달 상태
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [permissionType, setPermissionType] = useState<'private' | 'shared'>('private');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [individualEmails, setIndividualEmails] = useState<string[]>([]);
+
+  // 기본 템플릿 즐겨찾기 상태
+  const [defaultTemplateFavorites, setDefaultTemplateFavorites] = useState<string[]>([]);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
 
     // 동적 템플릿 로드 함수
     const testDriveApi = useCallback(async () => {
@@ -152,7 +175,11 @@ export function useTemplateUI(
             
             if (result && result.success && result.data) {
                 console.log('📄 동적 템플릿 로드 성공:', result.data);
-                setDynamicTemplates(result.data);
+                
+                // 템플릿 데이터 그대로 사용 (JSON 파싱 제거)
+                const processedTemplates = result.data;
+                
+                setDynamicTemplates(processedTemplates);
             } else {
                 const errorMessage = result ? result.message : 'API 응답이 null입니다';
                 console.error('📄 동적 템플릿 로드 실패:', errorMessage);
@@ -172,7 +199,71 @@ export function useTemplateUI(
         loadDynamicTemplates();
     }, [loadDynamicTemplates]);
 
-    // 기본 템플릿과 동적 템플릿 결합
+    // 기본 템플릿 즐겨찾기 로드
+    const loadDefaultTemplateFavorites = useCallback(async () => {
+        setIsLoadingFavorites(true);
+        try {
+            console.log('⭐ 기본 템플릿 즐겨찾기 로드 시작');
+            
+            // 개인 설정 파일 초기화
+            await initializePersonalConfigFile();
+            
+            // 기본 템플릿 즐겨찾기 목록 가져오기
+            const { getFavoritesByType } = await import('../../../utils/database/personalFavoriteManager');
+            const favorites = await getFavoritesByType('기본');
+            
+            setDefaultTemplateFavorites(favorites);
+            console.log('✅ 기본 템플릿 즐겨찾기 로드 완료:', favorites.length + '개');
+        } catch (error) {
+            console.error('❌ 기본 템플릿 즐겨찾기 로드 오류:', error);
+        } finally {
+            setIsLoadingFavorites(false);
+        }
+    }, []);
+
+    // 기본 템플릿 즐겨찾기 토글
+    const toggleDefaultTemplateFavorite = useCallback(async (template: Template) => {
+        try {
+            console.log('⭐ 기본 템플릿 즐겨찾기 토글:', template);
+            
+            const favoriteData = {
+                type: '기본' as const,
+                favorite: template.title
+            };
+
+            const isCurrentlyFavorite = defaultTemplateFavorites.includes(template.title);
+            
+            if (isCurrentlyFavorite) {
+                // 즐겨찾기 해제
+                const success = await removeFavorite(favoriteData);
+                if (success) {
+                    setDefaultTemplateFavorites(prev => prev.filter(fav => fav !== template.title));
+                    console.log('✅ 기본 템플릿 즐겨찾기 해제 완료');
+                }
+            } else {
+                // 즐겨찾기 추가
+                const success = await addFavorite(favoriteData);
+                if (success) {
+                    setDefaultTemplateFavorites(prev => [...prev, template.title]);
+                    console.log('✅ 기본 템플릿 즐겨찾기 추가 완료');
+                }
+            }
+        } catch (error) {
+            console.error('❌ 기본 템플릿 즐겨찾기 토글 오류:', error);
+        }
+    }, [defaultTemplateFavorites]);
+
+    // 컴포넌트 마운트 시 기본 템플릿 즐겨찾기 로드
+    useEffect(() => {
+        loadDefaultTemplateFavorites();
+    }, [loadDefaultTemplateFavorites]);
+
+    // 개인 템플릿을 일반 템플릿 형식으로 변환
+    const convertedPersonalTemplates = useMemo(() => {
+        return convertToTemplates(personalTemplates);
+    }, [personalTemplates, convertToTemplates]);
+
+    // 기본 템플릿과 동적 템플릿만 결합 (개인 템플릿은 별도 처리)
     const allDefaultTemplates = useMemo(() => {
         return [...defaultTemplates, ...dynamicTemplates];
     }, [dynamicTemplates]);
@@ -198,7 +289,10 @@ export function useTemplateUI(
         console.log('📄 템플릿 사용 시작:', { type, title, role });
         
         const isDefault = allDefaultTemplates.some(t => t.type === type);
-
+        
+        // 템플릿 찾기 (type이 Google Doc ID이므로 title로도 검색)
+        const foundTemplate = allDefaultTemplates.find(t => t.type === type || t.title === title);
+        
         // 특별한 처리가 필요한 템플릿들 (스프레드시트 등)
         const specialTemplateUrls: { [key: string]: string } = {
             "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
@@ -216,13 +310,13 @@ export function useTemplateUI(
             return;
         }
 
-        // 템플릿 정보를 모달에 전달하고 모달 열기
+        // 템플릿 정보를 모달에 전달하고 모달 열기 (tag 포함)
         const template: Template = {
             type,
             title,
-            description: allDefaultTemplates.find(t => t.type === type)?.description || '',
-            tag: allDefaultTemplates.find(t => t.type === type)?.tag || '기본',
-            documentId: type.length > 20 ? type : undefined // documentId는 보통 20자 이상
+            description: foundTemplate?.description || '',
+            tag: foundTemplate?.tag || '기본',  // 템플릿의 tag 사용
+            documentId: type.length > 20 ? type : undefined
         };
         
         setSelectedTemplate(template);
@@ -250,8 +344,8 @@ export function useTemplateUI(
                 console.log('📄 개인 드라이브에 문서 생성:', selectedTemplate);
                 
                 if (selectedTemplate.documentId) {
-                    // 커스텀 템플릿 복사
-                    const copyResult = await copyGoogleDocument(selectedTemplate.documentId, selectedTemplate.title);
+                    // 커스텀 템플릿 복사 (태그 포함)
+                    const copyResult = await copyGoogleDocument(selectedTemplate.documentId, selectedTemplate.title, selectedTemplate.tag);
                     if (copyResult && copyResult.webViewLink) {
                         window.open(copyResult.webViewLink, '_blank');
                         alert('문서가 개인 드라이브에 생성되었습니다!');
@@ -290,7 +384,8 @@ export function useTemplateUI(
                     templateType: selectedTemplate.documentId || selectedTemplate.type,
                     creatorEmail: creatorEmail,
                     editors: allEditors,
-                    role: 'student' // 기본값으로 student 설정
+                    role: 'student', // 기본값으로 student 설정
+                    tag: selectedTemplate.tag // 태그 추가
                 });
 
                 if (result.success && result.data) {
@@ -323,10 +418,20 @@ export function useTemplateUI(
     return {
         filteredTemplates, // 필터링/정렬된 템플릿 목록
         onUseTemplate,     // 템플릿 사용 함수
-        allDefaultTemplates, // 모든 기본 템플릿 (정적 + 동적)
-        isLoadingTemplates, // 동적 템플릿 로딩 상태
-        templateError,     // 템플릿 로딩 오류
+        allDefaultTemplates, // 모든 기본 템플릿 (정적 + 동적 + 개인)
+        isLoadingTemplates: isLoadingTemplates || isLoadingPersonalTemplates, // 전체 템플릿 로딩 상태
+        templateError: templateError || personalTemplateError, // 템플릿 로딩 오류
         loadDynamicTemplates, // 동적 템플릿 다시 로드 함수
+        // 개인 템플릿 관련
+        personalTemplates: convertedPersonalTemplates, // 개인 템플릿 목록
+        isLoadingPersonalTemplates, // 개인 템플릿 로딩 상태
+        personalTemplateError, // 개인 템플릿 오류
+        togglePersonalTemplateFavorite, // 개인 템플릿 즐겨찾기 토글
+        generateFileNameFromTemplate, // 파일명 생성 함수
+        // 기본 템플릿 즐겨찾기 관련
+        defaultTemplateFavorites, // 기본 템플릿 즐겨찾기 목록
+        isLoadingFavorites, // 즐겨찾기 로딩 상태
+        toggleDefaultTemplateFavorite, // 기본 템플릿 즐겨찾기 토글
         testDriveApi, // Drive API 테스트 함수
         testTemplateFolderDebug, // 템플릿 폴더 디버깅 테스트 함수
         testSpecificFolder, // 특정 폴더 ID 테스트 함수

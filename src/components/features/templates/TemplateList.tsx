@@ -7,6 +7,7 @@ interface Props {
     onUseTemplate: (type: string, title: string) => void;
     onDeleteTemplate: (rowIndex: number) => void;
     onEditTemplate?: (template: Template) => void;
+    onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     defaultTags: string[];
     onToggleFavorite: (template: Template) => void;
     isLoading?: boolean;
@@ -14,16 +15,17 @@ interface Props {
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);
 
-export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, defaultTags, onToggleFavorite, isLoading }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, onEditPersonal, defaultTags, onToggleFavorite, isLoading }: Props) {
     return (
         <div className="new-templates-container">
             {isLoading ? (
               <div className="loading-cell" style={{ gridColumn: '1 / -1' }}>
                 <BiLoaderAlt className="spinner" />
-                <span>템플릿을 가져오는 중입니다...</span>
+                <span>로딩 중...</span>
               </div>
             ) : templates.map((template) => {
                 const isFixed = fixedTemplateTypes.includes(template.type);
+                const isPersonal = template.isPersonal; // 개인 템플릿 여부 확인
                 const id = template.rowIndex ? template.rowIndex.toString() : template.title;
 
                 // Enhance template with documentId from localStorage if not already present
@@ -40,12 +42,13 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         id={id}
                         template={templateWithDocId} // Pass the enhanced template
                         onUse={onUseTemplate}
-                        onDelete={onDeleteTemplate}
-                        onEdit={onEditTemplate}
-                        isFixed={isFixed}
+                        onDelete={isPersonal ? () => {} : onDeleteTemplate} // 개인 템플릿은 삭제 불가
+                        onEdit={isPersonal ? undefined : onEditTemplate} // 개인 템플릿은 편집 불가
+                        onEditPersonal={isPersonal ? onEditPersonal : undefined} // 개인 템플릿 수정 함수
+                        isFixed={isFixed || isPersonal} // 개인 템플릿도 고정 템플릿으로 처리
                         defaultTags={defaultTags}
                         onToggleFavorite={onToggleFavorite}
-                        isFavorite={!!template.favoritesTag}
+                        isFavorite={!!template.favoritesTag || (template.isPersonal && template.favoritesTag)}
                     />
                 )
             })}

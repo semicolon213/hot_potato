@@ -125,8 +125,8 @@ function checkEncryptionSystemStatus() {
     console.log('암호화 시스템 상태 확인 중...');
     
     // EncryptionCore.gs 확인
-    const encryptionCoreLoaded = typeof EncryptionCore.applyEncryption === 'function' && 
-                                 typeof EncryptionCore.applyDecryption === 'function';
+    const encryptionCoreLoaded = typeof applyEncryption === 'function' && 
+                                 typeof applyDecryption === 'function';
     
     // EncryptionKeyManagement.gs 확인
     const keyManagementLoaded = typeof EncryptionKeyManagement.generateExtendedMultiLayerKey === 'function';

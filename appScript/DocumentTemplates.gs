@@ -194,7 +194,7 @@ function getTemplatesFromFolder() {
       };
     }
     
-    // 템플릿 정보 파싱
+    // 템플릿 정보 파싱 (기본 템플릿은 파일명 방식 유지)
     const templates = files.files.map(file => {
       // 파일 제목에서 태그 추출 (예: "회의 / 회의록 / 회의 내용을 기록하는 템플릿" -> "회의")
       const titleParts = file.name.split(' / ');
