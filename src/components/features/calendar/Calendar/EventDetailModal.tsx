@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import './EventDetailModal.css';
 import { type Event } from '../../../../hooks/features/calendar/useCalendarContext';
-import { BiTrashAlt, BiX, BiEditAlt } from 'react-icons/bi';
+import { BiTrashAlt, BiX, BiEditAlt, BiDetail, BiGroup, BiCalendar } from 'react-icons/bi';
+import useCalendarContext from '../../../../hooks/features/calendar/useCalendarContext';
 
 interface EventDetailModalProps {
     event: Event;
@@ -13,6 +14,20 @@ interface EventDetailModalProps {
 }
 
 const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position }) => {
+    const { students, staff } = useCalendarContext();
+
+    const attendeeNames = useMemo(() => {
+        if (!event.attendees || !students || !staff) {
+            return [];
+        }
+        const allPeople = [...students, ...staff];
+        const attendeeIds = event.attendees.split(',').map(id => id.trim());
+        return attendeeIds.map(id => {
+            const person = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === id);
+            return person ? person.name : null;
+        }).filter(Boolean);
+    }, [event.attendees, students, staff]);
+
     if (!event) {
         return null;
     }
@@ -65,11 +80,23 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
                 </div>
                 <div className="event-detail-body">
                     <div className="detail-item">
+                        <BiCalendar className="detail-icon" />
                         <p>{formatEventDate(event.startDate, event.endDate)}</p>
                     </div>
                     {event.description && (
                         <div className="detail-item">
+                            <BiDetail className="detail-icon" />
                             <p>{event.description}</p>
+                        </div>
+                    )}
+                    {attendeeNames.length > 0 && (
+                        <div className="detail-item">
+                            <BiGroup className="detail-icon" />
+                            <div className="attendee-list">
+                                {attendeeNames.map((name, index) => (
+                                    <span key={index} className="attendee-name-tag">{name}</span>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

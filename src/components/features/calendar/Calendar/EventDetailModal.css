@@ -58,10 +58,11 @@
     gap: 16px;
 }
 
-.detail-item .icon {
+.detail-item .detail-icon {
     font-size: 1.4rem;
     color: #5f6368;
-    margin-top: 2px;
+    margin-top: 4px;
+    flex-shrink: 0;
 }
 
 .detail-item p {
@@ -73,13 +74,13 @@
 }
 
 /* 참석자 목록 스타일 */
-.attendees-list {
+.attendee-list {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-.attendee {
+.attendee-name-tag {
     background-color: #f1f3f4;
     padding: 4px 8px;
     border-radius: var(--border-radius-sm);

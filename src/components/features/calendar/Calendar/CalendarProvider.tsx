@@ -277,7 +277,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             // Private event, visible only to attendees
             const attendeeIds = attendees.split(',').map((id: string) => id.trim());
             // Assuming user.studentId holds the unique ID for both students and staff
-            return user ? attendeeIds.includes(user.studentId) : false;
+            return user ? attendeeIds.includes(String(user.studentId)) : false;
         });
 
         const combinedEvents = [...visibleSheetEvents, ...googleEvents];
