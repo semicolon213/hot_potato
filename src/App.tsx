@@ -32,7 +32,8 @@ import {
     fetchTemplates,
     fetchCalendarEvents,
     updateCalendarEvent,
-    incrementViewCount
+    incrementViewCount,
+    updateAnnouncement
   } from './utils/database/papyrusManager';
 import { 
   addTag as addPersonalTag,
@@ -245,6 +246,19 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Failed to increment view count:', error);
       // Optionally, revert the optimistic update here
+    }
+  };
+
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+    try {
+      await updateAnnouncement(announcementId, postData);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error updating announcement:', error);
     }
   };
 
@@ -566,6 +580,7 @@ const App: React.FC = () => {
               onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
+              onUpdateAnnouncement={handleUpdateAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

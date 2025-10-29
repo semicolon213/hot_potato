@@ -454,6 +454,42 @@ export const incrementViewCount = async (announcementId: string): Promise<void> 
   }
 };
 
+export const updateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }): Promise<void> => {
+  try {
+    if (!announcementSpreadsheetId) {
+      throw new Error('Announcement spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
+    if (!data || !data.values) {
+      throw new Error('Could not get sheet data');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === announcementId);
+    if (rowIndex === -1) {
+      throw new Error(`Announcement with ID ${announcementId} not found in sheet.`);
+    }
+
+    // Title is in column D (index 3), Content is in column E (index 4)
+    const range = `${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}!D${rowIndex + 1}:E${rowIndex + 1}`;
+    const values = [[postData.title, postData.content]];
+
+    await window.gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: announcementSpreadsheetId,
+        range: range,
+        valueInputOption: 'RAW',
+        resource: {
+            values: values
+        }
+    });
+
+    console.log(`Announcement ${announcementId} updated successfully`);
+  } catch (error) {
+    console.error('Error updating announcement:', error);
+    throw error;
+  }
+};
+
 // 템플릿 관련 함수들
 export const fetchTemplates = async (): Promise<Template[]> => {
   try {
