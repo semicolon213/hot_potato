@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/pages/NewAnnouncementPost.css';
 import type { Post, User } from '../../types/app';
 import { BiPencil, BiPaperclip, BiSave, BiX } from "react-icons/bi";
+import TiptapEditor from '../../components/ui/TiptapEditor';
 
 interface NewAnnouncementPostProps {
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }) => void;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => void;
   user: User | null;
   isAuthenticated: boolean;
 }
@@ -15,7 +16,6 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
   const [content, setContent] = useState('');
   const [attachment, setAttachment] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [isPinned, setIsPinned] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,10 +33,9 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
 
     onAddPost({
       title,
-      content: content,
+      content: content, // content is now HTML
       author: user?.name || 'Unknown',
-      writer_id: user?.studentId || '',
-      attachment: attachment
+      writer_id: user?.studentId || ''
     });
   };
 
@@ -67,7 +66,8 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
       if (window.confirm('작성 중인 내용이 있습니다. 정말로 취소하시겠습니까?')) {
         onPageChange('announcements');
       }
-    } else {
+    }
+    else {
       onPageChange('announcements');
     }
   };
@@ -102,39 +102,22 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
 
           <div className="form-group">
             <label htmlFor="content-textarea">내용</label>
-            <textarea
-              id="content-textarea"
-              placeholder="내용을 입력하세요"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="content-textarea"
-            ></textarea>
+            <TiptapEditor content={content} onContentChange={setContent} />
           </div>
 
           <div className="form-group">
             <label><BiPaperclip /> 파일 첨부</label>
             <div className="attachment-area">
-              <div className="attachment-controls">
-                <button onClick={triggerFileInput} className="attachment-button">
-                  파일 선택
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-                {attachment && <span className="attachment-name">{attachment.name}</span>}
-              </div>
-              <div className="pin-announcement">
-                <input
-                  type="checkbox"
-                  id="pin-checkbox"
-                  checked={isPinned}
-                  onChange={(e) => setIsPinned(e.target.checked)}
-                />
-                <label htmlFor="pin-checkbox">고정 공지사항</label>
-              </div>
+              <button onClick={triggerFileInput} className="attachment-button">
+                파일 선택
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+              {attachment && <span className="attachment-name">{attachment.name}</span>}
             </div>
             {preview && <img src={preview} alt="첨부파일 미리보기" className="image-preview" />} 
           </div>
