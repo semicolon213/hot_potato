@@ -112,8 +112,6 @@
 
 .title-input:focus, .content-textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
 
 .content-textarea {
@@ -143,7 +141,7 @@
 .pin-announcement label {
     font-size: 14px;
     font-weight: 500;
-    color: #555;
+    color: #555 !important;
     cursor: pointer;
     margin-bottom: 0;
 }
@@ -154,6 +152,8 @@
     cursor: pointer;
     accent-color: var(--primary-color);
 }
+
+
 
 .attachment-button {
     background-color: #f0f0f0;
