@@ -9,6 +9,7 @@ interface AnnouncementsProps {
   onSelectAnnouncement: (post: Post) => void;
   posts: Post[];
   isAuthenticated: boolean;
+  user: User | null;
   announcementSpreadsheetId: string | null;
   isLoading: boolean;
   "data-oid": string;
@@ -56,7 +57,7 @@ const getPaginationNumbers = (currentPage: number, totalPages: number) => {
 };
 
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, posts, isAuthenticated, user, announcementSpreadsheetId, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchCriteria, setSearchCriteria] = useState('title'); // 'title' or 'author'
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,7 +121,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
               }}
             />
           </div>
-          {isAuthenticated && (
+          {isAuthenticated && user && (user.isAdmin || user.role !== 'student') && (
             <button 
               className="new-post-button" 
               onClick={() => onPageChange('new-announcement-post')}

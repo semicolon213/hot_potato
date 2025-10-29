@@ -156,6 +156,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           onSelectAnnouncement={onSelectAnnouncement}
           posts={announcements}
           isAuthenticated={isGoogleAuthenticatedForAnnouncements}
+          user={user}
           announcementSpreadsheetId={announcementSpreadsheetId}
           isLoading={isAnnouncementsLoading}
           data-oid="d01oi2r" />;

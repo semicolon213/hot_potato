@@ -9,6 +9,7 @@ interface User {
   studentId: string;
   isAdmin: boolean;
   isApproved: boolean;
+  role: string;
   accessToken?: string;
   googleAccessToken?: string;
 }
@@ -35,6 +36,7 @@ interface LoginResponse {
   studentId?: string;
   isAdmin?: boolean;
   name?: string;
+  role?: string;
   error?: string;
   approvalStatus?: string;
   debug?: {
@@ -86,6 +88,7 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       studentId: data.user?.no_member || data.studentId || data.memberNumber || '',
       isAdmin: data.user?.isAdmin || false,
       name: data.user?.name_member,
+      role: data.user?.role,
       error: data.error,
       debug: data.debug
     } as LoginResponse;
@@ -184,6 +187,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
             isApproved: true,
+            role: result.role || 'student',
             accessToken: accessToken,
             googleAccessToken: accessToken
           });
@@ -197,6 +201,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
             studentId: result.studentId || '',
             isAdmin: result.isAdmin || false,
             isApproved: false,
+            role: result.role || 'student',
             googleAccessToken: accessToken
           });
         }
