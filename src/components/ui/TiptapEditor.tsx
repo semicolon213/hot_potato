@@ -22,17 +22,17 @@ const MenuBar = ({ editor }) => {
   return (
     <div className="toolbar">
       <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}>
-        Bold
+        굵게
       </button>
       <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''}>
-        Underline
+        밑줄
       </button>
       <input
         type="color"
         onInput={event => editor.chain().focus().setColor(event.target.value).run()}
         value={editor.getAttributes('textStyle').color || '#000000'}
       />
-      <button onClick={addImage}>Image</button>
+      <button onClick={addImage}>이미지</button>
     </div>
   );
 };
