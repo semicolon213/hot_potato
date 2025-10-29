@@ -240,10 +240,10 @@
   border-radius: 50%;
 }
 
-input:checked + label {
+.proceedings-layout input:checked + label {
   background-color: var(--primary);
 }
 
-input:checked + label:before {
+.proceedings-layout input:checked + label:before {
   transform: translateX(20px);
 }
