@@ -107,25 +107,27 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
           <div className="form-group">
             <label><BiPaperclip /> 파일 첨부</label>
             <div className="attachment-area">
-              <div className="attachment-controls">
-                <button onClick={triggerFileInput} className="attachment-button">
-                  파일 선택
-                </button>
-                <input
-                  type="file"
-                  multiple
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-              </div>
-              <div className="attachment-list">
-                {attachments.map((file, index) => (
-                  <div key={index} className="attachment-item">
-                    <span>{file.name}</span>
-                    <button onClick={() => removeAttachment(index)}><BiX/></button>
-                  </div>
-                ))}
+              <div>
+                <div className="attachment-controls">
+                  <button onClick={triggerFileInput} className="attachment-button">
+                    파일 선택
+                  </button>
+                  <input
+                    type="file"
+                    multiple
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+                <div className="attachment-list">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="attachment-item">
+                      <span className="attachment-name">{file.name}</span>
+                      <button onClick={() => removeAttachment(index)} className="remove-attachment-button"><BiX/></button>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="pin-announcement">
                 <input
