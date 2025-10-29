@@ -9,6 +9,12 @@ interface AnnouncementViewProps {
 }
 
 const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, onBack }) => {
+  const attachmentRegex = /<p>첨부파일:.*?<\/p>/;
+  const attachmentMatch = post.content.match(attachmentRegex);
+  
+  const attachmentHtml = attachmentMatch ? attachmentMatch[0] : null;
+  const mainContent = post.content.replace(attachmentRegex, '').trim();
+
   return (
     <div className="announcements-container">
       <div className="post-view-header">
@@ -19,7 +25,12 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, onBack }) => 
         <span>작성일: {post.date}</span>
         <span>조회수: {post.views}</span>
       </div>
-      <div className="post-view-body" dangerouslySetInnerHTML={{ __html: post.content }} />
+
+      {attachmentHtml && (
+        <div className="post-view-attachment" dangerouslySetInnerHTML={{ __html: attachmentHtml }} />
+      )}
+
+      <div className="post-view-body" dangerouslySetInnerHTML={{ __html: mainContent }} />
       <div className="post-view-footer">
         <button onClick={onBack} className="back-to-list-button">목록으로</button>
       </div>
