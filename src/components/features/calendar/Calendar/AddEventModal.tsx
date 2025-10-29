@@ -362,12 +362,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                 <>
                     <div className="tag-selection-group">
                         {eventTypes
-                            .filter(type => {
-                                if (user?.userType === 'student') {
-                                    return type === 'meeting';
-                                }
-                                return true;
-                            })
                             .map(type => (
                             <button
                                 key={type}
@@ -379,9 +373,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                 {tagLabels[type] || type}
                             </button>
                         ))}
-                        {user?.userType !== 'student' && (
                             <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
-                        )}
                     </div>
                     {isCustomTag && (
                         <div className="custom-tag-container">
