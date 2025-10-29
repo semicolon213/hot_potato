@@ -621,8 +621,9 @@ export const addCalendarEvent = async (eventData: Omit<Event, 'id'>): Promise<vo
     }
 
     const data = await getSheetData(targetSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
-    const lastRow = data && data.values ? data.values.length : 0;
-    const newEventId = `cal-${lastRow + 1}`;
+    const existingIds = data && data.values ? data.values.slice(1).map(row => row[0]).filter(id => id && id.startsWith('cal-')).map(id => parseInt(id.substring(4), 10)).filter(num => !isNaN(num)) : [];
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+    const newEventId = `cal-${maxId + 1}`;
 
     const newEventForSheet = [
       newEventId,
