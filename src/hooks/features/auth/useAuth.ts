@@ -85,7 +85,7 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       isApproved: data.isApproved || false,
       approvalStatus: data.approvalStatus || 'not_requested',
       studentId: data.user?.no_member || '',
-      isAdmin: data.user?.is_admin || false,
+      isAdmin: data.user?.isAdmin || false, // is_admin에서 isAdmin으로 변경
       userType: data.user?.user_type || '',
       error: data.error,
       debug: data.debug
@@ -289,7 +289,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
         adminKey: formData.isAdmin ? formData.adminKey : undefined
       };
 
-      const result: RegistrationResponse = await registerUser(registrationData);
+      const result = await registerUser(registrationData) as any;
 
       // 디버그 정보 출력
       if (result.debug) {
