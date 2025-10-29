@@ -24,18 +24,22 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
 
   useEffect(() => {
-    const attachmentRegex = /<p>첨부파일:.*?<\/p>/;
+    const attachmentRegex = /<p>첨부파일:.*?<\/p>/g; // Use global flag
     const main = post.content.replace(attachmentRegex, '').trim();
     setMainContent(main);
     setEditedContent(main);
 
-    const attachmentMatch = post.content.match(attachmentRegex);
-    const html = attachmentMatch ? attachmentMatch[0] : null;
+    const attachmentMatches = post.content.match(attachmentRegex);
+    const html = attachmentMatches ? attachmentMatches.join('') : null;
     setAttachmentHtml(html);
 
-    if (html) {
-      const nameMatch = html.match(/>(.*?)</);
-      setAttachmentName(nameMatch ? nameMatch[1] : '파일');
+    if (attachmentMatches) {
+      const names = attachmentMatches.map(match => {
+        const nameMatch = match.match(/>(.*?)</);
+        return nameMatch ? nameMatch[1] : '파일';
+      });
+      // For now, just join the names for display in edit mode. This will be improved later.
+      setAttachmentName(names.join(', '));
     } else {
       setAttachmentName(null);
     }

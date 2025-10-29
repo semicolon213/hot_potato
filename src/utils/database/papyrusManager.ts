@@ -327,66 +327,67 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
-export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }): Promise<void> => {
-  setupPapyrusAuth();
-
+const uploadFileToDrive = async (file: File): Promise<string> => {
   const token = localStorage.getItem('googleAccessToken');
   if (!token) {
-      throw new Error('Google Access Token not found');
+    throw new Error('Google Access Token not found');
   }
-  try {
-      window.gapi.client.setToken({ access_token: token });
-  } catch (tokenError) {
-      console.error('Failed to set GAPI token:', tokenError);
-      throw new Error('Failed to set GAPI token');
+
+  const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
+
+  const fileMetadata = {
+    name: file.name,
+    parents: [folderId]
+  };
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+  form.append('file', file);
+
+  const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+    body: form,
+  });
+
+  const uploadedFile = await uploadResponse.json();
+
+  if (uploadedFile.id) {
+    const fileId = uploadedFile.id;
+
+    await window.gapi.client.drive.permissions.create({
+        fileId: fileId,
+        resource: {
+            role: 'reader',
+            type: 'anyone'
+        }
+    });
+
+    const fileInfo = await window.gapi.client.drive.files.get({
+        fileId: fileId,
+        fields: 'webViewLink'
+    });
+
+    return fileInfo.result.webViewLink;
+  } else {
+    console.error('File upload failed:', uploadedFile);
+    throw new Error('File upload failed');
   }
+};
+
+export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }): Promise<void> => {
+  setupPapyrusAuth();
 
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
     }
 
-    let fileUrl = '';
-    if (postData.attachment) {
-      const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
-
-      const fileMetadata = {
-        name: postData.attachment.name,
-        parents: [folderId]
-      };
-
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
-      form.append('file', postData.attachment);
-
-      const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: new Headers({ 'Authorization': 'Bearer ' + token }),
-        body: form,
-      });
-
-      const uploadedFile = await uploadResponse.json();
-
-      if (uploadedFile.id) {
-          const fileId = uploadedFile.id;
-
-          await window.gapi.client.drive.permissions.create({
-              fileId: fileId,
-              resource: {
-                  role: 'reader',
-                  type: 'anyone'
-              }
-          });
-
-          const fileInfo = await window.gapi.client.drive.files.get({
-              fileId: fileId,
-              fields: 'webViewLink'
-          });
-
-          fileUrl = fileInfo.result.webViewLink;
-      } else {
-          console.error('File upload failed:', uploadedFile);
-          throw new Error('File upload failed');
+    let fileInfos: { name: string, url: string }[] = [];
+    if (postData.attachments && postData.attachments.length > 0) {
+      for (const file of postData.attachments) {
+        const url = await uploadFileToDrive(file);
+        fileInfos.push({ name: file.name, url: url });
       }
     }
 
@@ -394,9 +395,13 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
     const lastRow = data && data.values ? data.values.length : 0;
     const newPostId = `${lastRow + 1}`;
 
-    const finalContent = postData.attachment && fileUrl 
-      ? `${postData.content}\n\n<p>첨부파일: <a href="${fileUrl}" target="_blank">${postData.attachment.name}</a></p>`
-      : postData.content;
+    let finalContent = postData.content;
+    if (fileInfos.length > 0) {
+      const attachmentLinks = fileInfos.map(info => `<p>첨부파일: <a href="${info.url}" target="_blank">${info.name}</a></p>`).join('\n');
+      finalContent = `${postData.content}\n\n${attachmentLinks}`;
+    }
+    
+    const fileNotice = fileInfos.length > 0 ? JSON.stringify(fileInfos) : '';
 
     const newAnnouncementForSheet = [
       newPostId,
@@ -406,7 +411,7 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
       finalContent,
       new Date().toISOString().slice(0, 10),
       0, // view_count
-      fileUrl // file_notice
+      fileNotice
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);

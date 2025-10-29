@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/pages/NewAnnouncementPost.css';
 import type { Post, User } from '../../types/app';
@@ -5,7 +6,7 @@ import { BiPencil, BiPaperclip, BiSave, BiX } from "react-icons/bi";
 
 interface NewAnnouncementPostProps {
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }) => void;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => void;
   user: User | null;
   isAuthenticated: boolean;
 }
@@ -13,8 +14,7 @@ interface NewAnnouncementPostProps {
 const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange, onAddPost, user, isAuthenticated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [attachment, setAttachment] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [isPinned, setIsPinned] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,33 +36,26 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
       content: content,
       author: user?.name || 'Unknown',
       writer_id: user?.studentId || '',
-      attachment: attachment
+      attachments: attachments
     });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAttachment(file);
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      }
-      else {
-        setPreview(null);
-      }
+    if (e.target.files) {
+      setAttachments(prev => [...prev, ...Array.from(e.target.files as FileList)]);
     }
   };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  }
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
   const handleCancel = () => {
-    const hasUnsavedChanges = title.trim() !== '' || content.trim() !== '' || attachment !== null;
+    const hasUnsavedChanges = title.trim() !== '' || content.trim() !== '' || attachments.length > 0;
     if (hasUnsavedChanges) {
       if (window.confirm('작성 중인 내용이 있습니다. 정말로 취소하시겠습니까?')) {
         onPageChange('announcements');
@@ -120,11 +113,19 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
                 </button>
                 <input
                   type="file"
+                  multiple
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   style={{ display: 'none' }}
                 />
-                {attachment && <span className="attachment-name">{attachment.name}</span>}
+              </div>
+              <div className="attachment-list">
+                {attachments.map((file, index) => (
+                  <div key={index} className="attachment-item">
+                    <span>{file.name}</span>
+                    <button onClick={() => removeAttachment(index)}><BiX/></button>
+                  </div>
+                ))}
               </div>
               <div className="pin-announcement">
                 <input
@@ -136,7 +137,6 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
                 <label htmlFor="pin-checkbox">고정 공지사항</label>
               </div>
             </div>
-            {preview && <img src={preview} alt="첨부파일 미리보기" className="image-preview" />} 
           </div>
         </div>
 
