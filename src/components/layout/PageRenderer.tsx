@@ -169,6 +169,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return selectedAnnouncement ? (
           <AnnouncementView
             post={selectedAnnouncement}
+            user={user}
             onBack={() => onPageChange('announcements')}
           />
         ) : (
