@@ -329,6 +329,18 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
 
 export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }): Promise<void> => {
   setupPapyrusAuth();
+
+  const token = localStorage.getItem('googleAccessToken');
+  if (!token) {
+      throw new Error('Google Access Token not found');
+  }
+  try {
+      window.gapi.client.setToken({ access_token: token });
+  } catch (tokenError) {
+      console.error('Failed to set GAPI token:', tokenError);
+      throw new Error('Failed to set GAPI token');
+  }
+
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
@@ -336,59 +348,45 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
 
     let fileUrl = '';
     if (postData.attachment) {
-      const findOrCreateFolderClientSide = async (path: string): Promise<string | null> => {
-        let parentId = 'root';
-        const pathParts = path.split('/');
-        for (const part of pathParts) {
-          try {
-            const response = await window.gapi.client.drive.files.list({
-              q: `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and name='${part}' and trashed=false`,
-              fields: 'files(id, name)',
-            });
-            if (response.result.files && response.result.files.length > 0) {
-              parentId = response.result.files[0].id;
-            } else {
-              const fileMetadata = {
-                name: part,
-                mimeType: 'application/vnd.google-apps.folder',
-                parents: [parentId],
-              };
-              const newFolder = await window.gapi.client.drive.files.create({
-                resource: fileMetadata,
-                fields: 'id',
-              });
-              parentId = newFolder.result.id;
-            }
-          } catch (error) {
-            console.error(`Error finding or creating folder part '${part}':`, error);
-            return null;
-          }
-        }
-        return parentId;
+      const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
+
+      const fileMetadata = {
+        name: postData.attachment.name,
+        parents: [folderId]
       };
 
-      const folderId = await findOrCreateFolderClientSide('hot potato/문서/공지사항 첨부파일');
-      if (folderId) {
-        // Step 1: Simple upload to create the file
-        const simpleUploadResponse = await window.gapi.client.request({
-            path: '/upload/drive/v3/files',
-            method: 'POST',
-            params: { uploadType: 'media' },
-            headers: { 'Content-Type': postData.attachment.type },
-            body: postData.attachment
-        });
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+      form.append('file', postData.attachment);
 
-        const fileId = (simpleUploadResponse.result as gapi.client.drive.files.File).id;
+      const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+        body: form,
+      });
 
-        // Step 2: Update metadata to set name and parent
-        const updatedFile = await window.gapi.client.drive.files.update({
-            fileId: fileId,
-            addParents: folderId,
-            resource: { name: postData.attachment.name },
-            fields: 'webViewLink'
-        });
+      const uploadedFile = await uploadResponse.json();
 
-        fileUrl = updatedFile.result.webViewLink;
+      if (uploadedFile.id) {
+          const fileId = uploadedFile.id;
+
+          await window.gapi.client.drive.permissions.create({
+              fileId: fileId,
+              resource: {
+                  role: 'reader',
+                  type: 'anyone'
+              }
+          });
+
+          const fileInfo = await window.gapi.client.drive.files.get({
+              fileId: fileId,
+              fields: 'webViewLink'
+          });
+
+          fileUrl = fileInfo.result.webViewLink;
+      } else {
+          console.error('File upload failed:', uploadedFile);
+          throw new Error('File upload failed');
       }
     }
 
