@@ -188,7 +188,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
         <div className="post-view-attachment" dangerouslySetInnerHTML={{ __html: attachmentHtml }} />
       )}
 
-      <div className="post-view-body" dangerouslySetInnerHTML={{ __html: mainContent }} />
+      <div className="post-view-body" dangerouslySetInnerHTML={{ __html: mainContent.replace(/\n/g, '<br />') }} />
       <div className="post-view-footer">
         <button onClick={onBack} className="back-to-list-button">목록으로</button>
       </div>
