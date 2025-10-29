@@ -6,6 +6,7 @@ interface LoginFormData {
   studentId: string;
   isAdmin: boolean;
   adminKey: string;
+  userType: string;
 }
 
 interface RegistrationFormProps {
@@ -74,6 +75,23 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </div>
 
           <div className="form-group">
+            <label htmlFor="userType">가입유형 *</label>
+            <select
+              id="userType"
+              value={formData.userType}
+              onChange={(e) => onFormDataChange('userType', e.target.value)}
+              className="form-input"
+            >
+              <option value="">가입유형을 선택하세요</option>
+              <option value="student">학생</option>
+              <option value="std_council">집행부</option>
+              <option value="supp">조교</option>
+              <option value="professor">교수</option>
+              <option value="ad_professor">겸임교원</option>
+            </select>
+          </div>
+
+          <div className="form-group">
             <label className="checkbox-label">
               <input
                 type="checkbox"
@@ -120,7 +138,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           <button
             type="button"
             onClick={onRegister}
-            disabled={isLoading || !formData.studentId.trim() || (formData.isAdmin && !formData.adminKey.trim())}
+            disabled={isLoading || !formData.studentId.trim() || !formData.userType || (formData.isAdmin && !formData.adminKey.trim())}
             className="register-btn"
           >
             {isLoading ? (

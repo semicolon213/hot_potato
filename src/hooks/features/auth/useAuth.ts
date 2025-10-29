@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { registerUser, verifyAdminKey, type RegistrationResponse } from '../../../utils/api/authApi';
+import { registerUser, verifyAdminKey } from '../../../utils/api/authApi';
 
 // 타입 정의
 interface User {
@@ -20,6 +20,7 @@ interface LoginFormData {
   studentId: string;
   isAdmin: boolean;
   adminKey: string;
+  userType: string;
 }
 
 interface LoginState {
@@ -38,6 +39,18 @@ interface LoginResponse {
   userType?: string;
   error?: string;
   approvalStatus?: string;
+  debug?: {
+    message?: string;
+    data?: unknown;
+    stack?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface RegistrationResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
   debug?: {
     message?: string;
     data?: unknown;
@@ -114,7 +127,8 @@ export const useAuth = (onLogin: (user: User) => void) => {
     name: '',
     studentId: '',
     isAdmin: false,
-    adminKey: ''
+    adminKey: '',
+    userType: ''
   });
 
   // Google 로그인
@@ -273,8 +287,8 @@ export const useAuth = (onLogin: (user: User) => void) => {
       return;
     }
 
-    if (formData.isAdmin && !formData.adminKey.trim()) {
-      setLoginState(prev => ({ ...prev, error: '관리자 키를 입력해주세요.' }));
+    if (!formData.userType) {
+      setLoginState(prev => ({ ...prev, error: '가입유형을 선택해주세요.' }));
       return;
     }
 
@@ -286,10 +300,11 @@ export const useAuth = (onLogin: (user: User) => void) => {
         name: formData.name,
         studentId: formData.studentId,
         isAdmin: formData.isAdmin,
-        adminKey: formData.isAdmin ? formData.adminKey : undefined
+        adminKey: formData.isAdmin ? formData.adminKey : undefined,
+        userType: formData.userType
       };
 
-      const result = await registerUser(registrationData) as any;
+      const result: RegistrationResponse = await registerUser(registrationData);
 
       // 디버그 정보 출력
       if (result.debug) {

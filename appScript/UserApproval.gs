@@ -68,6 +68,10 @@ function getAllUsers() {
         email: user.google_member ? applyDecryption(user.google_member, 'Base64', '') : '',
         studentId: user.no_member || '',
         name: user.name_member || '',
+        userType: (() => {
+          console.log('🔍 user_type 값 확인:', user.user_type, '타입:', typeof user.user_type);
+          return user.user_type || 'student';
+        })(),
         isAdmin: user.is_admin === 'O',
         isApproved: user.Approval === 'O',
         requestDate: user.approval_date || new Date().toISOString().split('T')[0],

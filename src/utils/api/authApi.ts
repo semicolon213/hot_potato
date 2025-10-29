@@ -24,6 +24,7 @@ export interface RegistrationRequest {
   studentId: string;
   isAdmin: boolean;
   adminKey?: string;
+  userType: string;
 }
 
 export interface RegistrationResponse {

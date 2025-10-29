@@ -494,10 +494,10 @@ function callUserManagementPost(req) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    if (req.action === 'approveUser') {
-      console.log('✅ 사용자 승인 요청:', req.studentId);
-      const result = approveUser(req.studentId);
-      console.log('✅ 사용자 승인 결과:', result);
+    if (req.action === 'approveUserWithGroup') {
+      console.log('✅ 사용자 승인 및 그룹스 권한 설정 요청:', req.studentId, req.groupRole);
+      const result = approveUserWithGroup(req.studentId, req.groupRole);
+      console.log('✅ 사용자 승인 및 그룹스 권한 설정 결과:', result);
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);

@@ -71,7 +71,7 @@
     // 이메일 암호화 방식 설정
     const EMAIL_ENCRYPTION_CONFIG = {
     // 사용할 암호화 방법 (ENCRYPTION_METHODS에서 선택)
-    METHOD: 'ROT13', // 'ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution' 등
+    METHOD: 'Base64', // 'ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution' 등
     
     // 암호화 레이어 수 (1 = 단일 암호화, 2+ = 다중 레이어)
     LAYERS: 1,
@@ -516,4 +516,76 @@
      */
     function getDocumentSheetColumns() {
         return DOCUMENT_SHEET_COLUMNS;
+    }
+    
+    // ===== 그룹스 역할 매핑 (관리자, 개발자 제외) =====
+    const GROUP_ROLE_MAPPING = {
+        'ad_professor': {
+            name: '겸임교원',
+            email: 'ad_professor_hp@googlegroups.com',
+            description: '뜨거운 감자 겸임 교원'
+        },
+        'professor': {
+            name: '교수',
+            email: 'professor_hp@googlegroups.com', 
+            description: '뜨거운 감자 교수 그룹'
+        },
+        'supp': {
+            name: '조교',
+            email: 'hp_supp@googlegroups.com',
+            description: '뜨거운 감자 조교 그룹'
+        },
+        'std_council': {
+            name: '집행부',
+            email: 'std_council_hp@googlegroups.com',
+            description: '뜨거운 감자 집행부 그룹'
+        },
+        'student': {
+            name: '학생',
+            email: 'student_hp@googlegroups.com',
+            description: '뜨거운 감자 학생 그룹'
+        }
+    };
+    
+    // 그룹스 역할 목록 (사용자 선택용)
+    const AVAILABLE_GROUP_ROLES = [
+        { value: 'student', label: '학생' },
+        { value: 'std_council', label: '집행부' },
+        { value: 'supp', label: '조교' },
+        { value: 'professor', label: '교수' },
+        { value: 'ad_professor', label: '겸임교원' }
+    ];
+    
+    /**
+     * 그룹스 역할 매핑 반환
+     * @returns {Object} 그룹스 역할 매핑 객체
+     */
+    function getGroupRoleMapping() {
+        return GROUP_ROLE_MAPPING;
+    }
+    
+    /**
+     * 사용 가능한 그룹스 역할 목록 반환
+     * @returns {Array} 그룹스 역할 목록
+     */
+    function getAvailableGroupRoles() {
+        return AVAILABLE_GROUP_ROLES;
+    }
+    
+    /**
+     * 그룹스 역할에 따른 이메일 반환
+     * @param {string} role - 그룹스 역할
+     * @returns {string} 그룹스 이메일
+     */
+    function getGroupEmailByRole(role) {
+        return GROUP_ROLE_MAPPING[role]?.email || '';
+    }
+    
+    /**
+     * 그룹스 역할에 따른 이름 반환
+     * @param {string} role - 그룹스 역할
+     * @returns {string} 그룹스 이름
+     */
+    function getGroupNameByRole(role) {
+        return GROUP_ROLE_MAPPING[role]?.name || '알 수 없는 그룹스';
     }

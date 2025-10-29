@@ -10,10 +10,11 @@ interface AdminUser {
   isApproved: boolean;
   requestDate: string;
   approvalDate?: string | null;
+  userType: string;
 }
 
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
-import { fetchAllUsers, sendAdminKeyEmail, approveUser, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
+import { fetchAllUsers, sendAdminKeyEmail, approveUserWithGroup, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
 import type { ApiResponse } from '../../../config/api';
 
@@ -25,6 +26,7 @@ export const useAdminPanel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [emailStatus, setEmailStatus] = useState<EmailStatus>('idle');
+  const [debugInfo, setDebugInfo] = useState('');
   
   const { user, setUser } = useAuthStore();
 
@@ -63,17 +65,39 @@ export const useAdminPanel = () => {
         console.log('승인 대기 사용자 수:', result.pendingUsers?.length || 0);
         console.log('승인된 사용자 수:', result.approvedUsers?.length || 0);
         
-        console.log('사용자 목록:', result.users.map((user: AdminUser) => ({
+        const userListDebug = result.users.map((user: AdminUser) => ({
           id: user.id,
           studentId: user.studentId,
           name: user.name,
           email: user.email,
+          userType: user.userType,
           isApproved: user.isApproved,
           isAdmin: user.isAdmin
-        })));
+        }));
+        
+        console.log('사용자 목록:', userListDebug);
+        
+        // 디버깅 정보를 상태에 저장
+        setDebugInfo(`사용자 수: ${result.users.length}\n승인 대기: ${result.pendingUsers?.length || 0}\n승인됨: ${result.approvedUsers?.length || 0}\n\n사용자 목록:\n${JSON.stringify(userListDebug.slice(0, 3), null, 2)}`);
         
         console.log('setUsers 호출 전 현재 users 상태:', users);
-        setUsers(result.users);
+        
+        // Apps Script에서 받은 데이터를 AdminUser 타입으로 변환
+        const convertedUsers = result.users.map((user: any) => ({
+          id: user.id || user.no_member || `user_${Math.random()}`,
+          email: user.email || '',
+          studentId: user.studentId || user.no_member || '',
+          name: user.name || user.name_member || '',
+          isAdmin: user.isAdmin || (user.is_admin === 'O'),
+          isApproved: user.isApproved || (user.Approval === 'O'),
+          requestDate: user.requestDate || user.approval_date || new Date().toISOString().split('T')[0],
+          approvalDate: user.approvalDate || (user.Approval === 'O' ? user.approval_date : null),
+          userType: user.userType || user.user_type || 'student'
+        }));
+        
+        console.log('변환된 사용자 데이터:', convertedUsers.slice(0, 2));
+        
+        setUsers(convertedUsers);
         setPendingUsers(result.pendingUsers || []);
         setApprovedUsers(result.approvedUsers || []);
         console.log('setUsers 호출 완료');
@@ -104,29 +128,30 @@ export const useAdminPanel = () => {
     }
   };
 
-  // 사용자 승인
-  const handleApproveUser = async (userId: string) => {
+  // 사용자 승인 (그룹스 권한과 함께)
+  const handleApproveUser = async (studentId: string, groupRole: string) => {
     try {
       setIsLoading(true);
       setMessage('');
       
       console.log('=== 승인 요청 데이터 ===');
-      console.log('userId:', userId);
+      console.log('studentId:', studentId);
+      console.log('groupRole:', groupRole);
       
-      const result = await approveUser(userId);
+      const result = await approveUserWithGroup(studentId, groupRole);
       
       if (result.success) {
-        setMessage('사용자가 승인되었습니다.');
+        setMessage('사용자가 승인되었습니다. 그룹스 관리자에게 알림이 전송되었습니다.');
         
         // 즉시 로컬 상태 업데이트 (UI 즉시 반영)
-        const approvedUser = users.find(u => u.id === userId);
+        const approvedUser = users.find(u => u.studentId === studentId);
         if (approvedUser) {
           console.log('승인된 사용자 찾음:', approvedUser);
           
           // 로컬 users 상태에서 해당 사용자의 isApproved를 true로 업데이트
           setUsers(prevUsers => 
             prevUsers.map(u => 
-              u.id === userId 
+              u.studentId === studentId 
                 ? { ...u, isApproved: true, approvalDate: new Date().toISOString().split('T')[0] }
                 : u
             )
@@ -348,6 +373,7 @@ export const useAdminPanel = () => {
     isLoading,
     message,
     emailStatus,
+    debugInfo,
     handleApproveUser,
     handleRejectUser,
     handleSendAdminKey,

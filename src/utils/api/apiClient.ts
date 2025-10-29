@@ -160,8 +160,8 @@ export class ApiClient {
     return this.request(API_ACTIONS.GET_PENDING_USERS);
   }
 
-  async approveUser(studentId: string) {
-    return this.request(API_ACTIONS.APPROVE_USER, { studentId });
+  async approveUserWithGroup(studentId: string, groupRole: string) {
+    return this.request(API_ACTIONS.APPROVE_USER_WITH_GROUP, { studentId, groupRole });
   }
 
   async rejectUser(studentId: string) {
@@ -288,8 +288,8 @@ export const fetchAllUsers = () =>
 export const fetchPendingUsers = () =>
   apiClient.getPendingUsers();
 
-export const approveUser = (userId: string) =>
-  apiClient.approveUser(userId);
+export const approveUserWithGroup = (studentId: string, groupRole: string) =>
+  apiClient.approveUserWithGroup(studentId, groupRole);
 
 export const rejectUser = (userId: string) =>
   apiClient.rejectUser(userId);

@@ -15,8 +15,8 @@ function submitRegistrationRequest(req) {
   try {
     console.log('📝 사용자 등록 요청 처리 시작:', req);
     
-    const { name, email, studentId, phone, department, role } = req;
-    console.log('📝 추출된 데이터:', { name, email, studentId, phone, department, role });
+    const { name, email, studentId, phone, department, role, userType } = req;
+    console.log('📝 추출된 데이터:', { name, email, studentId, phone, department, role, userType });
     
     // 필수 필드 검증
     if (!name || !email || !studentId) {
@@ -72,7 +72,8 @@ function submitRegistrationRequest(req) {
       name: name,
       email: email,
       student_id: studentId,
-      isAdmin: role === 'admin' || false
+      isAdmin: role === 'admin' || false,
+      groupRole: userType || 'student'
     });
     
     if (!updateResult.success) {
@@ -461,6 +462,7 @@ function addUserToSpreadsheet(userData) {
     
     // 실제 헤더 기준으로 컬럼 찾기
     const emailColumnIndex = header.findIndex(h => h.includes('google_member') || h.includes('이메일') || h.includes('email'));
+    const userTypeColumnIndex = header.findIndex(h => h.includes('user_type') || h.includes('사용자 유형') || h.includes('userType'));
     const approvalColumnIndex = header.findIndex(h => h.includes('Approval') || h.includes('승인') || h.includes('approval'));
     const adminColumnIndex = header.findIndex(h => h.includes('is_admin') || h.includes('관리자') || h.includes('admin'));
     const dateColumnIndex = header.findIndex(h => h.includes('approval_date') || h.includes('등록') || h.includes('date'));
@@ -489,14 +491,16 @@ function addUserToSpreadsheet(userData) {
     // 업데이트할 데이터
     const updateData = [
       [encryptedEmail],  // google_member 컬럼
+      [userData.groupRole || 'student'], // user_type 컬럼 (사용자가 선택한 그룹스 권한)
       ['X'],             // Approval 컬럼 (초기값 X)
       [userData.isAdmin ? 'O' : 'X'],  // is_admin 컬럼
-      ['']               // approval_date 컬럼 (승인 시에만 채움)
+      ['']               // approval_date 컬럼
     ];
     
     // 각 열별로 업데이트
     const ranges = [
       `${sheetName}!${String.fromCharCode(65 + emailColumnIndex)}${actualRowNumber}`,    // google_member
+      `${sheetName}!${String.fromCharCode(65 + userTypeColumnIndex)}${actualRowNumber}`, // user_type
       `${sheetName}!${String.fromCharCode(65 + approvalColumnIndex)}${actualRowNumber}`,  // Approval
       `${sheetName}!${String.fromCharCode(65 + adminColumnIndex)}${actualRowNumber}`,    // is_admin
       `${sheetName}!${String.fromCharCode(65 + dateColumnIndex)}${actualRowNumber}`      // approval_date
