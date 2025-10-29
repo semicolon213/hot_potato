@@ -38,6 +38,7 @@ export interface Post {
   likes: number;
   content: string;
   writer_id: string;
+  file_notice?: string;
 }
 
 export interface User {

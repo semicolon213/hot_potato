@@ -69,7 +69,7 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                     const checkGapi = () => {
                         attempts++;
 
-                        if (typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.load) {
+                        if (typeof window !== 'undefined' && window.gapi && window.gapi.load) {
                             console.log("gapi 스크립트 로드 완료");
                             resolve();
                         } else if (attempts >= maxAttempts) {
@@ -90,7 +90,7 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
             await new Promise<void>((resolve) => {
                 console.log("Google API Client Library 초기화 중...");
                 
-                (window as any).gapi.load('client:auth2', async () => {
+                window.gapi.load('client:auth2', async () => {
                     try {
                         console.log("gapi.load 완료, client.init 시작...");
                         
@@ -115,7 +115,7 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                             console.log("저장된 토큰 발견:", savedToken);
                             try {
                                 // 토큰을 gapi client에 직접 설정
-                                (window as any).gapi.client.setToken({ access_token: savedToken });
+                                window.gapi.client.setToken({ access_token: savedToken });
                                 console.log("✅ 토큰이 gapi client에 설정되었습니다.");
                             } catch (tokenError) {
                                 console.warn("토큰 설정 실패:", tokenError);
