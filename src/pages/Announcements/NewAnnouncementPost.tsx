@@ -6,7 +6,7 @@ import TiptapEditor from '../../components/ui/TiptapEditor';
 
 interface NewAnnouncementPostProps {
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => void;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }) => void;
   user: User | null;
   isAuthenticated: boolean;
 }
@@ -35,7 +35,8 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
       title,
       content: content, // content is now HTML
       author: user?.name || 'Unknown',
-      writer_id: user?.studentId || ''
+      writer_id: user?.studentId || '',
+      attachment: attachment,
     });
   };
 

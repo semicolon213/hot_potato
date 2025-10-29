@@ -299,7 +299,13 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
     }
 
     console.log(`Fetching announcements from spreadsheet: ${announcementSpreadsheetId}, sheet: ${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}`);
-    const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
+    
+    const response = await window.gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: announcementSpreadsheetId,
+      range: ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME,
+    });
+
+    const data = response.result;
     console.log('Announcements data received:', data);
     
     if (!data || !data.values || data.values.length <= 1) {
@@ -327,6 +333,18 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
+const dataURLtoBlob = (dataurl: string) => {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
+
 export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }): Promise<void> => {
   setupPapyrusAuth();
 
@@ -345,6 +363,61 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
     }
+
+    let processedContent = postData.content;
+    const imgRegex = /<img src="(data:image\/[^;]+;base64,[^"]+)"[^>]*>/g;
+    let match;
+    const uploadPromises = [];
+
+    while ((match = imgRegex.exec(postData.content)) !== null) {
+      const base64Src = match[1];
+      const blob = dataURLtoBlob(base64Src);
+      const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD'; // Same folder as attachments
+
+      const fileMetadata = {
+        name: `announcement-image-${Date.now()}`,
+        parents: [folderId]
+      };
+
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+      form.append('file', blob);
+
+      const uploadPromise = fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+        body: form,
+      })
+      .then(response => response.json())
+      .then(async uploadedFile => {
+        if (uploadedFile.id) {
+          const fileId = uploadedFile.id;
+          await window.gapi.client.drive.permissions.create({
+              fileId: fileId,
+              resource: {
+                  role: 'reader',
+                  type: 'anyone'
+              }
+          });
+          const fileInfo = await window.gapi.client.drive.files.get({
+              fileId: fileId,
+              fields: 'thumbnailLink'
+          });
+          return { base64Src, url: fileInfo.result.thumbnailLink };
+        } else {
+          console.error('File upload failed:', uploadedFile);
+          return { base64Src, url: null };
+        }
+      });
+      uploadPromises.push(uploadPromise);
+    }
+
+    const uploadedImages = await Promise.all(uploadPromises);
+    uploadedImages.forEach(image => {
+      if (image.url) {
+        processedContent = processedContent.replace(image.base64Src, image.url);
+      }
+    });
 
     let fileUrl = '';
     if (postData.attachment) {
@@ -395,8 +468,8 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
     const newPostId = `${lastRow + 1}`;
 
     const finalContent = postData.attachment && fileUrl 
-      ? `${postData.content}\n\n<p>첨부파일: <a href="${fileUrl}" target="_blank">${postData.attachment.name}</a></p>`
-      : postData.content;
+      ? `${processedContent}\n\n<p>첨부파일: <a href="${fileUrl}" target="_blank">${postData.attachment.name}</a></p>`
+      : processedContent;
 
     const newAnnouncementForSheet = [
       newPostId,
