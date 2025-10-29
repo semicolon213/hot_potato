@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './EventDetailModal.css';
 import { type Event } from '../../../../hooks/features/calendar/useCalendarContext';
-import { BiTrashAlt, BiX, BiEditAlt, BiDetail, BiGroup, BiCalendar } from 'react-icons/bi';
+import { BiTrashAlt, BiX, BiEditAlt, BiDetail, BiGroup, BiCalendar, BiChevronUp } from 'react-icons/bi';
 import useCalendarContext from '../../../../hooks/features/calendar/useCalendarContext';
 
 interface EventDetailModalProps {
@@ -15,16 +15,16 @@ interface EventDetailModalProps {
 
 const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position }) => {
     const { students, staff } = useCalendarContext();
+    const [isAttendeesExpanded, setIsAttendeesExpanded] = useState(false);
 
-    const attendeeNames = useMemo(() => {
+    const attendees = useMemo(() => {
         if (!event.attendees || !students || !staff) {
             return [];
         }
         const allPeople = [...students, ...staff];
         const attendeeIds = event.attendees.split(',').map(id => id.trim());
         return attendeeIds.map(id => {
-            const person = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === id);
-            return person ? person.name : null;
+            return allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === id);
         }).filter(Boolean);
     }, [event.attendees, students, staff]);
 
@@ -38,9 +38,16 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         }
     };
 
-    const formatEventDate = (startStr: string, endStr: string) => {
-        const startDate = new Date(startStr);
-        const endDate = new Date(endStr);
+    const formatEventDate = (event: Event) => {
+        if (event.startDateTime && event.endDateTime) {
+            const startTime = new Date(event.startDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const endTime = new Date(event.endDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const startDate = new Date(event.startDate).toLocaleDateString();
+            return `${startDate} ${startTime} - ${endTime}`;
+        }
+
+        const startDate = new Date(event.startDate);
+        const endDate = new Date(event.endDate);
 
         // For single-day events
         if (endDate.getTime() - startDate.getTime() === 0) {
@@ -69,7 +76,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
 
     const modalContent = (
         <div className="event-detail-modal-overlay" onClick={onClose}>
-            <div className="event-detail-container" style={modalStyle} onClick={(e) => e.stopPropagation()}>
+            <div className={`event-detail-container ${isAttendeesExpanded ? 'expanded' : ''}`} style={modalStyle} onClick={(e) => e.stopPropagation()}>
                 <div className="event-detail-header">
                     <h2>{event.title}</h2>
                     <div className="header-actions">
@@ -81,7 +88,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
                 <div className="event-detail-body">
                     <div className="detail-item">
                         <BiCalendar className="detail-icon" />
-                        <p>{formatEventDate(event.startDate, event.endDate)}</p>
+                        <p>{formatEventDate(event)}</p>
                     </div>
                     {event.description && (
                         <div className="detail-item">
@@ -89,13 +96,32 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
                             <p>{event.description}</p>
                         </div>
                     )}
-                    {attendeeNames.length > 0 && (
+                    {attendees.length > 0 && (
                         <div className="detail-item">
                             <BiGroup className="detail-icon" />
-                            <div className="attendee-list">
-                                {attendeeNames.map((name, index) => (
-                                    <span key={index} className="attendee-name-tag">{name}</span>
+                            <div className={`attendee-list ${isAttendeesExpanded ? 'expanded' : ''}`}>
+                                {(isAttendeesExpanded ? attendees : attendees.slice(0, 3)).map((attendee, index) => (
+                                    isAttendeesExpanded ? (
+                                        <div key={index} className="attendee-detail-item">
+                                            <span className="attendee-name">{attendee.name}</span>
+                                            <span className="attendee-details">
+                                                {('no_student' in attendee) ? `(학번: ${attendee.no_student}, ${attendee.grade}학년)` : `(직책: ${attendee.pos}, 사번: ${attendee.no})`}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span key={index} className="attendee-name-tag">{attendee.name}</span>
+                                    )
                                 ))}
+                                {attendees.length > 3 && !isAttendeesExpanded && (
+                                    <button className="more-attendees-btn attendee-name-tag" onClick={() => setIsAttendeesExpanded(true)}>
+                                        ... {attendees.length - 3} more
+                                    </button>
+                                )}
+                                {isAttendeesExpanded && (
+                                    <button className="collapse-attendees-btn" onClick={() => setIsAttendeesExpanded(false)}>
+                                        <BiChevronUp />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}

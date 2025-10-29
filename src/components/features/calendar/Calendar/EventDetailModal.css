@@ -87,6 +87,40 @@
     font-size: 0.9rem;
 }
 
+.more-attendees-btn {
+    background-color: #f1f3f4;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+}
+
+.attendee-list.expanded {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.event-detail-container.expanded {
+    max-height: 70vh;
+}
+
+.attendee-detail-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px 0;
+}
+
+.collapse-attendees-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    padding: 8px 0;
+}
+
 
 
 /* 간단한 페이드인 애니메이션 */
