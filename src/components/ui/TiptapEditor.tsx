@@ -13,23 +13,33 @@ const MenuBar = ({ editor }) => {
     return null;
   }
 
-  const addImage = () => {
-    const url = window.prompt('URL');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const addImage = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const src = e.target.result as string;
+      editor.chain().focus().setImage({ src }).run();
+    };
+    reader.readAsDataURL(file);
+    event.target.value = ''; // Reset the input value
+  };
+
+  const handleImageButtonClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
     <div className="toolbar">
       <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}>
-        굵게
+        Bold
       </button>
       <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''}>
-          밑줄
+        Underline
       </button>
       <select onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}>
-        <option value="">글자 크기</option>
+        <option value="">Font Size</option>
         <option value="12px">12px</option>
         <option value="14px">14px</option>
         <option value="16px">16px</option>
@@ -41,7 +51,8 @@ const MenuBar = ({ editor }) => {
         onInput={event => editor.chain().focus().setColor(event.target.value).run()}
         value={editor.getAttributes('textStyle').color || '#000000'}
       />
-      <button onClick={addImage}>이미지</button>
+      <button onClick={handleImageButtonClick}>Image</button>
+      <input type="file" accept="image/*" ref={fileInputRef} onChange={addImage} style={{ display: 'none' }} />
     </div>
   );
 };
