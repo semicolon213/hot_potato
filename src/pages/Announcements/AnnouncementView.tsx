@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Post, User } from '../../types/app';
 import '../../styles/pages/AnnouncementView.css';
 import '../../styles/pages/NewAnnouncementPost.css';
-import { BiPencil, BiSave, BiX } from "react-icons/bi";
+import { BiPencil, BiSave, BiX, BiPaperclip } from "react-icons/bi";
 
 interface AnnouncementViewProps {
   post: Post;
@@ -14,13 +14,27 @@ interface AnnouncementViewProps {
 const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(post.title);
-  const [editedContent, setEditedContent] = useState(post.content);
+  const [editedContent, setEditedContent] = useState('');
 
-  const attachmentRegex = /<p>첨부파일:.*?<\/p>/;
-  const attachmentMatch = post.content.match(attachmentRegex);
-  
-  const attachmentHtml = attachmentMatch ? attachmentMatch[0] : null;
-  const mainContent = post.content.replace(attachmentRegex, '').trim();
+  const [mainContent, setMainContent] = useState('');
+  const [attachmentHtml, setAttachmentHtml] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const attachmentRegex = /<p>첨부파일:.*?<\/p>/;
+    const main = post.content.replace(attachmentRegex, '').trim();
+    setMainContent(main);
+    setEditedContent(main);
+
+    const attachmentMatch = post.content.match(attachmentRegex);
+    const html = attachmentMatch ? attachmentMatch[0] : null;
+    setAttachmentHtml(html);
+
+    if (html) {
+      const nameMatch = html.match(/>(.*?)</);
+      setAttachmentName(nameMatch ? nameMatch[1] : '파일');
+    }
+  }, [post.content]);
 
   const isAuthor = String(user?.studentId) === post.writer_id;
 
@@ -29,11 +43,14 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   };
 
   const handleSave = () => {
-    onUpdate(post.id, { title: editedTitle, content: editedContent });
+    const newContent = attachmentHtml ? `${editedContent}\n\n${attachmentHtml}` : editedContent;
+    onUpdate(post.id, { title: editedTitle, content: newContent });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
+    setEditedTitle(post.title);
+    setEditedContent(mainContent);
     setIsEditing(false);
   };
 
@@ -76,6 +93,17 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
                 className="content-textarea"
               ></textarea>
             </div>
+
+            {attachmentName && (
+              <div className="form-group">
+                <label><BiPaperclip /> 파일 첨부</label>
+                <div className="attachment-area">
+                  <div className="attachment-controls">
+                    <span className="attachment-name">{attachmentName}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card-footer">
