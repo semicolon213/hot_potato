@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "../styles/pages/Docbox.css";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, deleteRowsByDocIds, updateLastModifiedInSheetByDocId } from "../utils/google/googleSheetUtils";
 import { addRecentDocument } from "../utils/helpers/localStorageUtils";
 import { BiLoaderAlt, BiShareAlt } from "react-icons/bi";
-import { ENV_CONFIG } from "../config/environment";
-import type { DocumentMap, DocumentInfo } from "../types/documents";
+import { loadAllDocuments } from "../utils/helpers/loadDocumentsFromDrive";
+import type { DocumentInfo } from "../types/documents";
 
 
 interface DocboxProps {
@@ -14,114 +13,39 @@ interface DocboxProps {
 const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedAuthor, setSelectedAuthor] = useState<string>("전체");
-  const [selectedSort, setSelectedSort] = useState<string>("최신순");
+  const [selectedCreator, setSelectedCreator] = useState<string>("전체");
+  const [selectedTag, setSelectedTag] = useState<string>("전체");
+  const [selectedType, setSelectedType] = useState<string>("전체");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // 정렬 상태 추가
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
-    const SPREADSHEET_NAME = ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
-    const DOC_SHEET_NAME = 'documents';
-
-    const fetchAndSyncDocuments = async () => {
-      console.log("Fetching and syncing documents...");
-      const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
-      if (!sheetId) {
-        return;
-      }
-
-      const data = await getSheetData(sheetId, DOC_SHEET_NAME, 'A:I');
-      if (!data || data.length <= 1) {
-        setDocuments([]);
-        return;
-      }
-
-      const header = data[0];
-      const initialDocs: DocumentInfo[] = data.slice(1).map((row, index) => {
-        const doc: DocumentMap = {};
-        header.forEach((key, hIndex) => {
-          doc[key] = row[hIndex];
-        });
-        return {
-          id: doc.document_id,
-          title: doc.title,
-          author: doc.author,
-          lastModified: doc.last_modified,
-          url: doc.url,
-          documentNumber: doc.document_number,
-          approvalDate: doc.approval_date,
-          status: doc.status,
-          originalIndex: index,
-        };
-      }).filter(doc => doc.id); // Ensure documents have an ID
-
-      const gapi = window.gapi;
-      if (!gapi?.client?.drive || initialDocs.length === 0) {
-        setDocuments(initialDocs);
-        return;
-      }
-
-      const batch = gapi.client.newBatch();
-      initialDocs.forEach(doc => {
-        batch.add(gapi.client.drive.files.get({ fileId: doc.id, fields: 'name,modifiedTime' }), { id: doc.id });
-      });
-
-      try {
-        const batchResponse = await batch;
-        const driveResults = batchResponse.result;
-        const syncedDocs = [...initialDocs];
-
-        Object.keys(driveResults).forEach(docId => {
-          const response = driveResults[docId];
-          if (!response || !response.result) {
-            console.warn(`No result for docId ${docId} in batch response.`);
-            return;
-          }
-          
-          const latestTitle = response.result.name;
-          const latestModifiedTime = response.result.modifiedTime;
-          const docIndex = syncedDocs.findIndex(d => d.id === docId);
-
-          if (docIndex !== -1) {
-            if (latestTitle && latestTitle !== syncedDocs[docIndex].title) {
-              console.log(`Syncing title for ${docId}: "${syncedDocs[docIndex].title}" -> "${latestTitle}"`);
-              syncedDocs[docIndex].title = latestTitle;
-              updateTitleInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, latestTitle);
-            }
-            if (latestModifiedTime && new Date(latestModifiedTime).getTime() !== new Date(syncedDocs[docIndex].lastModified).getTime()) {
-              const date = new Date(latestModifiedTime);
-              const formattedDate = `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}. ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-              syncedDocs[docIndex].lastModified = formattedDate;
-              updateLastModifiedInSheetByDocId(sheetId, DOC_SHEET_NAME, docId, formattedDate);
-            }
-          }
-        });
-
-        setDocuments(syncedDocs);
-
-      } catch (error) {
-        console.error("Error during title sync on load:", error);
-        setDocuments(initialDocs);
-      }
-    };
-
-    const loadDocs = async () => {
+    const loadDocuments = async () => {
       setIsLoading(true);
       try {
-        await fetchAndSyncDocuments();
+        console.log("📄 Docbox에서 문서 로딩 시작...");
+        const allDocs = await loadAllDocuments();
+        console.log("📄 로딩된 문서 수:", allDocs.length);
+        setDocuments(allDocs);
+      } catch (error) {
+        console.error("📄 문서 로딩 오류:", error);
+        setDocuments([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadDocs();
+    loadDocuments();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        loadDocs();
+        loadDocuments();
       }
     };
 
@@ -133,22 +57,41 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   }, []);
 
   const handleResetFilters = () => {
-    setSelectedAuthor("전체");
-    setSelectedSort("최신순");
+    setSelectedCreator("전체");
+    setSelectedTag("전체");
+    setSelectedType("전체");
     setStartDate("");
     setEndDate("");
     setCurrentPage(1);
+    setSortConfig(null);
   };
 
-  const handleRowClick = (doc: Document) => {
+  // 정렬 함수 추가
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev?.key === key && prev?.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleRowClick = (doc: DocumentInfo) => {
     addRecentDocument(doc);
     window.open(doc.url, '_blank');
+  };
+
+  // 문서 타입을 한국어로 변환
+  const typeMap: { [key: string]: string } = {
+    'shared': '공유',
+    'personal': '개인'
   };
 
   const filteredDocuments = documents
     .filter((doc) => {
       const matchesSearch = searchTerm === '' || doc.title.replace(/\s/g, '').toLowerCase().includes(searchTerm.replace(/\s/g, '').toLowerCase());
-      const matchesAuthor = selectedAuthor === "전체" || doc.author === selectedAuthor;
+      const matchesCreator = selectedCreator === "전체" || doc.creator === selectedCreator;
+      const matchesTag = selectedTag === "전체" || doc.tag === selectedTag;
+      const matchesType = selectedType === "전체" || typeMap[doc.documentType] === selectedType;
+      
       let docDate = null;
       const match = doc.documentNumber.match(/(\d{8})/);
       if (match) {
@@ -168,27 +111,59 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         if (end && docDate > end) return false;
       }
 
-      return matchesSearch && matchesAuthor;
+      return matchesSearch && matchesCreator && matchesTag && matchesType;
     })
     .sort((a, b) => {
+      if (sortConfig) {
+        let aValue: any;
+        let bValue: any;
+        
+        switch (sortConfig.key) {
+          case 'documentNumber':
+            aValue = a.documentNumber;
+            bValue = b.documentNumber;
+            break;
+          case 'title':
+            aValue = a.title;
+            bValue = b.title;
+            break;
+          case 'creator':
+            aValue = a.creator;
+            bValue = b.creator;
+            break;
+          case 'lastModified':
+            aValue = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));
+            bValue = new Date(b.lastModified.replace(/\./g, '-').slice(0, -1));
+            break;
+          case 'tag':
+            aValue = a.tag;
+            bValue = b.tag;
+            break;
+          case 'documentType':
+            aValue = typeMap[a.documentType] || a.documentType;
+            bValue = typeMap[b.documentType] || b.documentType;
+            break;
+          default:
+            return 0;
+        }
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      }
+      
+      // 기본 정렬: 최신순
       const dateA = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));
       const dateB = new Date(b.lastModified.replace(/\./g, '-').slice(0, -1));
-
-      if (selectedSort === "최신순") {
-        const dateDiff = dateB.getTime() - dateA.getTime();
-        if (dateDiff !== 0) return dateDiff;
-        return b.originalIndex - a.originalIndex; // newest index first
-      } else if (selectedSort === "오래된순") {
-        const dateDiff = dateA.getTime() - dateB.getTime();
-        if (dateDiff !== 0) return dateDiff;
-        return a.originalIndex - b.originalIndex; // oldest index first
-      } else if (selectedSort === "제목순") {
-        return a.title.localeCompare(b.title);
-      }
-      return 0;
+      const dateDiff = dateB.getTime() - dateA.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return b.originalIndex - a.originalIndex;
     });
 
-  const authors = ["전체", ...new Set(documents.map(doc => doc.author))];
+  // 동적 필터 옵션 생성
+  const creators = ["전체", ...new Set(documents.map(doc => doc.creator).filter(Boolean))];
+  const tags = ["전체", ...new Set(documents.map(doc => doc.tag).filter(Boolean))];
+  const types = ["전체", ...new Set(documents.map(doc => typeMap[doc.documentType] || doc.documentType).filter(Boolean))];
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -206,35 +181,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
     }
   };
 
-  const handleDelete = async () => {
-    if (selectedDocs.length === 0) {
-      alert("삭제할 문서를 선택하세요.");
-      return;
-    }
-
-    if (window.confirm(`선택된 ${selectedDocs.length}개의 문서를 정말 삭제하시겠습니까?`)) {
-      try {
-        const SPREADSHEET_NAME = ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
-        const DOC_SHEET_NAME = 'documents';
-        const sheetId = await getSheetIdByName(SPREADSHEET_NAME);
-        if (!sheetId) {
-          alert("스프레드시트를 찾을 수 없습니다.");
-          return;
-        }
-
-        await deleteRowsByDocIds(sheetId, DOC_SHEET_NAME, selectedDocs);
-
-        setDocuments(prevDocs => prevDocs.filter(doc => !selectedDocs.includes(doc.id)));
-        setSelectedDocs([]);
-
-        alert("선택한 문서가 삭제되었습니다.");
-
-      } catch (error) {
-        console.error("문서 삭제 중 오류 발생:", error);
-        alert("문서 삭제 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
-      }
-    }
-  };
+  // 삭제 기능 제거 - 문서는 Google Drive에서 직접 관리
 
   const handleShare = () => {
     if (selectedDocs.length !== 1) {
@@ -286,32 +233,44 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       <div className="filter-section">
         <div className="filter-row" style={{ marginBottom: 0, alignItems: 'flex-end' }}>
           <div className="filter-group author-sort-filter">
-            <div className="filter-label">기안자</div>
+            <div className="filter-label">생성자</div>
             <div className="select-container">
               <select
                 className="filter-select"
-                value={selectedAuthor}
-                onChange={(e) => setSelectedAuthor(e.target.value)}
+                value={selectedCreator}
+                onChange={(e) => setSelectedCreator(e.target.value)}
               >
-                {authors.map(author => <option key={author}>{author}</option>)}
+                {creators.map(creator => <option key={creator}>{creator}</option>)}
               </select>
             </div>
           </div>
 
           <div className="filter-group author-sort-filter">
-            <div className="filter-label">정렬</div>
+            <div className="filter-label">태그</div>
             <div className="select-container">
               <select
                 className="filter-select"
-                value={selectedSort}
-                onChange={(e) => setSelectedSort(e.target.value)}
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
               >
-                <option>최신순</option>
-                <option>오래된순</option>
-                <option>제목순</option>
+                {tags.map(tag => <option key={tag}>{tag}</option>)}
               </select>
             </div>
           </div>
+
+          <div className="filter-group author-sort-filter">
+            <div className="filter-label">유형</div>
+            <div className="select-container">
+              <select
+                className="filter-select"
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+              >
+                {types.map(type => <option key={type}>{type}</option>)}
+              </select>
+            </div>
+          </div>
+
           <div className="filter-group date-group">
             <div className="filter-label">기간</div>
             <div className="date-range">
@@ -353,10 +312,6 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             <BiShareAlt color="black" style={{ fontSize: '14px' }} />
             공유
           </button>
-          <button className="btn-delete" onClick={handleDelete}>
-            <span className="icon-trash"></span>
-            삭제
-          </button>
         </div>
       </div>
 
@@ -383,12 +338,90 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 checked={filteredDocuments.length > 0 && selectedDocs.length === paginatedDocuments.length && paginatedDocuments.length > 0}
               />
             </div>
-            <div className="table-header-cell doc-number-cell">문서번호</div>
-            <div className="table-header-cell title-cell">제목</div>
-            <div className="table-header-cell author-cell">기안자</div>
-            <div className="table-header-cell date-cell">최근 수정일</div>
-            <div className="table-header-cell approval-date-cell">결재일</div>
-            <div className="table-header-cell status-cell">상태</div>
+            <div 
+              className="table-header-cell doc-number-cell sortable" 
+              onClick={() => handleSort('documentNumber')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="header-content">
+                <span>문서고유번호</span>
+                {sortConfig?.key === 'documentNumber' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div 
+              className="table-header-cell title-cell sortable" 
+              onClick={() => handleSort('title')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="header-content">
+                <span>문서이름</span>
+                {sortConfig?.key === 'title' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div 
+              className="table-header-cell author-cell sortable" 
+              onClick={() => handleSort('creator')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="header-content">
+                <span>생성자</span>
+                {sortConfig?.key === 'creator' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div 
+              className="table-header-cell date-cell sortable" 
+              onClick={() => handleSort('lastModified')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="header-content">
+                <span>수정시간</span>
+                {sortConfig?.key === 'lastModified' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div 
+              className="table-header-cell tag-cell sortable" 
+              onClick={() => handleSort('tag')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="header-content">
+                <span>태그</span>
+                {sortConfig?.key === 'tag' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div 
+              className="table-header-cell type-cell sortable" 
+              onClick={() => handleSort('documentType')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="header-content">
+                <span>유형</span>
+                {sortConfig?.key === 'documentType' && (
+                  <span className="sort-indicator">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           {isLoading ? (
@@ -414,14 +447,10 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
               <div className="table-cell title-cell title-bold" onClick={() => handleRowClick(doc)} style={{cursor: 'pointer'}}>
                 {doc.title}
               </div>
-              <div className="table-cell author-cell">{doc.author}</div>
+              <div className="table-cell author-cell">{doc.creator}</div>
               <div className="table-cell date-cell">{doc.lastModified}</div>
-              <div className="table-cell approval-date-cell">{doc.approvalDate}</div>
-              <div className="table-cell status-cell">
-                <div className={`status-badge ${doc.status?.toLowerCase()}`}>
-                  <div className="status-text">{doc.status}</div>
-                </div>
-              </div>
+              <div className="table-cell tag-cell">{doc.tag}</div>
+              <div className="table-cell type-cell">{doc.documentType === 'shared' ? '공유' : '개인'}</div>
             </div>
           ))
           ) : (

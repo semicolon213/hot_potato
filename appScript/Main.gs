@@ -366,6 +366,27 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    // 이메일로 사용자 이름 조회 액션 처리
+    if (req.action === 'getUserNameByEmail') {
+      console.log('👤 사용자 이름 조회 요청:', req.email);
+      try {
+        const result = getUserNameByEmail(req.email);
+        console.log('👤 사용자 이름 조회 결과:', result);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('👤 사용자 이름 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '사용자 이름 조회 중 오류가 발생했습니다: ' + error.message,
+            name: req.email // 오류 시 원본 이메일 반환
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     if (req.action === 'registerUser') {
       console.log('📝 사용자 등록 요청:', req);
       const result = handleSubmitRegistrationRequest(req);

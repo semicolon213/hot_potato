@@ -376,17 +376,22 @@ export function useTemplateUI(
                     title: selectedTemplate.title,
                     documentId: selectedTemplate.documentId,
                     type: selectedTemplate.type,
-                    templateType: selectedTemplate.documentId || selectedTemplate.type
+                    templateType: selectedTemplate.documentId || selectedTemplate.type,
+                    tag: selectedTemplate.tag
                 });
                 
-                const result = await apiClient.createDocument({
+                const documentData = {
                     title: selectedTemplate.title,
                     templateType: selectedTemplate.documentId || selectedTemplate.type,
                     creatorEmail: creatorEmail,
                     editors: allEditors,
                     role: 'student', // 기본값으로 student 설정
                     tag: selectedTemplate.tag // 태그 추가
-                });
+                };
+                
+                console.log('📄 API로 전송할 데이터:', documentData);
+                
+                const result = await apiClient.createDocument(documentData);
 
                 if (result.success && result.data) {
                     window.open(result.data.documentUrl, '_blank');
