@@ -52,6 +52,15 @@
   background-color: var(--lightgrey);
   margin-bottom: 20px;
   border-radius: var(--border-radius-md);
+  color: var(--text-light);
+}
+
+.post-view-attachment a {
+  color: var(--text-light);
+}
+
+.post-view-attachment p + p {
+  margin-top: 8px;
 }
 
 .post-view-body {
