@@ -327,7 +327,22 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                   {!isAttendeeSearchVisible && (
                     <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
                   )}
-                  <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => setSaveTarget('sheet')}>공유</button>
+                  <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => {
+                    setSaveTarget('sheet');
+                    if (user && user.userType !== 'admin' && (students.length > 0 || staff.length > 0)) {
+                        const allPeople = [...students, ...staff];
+                        const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === String(user.studentId));
+                        if (loggedInUserObject) {
+                            setSelectedAttendees(prev => {
+                                const userExists = prev.some(a => ('no_student' in a ? a.no_student : a.no) === String(user.studentId));
+                                if (!userExists) {
+                                    return [...prev, loggedInUserObject];
+                                }
+                                return prev;
+                            });
+                        }
+                    }
+                  }}>공유</button>
                 </div>
             )}
 
