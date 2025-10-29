@@ -15,6 +15,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
   const [content, setContent] = useState('');
   const [attachment, setAttachment] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [isPinned, setIsPinned] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -112,16 +113,27 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({ onPageChange,
           <div className="form-group">
             <label><BiPaperclip /> 파일 첨부</label>
             <div className="attachment-area">
-              <button onClick={triggerFileInput} className="attachment-button">
-                파일 선택
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-              {attachment && <span className="attachment-name">{attachment.name}</span>}
+              <div className="attachment-controls">
+                <button onClick={triggerFileInput} className="attachment-button">
+                  파일 선택
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                />
+                {attachment && <span className="attachment-name">{attachment.name}</span>}
+              </div>
+              <div className="pin-announcement">
+                <input
+                  type="checkbox"
+                  id="pin-checkbox"
+                  checked={isPinned}
+                  onChange={(e) => setIsPinned(e.target.checked)}
+                />
+                <label htmlFor="pin-checkbox">고정 공지사항</label>
+              </div>
             </div>
             {preview && <img src={preview} alt="첨부파일 미리보기" className="image-preview" />} 
           </div>

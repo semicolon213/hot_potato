@@ -123,8 +123,36 @@
 
 .attachment-area {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 15px;
+}
+
+.attachment-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pin-announcement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pin-announcement label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.pin-announcement input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
 }
 
 .attachment-button {
