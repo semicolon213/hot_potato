@@ -158,6 +158,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           isAuthenticated={isGoogleAuthenticatedForAnnouncements}
           announcementSpreadsheetId={announcementSpreadsheetId}
           isLoading={isAnnouncementsLoading}
+          user={user}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost 

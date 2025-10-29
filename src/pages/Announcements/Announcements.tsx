@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BiPencil } from "react-icons/bi";
 import '../../styles/pages/Announcements.css';
-import type { Post } from '../../types/app';
+import type { Post, User } from '../../types/app';
 import RightArrowIcon from '../../assets/Icons/right_black.svg';
 
 interface AnnouncementsProps {
@@ -11,6 +11,7 @@ interface AnnouncementsProps {
   isAuthenticated: boolean;
   announcementSpreadsheetId: string | null;
   isLoading: boolean;
+  user: User | null;
   "data-oid": string;
 }
 
@@ -56,7 +57,7 @@ const getPaginationNumbers = (currentPage: number, totalPages: number) => {
 };
 
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading, user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchCriteria, setSearchCriteria] = useState('title'); // 'title' or 'author'
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,7 +121,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
               }}
             />
           </div>
-          {isAuthenticated && (
+          {isAuthenticated && user && user.isAdmin && (
             <button 
               className="new-post-button" 
               onClick={() => onPageChange('new-announcement-post')}
