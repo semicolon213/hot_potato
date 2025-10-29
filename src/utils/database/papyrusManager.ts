@@ -22,10 +22,10 @@ const updateRow = async (spreadsheetId: string, sheetName: string, key: string, 
 
 // papyrus-db에 Google API 인증 설정
 const setupPapyrusAuth = () => {
-  if ((window as any).gapi && (window as any).gapi.client) {
+  if (window.gapi && window.gapi.client) {
     // papyrus-db가 gapi.client를 사용하도록 설정
     (window as any).papyrusAuth = {
-      client: (window as any).gapi.client
+      client: window.gapi.client
     };
   }
 };
@@ -49,7 +49,7 @@ let staffSpreadsheetId: string | null = null;
 export const findSpreadsheetById = async (name: string): Promise<string | null> => {
     try {
         // Google API가 초기화되지 않은 경우
-        if (!(window as any).gapi || !(window as any).gapi.client) {
+        if (!window.gapi || !window.gapi.client) {
             console.warn(`Google API가 초기화되지 않았습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
             return null;
         }
@@ -63,7 +63,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
 
         // 토큰을 gapi client에 설정
         try {
-            (window as any).gapi.client.setToken({ access_token: token });
+            window.gapi.client.setToken({ access_token: token });
             console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
         } catch (tokenError) {
             console.warn(`토큰 설정 실패:`, tokenError);
@@ -77,7 +77,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
             try {
                 console.log(`스프레드시트 '${name}' 검색 중... (시도 ${attempts + 1}/${maxAttempts})`);
                 
-                const response = await (window as any).gapi.client.drive.files.list({
+                const response = await window.gapi.client.drive.files.list({
                     q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
                     fields: 'files(id, name)'
                 });
@@ -143,7 +143,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
 
         // 토큰을 gapi client에 설정
         try {
-            (window as any).gapi.client.setToken({ access_token: token });
+            window.gapi.client.setToken({ access_token: token });
             console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
         } catch (tokenError) {
             console.warn(`토큰 설정 실패:`, tokenError);
@@ -316,6 +316,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
       date: row[5] || new Date().toISOString().slice(0, 10),
       views: parseInt(row[6] || '0', 10),
       likes: 0,
+      file_notice: row[7] || ''
     })).reverse();
     
     console.log(`Loaded ${announcements.length} announcements`);
@@ -326,26 +327,86 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
-export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
+export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }): Promise<void> => {
   setupPapyrusAuth();
+
+  const token = localStorage.getItem('googleAccessToken');
+  if (!token) {
+      throw new Error('Google Access Token not found');
+  }
+  try {
+      window.gapi.client.setToken({ access_token: token });
+  } catch (tokenError) {
+      console.error('Failed to set GAPI token:', tokenError);
+      throw new Error('Failed to set GAPI token');
+  }
+
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
+    }
+
+    let fileUrl = '';
+    if (postData.attachment) {
+      const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
+
+      const fileMetadata = {
+        name: postData.attachment.name,
+        parents: [folderId]
+      };
+
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+      form.append('file', postData.attachment);
+
+      const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+        body: form,
+      });
+
+      const uploadedFile = await uploadResponse.json();
+
+      if (uploadedFile.id) {
+          const fileId = uploadedFile.id;
+
+          await window.gapi.client.drive.permissions.create({
+              fileId: fileId,
+              resource: {
+                  role: 'reader',
+                  type: 'anyone'
+              }
+          });
+
+          const fileInfo = await window.gapi.client.drive.files.get({
+              fileId: fileId,
+              fields: 'webViewLink'
+          });
+
+          fileUrl = fileInfo.result.webViewLink;
+      } else {
+          console.error('File upload failed:', uploadedFile);
+          throw new Error('File upload failed');
+      }
     }
 
     const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
     const lastRow = data && data.values ? data.values.length : 0;
     const newPostId = `${lastRow + 1}`;
 
+    const finalContent = postData.attachment && fileUrl 
+      ? `${postData.content}\n\n<p>첨부파일: <a href="${fileUrl}" target="_blank">${postData.attachment.name}</a></p>`
+      : postData.content;
+
     const newAnnouncementForSheet = [
       newPostId,
       postData.author,
       postData.writer_id,
       postData.title,
-      postData.content,
+      finalContent,
       new Date().toISOString().slice(0, 10),
       0, // view_count
-      '' // file_notice
+      fileUrl // file_notice
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
@@ -377,7 +438,7 @@ export const incrementViewCount = async (announcementId: string): Promise<void> 
     const currentViews = parseInt(data.values[rowIndex][6] || '0', 10);
     const newViews = currentViews + 1;
 
-    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+    await window.gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: announcementSpreadsheetId,
         range: `${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}!G${rowIndex + 1}`,
         valueInputOption: 'RAW',
@@ -457,7 +518,7 @@ export const addTemplate = async (newDocData: { title: string; description: stri
     }
 
     // 1. Create a new Google Doc
-    const doc = await (window as any).gapi.client.docs.documents.create({
+    const doc = await window.gapi.client.docs.documents.create({
       title: newDocData.title,
     });
 
@@ -538,7 +599,7 @@ export const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: s
     }
 
     // Google Sheets API를 사용하여 특정 셀 업데이트
-    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+    await window.gapi.client.sheets.spreadsheets.values.update({
       spreadsheetId: hotPotatoDBSpreadsheetId,
       range: `${ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME}!G${rowIndex}`,
       valueInputOption: 'RAW',

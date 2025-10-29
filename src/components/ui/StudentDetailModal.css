@@ -223,12 +223,6 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #007bff;
-  border-width: 2px;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3), 0 2px 8px rgba(0, 123, 255, 0.15);
-  background-color: #f8f9ff;
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
   pointer-events: auto;
   user-select: text;
   -webkit-user-select: text;

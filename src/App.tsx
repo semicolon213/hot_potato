@@ -157,10 +157,33 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageFromUrl = urlParams.get('page');
+    const announcementId = urlParams.get('announcementId');
+
+    if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
+      const announcement = announcements.find(a => a.id === announcementId);
+      if (announcement) {
+        setSelectedAnnouncement(announcement);
+      }
+    }
+  }, [announcements, currentPage]);
+
   // 페이지 전환 처리
-  const handlePageChange = (pageName: string) => {
+  const handlePageChange = (pageName: string, params?: Record<string, string>) => {
     const url = new URL(window.location.toString());
     url.searchParams.set('page', pageName);
+
+    // 기존 announcementId 파라미터를 제거
+    url.searchParams.delete('announcementId');
+
+    if (params) {
+      Object.keys(params).forEach(key => {
+        url.searchParams.set(key, params[key]);
+      });
+    }
+
     window.history.pushState({}, '', url.toString());
     setCurrentPage(pageName as PageType);
   };
@@ -192,7 +215,7 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
@@ -215,7 +238,7 @@ const App: React.FC = () => {
     setAnnouncements(updatedAnnouncements);
     setSelectedAnnouncement({ ...post, views: post.views + 1 });
 
-    handlePageChange('announcement-view');
+    handlePageChange('announcement-view', { announcementId: post.id });
 
     try {
       await incrementViewCount(post.id);
