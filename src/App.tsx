@@ -33,7 +33,8 @@ import {
     fetchCalendarEvents,
     updateCalendarEvent,
     incrementViewCount,
-    updateAnnouncement
+    updateAnnouncement,
+    deleteAnnouncement
   } from './utils/database/papyrusManager';
 import { 
   addTag as addPersonalTag,
@@ -259,6 +260,22 @@ const App: React.FC = () => {
       handlePageChange('announcements');
     } catch (error) {
       console.error('Error updating announcement:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await deleteAnnouncement(announcementSpreadsheetId, announcementId);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
     }
   };
 
@@ -581,6 +598,7 @@ const App: React.FC = () => {
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
               onUpdateAnnouncement={handleUpdateAnnouncement}
+              onDeleteAnnouncement={handleDeleteAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

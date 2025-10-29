@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Post, User } from '../../types/app';
 import '../../styles/pages/AnnouncementView.css';
 import '../../styles/pages/NewAnnouncementPost.css';
@@ -8,13 +8,16 @@ interface AnnouncementViewProps {
   post: Post;
   user: User | null;
   onBack: () => void;
-  onUpdate: (announcementId: string, postData: { title: string; content: string; }) => Promise<void>;
+  onUpdate: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; }) => Promise<void>;
+  onDelete: (announcementId: string) => Promise<void>;
 }
 
-const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack, onUpdate }) => {
+const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(post.title);
   const [editedContent, setEditedContent] = useState('');
+  const [newAttachment, setNewAttachment] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [mainContent, setMainContent] = useState('');
   const [attachmentHtml, setAttachmentHtml] = useState<string | null>(null);
@@ -33,7 +36,10 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     if (html) {
       const nameMatch = html.match(/>(.*?)</);
       setAttachmentName(nameMatch ? nameMatch[1] : '파일');
+    } else {
+      setAttachmentName(null);
     }
+    setNewAttachment(null);
   }, [post.content]);
 
   const isAuthor = String(user?.studentId) === post.writer_id;
@@ -43,16 +49,51 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   };
 
   const handleSave = () => {
-    const newContent = attachmentHtml ? `${editedContent}\n\n${attachmentHtml}` : editedContent;
-    onUpdate(post.id, { title: editedTitle, content: newContent });
+    let contentToSave = editedContent;
+    // If there is no new attachment, but there was an old one, re-attach the old html
+    if (!newAttachment && attachmentHtml) {
+      contentToSave = `${editedContent}\n\n${attachmentHtml}`;
+    }
+
+    onUpdate(post.id, { 
+      title: editedTitle, 
+      content: contentToSave, 
+      attachment: newAttachment 
+    });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setEditedTitle(post.title);
     setEditedContent(mainContent);
+    setNewAttachment(null);
     setIsEditing(false);
   };
+
+  const handleDelete = () => {
+    if (window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      onDelete(post.id);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewAttachment(e.target.files[0]);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeAttachment = () => {
+    setNewAttachment(null);
+    setAttachmentName(null);
+    setAttachmentHtml(null);
+    if(fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
 
   if (isEditing) {
     return (
@@ -94,16 +135,28 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
               ></textarea>
             </div>
 
-            {attachmentName && (
-              <div className="form-group">
-                <label><BiPaperclip /> 파일 첨부</label>
-                <div className="attachment-area">
-                  <div className="attachment-controls">
-                    <span className="attachment-name">{attachmentName}</span>
-                  </div>
+            <div className="form-group">
+              <label><BiPaperclip /> 파일 첨부</label>
+              <div className="attachment-area">
+                <div className="attachment-controls">
+                  <button onClick={triggerFileInput} className="attachment-button">
+                    파일 선택
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                  {(newAttachment || attachmentName) &&
+                    <div className='attachment-info'>
+                      <span className="attachment-name">{newAttachment?.name || attachmentName}</span>
+                      <button onClick={removeAttachment} className='remove-attachment-button'><BiX/></button>
+                    </div>
+                  }
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="card-footer">
@@ -121,7 +174,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
         {isAuthor && (
           <div className="post-view-actions">
             <button onClick={handleEdit} className="edit-button">수정</button>
-            <button className="delete-button">삭제</button>
+            <button onClick={handleDelete} className="delete-button">삭제</button>
           </div>
         )}
       </div>

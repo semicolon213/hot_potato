@@ -490,6 +490,33 @@ export const updateAnnouncement = async (announcementId: string, postData: { tit
   }
 };
 
+export const deleteAnnouncement = async (announcementSpreadsheetId: string, announcementId: string): Promise<void> => {
+  try {
+    if (!announcementSpreadsheetId) {
+      throw new Error('Announcement spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
+    if (!data || !data.values) {
+      throw new Error('Could not get sheet data');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === announcementId);
+    if (rowIndex === -1) {
+      throw new Error(`Announcement with ID ${announcementId} not found in sheet.`);
+    }
+
+    // Assuming the announcement sheet is the first sheet (sheetId = 0)
+    const sheetId = 0; 
+    await deleteRow(announcementSpreadsheetId, sheetId, rowIndex);
+
+    console.log(`Announcement ${announcementId} deleted successfully`);
+  } catch (error) {
+    console.error('Error deleting announcement:', error);
+    throw error;
+  }
+};
+
 // 템플릿 관련 함수들
 export const fetchTemplates = async (): Promise<Template[]> => {
   try {
