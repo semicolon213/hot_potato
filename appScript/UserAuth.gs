@@ -7,6 +7,99 @@
 // ===== 사용자 인증 관련 함수들 =====
 
 /**
+ * 이메일로 사용자 이름 조회
+ * @param {string} email - 사용자 이메일
+ * @returns {Object} 사용자 이름 정보
+ */
+function getUserNameByEmail(email) {
+  try {
+    console.log('👤 이메일로 사용자 이름 조회 시작:', email);
+    
+    if (!email) {
+      return {
+        success: false,
+        message: '이메일이 필요합니다.',
+        name: email
+      };
+    }
+    
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
+      return {
+        success: false,
+        message: '스프레드시트를 찾을 수 없습니다.',
+        name: email
+      };
+    }
+    const spreadsheetId = spreadsheet.getId();
+    
+    const sheetName = 'user';  // 스프레드시트의 시트명이 'user'
+    const data = getSheetData(spreadsheetId, sheetName, 'A:G');  // G열까지 포함
+    
+    if (!data || data.length <= 1) {
+      console.log('👤 사용자 데이터가 없습니다.');
+      return {
+        success: true,
+        name: email,  // 이름을 찾을 수 없으면 이메일 반환
+        message: '사용자 데이터를 찾을 수 없습니다.'
+      };
+    }
+    
+    const header = data[0];
+    console.log('👤 스프레드시트 헤더:', header);
+    
+    const users = data.slice(1).map(row => {
+      const user = {};
+      header.forEach((key, index) => {
+        user[key] = row[index];
+      });
+      return user;
+    });
+    
+    console.log('👤 전체 사용자 수:', users.length);
+    console.log('👤 첫 번째 사용자 샘플:', users[0]);
+    
+    // 암호화된 이메일로 비교
+    const encryptedEmail = applyEncryption(email, 'Base64', '');
+    console.log('👤 원본 이메일:', email);
+    console.log('👤 암호화된 이메일:', encryptedEmail);
+    
+    const user = users.find(u => u.google_member === encryptedEmail);
+    
+    if (!user) {
+      console.log('👤 해당 이메일의 사용자를 찾을 수 없습니다.');
+      console.log('👤 사용 가능한 google_member 값들:', users.map(u => u.google_member).slice(0, 3));
+      return {
+        success: true,
+        name: email,  // 사용자를 찾을 수 없으면 이메일 반환
+        message: '해당 이메일의 사용자를 찾을 수 없습니다.'
+      };
+    }
+    
+    // 사용자 이름 반환 (name_member 컬럼 사용)
+    const userName = user.name_member || user.name || user.Name || user.username || user.Username || email;
+    
+    console.log('👤 사용자 이름 조회 성공:', email, '->', userName);
+    
+    return {
+      success: true,
+      name: userName,
+      message: '사용자 이름을 성공적으로 조회했습니다.',
+      user: user
+    };
+    
+  } catch (error) {
+    console.error('👤 사용자 이름 조회 오류:', error);
+    return {
+      success: false,
+      message: '사용자 이름 조회 중 오류가 발생했습니다: ' + error.message,
+      name: email  // 오류 시 이메일 반환
+    };
+  }
+}
+
+/**
  * 사용자 상태 확인
  * @param {string} email - 사용자 이메일
  * @returns {Object} 사용자 상태 정보

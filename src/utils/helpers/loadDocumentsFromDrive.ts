@@ -8,11 +8,40 @@ import { generateDocumentNumber } from "./documentNumberGenerator";
 import type { DocumentInfo, GoogleFile } from "../../types/documents";
 import { findPersonalDocumentFolder } from "../google/googleSheetUtils";
 import { formatDateTime } from "./timeUtils";
+import { apiClient } from "../api/apiClient";
 
 export interface FileWithDescription {
   id: string;
   name: string;
   description?: string;
+}
+
+/**
+ * 이메일을 사용자 이름으로 변환
+ * @param email - 이메일 주소
+ * @returns 사용자 이름 또는 원본 이메일
+ */
+async function convertEmailToName(email: string): Promise<string> {
+  try {
+    // 이메일 형식이 아닌 경우 그대로 반환
+    if (!email || !email.includes('@')) {
+      return email;
+    }
+    
+    const response = await apiClient.getUserNameByEmail(email);
+    console.log('👤 API 응답:', response);
+    
+    if (response.success && response.name) {
+      console.log('👤 사용자 이름 변환 성공:', email, '->', response.name);
+      return response.name;
+    }
+    
+    console.log('👤 사용자 이름 변환 실패, 원본 이메일 반환:', email);
+    return email; // 변환 실패 시 원본 이메일 반환
+  } catch (error) {
+    console.warn('이메일을 사용자 이름으로 변환 실패:', email, error);
+    return email; // 오류 시 원본 이메일 반환
+  }
 }
 
 /**
@@ -116,11 +145,15 @@ export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
         metadataTag
       });
       
+      // 생성자 이름 변환 (이메일인 경우 사용자 이름으로 변환)
+      const rawCreator = metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
+      const creatorName = await convertEmailToName(rawCreator);
+      
       documents.push({
         id: fileWithProperties.id || '',
         documentNumber: generateDocumentNumber(fileWithProperties.mimeType || '', 'shared', fileWithProperties.id, fileWithProperties.createdTime),
         title: fileWithProperties.name || '', // 원본 파일명 그대로 사용
-        creator: metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음',
+        creator: creatorName, // 변환된 사용자 이름 사용
         lastModified: formatDateTime(fileWithProperties.modifiedTime || new Date().toISOString()),
         createdTime: fileWithProperties.createdTime || '', // 생성 시간 추가
         url: fileWithProperties.webViewLink || '',
@@ -234,11 +267,15 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
         metadataTag
       });
       
+      // 생성자 이름 변환 (이메일인 경우 사용자 이름으로 변환)
+      const rawCreator = metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
+      const creatorName = await convertEmailToName(rawCreator);
+      
       documents.push({
         id: fileWithProperties.id || '',
         documentNumber: generateDocumentNumber(fileWithProperties.mimeType || '', 'personal', fileWithProperties.id, fileWithProperties.createdTime),
         title: fileWithProperties.name || '', // 원본 파일명 그대로 사용
-        creator: metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음',
+        creator: creatorName, // 변환된 사용자 이름 사용
         lastModified: formatDateTime(fileWithProperties.modifiedTime || new Date().toISOString()),
         url: fileWithProperties.webViewLink || '',
         documentType: 'personal',

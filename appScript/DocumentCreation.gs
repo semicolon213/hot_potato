@@ -37,14 +37,21 @@ function handleCreateDocument(req) {
     const documentId = document.data.id;
     const documentUrl = document.data.webViewLink;
     
+    // 이메일로 사용자 이름 조회
+    const userNameResult = getUserNameByEmail(creatorEmail);
+    const creatorName = userNameResult.success ? userNameResult.name : creatorEmail;
+    console.log('📄 생성자 이름 조회 결과:', creatorEmail, '->', creatorName);
+    
     // 문서 메타데이터에 생성자 정보 및 태그 추가 (Google Drive API 사용)
     let metadataStatus = '';
     let metadataError = null;
     let verifiedProperties = null;
     
     try {
+      
       const properties = {
-        'creator': creatorEmail,
+        'creator': creatorName,  // 이메일 대신 사용자 이름 저장
+        'creatorEmail': creatorEmail,  // 원본 이메일도 함께 저장
         'createdDate': new Date().toLocaleString('ko-KR')
       };
       
@@ -89,7 +96,7 @@ function handleCreateDocument(req) {
     let descriptionStatus = '';
     let descriptionError = null;
     try {
-      const description = `생성자: ${creatorEmail} | 생성일: ${new Date().toLocaleString('ko-KR')}${tag ? ` | Tag: ${tag}` : ''}`;
+      const description = `생성자: ${creatorName} | 생성일: ${new Date().toLocaleString('ko-KR')}${tag ? ` | Tag: ${tag}` : ''}`;
       
       // Google Drive API로 설명 업데이트
       Drive.Files.update(
@@ -113,11 +120,17 @@ function handleCreateDocument(req) {
       return permissionResult;
     }
     
-    // 3. 적절한 폴더에 문서 이동
-    const moveResult = moveDocumentToFolder(documentId, documentType);
-    if (!moveResult.success) {
-      console.warn('문서 폴더 이동 실패:', moveResult.message);
-      // 폴더 이동 실패해도 문서 생성은 성공으로 처리
+    // 3. 적절한 폴더에 문서 이동 (필요한 경우에만)
+    let moveResult = { success: true, message: '폴더 이동 불필요' };
+    if (document.needsFolderMove !== false) {
+      console.log('📄 문서 폴더 이동 필요:', document.needsFolderMove);
+      moveResult = moveDocumentToFolder(documentId, documentType);
+      if (!moveResult.success) {
+        console.warn('문서 폴더 이동 실패:', moveResult.message);
+        // 폴더 이동 실패해도 문서 생성은 성공으로 처리
+      }
+    } else {
+      console.log('📄 템플릿 복사로 이미 올바른 폴더에 생성됨, 폴더 이동 생략');
     }
     
     // 4. 문서 정보를 스프레드시트에 추가
@@ -144,6 +157,7 @@ function handleCreateDocument(req) {
         descriptionError: descriptionError,
         tag: tag,
         creatorEmail: creatorEmail,
+        creatorName: creatorName,  // 사용자 이름 추가
         documentId: documentId,
         verifiedProperties: verifiedProperties,
         documentType: documentType,
@@ -220,7 +234,8 @@ function createGoogleDocument(title, templateType) {
             id: copiedFile.id,
             name: title,
             webViewLink: `https://docs.google.com/document/d/${copiedFile.id}/edit`
-          }
+          },
+          needsFolderMove: false  // 이미 올바른 폴더에 생성됨
         };
       } catch (copyError) {
         console.error('📄 템플릿 복사 실패:', copyError);
@@ -243,7 +258,8 @@ function createGoogleDocument(title, templateType) {
         id: file.id,
         name: file.name,
         webViewLink: `https://docs.google.com/document/d/${file.id}/edit`
-      }
+      },
+      needsFolderMove: true  // 빈 문서는 폴더 이동 필요
     };
     
   } catch (error) {

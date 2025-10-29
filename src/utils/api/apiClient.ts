@@ -210,6 +210,11 @@ export class ApiClient {
     return this.request('createDocument', documentData);
   }
 
+  // 이메일로 사용자 이름 조회
+  async getUserNameByEmail(email: string) {
+    return this.request('getUserNameByEmail', { email });
+  }
+
   async getTemplates() {
     return this.request('getTemplates');
   }
