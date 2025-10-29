@@ -186,13 +186,25 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   }, [attendeeSearchTerm, students, staff]);
 
   const handleSelectAttendee = (person: Student | Staff) => {
-    if (!selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no))) {
-        setSelectedAttendees([...selectedAttendees, person]);
+    const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
+
+    if (isSelected) {
+      // Before removing, check if it's the logged-in user and not an admin
+      if (user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId)) {
+        return; // Don't allow removal
+      }
+      handleRemoveAttendee(person);
+    } else {
+      setSelectedAttendees([...selectedAttendees, person]);
     }
     setAttendeeSearchTerm('');
   };
 
   const handleRemoveAttendee = (personToRemove: Student | Staff) => {
+    if (user && user.userType !== 'admin' && ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no) === String(user.studentId)) {
+      // Prevent removal of self if not an admin
+      return;
+    }
     setSelectedAttendees(selectedAttendees.filter(a => ('no_student' in a ? a.no_student : a.no) !== ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no)));
   };
 
@@ -446,16 +458,17 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                 <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
                   {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
                 </button>
-                {isAttendeeSearchVisible && (
-                  <div className="selected-attendees-list">
-                    {selectedAttendees.map(person => (
-                      <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
-                        <span>{person.name}</span>
-                        <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="selected-attendees-list">
+                  {selectedAttendees.map(person => (
+                    <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
+                      <span>{person.name}</span>
+                      <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="selected-attendees-count">
+                  선택된 참석자: {selectedAttendees.length}명
+                </div>
               </div>
             )}
           </div>
@@ -474,11 +487,15 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               ) : (
                 filteredAttendees.length > 0 ? (
                   <ul>
-                    {filteredAttendees.map(person => (
-                      <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
-                        {person.name} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
-                      </li>
-                    ))}
+                    {filteredAttendees.map(person => {
+                      const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
+                      return (
+                        <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
+                          {person.name} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
+                          {isSelected && <span className="checkmark-icon">✓</span>}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p>{attendeeSearchTerm.trim() !== '' ? '검색 결과가 없습니다.' : '전체 목록이 표시됩니다.'}</p>

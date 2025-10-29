@@ -86,10 +86,22 @@
 }
 
 .attendee-results-list li {
+  display: flex;
+  align-items: center;
   padding: 10px 12px;
   font-size: 14px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
+  position: relative; /* For absolute positioning of the checkmark */
+}
+
+.checkmark-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-weight: bold;
 }
 
 .attendee-results-list li:last-child {
@@ -367,4 +379,17 @@
     align-items: center;
     gap: 8px;
     font-size: 14px;
+}
+
+.checkmark-icon {
+  margin-left: auto;
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+.selected-attendees-count {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-medium);
+  text-align: right;
 }
