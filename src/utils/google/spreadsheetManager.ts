@@ -26,8 +26,13 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
         }
 
         const response = await (window as any).gapi.client.drive.files.list({
-            q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
-            fields: 'files(id, name)'
+            q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+            fields: 'files(id,name,owners,parents)',
+            orderBy: 'name',
+            spaces: 'drive',
+            includeItemsFromAllDrives: true,
+            supportsAllDrives: true,
+            corpora: 'allDrives'
         });
         
         if (response.result.files && response.result.files.length > 0) {

@@ -45,6 +45,7 @@ export interface DocumentInfo {
   documentNumber: string; // 문서고유번호 (생성날짜+파일타입+유형 조합)
   title: string; // 문서이름
   creator: string; // 생성자
+  creatorEmail?: string; // 생성자 이메일(옵션)
   lastModified: string; // 수정시간
   url: string;
   documentType: 'shared' | 'personal'; // 공유문서/개인문서 구분

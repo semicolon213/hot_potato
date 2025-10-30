@@ -6,7 +6,6 @@
 
 import { generateDocumentNumber } from "./documentNumberGenerator";
 import type { DocumentInfo, GoogleFile } from "../../types/documents";
-import { findPersonalDocumentFolder } from "../google/googleSheetUtils";
 import { formatDateTime } from "./timeUtils";
 import { apiClient } from "../api/apiClient";
 
@@ -31,9 +30,10 @@ async function convertEmailToName(email: string): Promise<string> {
     const response = await apiClient.getUserNameByEmail(email);
     console.log('👤 API 응답:', response);
     
-    if (response.success && response.name) {
-      console.log('👤 사용자 이름 변환 성공:', email, '->', response.name);
-      return response.name;
+    const resolvedName = (response as any).name || (response as any).data?.name;
+    if (response.success && resolvedName) {
+      console.log('👤 사용자 이름 변환 성공:', email, '->', resolvedName);
+      return resolvedName;
     }
     
     console.log('👤 사용자 이름 변환 실패, 원본 이메일 반환:', email);
@@ -49,126 +49,37 @@ async function convertEmailToName(email: string): Promise<string> {
  * @returns 문서 목록
  */
 export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
-  const gapi = window.gapi;
-  
-  if (!gapi?.client?.drive) {
-    console.error('Google Drive API가 초기화되지 않았습니다.');
-    return [];
-  }
-
   try {
-    // 1단계: hot potato 폴더 찾기
-    const hotPotatoResponse = await gapi.client.drive.files.list({
-      q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
-      fields: 'files(id,name)',
-      spaces: 'drive',
-      orderBy: 'name'
-    });
-
-    if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
-      console.log('hot potato 폴더를 찾을 수 없습니다');
+    const result = await apiClient.getDocuments({ role: 'shared' });
+    if (!result.success) {
+      console.warn('공유 문서 API 실패:', result.message || result.error);
       return [];
     }
 
-    const hotPotatoFolder = hotPotatoResponse.result.files[0];
-
-    // 2단계: 문서 폴더 찾기
-    const documentResponse = await gapi.client.drive.files.list({
-      q: `'${hotPotatoFolder.id}' in parents and name='문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: 'files(id,name)',
-      spaces: 'drive',
-      orderBy: 'name'
-    });
-
-    if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
-      console.log('문서 폴더를 찾을 수 없습니다');
-      return [];
-    }
-
-    const documentFolder = documentResponse.result.files[0];
-
-    // 3단계: 공유 문서 폴더 찾기
-    const sharedDocResponse = await gapi.client.drive.files.list({
-      q: `'${documentFolder.id}' in parents and name='공유 문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: 'files(id,name)',
-      spaces: 'drive',
-      orderBy: 'name'
-    });
-
-    if (!sharedDocResponse.result.files || sharedDocResponse.result.files.length === 0) {
-      console.log('공유 문서 폴더를 찾을 수 없습니다');
-      return [];
-    }
-
-    const sharedDocFolder = sharedDocResponse.result.files[0];
-
-    // 4단계: 공유 문서 폴더에서 파일 목록 가져오기 (메타데이터 포함)
-    const filesResponse = await gapi.client.drive.files.list({
-      q: `'${sharedDocFolder.id}' in parents and trashed=false`,
-      fields: 'files(id,name,mimeType,modifiedTime,createdTime,owners,webViewLink,description,properties)',
-      spaces: 'drive',
-      orderBy: 'modifiedTime desc'
-    });
-
-    if (!filesResponse.result.files || filesResponse.result.files.length === 0) {
-      console.log('공유 문서 폴더가 비어있습니다');
-      return [];
-    }
-
-    // 파일 정보를 DocumentInfo로 변환
-    const documents: DocumentInfo[] = [];
-    
-    for (let i = 0; i < filesResponse.result.files.length; i++) {
-      const file = filesResponse.result.files[i];
-      
-      // 각 파일의 상세 정보를 개별적으로 가져오기 (properties 포함)
-      let fileWithProperties;
-      try {
-        const detailResponse = await gapi.client.drive.files.get({
-          fileId: file.id,
-          fields: 'id,name,mimeType,modifiedTime,createdTime,owners,webViewLink,description,properties'
-        });
-        fileWithProperties = detailResponse.result;
-      } catch (error) {
-        console.warn(`파일 ${file.name} 상세 정보 가져오기 실패:`, error);
-        fileWithProperties = file; // 기본 정보만 사용
-      }
-      
-      // 메타데이터에서 정보 추출
-      const metadataCreator = fileWithProperties.properties?.creator;
-      const metadataTag = fileWithProperties.properties?.tag;
-      
-      console.log(`📄 파일 ${i + 1} 메타데이터:`, {
-        fileName: fileWithProperties.name,
-        properties: fileWithProperties.properties,
-        metadataCreator,
-        metadataTag
-      });
-      
-      // 생성자 이름 변환 (이메일인 경우 사용자 이름으로 변환)
-      const rawCreator = metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
-      const creatorName = await convertEmailToName(rawCreator);
-      
-      documents.push({
-        id: fileWithProperties.id || '',
-        documentNumber: generateDocumentNumber(fileWithProperties.mimeType || '', 'shared', fileWithProperties.id, fileWithProperties.createdTime),
-        title: fileWithProperties.name || '', // 원본 파일명 그대로 사용
-        creator: creatorName, // 변환된 사용자 이름 사용
-        lastModified: formatDateTime(fileWithProperties.modifiedTime || new Date().toISOString()),
-        createdTime: fileWithProperties.createdTime || '', // 생성 시간 추가
-        url: fileWithProperties.webViewLink || '',
+    const rows = (result.data || []) as any[];
+    const documents: DocumentInfo[] = rows.map((row: any, index: number) => {
+      const mimeType = row.mimeType || row.type || '';
+      const created = row.createdTime || row.created_at || undefined;
+      const id = row.id || row.documentId || row.fileId || '';
+      const url = row.url || row.webViewLink || (id ? `https://docs.google.com/document/d/${id}/edit` : '');
+      return {
+        id,
+        documentNumber: row.documentNumber || generateDocumentNumber(mimeType, 'shared', id, created),
+        title: row.title || row.name || '',
+        creator: row.creator || row.author || '',
+        creatorEmail: row.authorEmail || row.creatorEmail || '',
+        lastModified: row.lastModified || row.modifiedTime || formatDateTime(new Date().toISOString()),
+        url,
         documentType: 'shared',
-        mimeType: fileWithProperties.mimeType || '',
-        originalIndex: i,
-        tag: metadataTag || '공용' // 메타데이터 태그 또는 기본 '공용' 태그
-      });
-    }
+        mimeType,
+        tag: row.tag || '공용',
+        originalIndex: index,
+      };
+    });
 
-    console.log('공유 문서 로드 완료:', documents.length, '개');
     return documents;
-
   } catch (error) {
-    console.error('공유 문서 로드 오류:', error);
+    console.error('공유 문서 로드(API) 오류:', error);
     return [];
   }
 };
@@ -178,7 +89,7 @@ export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
  * @returns 문서 목록
  */
 export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
-  const gapi = window.gapi;
+  const gapi = (window as any).gapi;
   
   if (!gapi?.client?.drive) {
     console.error('Google Drive API가 초기화되지 않았습니다.');
@@ -216,17 +127,24 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
 
     const documentFolder = documentResponse.result.files[0];
 
-    // 3단계: 개인 문서 폴더 찾기 (기존 유틸리티 사용)
-    const personalDocFolderId = await findPersonalDocumentFolder();
+    // 3단계: 개인 문서 폴더 찾기
+    const personalDocResponse = await gapi.client.drive.files.list({
+      q: `'${documentFolder.id}' in parents and name='개인 문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
 
-    if (!personalDocFolderId) {
+    if (!personalDocResponse.result.files || personalDocResponse.result.files.length === 0) {
       console.log('개인 문서 폴더를 찾을 수 없습니다');
       return [];
     }
 
+    const personalDocFolder = personalDocResponse.result.files[0];
+
     // 4단계: 개인 문서 폴더에서 파일 목록 가져오기 (메타데이터 포함)
     const filesResponse = await gapi.client.drive.files.list({
-      q: `'${personalDocFolderId}' in parents and trashed=false`,
+      q: `'${personalDocFolder.id}' in parents and trashed=false`,
       fields: 'files(id,name,mimeType,modifiedTime,createdTime,owners,webViewLink,description,properties)',
       spaces: 'drive',
       orderBy: 'modifiedTime desc'
@@ -237,13 +155,10 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
       return [];
     }
 
-    // 파일 정보를 DocumentInfo로 변환
     const documents: DocumentInfo[] = [];
-    
     for (let i = 0; i < filesResponse.result.files.length; i++) {
       const file = filesResponse.result.files[i];
-      
-      // 각 파일의 상세 정보를 개별적으로 가져오기 (properties 포함)
+
       let fileWithProperties;
       try {
         const detailResponse = await gapi.client.drive.files.get({
@@ -253,41 +168,30 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
         fileWithProperties = detailResponse.result;
       } catch (error) {
         console.warn(`개인 파일 ${file.name} 상세 정보 가져오기 실패:`, error);
-        fileWithProperties = file; // 기본 정보만 사용
+        fileWithProperties = file;
       }
-      
-      // 메타데이터에서 정보 추출
+
       const metadataCreator = fileWithProperties.properties?.creator;
       const metadataTag = fileWithProperties.properties?.tag;
-      
-      console.log(`📄 개인 파일 ${i + 1} 메타데이터:`, {
-        fileName: fileWithProperties.name,
-        properties: fileWithProperties.properties,
-        metadataCreator,
-        metadataTag
-      });
-      
-      // 생성자 이름 변환 (이메일인 경우 사용자 이름으로 변환)
+
       const rawCreator = metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
       const creatorName = await convertEmailToName(rawCreator);
-      
+
       documents.push({
         id: fileWithProperties.id || '',
         documentNumber: generateDocumentNumber(fileWithProperties.mimeType || '', 'personal', fileWithProperties.id, fileWithProperties.createdTime),
-        title: fileWithProperties.name || '', // 원본 파일명 그대로 사용
-        creator: creatorName, // 변환된 사용자 이름 사용
+        title: fileWithProperties.name || '',
+        creator: creatorName,
         lastModified: formatDateTime(fileWithProperties.modifiedTime || new Date().toISOString()),
-        url: fileWithProperties.webViewLink || '',
+        url: fileWithProperties.webViewLink || (fileWithProperties.id ? `https://docs.google.com/document/d/${fileWithProperties.id}/edit` : ''),
         documentType: 'personal',
         mimeType: fileWithProperties.mimeType || '',
         originalIndex: i,
-        tag: metadataTag || '개인' // 메타데이터 태그 또는 기본 '개인' 태그
+        tag: metadataTag || '개인'
       });
     }
 
-    console.log('개인 문서 로드 완료:', documents.length, '개');
     return documents;
-
   } catch (error) {
     console.error('개인 문서 로드 오류:', error);
     return [];

@@ -72,8 +72,13 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
 
   try {
     const response = await (window as any).gapi.client.drive.files.list({
-      q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
-      fields: 'files(id, name)',
+      q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+      fields: 'files(id,name,owners,parents)',
+      orderBy: 'name',
+      spaces: 'drive',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      corpora: 'allDrives'
     });
     const files = response.result.files;
     if (files && files.length > 0) {

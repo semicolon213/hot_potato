@@ -104,9 +104,119 @@ function handleGetDocuments(req) {
   try {
     console.log('📄 문서 목록 조회 시작:', req);
     
-    const { role, searchTerm, author, sortBy, page, limit } = req;
+    const { role, searchTerm, author, sortBy } = req;
+    // 기본 페이지네이션 값 보정
+    const page = req.page ? Number(req.page) : 1;
+    const limit = req.limit ? Number(req.limit) : 100;
+
+    // 1) Drive 폴더 기반 조회 (공유 전용)
+    if (role === 'shared') {
+      console.log('📁 Drive 폴더 기반 조회 모드:', role);
+
+      // 폴더 경로 결정
+      var folderPath = (typeof getSharedDocumentFolderPath === 'function' ? getSharedDocumentFolderPath() : 'hot potato/문서/공유 문서');
+
+      // 폴더 찾기/생성
+      var folderResult = null;
+      try {
+        folderResult = findOrCreateFolder(folderPath);
+      } catch (findErr) {
+        console.error('📁 폴더 탐색 오류:', findErr);
+        folderResult = { success: false };
+      }
+
+      if (!folderResult || !folderResult.success || !folderResult.data || !folderResult.data.id) {
+        return { success: true, data: [], total: 0, message: '대상 폴더를 찾을 수 없습니다.' };
+      }
+
+      const targetFolderId = folderResult.data.id;
+      console.log('📁 대상 폴더 ID:', targetFolderId);
+
+      // 폴더 내 파일 조회
+      var files;
+      try {
+        files = Drive.Files.list({
+          q: "'" + targetFolderId + "' in parents and trashed=false",
+          fields: 'files(id,name,mimeType,modifiedTime,createdTime,owners,webViewLink,properties)',
+          orderBy: 'modifiedTime desc'
+        });
+      } catch (listErr) {
+        console.error('📁 파일 목록 조회 오류:', listErr);
+        files = { files: [] };
+      }
+
+      var items = (files.files || []).map(function(file, index) {
+        var creatorRaw = (file.properties && file.properties.creator) 
+          || (file.owners && file.owners.length > 0 && (file.owners[0].displayName || file.owners[0].emailAddress))
+          || '';
+        // 이메일이면 이름 변환 시도
+        var creator = creatorRaw;
+        var creatorEmail = '';
+        try {
+          if (creatorRaw && typeof creatorRaw === 'string' && creatorRaw.indexOf('@') !== -1) {
+            creatorEmail = creatorRaw;
+            var nameResult = getUserNameByEmail(creatorRaw);
+            if (nameResult && nameResult.success && nameResult.name) {
+              creator = nameResult.name;
+            }
+          }
+        } catch (nameErr) {
+          // 변환 실패 시 원본 유지
+        }
+        var tag = (file.properties && file.properties.tag) || '공용';
+        return {
+          id: file.id,
+          documentNumber: '', // 프론트에서 보완 생성 가능
+          title: file.name || '',
+          author: creator,
+          authorEmail: creatorEmail,
+          createdTime: file.createdTime || '',
+          lastModified: file.modifiedTime || '',
+          url: file.webViewLink || '',
+          mimeType: file.mimeType || '',
+          tag: tag,
+          originalIndex: index
+        };
+      });
+
+      // 검색/필터
+      if (searchTerm) {
+        var lower = String(searchTerm).toLowerCase();
+        items = items.filter(function(doc){
+          return (doc.title || '').toLowerCase().indexOf(lower) !== -1
+            || (doc.documentNumber || '').toLowerCase().indexOf(lower) !== -1;
+        });
+      }
+      if (author && author !== '전체') {
+        items = items.filter(function(doc){ return doc.author === author; });
+      }
+
+      // 정렬
+      if (sortBy === '최신순') {
+        items.sort(function(a,b){ return new Date(b.lastModified) - new Date(a.lastModified); });
+      } else if (sortBy === '오래된순') {
+        items.sort(function(a,b){ return new Date(a.lastModified) - new Date(b.lastModified); });
+      } else if (sortBy === '제목순') {
+        items.sort(function(a,b){ return String(a.title).localeCompare(String(b.title)); });
+      }
+
+      // 페이지네이션
+      var totalDrive = items.length;
+      var start = (page - 1) * limit;
+      var end = start + limit;
+      var pageItems = items.slice(start, end);
+
+      return {
+        success: true,
+        data: pageItems,
+        total: totalDrive,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(totalDrive / limit)
+      };
+    }
     
-    // 역할에 따른 스프레드시트 선택
+    // 2) 스프레드시트 기반 조회 (기존 로직)
     const spreadsheetName = getSpreadsheetNameByRole(role);
     const spreadsheetId = getSheetIdByName(spreadsheetName);
     
