@@ -171,7 +171,7 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
         fileWithProperties = file;
       }
 
-      const metadataCreator = fileWithProperties.properties?.creator;
+      const metadataCreator = fileWithProperties.properties?.creatorEmail || fileWithProperties.properties?.creator;
       const metadataTag = fileWithProperties.properties?.tag;
 
       const rawCreator = metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';

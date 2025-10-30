@@ -196,18 +196,13 @@ function getTemplatesFromFolder() {
     
     // 템플릿 정보 파싱 (기본 템플릿은 파일명 방식 유지)
     const templates = files.files.map(file => {
-      // 파일 제목에서 태그 추출 (예: "회의 / 회의록 / 회의 내용을 기록하는 템플릿" -> "회의")
-      const titleParts = file.name.split(' / ');
-      const tag = titleParts.length > 1 ? titleParts[0] : '기본';
-      const displayTitle = titleParts.length > 1 ? titleParts[1] : file.name;
-      const description = titleParts.length > 2 ? titleParts[2] : (file.description || '템플릿 파일');
-      
+      const p = file.properties || {};
       return {
         id: file.id,
-        type: file.id, // documentId를 type으로 사용
-        title: displayTitle,
-        description: description,
-        tag: tag,
+        type: file.id,
+        title: file.name,
+        description: p.description || file.description || '템플릿 파일',
+        tag: p.tag || '기본',
         fullTitle: file.name,
         modifiedDate: file.modifiedTime,
         owner: file.owners && file.owners.length > 0 ? file.owners[0].displayName : 'Unknown'
@@ -231,6 +226,147 @@ function getTemplatesFromFolder() {
       message: '템플릿 목록을 가져오는 중 오류가 발생했습니다: ' + error.message,
       debugInfo: debugInfo
     };
+  }
+}
+
+/**
+ * 공유 템플릿 업로드(파일 업로드 + properties 저장 + 폴더 이동)
+ * req: { fileName, fileMimeType, fileContentBase64, meta: { title, description, tag, creatorEmail } }
+ */
+function uploadSharedTemplate(req) {
+  try {
+    if (!req || !req.fileName || !req.fileContentBase64) {
+      return { success: false, message: 'fileName과 fileContentBase64가 필요합니다.' };
+    }
+    // 권한 검증: 관리자만 허용
+    var creatorEmail = (req.meta && req.meta.creatorEmail) || '';
+    var status = checkUserStatus(creatorEmail);
+    if (!status.success || !status.data || !status.data.user || status.data.user.is_admin !== 'O') {
+      return { success: false, message: '관리자만 템플릿을 업로드할 수 있습니다.' };
+    }
+
+    // 입력 검증/정규화
+    var sanitize = function(s){
+      if (!s) return '';
+      s = String(s);
+      s = s.replace(/[<>"'\\]/g, '');
+      return s.substring(0, 200);
+    };
+
+    var safeTitle = sanitize((req.meta && req.meta.title) || req.fileName);
+    var safeDesc = sanitize((req.meta && req.meta.description) || '');
+    var safeTag = sanitize((req.meta && req.meta.tag) || '기본');
+    var mime = req.fileMimeType || '';
+    var allowed = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.ms-excel'];
+    if (mime && allowed.indexOf(mime) === -1) {
+      return { success: false, message: '지원되지 않는 파일 형식입니다.' };
+    }
+    if (req.fileContentBase64.length > 12 * 1024 * 1024) { // ~12MB base64 길이 보호
+      return { success: false, message: '파일이 너무 큽니다.' };
+    }
+
+    if (typeof Drive === 'undefined') {
+      return { success: false, message: 'Drive API가 활성화되지 않았습니다.' };
+    }
+
+    var bytes = Utilities.base64Decode(req.fileContentBase64);
+    var blob = Utilities.newBlob(bytes, mime || 'application/octet-stream', req.fileName);
+
+    // 대상 폴더 준비(사전 조회) 후 부모 설정과 함께 업로드
+    var folderPath = getTemplateFolderPath();
+    var folderRes = findOrCreateFolder(folderPath);
+    if (!folderRes || !folderRes.success || !folderRes.data || !folderRes.data.id) {
+      return { success: false, message: '양식 폴더를 찾을 수 없습니다.' };
+    }
+
+    // 업로드: 부모(folder)와 이름을 메타데이터로 설정해 바로 해당 폴더에 저장 (Drive v3 스타일)
+    // Word/Excel 업로드 시 Google 형식으로 변환하여 저장
+    var targetGoogleMime = 'application/vnd.google-apps.document';
+    var lower = (mime || '').toLowerCase();
+    if (lower.indexOf('sheet') !== -1 || lower.indexOf('excel') !== -1 || lower.indexOf('spreadsheetml') !== -1) {
+      targetGoogleMime = 'application/vnd.google-apps.spreadsheet';
+    }
+    var created = Drive.Files.create({
+      name: safeTitle,
+      mimeType: targetGoogleMime,
+      parents: [folderRes.data.id]
+    }, blob);
+
+    // properties 설정
+    var props = {
+      description: safeDesc,
+      tag: safeTag,
+      creatorEmail: creatorEmail,
+      createdDate: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
+    };
+    Drive.Files.update({ properties: props }, created.id);
+
+    return { success: true, data: { id: created.id } };
+  } catch (e) {
+    return { success: false, message: '업로드 실패: ' + e.message };
+  }
+}
+
+/**
+ * 공유 템플릿 메타데이터 수정(properties만)
+ */
+function updateSharedTemplateMeta(req) {
+  try {
+    if (!req || !req.fileId) {
+      return { success: false, message: 'fileId가 필요합니다.' };
+    }
+    // 관리자 검증
+    var editorEmail = (req.meta && req.meta.creatorEmail) || req.editorEmail || '';
+    var status = checkUserStatus(editorEmail);
+    if (!status.success || !status.data || !status.data.user || status.data.user.is_admin !== 'O') {
+      return { success: false, message: '관리자만 메타데이터를 수정할 수 있습니다.' };
+    }
+    var updateProps = {};
+    if (req.meta) {
+      var sanitize = function(s){ if(!s) return ''; s=String(s); s=s.replace(/[<>"'\\]/g,''); return s.substring(0,200); };
+      if (req.meta.title !== undefined) updateProps.title = sanitize(req.meta.title);
+      if (req.meta.description !== undefined) updateProps.description = sanitize(req.meta.description);
+      if (req.meta.tag !== undefined) updateProps.tag = sanitize(req.meta.tag);
+      if (req.meta.creatorEmail !== undefined) updateProps.creatorEmail = sanitize(req.meta.creatorEmail);
+    }
+    Drive.Files.update({ properties: updateProps }, req.fileId);
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: '메타데이터 업데이트 실패: ' + e.message };
+  }
+}
+
+/**
+ * 공유 템플릿 목록(메타데이터 우선) 반환
+ */
+function getSharedTemplates() {
+  try {
+    var folderPath = getTemplateFolderPath();
+    var folderRes = findOrCreateFolder(folderPath);
+    if (!folderRes || !folderRes.success || !folderRes.data || !folderRes.data.id) {
+      return { success: false, message: '양식 폴더를 찾을 수 없습니다.' };
+    }
+    var files = Drive.Files.list({
+      q: '\'' + folderRes.data.id + '\' in parents and trashed=false',
+      fields: 'files(id,name,mimeType,modifiedTime,description,properties,owners)'
+    });
+    var items = (files.files || []).filter(function(f){ return f.mimeType === 'application/vnd.google-apps.document'; }).map(function(file){
+      var p = file.properties || {};
+      return {
+        id: file.id,
+        title: file.name,
+        description: p.description || file.description || '템플릿 파일',
+        tag: p.tag || '기본',
+        creatorEmail: p.creatorEmail || '',
+        createdDate: p.createdDate || '',
+        fullTitle: file.name,
+        modifiedDate: file.modifiedTime,
+        owner: file.owners && file.owners.length > 0 ? file.owners[0].displayName : 'Unknown'
+      };
+    });
+    return { success: true, data: items };
+  } catch (e) {
+    return { success: false, message: '공유 템플릿 조회 실패: ' + e.message };
   }
 }
 

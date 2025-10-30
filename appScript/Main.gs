@@ -233,8 +233,35 @@ function doPost(e) {
     // 문서 목록 조회 액션 처리
     if (req.action === 'getDocuments') {
       console.log('📄 문서 목록 조회 요청 받음:', req);
-      const result = DocumentSpreadsheet.handleGetDocuments(req);
+      const result = (typeof handleGetDocuments === 'function') ? handleGetDocuments(req) : (typeof DocumentSpreadsheet !== 'undefined' && DocumentSpreadsheet.handleGetDocuments ? DocumentSpreadsheet.handleGetDocuments(req) : { success: false, message: 'DocumentSpreadsheet is not defined' });
       console.log('📄 문서 목록 조회 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 공유 템플릿 업로드(파일 업로드 + 메타데이터 저장)
+    if (req.action === 'uploadSharedTemplate') {
+      console.log('📄 공유 템플릿 업로드 요청:', { name: req.fileName, mimeType: req.fileMimeType });
+      const result = uploadSharedTemplate(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공유 템플릿 메타데이터 수정
+    if (req.action === 'updateSharedTemplateMeta') {
+      console.log('🛠️ 공유 템플릿 메타 수정 요청:', { id: req.fileId });
+      const result = updateSharedTemplateMeta(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공유 템플릿 목록(메타데이터 우선) 조회
+    if (req.action === 'getSharedTemplates') {
+      console.log('📄 공유 템플릿 목록 요청');
+      const result = getSharedTemplates();
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
@@ -243,7 +270,7 @@ function doPost(e) {
     // 문서 삭제 액션 처리
     if (req.action === 'deleteDocuments') {
       console.log('🗑️ 문서 삭제 요청 받음:', req);
-      const result = DocumentSpreadsheet.handleDeleteDocuments(req);
+      const result = (typeof handleDeleteDocuments === 'function') ? handleDeleteDocuments(req) : (typeof DocumentSpreadsheet !== 'undefined' && DocumentSpreadsheet.handleDeleteDocuments ? DocumentSpreadsheet.handleDeleteDocuments(req) : { success: false, message: 'DocumentSpreadsheet is not defined' });
       console.log('🗑️ 문서 삭제 결과:', result);
       return ContentService
         .createTextOutput(JSON.stringify(result))

@@ -219,6 +219,29 @@ export class ApiClient {
     return this.request('getTemplates');
   }
 
+  // 공유 템플릿 업로드(파일 업로드)
+  async uploadSharedTemplate(params: {
+    fileName: string;
+    fileMimeType: string;
+    fileContentBase64: string;
+    meta: { title: string; description: string; tag: string; creatorEmail?: string };
+  }) {
+    return this.request('uploadSharedTemplate', params);
+  }
+
+  // 공유 템플릿 메타데이터 수정
+  async updateSharedTemplateMeta(params: {
+    fileId: string;
+    meta: Partial<{ title: string; description: string; tag: string; creatorEmail: string }>;
+  }) {
+    return this.request('updateSharedTemplateMeta', params);
+  }
+
+  // 공유 템플릿 목록(메타데이터 우선)
+  async getSharedTemplates() {
+    return this.request('getSharedTemplates');
+  }
+
   async testDriveApi() {
     return this.request('testDriveApi');
   }

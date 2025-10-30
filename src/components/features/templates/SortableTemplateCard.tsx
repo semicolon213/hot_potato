@@ -45,6 +45,7 @@ export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, on
             listeners={listeners}
             onToggleFavorite={onToggleFavorite}
             isFavorite={isFavorite}
+            allowFormEdit={!!template.isPersonal}
         />
     );
 }

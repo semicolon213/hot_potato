@@ -16,6 +16,7 @@ interface Props {
     listeners?: DraggableSyntheticListeners;
     onToggleFavorite?: (template: Template) => void; // 즐겨찾기 토글 함수
     isFavorite?: boolean; // 즐겨찾기 상태
+    allowFormEdit?: boolean; // 양식 내용 수정 버튼 노출 여부
 }
 
 const tagToClassMap: { [key: string]: string } = {
@@ -38,7 +39,7 @@ function getCustomTagColorClass(tagName: string): string {
 }
 
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
-    ({ template, onUse, onDelete, onEdit, onEditPersonal, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite }, ref) => {
+    ({ template, onUse, onDelete, onEdit, onEditPersonal, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite, allowFormEdit = true }, ref) => {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const menuRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +104,7 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                             {isMenuOpen && (
                                 <div className="options-menu">
                                     <div className="options-menu-item" onClick={handleEdit}>정보 수정</div>
-                                    {template.documentId && (
+                                    {allowFormEdit && template.documentId && (
                                         <div className="options-menu-item" onClick={handleEditForm}>양식 수정</div>
                                     )}
                                 </div>

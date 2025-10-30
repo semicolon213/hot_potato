@@ -340,7 +340,7 @@ function NewDocument({
                 const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
                 const creatorEmail = userInfo.email || '';
                 
-                const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}`, {
+                        const metadataResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
@@ -348,7 +348,8 @@ function NewDocument({
                     },
                     body: JSON.stringify({
                         properties: {
-                            creator: creatorEmail,
+                                    creatorEmail: creatorEmail,
+                                    creator: creatorEmail, // 호환성 유지
                             createdDate: new Date().toLocaleString('ko-KR'),
                             tag: templateData.tag,
                             description: templateData.description
@@ -436,7 +437,8 @@ function NewDocument({
                         fileId: documentId,
                         resource: {
                             properties: {
-                                creator: creatorEmail,
+                                creatorEmail: creatorEmail,
+                                creator: creatorEmail, // 호환성 유지
                                 createdDate: new Date().toLocaleString('ko-KR'),
                                 tag: templateData.tag,
                                 description: templateData.description
@@ -541,6 +543,22 @@ function NewDocument({
         setTemplateCreationMode('create');
         setUploadedFile(null);
         setDocumentType('document');
+    };
+
+    // 관리자 전용: 기본(공유) 템플릿 업로드 모달
+    const [showSharedUploadModal, setShowSharedUploadModal] = useState(false);
+    const [sharedUploadFile, setSharedUploadFile] = useState<File | null>(null);
+    const [sharedMeta, setSharedMeta] = useState({ title: '', description: '', tag: '' });
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdminUser = userInfo?.is_admin === 'O' || userInfo?.isAdmin === true;
+    const handleSharedFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0] || null;
+      setSharedUploadFile(f);
+    };
+    const resetSharedUpload = () => {
+      setShowSharedUploadModal(false);
+      setSharedUploadFile(null);
+      setSharedMeta({ title: '', description: '', tag: '' });
     };
 
     // 입력값 변경 처리
@@ -652,12 +670,26 @@ function NewDocument({
                     alert('개인 템플릿 수정 중 오류가 발생했습니다.');
                 }
             } else {
-                // 기존 로직 (시트 템플릿)
-                updateTemplate(editingTemplate.rowIndex!, {
-                    title: editingTemplate.title,
-                    description: editingTemplate.description,
-                    tag: editingTemplate.tag,
-                }, originalTemplate.title);
+                // 공유(기본) 템플릿 메타 수정 (문서 내용 수정 아님)
+                if (editingTemplate.documentId) {
+                    try {
+                        const res = await apiClient.updateSharedTemplateMeta({
+                            fileId: editingTemplate.documentId,
+                            meta: {
+                                title: editingTemplate.title,
+                                description: editingTemplate.description,
+                                tag: editingTemplate.tag,
+                            }
+                        });
+                        if (res.success) {
+                            alert('공유 템플릿 정보가 수정되었습니다.');
+                        } else {
+                            alert('수정 실패: ' + (res.message || '알 수 없는 오류'));
+                        }
+                    } catch (e) {
+                        alert('수정 중 오류가 발생했습니다.');
+                    }
+                }
                 handleEditDocCancel();
             }
         }
@@ -694,6 +726,7 @@ function NewDocument({
         individualEmails,
         setIndividualEmails,
         closePermissionModal,
+        uploadSharedTemplate,
     } = useTemplateUI([], onPageChange, searchTerm, activeTab); // 빈 배열로 시트 템플릿 제거
 
     // 동적 템플릿이 로드되면 기본 템플릿 목록 업데이트
@@ -821,9 +854,27 @@ function NewDocument({
                 {/* Left Sidebar: Default Templates */}
                 <div className="layout-sidebar">
                     <div className="template-section">
-                        <h2 className="section-title">
-                            기본 템플릿
-                        </h2>
+                        <div className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>기본 템플릿</span>
+                            {isAdminUser && (
+                              <button
+                                type="button"
+                                onClick={() => setShowSharedUploadModal(true)}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid var(--primary)',
+                                  color: 'var(--primary)',
+                                  borderRadius: 6,
+                                  padding: '6px 10px',
+                                  fontSize: 12,
+                                  cursor: 'pointer'
+                                }}
+                                title="기본 템플릿 업로드"
+                              >
+                                + 기본 템플릿 업로드
+                              </button>
+                            )}
+                        </div>
                         {templateError && (
                             <div style={{ color: 'red', fontSize: '12px', marginBottom: '10px' }}>
                                 {templateError}
@@ -909,10 +960,15 @@ function NewDocument({
                                                     key={template.type}
                                                     id={template.type}
                                                     template={template}
-                                                    onUse={handleUseTemplateClick} // No delete for default templates
-                                                    onDelete={() => {}} // No delete for default templates
-                                                    onEdit={() => {}} // No edit for default templates
-                                                    isFixed={true}
+                                                    onUse={handleUseTemplateClick}
+                                                    onDelete={() => {}}
+                                                    onEdit={isAdminUser ? (t)=>{
+                                                      // 공유 템플릿 메타 수정 모달 열기
+                                                      setEditingTemplate({ ...t });
+                                                      setOriginalTemplate({ ...t });
+                                                      setShowEditDocModal(true);
+                                                    } : undefined}
+                                                    isFixed={!isAdminUser}
                                                     defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                                     onToggleFavorite={toggleDefaultTemplateFavorite} // 기본 템플릿 즐겨찾기 토글
                                                     isFavorite={defaultTemplateFavorites.includes(template.title)} // 즐겨찾기 상태
@@ -1286,6 +1342,78 @@ function NewDocument({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* 관리자 전용: 기본 템플릿 업로드 모달 */}
+            {showSharedUploadModal && (
+              <div className="document-modal-overlay" onClick={resetSharedUpload}>
+                <div className="document-modal-content has-file-upload" onClick={(e)=>e.stopPropagation()}>
+                  <div className="document-modal-header">
+                    <div className="header-left">
+                      <h2>📁 기본 템플릿 업로드</h2>
+                      <p className="header-subtitle">파일을 업로드하고 메타데이터를 입력하세요</p>
+                    </div>
+                    <button className="document-modal-close" onClick={resetSharedUpload}><span>&times;</span></button>
+                  </div>
+                  <div className="document-modal-body">
+                    <div className="form-section">
+                      <div className="form-group-large">
+                        <label className="form-label-large"><span className="label-icon">📁</span>파일 선택</label>
+                        <div className="file-upload-area">
+                          <input id="shared-file" type="file" accept=".doc,.docx,.xls,.xlsx" className="file-input" onChange={handleSharedFilePick} />
+                          <div className="file-upload-display" onClick={() => document.getElementById('shared-file')?.click()}>
+                            {sharedUploadFile ? (
+                              <div className="uploaded-file">
+                                <span className="file-icon">📄</span>
+                                <span className="file-name">{sharedUploadFile.name}</span>
+                                <span className="file-size">({(sharedUploadFile.size/1024/1024).toFixed(2)} MB)</span>
+                              </div>
+                            ) : (
+                              <div className="upload-placeholder">
+                                <span className="upload-icon">📁</span>
+                                <span className="upload-text">파일을 선택하거나 여기에 드래그하세요</span>
+                                <span className="upload-hint">지원 형식: .docx, .xlsx, .doc, .xls</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="form-section">
+                      <div className="form-group-large">
+                        <label className="form-label-large"><span className="label-icon">📝</span>제목</label>
+                        <input className="form-input-large" value={sharedMeta.title} onChange={(e)=>setSharedMeta({...sharedMeta, title: e.target.value})} />
+                      </div>
+                      <div className="form-group-large">
+                        <label className="form-label-large"><span className="label-icon">📋</span>설명</label>
+                        <textarea className="form-textarea-large" rows={3} value={sharedMeta.description} onChange={(e)=>setSharedMeta({...sharedMeta, description: e.target.value})} />
+                      </div>
+                      <div className="form-group-large">
+                        <label className="form-label-large"><span className="label-icon">🏷️</span>카테고리</label>
+                        <select className="form-select-large" value={sharedMeta.tag} onChange={(e)=>setSharedMeta({...sharedMeta, tag: e.target.value})}>
+                          <option value="" disabled>카테고리를 선택하세요</option>
+                          {orderedTags.map(tag => (<option key={tag} value={tag}>{tag}</option>))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="document-modal-actions">
+                    <button type="button" className="action-btn cancel-btn" onClick={resetSharedUpload}><span>취소</span></button>
+                    <button type="button" className="action-btn save-btn" disabled={!sharedUploadFile || !sharedMeta.title || !sharedMeta.tag} onClick={async ()=>{
+                      if(!sharedUploadFile) return; 
+                      const res = await uploadSharedTemplate(sharedUploadFile, { ...sharedMeta, creatorEmail: userInfo.email });
+                      if(res.success){
+                        alert('업로드 완료');
+                        resetSharedUpload();
+                      } else {
+                        alert('업로드 실패: ' + (res.message||'알 수 없는 오류'));
+                      }
+                    }}>
+                      <span>업로드</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* 권한 설정 모달 - 개선된 UI */}

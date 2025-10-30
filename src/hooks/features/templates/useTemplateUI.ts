@@ -170,14 +170,20 @@ export function useTemplateUI(
         
         try {
             console.log('📄 동적 템플릿 로드 시작');
-            const result = await apiClient.getTemplates();
+            const result = await apiClient.getSharedTemplates();
             console.log('📄 API 응답:', result);
             
             if (result && result.success && result.data) {
                 console.log('📄 동적 템플릿 로드 성공:', result.data);
                 
                 // 템플릿 데이터 그대로 사용 (JSON 파싱 제거)
-                const processedTemplates = result.data;
+                const processedTemplates = (result.data as any[]).map((t) => ({
+                  type: t.id, // 문서 ID 사용
+                  title: t.title,
+                  description: t.description,
+                  tag: t.tag || '기본',
+                  documentId: t.id
+                }));
                 
                 setDynamicTemplates(processedTemplates);
             } else {
@@ -193,6 +199,25 @@ export function useTemplateUI(
             setIsLoadingTemplates(false);
         }
     }, []);
+
+    // 공유 템플릿 업로드 (관리자 전용 사용 예정)
+    const uploadSharedTemplate = useCallback(async (file: File, meta: { title: string; description: string; tag: string; creatorEmail?: string; }) => {
+      const toBase64 = (f: File) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1] || '');
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+      const base64 = await toBase64(file);
+      const res = await apiClient.uploadSharedTemplate({
+        fileName: file.name,
+        fileMimeType: file.type || 'application/vnd.google-apps.document',
+        fileContentBase64: base64,
+        meta
+      });
+      if (res.success) await loadDynamicTemplates();
+      return res;
+    }, [loadDynamicTemplates]);
 
     // 컴포넌트 마운트 시 동적 템플릿 로드
     useEffect(() => {
@@ -453,5 +478,6 @@ export function useTemplateUI(
         setIndividualEmails,
         createDocument,
         closePermissionModal,
+        uploadSharedTemplate,
     };
 }
