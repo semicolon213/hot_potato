@@ -21,8 +21,6 @@ import DocumentManagement from '../../pages/DocumentManagement';
 import EmptyDocument from '../../pages/EmptyDocument';
 import Mypage from '../../pages/Mypage';
 import NewDocument from '../../pages/NewDocument';
-import Board from '../../pages/Board/Board';
-import NewBoardPost from '../../pages/Board/NewBoardPost';
 import AnnouncementsPage from '../../pages/Announcements/Announcements';
 import AnnouncementView from '../../pages/Announcements/AnnouncementView';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
@@ -32,14 +30,10 @@ import GoogleServicePage from '../../pages/GoogleService';
 interface PageRendererProps {
   currentPage: PageType;
   user: User | null;
-  posts: Post[];
   announcements: Post[];
   selectedAnnouncement: Post | null;
-  isGoogleAuthenticatedForBoard: boolean;
   isGoogleAuthenticatedForAnnouncements: boolean;
-  boardSpreadsheetId: string | null;
   announcementSpreadsheetId: string | null;
-  isBoardLoading: boolean;
   isAnnouncementsLoading: boolean;
   customTemplates: Template[];
   tags: string[];
@@ -57,7 +51,6 @@ interface PageRendererProps {
   staff: Staff[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
   onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
@@ -87,14 +80,10 @@ interface PageRendererProps {
 const PageRenderer: React.FC<PageRendererProps> = ({
   currentPage,
   user,
-  posts,
   announcements,
   selectedAnnouncement,
-  isGoogleAuthenticatedForBoard,
   isGoogleAuthenticatedForAnnouncements,
-  boardSpreadsheetId,
   announcementSpreadsheetId,
-  isBoardLoading,
   isAnnouncementsLoading,
   customTemplates,
   tags,
@@ -112,7 +101,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   staff,
   searchTerm,
   onPageChange,
-  onAddPost,
   onAddAnnouncement,
   onSelectAnnouncement,
   onAddCalendarEvent,
@@ -134,20 +122,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case "board":
-        return <Board
-          onPageChange={onPageChange}
-          posts={posts}
-          isAuthenticated={isGoogleAuthenticatedForBoard}
-          boardSpreadsheetId={boardSpreadsheetId}
-          isLoading={isBoardLoading}
-          data-oid="d01oi2r" />;
-      case "new-board-post":
-        return <NewBoardPost 
-          onPageChange={onPageChange} 
-          onAddPost={onAddPost} 
-          user={user} 
-          isAuthenticated={isGoogleAuthenticatedForBoard} />;
       case "announcements":
         return <AnnouncementsPage
           onPageChange={onPageChange}

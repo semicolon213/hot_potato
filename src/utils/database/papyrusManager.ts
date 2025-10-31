@@ -34,7 +34,6 @@ import type { Template } from '../../hooks/features/templates/useTemplateUI';
 
 // 스프레드시트 ID들을 저장할 변수들
 let hotPotatoDBSpreadsheetId: string | null = null;
-let boardSpreadsheetId: string | null = null;
 let announcementSpreadsheetId: string | null = null;
 let calendarProfessorSpreadsheetId: string | null = null;
 let calendarStudentSpreadsheetId: string | null = null;
@@ -118,7 +117,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
     announcementSpreadsheetId: string | null;
     calendarProfessorSpreadsheetId: string | null;
     calendarStudentSpreadsheetId: string | null;
-    boardSpreadsheetId: string | null;
     hotPotatoDBSpreadsheetId: string | null;
     studentSpreadsheetId: string | null;
     staffSpreadsheetId: string | null;
@@ -134,7 +132,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
                 announcementSpreadsheetId: null,
                 calendarProfessorSpreadsheetId: null,
                 calendarStudentSpreadsheetId: null,
-                boardSpreadsheetId: null,
                 hotPotatoDBSpreadsheetId: null,
                 studentSpreadsheetId: null,
                 staffSpreadsheetId: null
@@ -155,7 +152,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
         //     announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
         //     calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
         //     calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
-        //     board: ENV_CONFIG.BOARD_SPREADSHEET_NAME,
         //     hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
         //     student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
         // });
@@ -169,9 +165,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
         const calendarStudentId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME);
         // console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
         
-        const boardId = await findSpreadsheetById(ENV_CONFIG.BOARD_SPREADSHEET_NAME);
-        // console.log('📋 게시판 스프레드시트 ID:', boardId);
-        
         const hotPotatoDBId = await findSpreadsheetById(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
         // console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
         
@@ -184,7 +177,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
         calendarStudentSpreadsheetId = calendarStudentId;
-        boardSpreadsheetId = boardId;
         hotPotatoDBSpreadsheetId = hotPotatoDBId;
         studentSpreadsheetId = studentId;
         staffSpreadsheetId = staffId;
@@ -193,7 +185,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
             announcement: !!announcementId,
             calendarProfessor: !!calendarProfessorId,
             calendarStudent: !!calendarStudentId,
-            board: !!boardId,
             hotPotatoDB: !!hotPotatoDBId,
             student: !!studentId,
             staff: !!staffId
@@ -203,7 +194,6 @@ export const initializeSpreadsheetIds = async (): Promise<{
             announcementSpreadsheetId: announcementId,
             calendarProfessorSpreadsheetId: calendarProfessorId,
             calendarStudentSpreadsheetId: calendarStudentId,
-            boardSpreadsheetId: boardId,
             hotPotatoDBSpreadsheetId: hotPotatoDBId,
             studentSpreadsheetId: studentId,
             staffSpreadsheetId: staffId
@@ -215,79 +205,11 @@ export const initializeSpreadsheetIds = async (): Promise<{
             announcementSpreadsheetId: null,
             calendarProfessorSpreadsheetId: null,
             calendarStudentSpreadsheetId: null,
-            boardSpreadsheetId: null,
             hotPotatoDBSpreadsheetId: null,
             studentSpreadsheetId: null,
             staffSpreadsheetId: null
         };
     }
-};
-
-// 게시글 관련 함수들
-export const fetchPosts = async (): Promise<Post[]> => {
-  try {
-    if (!boardSpreadsheetId) {
-      console.warn('Board spreadsheet ID not found');
-      return [];
-    }
-    
-    // papyrus-db 인증 설정
-    setupPapyrusAuth();
-    
-    console.log(`Fetching posts from spreadsheet: ${boardSpreadsheetId}, sheet: ${ENV_CONFIG.BOARD_SHEET_NAME}`);
-    const data = await getSheetData(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME);
-    console.log('Posts data received:', data);
-    
-    if (!data || !data.values || data.values.length <= 1) {
-      console.log('No posts data or insufficient rows');
-      return [];
-    }
-
-    const posts = data.values.slice(1).map((row: string[]) => ({
-      id: row[0] || '',
-      author: row[1] || '',
-      title: row[2] || '',
-      content: row[3] || '',
-      date: row[5] || new Date().toISOString().slice(0, 10),
-      views: 0,
-      likes: 0,
-      writer_id: row[6] || ''
-    })).reverse();
-    
-    console.log(`Loaded ${posts.length} posts`);
-    return posts;
-  } catch (error) {
-    console.error('Error fetching posts from Google Sheet:', error);
-    return [];
-  }
-};
-
-export const addPost = async (boardSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
-  try {
-    if (!boardSpreadsheetId) {
-      throw new Error('Board spreadsheet ID not found');
-    }
-
-    const data = await getSheetData(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME);
-    const lastRow = data && data.values ? data.values.length : 0;
-    const newPostId = `fb-${lastRow + 1}`;
-
-    const newPostForSheet = [
-      newPostId,
-      postData.author,
-      postData.title,
-      postData.content,
-      '',
-      new Date().toISOString().slice(0, 10),
-      postData.writer_id
-    ];
-
-    await append(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, [newPostForSheet]);
-    console.log('게시글이 성공적으로 저장되었습니다.');
-  } catch (error) {
-    console.error('Error saving post to Google Sheet:', error);
-    throw error;
-  }
 };
 
 // 공지사항 관련 함수들

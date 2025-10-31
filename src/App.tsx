@@ -19,7 +19,6 @@ import PendingApproval from './components/features/auth/PendingApproval';
 import Chat from './pages/Chat';
 import { useAppState } from './hooks/core/useAppState';
 import {
-  addPost,
   addAnnouncement,
   addCalendarEvent,
   addTemplate,
@@ -27,7 +26,6 @@ import {
   updateTemplate,
   updateTemplateFavorite,
   saveAcademicScheduleToSheet,
-    fetchPosts,
     fetchAnnouncements,
     fetchTemplates,
     fetchCalendarEvents,
@@ -70,13 +68,6 @@ const App: React.FC = () => {
     isTemplatesLoading,
     tags,
     setTags,
-
-    // Board state
-    posts,
-    setPosts,
-    isGoogleAuthenticatedForBoard,
-    isBoardLoading,
-    boardSpreadsheetId,
 
     // Announcements state
     announcements,
@@ -173,22 +164,6 @@ const App: React.FC = () => {
   const handleSearchSubmit = () => {
     if (currentPage !== 'docbox') {
       handlePageChange('docbox');
-    }
-  };
-
-  // 게시글 추가 핸들러
-  const handleAddPost = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
-    try {
-      if (!boardSpreadsheetId) {
-        throw new Error("Board spreadsheet ID not found");
-      }
-      await addPost(boardSpreadsheetId, postData);
-      // 게시글 목록 새로고침
-      const updatedPosts = await fetchPosts();
-      setPosts(updatedPosts);
-      handlePageChange('board');
-    } catch (error) {
-      console.error('Error adding post:', error);
     }
   };
 
@@ -515,14 +490,10 @@ const App: React.FC = () => {
             <PageRenderer
               currentPage={currentPage}
               user={user}
-              posts={posts}
               announcements={announcements}
               selectedAnnouncement={selectedAnnouncement}
-              isGoogleAuthenticatedForBoard={isGoogleAuthenticatedForBoard}
               isGoogleAuthenticatedForAnnouncements={isGoogleAuthenticatedForAnnouncements}
-              boardSpreadsheetId={boardSpreadsheetId}
               announcementSpreadsheetId={announcementSpreadsheetId}
-              isBoardLoading={isBoardLoading}
               isAnnouncementsLoading={isAnnouncementsLoading}
               customTemplates={customTemplates}
               tags={tags}
@@ -540,7 +511,6 @@ const App: React.FC = () => {
               staff={staff}
               searchTerm={searchTerm}
               onPageChange={handlePageChange}
-              onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}

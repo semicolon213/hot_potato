@@ -12,7 +12,6 @@ import type { Template } from '../features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce } from '../../utils/google/googleApiInitializer';
 import { 
     initializeSpreadsheetIds,
-    fetchPosts, 
     fetchAnnouncements, 
     fetchTemplates, 
     fetchCalendarEvents,
@@ -39,18 +38,12 @@ export const useAppState = () => {
     const [isTemplatesLoading, setIsTemplatesLoading] = useState(true);
     const [tags, setTags] = useState<string[]>([]);
 
-    // State for Board
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
-    const [isBoardLoading, setIsBoardLoading] = useState(false);
-
     // State for Announcements
     const [announcements, setAnnouncements] = useState<Post[]>([]);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<Post | null>(null);
     const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
     const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
     const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
-    const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
     const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
     const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
     const [staffSpreadsheetId, setStaffSpreadsheetId] = useState<string | null>(null);
@@ -72,7 +65,6 @@ export const useAppState = () => {
     const [staff, setStaff] = useState<Staff[]>([]);
 
     // 환경변수에서 시트 이름 가져오기
-    const boardSheetName = ENV_CONFIG.BOARD_SHEET_NAME;
     const announcementSheetName = ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME;
     const calendarSheetName = ENV_CONFIG.CALENDAR_SHEET_NAME;
 
@@ -120,14 +112,12 @@ export const useAppState = () => {
                         setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
                         setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
                         setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
-                        setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
                         setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                         setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
                         setStaffSpreadsheetId(spreadsheetIds.staffSpreadsheetId);
                         
                         setIsGapiReady(true);
                         setIsGoogleAuthenticatedForAnnouncements(true);
-                        setIsGoogleAuthenticatedForBoard(true);
                         
                         // console.log("✅ 새로고침 후 Papyrus DB 연결 완료");
                     } catch (error) {
@@ -135,7 +125,6 @@ export const useAppState = () => {
                         // Google API 초기화 실패해도 계속 진행
                         setIsGapiReady(true);
                         setIsGoogleAuthenticatedForAnnouncements(true);
-                        setIsGoogleAuthenticatedForBoard(true);
                     }
                 }
             }
@@ -174,14 +163,12 @@ export const useAppState = () => {
                     setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
                     setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
                     setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
-                    setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
                     setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                     setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
                     setStaffSpreadsheetId(spreadsheetIds.staffSpreadsheetId);
                     
                     setIsGapiReady(true);
                     setIsGoogleAuthenticatedForAnnouncements(true);
-                    setIsGoogleAuthenticatedForBoard(true);
                     
                     // console.log("✅ 로그인 후 Papyrus DB 연결 완료");
                     // console.log("스프레드시트 ID들:", spreadsheetIds);
@@ -192,7 +179,6 @@ export const useAppState = () => {
                     // Google API 초기화 실패해도 계속 진행
                     setIsGapiReady(false); // 실제 상태 반영
                     setIsGoogleAuthenticatedForAnnouncements(false);
-                    setIsGoogleAuthenticatedForBoard(false);
                     
                     // 사용자에게 알림
                     console.log("⚠️ 일부 Google 서비스가 제한될 수 있습니다.");
@@ -204,25 +190,6 @@ export const useAppState = () => {
     }, [user, isLoading]);
 
     // 데이터 로드 useEffect들
-    useEffect(() => {
-        if (isGapiReady && boardSpreadsheetId) {
-            const loadPosts = async () => {
-                setIsBoardLoading(true);
-                try {
-                    console.log('게시글 데이터 로딩 시작...');
-                    const postsData = await fetchPosts();
-                    setPosts(postsData);
-                    console.log('게시글 데이터 로딩 완료:', postsData.length, '개');
-                } catch (error) {
-                    console.error('Error loading posts:', error);
-                } finally {
-                    setIsBoardLoading(false);
-                }
-            };
-            loadPosts();
-        }
-    }, [isGapiReady, boardSpreadsheetId]);
-
     useEffect(() => {
         if (isGapiReady && announcementSpreadsheetId) {
             const loadAnnouncements = async () => {
@@ -324,15 +291,6 @@ export const useAppState = () => {
         tags,
         setTags,
         
-        // Board state
-        posts,
-        setPosts,
-        isGoogleAuthenticatedForBoard,
-        setIsGoogleAuthenticatedForBoard,
-        isBoardLoading,
-        setIsBoardLoading,
-        boardSpreadsheetId,
-        
         // Announcements state
         announcements,
         setAnnouncements,
@@ -371,7 +329,6 @@ export const useAppState = () => {
         studentSpreadsheetId,
         
         // Constants
-        boardSheetName,
         announcementSheetName,
         calendarSheetName
     };
