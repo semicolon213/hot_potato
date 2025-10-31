@@ -113,8 +113,17 @@ function handleGetDocuments(req) {
     if (role === 'shared') {
       console.log('📁 Drive 폴더 기반 조회 모드:', role);
 
-      // 폴더 경로 결정
-      var folderPath = (typeof getSharedDocumentFolderPath === 'function' ? getSharedDocumentFolderPath() : 'hot potato/문서/공유 문서');
+      // 폴더 경로 결정 (스크립트 속성 사용)
+      var folderPath;
+      if (typeof getSharedDocumentFolderPath === 'function') {
+        folderPath = getSharedDocumentFolderPath();
+      } else {
+        // 스크립트 속성에서 폴더 이름 가져오기
+        const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+        const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+        const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
+        folderPath = rootFolderName + '/' + documentFolderName + '/' + sharedFolderName;
+      }
 
       // 폴더 찾기/생성
       var folderResult = null;

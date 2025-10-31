@@ -39,6 +39,65 @@ function getSheetIdByName(sheetName) {
 }
 
 /**
+ * 여러 스프레드시트 이름으로 ID 찾기
+ * @param {Object} req - 요청 데이터 { spreadsheetNames: Array<string> }
+ * @returns {Object} 응답 결과 { success: boolean, data: Object<string, string|null> }
+ */
+function getSpreadsheetIds(req) {
+  try {
+    console.log('📊 스프레드시트 ID 목록 조회 시작:', req);
+    
+    const spreadsheetNames = req.spreadsheetNames || [];
+    if (!Array.isArray(spreadsheetNames) || spreadsheetNames.length === 0) {
+      return {
+        success: false,
+        message: '스프레드시트 이름 배열이 필요합니다.',
+        data: {}
+      };
+    }
+
+    const result = {};
+    const notFound = [];
+    
+    // 각 스프레드시트 이름으로 ID 찾기
+    spreadsheetNames.forEach(name => {
+      if (!name || typeof name !== 'string') {
+        console.warn('📊 유효하지 않은 스프레드시트 이름:', name);
+        result[name] = null;
+        return;
+      }
+      
+      const id = getSheetIdByName(name);
+      result[name] = id;
+      
+      if (!id) {
+        notFound.push(name);
+      }
+    });
+    
+    console.log('📊 스프레드시트 ID 목록 조회 완료:', {
+      total: spreadsheetNames.length,
+      found: spreadsheetNames.length - notFound.length,
+      notFound: notFound.length > 0 ? notFound : '없음'
+    });
+
+    return {
+      success: true,
+      data: result,
+      notFound: notFound.length > 0 ? notFound : undefined
+    };
+    
+  } catch (error) {
+    console.error('📊 스프레드시트 ID 목록 조회 오류:', error);
+    return {
+      success: false,
+      message: '스프레드시트 ID 조회 중 오류가 발생했습니다: ' + error.message,
+      data: {}
+    };
+  }
+}
+
+/**
  * 문서 ID로 행 삭제
  * @param {string} spreadsheetId - 스프레드시트 ID
  * @param {string} sheetName - 시트 이름

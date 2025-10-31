@@ -97,16 +97,21 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
   }
 
   try {
-    // 1단계: hot potato 폴더 찾기
+    const { ENV_CONFIG } = await import('../../config/environment');
+    const rootFolderName = ENV_CONFIG.ROOT_FOLDER_NAME;
+    const documentFolderName = ENV_CONFIG.DOCUMENT_FOLDER_NAME;
+    const personalDocFolderName = ENV_CONFIG.PERSONAL_DOCUMENT_FOLDER_NAME;
+
+    // 1단계: 루트 폴더 찾기
     const hotPotatoResponse = await gapi.client.drive.files.list({
-      q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+      q: `'root' in parents and name='${rootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
       orderBy: 'name'
     });
 
     if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
-      console.log('hot potato 폴더를 찾을 수 없습니다');
+      console.log(`${rootFolderName} 폴더를 찾을 수 없습니다`);
       return [];
     }
 
@@ -114,14 +119,14 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
 
     // 2단계: 문서 폴더 찾기
     const documentResponse = await gapi.client.drive.files.list({
-      q: `'${hotPotatoFolder.id}' in parents and name='문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      q: `'${hotPotatoFolder.id}' in parents and name='${documentFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
       orderBy: 'name'
     });
 
     if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
-      console.log('문서 폴더를 찾을 수 없습니다');
+      console.log(`${documentFolderName} 폴더를 찾을 수 없습니다`);
       return [];
     }
 
@@ -129,7 +134,7 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
 
     // 3단계: 개인 문서 폴더 찾기
     const personalDocResponse = await gapi.client.drive.files.list({
-      q: `'${documentFolder.id}' in parents and name='개인 문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      q: `'${documentFolder.id}' in parents and name='${personalDocFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
       orderBy: 'name'

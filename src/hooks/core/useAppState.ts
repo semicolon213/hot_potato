@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { User, PageType, Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce } from '../../utils/google/googleApiInitializer';
@@ -269,6 +269,57 @@ export const useAppState = () => {
         }
     }, [isGapiReady, studentSpreadsheetId, staffSpreadsheetId]);
 
+    /**
+     * @brief 모든 상태 초기화 함수
+     * @details 로그아웃 또는 계정 전환 시 모든 상태를 초기화합니다.
+     */
+    const resetAllState = useCallback(() => {
+        console.log('🧹 useAppState 상태 초기화 시작...');
+        
+        // 사용자 상태 초기화
+        setUser(null);
+        setGoogleAccessToken(null);
+        setCurrentPage("dashboard");
+        setSearchTerm("");
+        
+        // 템플릿 상태 초기화
+        setCustomTemplates([]);
+        setTags([]);
+        setIsTemplatesLoading(true);
+        
+        // 공지사항 상태 초기화
+        setAnnouncements([]);
+        setSelectedAnnouncement(null);
+        setIsGoogleAuthenticatedForAnnouncements(false);
+        setIsAnnouncementsLoading(false);
+        setAnnouncementSpreadsheetId(null);
+        
+        // 캘린더 상태 초기화
+        setCalendarEvents([]);
+        setIsCalendarLoading(false);
+        setSemesterStartDate(null);
+        setFinalExamsPeriod(null);
+        setMidtermExamsPeriod(null);
+        setGradeEntryPeriod(null);
+        setCustomPeriods([]);
+        setCalendarProfessorSpreadsheetId(null);
+        setCalendarStudentSpreadsheetId(null);
+        
+        // 스프레드시트 ID 상태 초기화
+        setHotPotatoDBSpreadsheetId(null);
+        setStudentSpreadsheetId(null);
+        setStaffSpreadsheetId(null);
+        
+        // 참석자 상태 초기화
+        setStudents([]);
+        setStaff([]);
+        
+        // Google API 상태 초기화
+        setIsGapiReady(false);
+        
+        console.log('🧹 useAppState 상태 초기화 완료');
+    }, []);
+
     return {
         // User state
         user,
@@ -330,6 +381,9 @@ export const useAppState = () => {
         
         // Constants
         announcementSheetName,
-        calendarSheetName
+        calendarSheetName,
+        
+        // State reset function
+        resetAllState
     };
 };

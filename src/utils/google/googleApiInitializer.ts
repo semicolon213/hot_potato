@@ -15,6 +15,16 @@ let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
 
 /**
+ * @brief Google API 초기화 상태 초기화 (googleApiInitializer)
+ * @details 로그아웃 또는 계정 전환 시 Google API 초기화 상태를 리셋합니다.
+ */
+export const resetGoogleApiInitializer = (): void => {
+    isGoogleAPIInitialized = false;
+    googleAPIInitPromise = null;
+    console.log('🧹 Google API Initializer 리셋 완료');
+};
+
+/**
  * @brief Google API 상태 리셋 함수
  * @details 새로고침 시 Google API 초기화 상태를 리셋합니다.
  */

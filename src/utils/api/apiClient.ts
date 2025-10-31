@@ -269,6 +269,11 @@ export class ApiClient {
     return this.request('deleteDocuments', { documentIds, role });
   }
 
+  // 스프레드시트 ID 목록 조회
+  async getSpreadsheetIds(spreadsheetNames: string[]) {
+    return this.request('getSpreadsheetIds', { spreadsheetNames });
+  }
+
   // 테스트 API
   async testEmailEncryption() {
     return this.request(API_ACTIONS.TEST_EMAIL_ENCRYPTION);

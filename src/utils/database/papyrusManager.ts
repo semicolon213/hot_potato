@@ -9,6 +9,7 @@
 import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { ENV_CONFIG } from '../../config/environment';
+import { apiClient } from '../api/apiClient';
 import type { StaffMember, Committee as CommitteeType } from '../../types/features/staff';
 
 // 헬퍼 함수들
@@ -39,6 +40,20 @@ let calendarProfessorSpreadsheetId: string | null = null;
 let calendarStudentSpreadsheetId: string | null = null;
 let studentSpreadsheetId: string | null = null;
 let staffSpreadsheetId: string | null = null;
+
+/**
+ * @brief 스프레드시트 ID 전역 변수 초기화
+ * @details 로그아웃 또는 계정 전환 시 모든 스프레드시트 ID를 초기화합니다.
+ */
+export const clearSpreadsheetIds = (): void => {
+    hotPotatoDBSpreadsheetId = null;
+    announcementSpreadsheetId = null;
+    calendarProfessorSpreadsheetId = null;
+    calendarStudentSpreadsheetId = null;
+    studentSpreadsheetId = null;
+    staffSpreadsheetId = null;
+    console.log('🧹 스프레드시트 ID 전역 변수 초기화 완료');
+};
 
 /**
  * @brief 스프레드시트 ID 찾기 함수
@@ -111,7 +126,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
 };
 
 /**
- * @brief 스프레드시트 ID들 초기화
+ * @brief 스프레드시트 ID들 초기화 (Apps Script를 통한 일괄 조회)
  */
 export const initializeSpreadsheetIds = async (): Promise<{
     announcementSpreadsheetId: string | null;
@@ -121,71 +136,70 @@ export const initializeSpreadsheetIds = async (): Promise<{
     studentSpreadsheetId: string | null;
     staffSpreadsheetId: string | null;
 }> => {
-    // console.log('스프레드시트 ID 초기화 시작...');
+    console.log('📊 스프레드시트 ID 초기화 시작 (Apps Script 방식)...');
     
     try {
-        // Google API 인증 상태 확인 (더 안전한 방법)
-        const token = localStorage.getItem('googleAccessToken');
-        if (!token) {
-            console.warn('Google API 인증 토큰이 없습니다. 스프레드시트 ID 초기화를 건너뜁니다.');
+        // 환경변수에서 스프레드시트 이름 목록 가져오기 (hp_potato_DB는 개인 설정 파일로 분리)
+        const spreadsheetNames = [
+            ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
+            ENV_CONFIG.STUDENT_SPREADSHEET_NAME,
+            ENV_CONFIG.STAFF_SPREADSHEET_NAME
+        ];
+
+        console.log('📋 조회할 스프레드시트 이름들:', spreadsheetNames);
+
+        // Apps Script에 일괄 조회 요청
+        const response = await apiClient.getSpreadsheetIds(spreadsheetNames);
+
+        if (!response.success || !response.data) {
+            console.error('❌ 스프레드시트 ID 조회 실패:', response.message || '알 수 없는 오류');
+            // 개인 설정 파일은 별도로 초기화 시도
+            const { findPersonalConfigFile } = await import('./personalConfigManager');
+            const personalConfigId = await findPersonalConfigFile().catch(() => null);
+            
             return {
                 announcementSpreadsheetId: null,
                 calendarProfessorSpreadsheetId: null,
                 calendarStudentSpreadsheetId: null,
-                hotPotatoDBSpreadsheetId: null,
+                hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
                 studentSpreadsheetId: null,
                 staffSpreadsheetId: null
             };
         }
 
-        // 토큰을 gapi client에 설정
-        try {
-            (window as any).gapi.client.setToken({ access_token: token });
-            // console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
-        } catch (tokenError) {
-            console.warn(`토큰 설정 실패:`, tokenError);
+        const ids = response.data;
+        
+        // 찾지 못한 스프레드시트가 있으면 경고
+        if (response.notFound && response.notFound.length > 0) {
+            console.warn('⚠️ 찾지 못한 스프레드시트:', response.notFound);
         }
 
-        // 순차적으로 스프레드시트 ID 찾기 (안정성을 위해)
-        // console.log('📋 스프레드시트 검색 시작...');
-        // console.log('검색할 스프레드시트 이름들:', {
-        //     announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
-        //     calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
-        //     calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
-        //     hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
-        //     student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
-        // });
-        
-        const announcementId = await findSpreadsheetById(ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME);
-        // console.log('📢 공지사항 스프레드시트 ID:', announcementId);
-        
-        const calendarProfessorId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME);
-        // console.log('📅 교수 캘린더 스프레드시트 ID:', calendarProfessorId);
-        
-        const calendarStudentId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME);
-        // console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
-        
-        const hotPotatoDBId = await findSpreadsheetById(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-        // console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
-        
-        const studentId = await findSpreadsheetById(ENV_CONFIG.STUDENT_SPREADSHEET_NAME);
-        // console.log('👥 학생 스프레드시트 ID:', studentId);
+        // 결과 매핑 (hp_potato_DB는 개인 설정 파일로 별도 초기화)
+        const announcementId = ids[ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME] || null;
+        const calendarProfessorId = ids[ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME] || null;
+        const calendarStudentId = ids[ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME] || null;
+        const studentId = ids[ENV_CONFIG.STUDENT_SPREADSHEET_NAME] || null;
+        const staffId = ids[ENV_CONFIG.STAFF_SPREADSHEET_NAME] || null;
 
-        const staffId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-        // console.log('👥 교직원 스프레드시트 ID:', staffId);
+        // 개인 설정 파일 ID 초기화 (별도 함수로 처리)
+        const { findPersonalConfigFile } = await import('./personalConfigManager');
+        const personalConfigId = await findPersonalConfigFile();
 
+        // 전역 변수 업데이트
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
         calendarStudentSpreadsheetId = calendarStudentId;
-        hotPotatoDBSpreadsheetId = hotPotatoDBId;
+        hotPotatoDBSpreadsheetId = personalConfigId; // 개인 설정 파일 ID로 설정
         studentSpreadsheetId = studentId;
         staffSpreadsheetId = staffId;
         
-        console.log('스프레드시트 ID 초기화 완료:', {
+        console.log('✅ 스프레드시트 ID 초기화 완료:', {
             announcement: !!announcementId,
             calendarProfessor: !!calendarProfessorId,
             calendarStudent: !!calendarStudentId,
-            hotPotatoDB: !!hotPotatoDBId,
+            hotPotatoDB: !!personalConfigId,
             student: !!studentId,
             staff: !!staffId
         });
@@ -194,18 +208,22 @@ export const initializeSpreadsheetIds = async (): Promise<{
             announcementSpreadsheetId: announcementId,
             calendarProfessorSpreadsheetId: calendarProfessorId,
             calendarStudentSpreadsheetId: calendarStudentId,
-            hotPotatoDBSpreadsheetId: hotPotatoDBId,
+            hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
             studentSpreadsheetId: studentId,
             staffSpreadsheetId: staffId
         };
     } catch (error) {
         console.error('❌ 스프레드시트 ID 초기화 중 오류:', error);
         console.warn('⚠️ 일부 기능이 제한될 수 있습니다.');
+        // 개인 설정 파일은 별도로 초기화 시도
+        const { findPersonalConfigFile } = await import('./personalConfigManager');
+        const personalConfigId = await findPersonalConfigFile().catch(() => null);
+        
         return {
             announcementSpreadsheetId: null,
             calendarProfessorSpreadsheetId: null,
             calendarStudentSpreadsheetId: null,
-            hotPotatoDBSpreadsheetId: null,
+            hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
             studentSpreadsheetId: null,
             staffSpreadsheetId: null
         };
@@ -314,61 +332,20 @@ export const incrementViewCount = async (announcementId: string): Promise<void> 
   }
 };
 
-// 템플릿 관련 함수들
+// 템플릿 관련 함수들 (deprecated - document_template 시트 방식은 제거됨)
+// 템플릿은 이제 개인 템플릿 폴더와 공유 템플릿 폴더에서 직접 가져옵니다.
 export const fetchTemplates = async (): Promise<Template[]> => {
-  try {
-    if (!hotPotatoDBSpreadsheetId) {
-      console.warn('Hot Potato DB spreadsheet ID not found');
-      return [];
-    }
-
-    console.log(`Fetching templates from spreadsheet: ${hotPotatoDBSpreadsheetId}, sheet: ${ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME}`);
-    const data = await getSheetData(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME);
-    console.log('Templates data received:', data);
-    
-    if (!data || !data.values || data.values.length <= 1) {
-      console.log('No templates data or insufficient rows');
-      return [];
-    }
-
-    const templates = data.values.slice(1).map((row: string[], index: number) => ({
-      rowIndex: index + 2,
-      title: row[0] || '',
-      description: row[1] || '',
-      partTitle: row[1] || '',
-      tag: row[2] || '',
-      type: row[0] || '',
-      documentId: row[4] || '',
-      favoritesTag: row[5] || '',
-    }));
-    
-    console.log(`Loaded ${templates.length} templates`);
-    return templates;
-  } catch (error) {
-    console.error('Error fetching templates from Google Sheet:', error);
-    return [];
-  }
+  // document_template 시트 방식은 더 이상 사용하지 않음
+  // 템플릿은 useTemplateUI의 loadDynamicTemplates에서 폴더 기반으로 로드됨
+  console.log('⚠️ fetchTemplates: document_template 시트 방식은 더 이상 사용되지 않습니다. 폴더 기반 템플릿을 사용하세요.');
+  return [];
 };
 
 export const fetchTags = async (): Promise<string[]> => {
-  try {
-    if (!hotPotatoDBSpreadsheetId) {
-      console.warn('Hot Potato DB spreadsheet ID not found');
-      return [];
-    }
-
-    const data = await getSheetData(hotPotatoDBSpreadsheetId, ENV_CONFIG.DOCUMENT_TEMPLATE_SHEET_NAME);
-    
-    if (!data || !data.values || data.values.length <= 1) {
-      return [];
-    }
-
-    const tags = data.values.slice(1).map((row: string[]) => row[2]).filter(Boolean);
-    return [...new Set(tags)];
-  } catch (error) {
-    console.error('Error fetching tags from Google Sheet:', error);
-    return [];
-  }
+  // document_template 시트 방식은 더 이상 사용하지 않음
+  // 태그는 personalTagManager의 fetchTags를 사용하세요
+  console.log('⚠️ fetchTags: document_template 시트 방식은 더 이상 사용되지 않습니다. personalTagManager를 사용하세요.');
+  return [];
 };
 
 export const addTemplate = async (newDocData: { title: string; description: string; tag: string; }): Promise<void> => {

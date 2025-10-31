@@ -509,21 +509,26 @@ function NewDocument({
 
             const documentFolder = documentResponse.result.files[0];
 
-            // 3단계: 문서 폴더에서 "개인 양식" 폴더 찾기
+            // 이미 파일 상단에서 import한 ENV_CONFIG 사용
+            const rootFolderName = ENV_CONFIG.ROOT_FOLDER_NAME;
+            const documentFolderName = ENV_CONFIG.DOCUMENT_FOLDER_NAME;
+            const personalTemplateFolderName = ENV_CONFIG.PERSONAL_TEMPLATE_FOLDER_NAME;
+
+            // 3단계: 문서 폴더에서 개인 양식 폴더 찾기
             const personalTemplateResponse = await gapi.client.drive.files.list({
-                q: `'${documentFolder.id}' in parents and name='개인 양식' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                q: `'${documentFolder.id}' in parents and name='${personalTemplateFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
                 fields: 'files(id,name)',
                 spaces: 'drive',
                 orderBy: 'name'
             });
 
             if (!personalTemplateResponse.result.files || personalTemplateResponse.result.files.length === 0) {
-                console.log('❌ 개인 양식 폴더를 찾을 수 없습니다');
+                console.log(`❌ ${personalTemplateFolderName} 폴더를 찾을 수 없습니다`);
                 return null;
             }
 
             const personalTemplateFolder = personalTemplateResponse.result.files[0];
-            console.log('✅ 개인 양식 폴더 찾음:', personalTemplateFolder.id);
+            console.log(`✅ ${personalTemplateFolderName} 폴더 찾음:`, personalTemplateFolder.id);
 
             return personalTemplateFolder.id;
         } catch (error) {

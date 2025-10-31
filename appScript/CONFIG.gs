@@ -8,10 +8,10 @@
     // hp_member 스프레드시트 ID (실제 값으로 교체 필요)
     const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
 
-    // 시트 이름 상수
+    // 시트 이름 상수 (스크립트 속성에서 가져오기, 기본값 제공)
     const SHEET_NAMES = {
-    USER: 'user',
-    ADMIN_KEYS: 'admin_keys'
+    USER: PropertiesService.getScriptProperties().getProperty('SHEET_NAME_USER') || 'user',
+    ADMIN_KEYS: PropertiesService.getScriptProperties().getProperty('SHEET_NAME_ADMIN_KEYS') || 'admin_keys'
     };
 
     // ===== 암호화 설정 =====
@@ -424,14 +424,15 @@
     }
 
     // ===== 문서 관리 설정 =====
-    // 문서 저장 폴더 경로
-    const DOCUMENT_FOLDER_PATH = 'hot potato/문서';
+    // 문서 저장 폴더 경로 (환경변수 또는 기본값 사용)
+    const ROOT_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const DOCUMENT_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const TEMPLATE_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('TEMPLATE_FOLDER_NAME') || '양식';
+    const SHARED_DOCUMENT_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
     
-    // 템플릿 폴더 경로
-    const TEMPLATE_FOLDER_PATH = 'hot potato/문서/양식';
-    
-    // 공유 문서 폴더 경로
-    const SHARED_DOCUMENT_FOLDER_PATH = 'hot potato/문서/공유 문서';
+    const DOCUMENT_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME;
+    const TEMPLATE_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME + '/' + TEMPLATE_FOLDER_NAME;
+    const SHARED_DOCUMENT_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME + '/' + SHARED_DOCUMENT_FOLDER_NAME;
     
     // 역할별 스프레드시트 이름 매핑
     const ROLE_SPREADSHEET_MAP = {

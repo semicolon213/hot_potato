@@ -48,12 +48,18 @@ function getTemplatesFromFolder() {
       debugInfo.push('❌ 루트 폴더 검색 오류: ' + rootError.message);
     }
     
-    // 여러 가능한 폴더 경로 시도
+    // 스크립트 속성에서 폴더 이름 가져오기
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const templateFolderName = PropertiesService.getScriptProperties().getProperty('TEMPLATE_FOLDER_NAME') || '양식';
+    
+    // 여러 가능한 폴더 경로 시도 (하위 호환성을 위해 유지)
     const possiblePaths = [
       getTemplateFolderPath(),
-      'hot_potato/문서/양식',
-      '문서/양식',
-      '양식'
+      rootFolderName + '/' + documentFolderName + '/' + templateFolderName,
+      rootFolderName.replace(' ', '_') + '/' + documentFolderName + '/' + templateFolderName,
+      documentFolderName + '/' + templateFolderName,
+      templateFolderName
     ];
     
     debugInfo.push('📁 가능한 폴더 경로들: ' + JSON.stringify(possiblePaths));
@@ -385,8 +391,13 @@ function testSpecificFolder() {
       };
     }
     
+    // 스크립트 속성에서 폴더 이름 가져오기
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const templateFolderName = PropertiesService.getScriptProperties().getProperty('TEMPLATE_FOLDER_NAME') || '양식';
+    
     // 실제 폴더 구조를 단계별로 찾기
-    // 1단계: 루트에서 "hot potato" 또는 "hot_potato" 폴더 찾기
+    // 1단계: 루트에서 루트 폴더 찾기 (하위 호환성을 위해 underscore 버전도 확인)
     let hotPotatoFolderId = null;
     const rootFolders = Drive.Files.list({
       q: "'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false",
@@ -394,7 +405,7 @@ function testSpecificFolder() {
     });
     
     for (const folder of rootFolders.files || []) {
-      if (folder.name === 'hot potato' || folder.name === 'hot_potato') {
+      if (folder.name === rootFolderName || folder.name === rootFolderName.replace(' ', '_')) {
         hotPotatoFolderId = folder.id;
         break;
       }
@@ -403,12 +414,12 @@ function testSpecificFolder() {
     if (!hotPotatoFolderId) {
       return {
         success: false,
-        message: 'hot potato 폴더를 찾을 수 없습니다',
-        debugInfo: ['루트 폴더에서 hot potato 폴더를 찾을 수 없음']
+        message: rootFolderName + ' 폴더를 찾을 수 없습니다',
+        debugInfo: ['루트 폴더에서 ' + rootFolderName + ' 폴더를 찾을 수 없음']
       };
     }
-    
-    // 2단계: hot potato 폴더에서 "문서" 폴더 찾기
+
+    // 2단계: 루트 폴더에서 문서 폴더 찾기
     let documentFolderId = null;
     const hotPotatoFolders = Drive.Files.list({
       q: `'${hotPotatoFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -416,7 +427,7 @@ function testSpecificFolder() {
     });
     
     for (const folder of hotPotatoFolders.files || []) {
-      if (folder.name === '문서') {
+      if (folder.name === documentFolderName) {
         documentFolderId = folder.id;
         break;
       }
@@ -425,12 +436,12 @@ function testSpecificFolder() {
     if (!documentFolderId) {
       return {
         success: false,
-        message: '문서 폴더를 찾을 수 없습니다',
-        debugInfo: ['hot potato 폴더에서 문서 폴더를 찾을 수 없음']
+        message: documentFolderName + ' 폴더를 찾을 수 없습니다',
+        debugInfo: [rootFolderName + ' 폴더에서 ' + documentFolderName + ' 폴더를 찾을 수 없음']
       };
     }
-    
-    // 3단계: 문서 폴더에서 "양식" 폴더 찾기
+
+    // 3단계: 문서 폴더에서 양식 폴더 찾기
     let templateFolderId = null;
     const documentFolders = Drive.Files.list({
       q: `'${documentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -438,7 +449,7 @@ function testSpecificFolder() {
     });
     
     for (const folder of documentFolders.files || []) {
-      if (folder.name === '양식') {
+      if (folder.name === templateFolderName) {
         templateFolderId = folder.id;
         break;
       }
@@ -447,8 +458,8 @@ function testSpecificFolder() {
     if (!templateFolderId) {
       return {
         success: false,
-        message: '양식 폴더를 찾을 수 없습니다',
-        debugInfo: ['문서 폴더에서 양식 폴더를 찾을 수 없음']
+        message: templateFolderName + ' 폴더를 찾을 수 없습니다',
+        debugInfo: [documentFolderName + ' 폴더에서 ' + templateFolderName + ' 폴더를 찾을 수 없음']
       };
     }
     

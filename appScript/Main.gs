@@ -266,6 +266,15 @@ function doPost(e) {
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
+
+    // 스프레드시트 ID 목록 조회
+    if (req.action === 'getSpreadsheetIds') {
+      console.log('📊 스프레드시트 ID 목록 조회 요청:', req);
+      const result = getSpreadsheetIds(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     
     // 문서 삭제 액션 처리
     if (req.action === 'deleteDocuments') {
@@ -659,8 +668,11 @@ function moveDocumentToSharedFolder(documentId) {
     // 문서 가져오기
     const file = DriveApp.getFileById(documentId);
     
-    // 폴더 경로: hot potato/문서/공유 문서
-    const targetFolder = findOrCreateFolderPath(['hot potato', '문서', '공유 문서']);
+    // 폴더 경로: 환경변수 또는 기본값 사용
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
+    const targetFolder = findOrCreateFolderPath([rootFolderName, documentFolderName, sharedFolderName]);
     
     if (!targetFolder) {
       console.error('📁 대상 폴더를 찾을 수 없습니다');
@@ -700,8 +712,11 @@ function moveDocumentToSharedFolderWithModule(documentId) {
     // 문서 가져오기
     const file = DriveApp.getFileById(documentId);
     
-    // 폴더 경로: hot potato/문서/공유 문서
-    const folderPath = 'hot potato/문서/공유 문서';
+    // 폴더 경로: 환경변수 또는 기본값 사용
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
+    const folderPath = rootFolderName + '/' + documentFolderName + '/' + sharedFolderName;
     const targetFolder = DocumentFolder.findOrCreateFolder(folderPath);
     
     if (!targetFolder) {

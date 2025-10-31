@@ -39,6 +39,7 @@ import {
   fetchTags as fetchPersonalTags,
   checkTagDeletionImpact
 } from './utils/database/personalTagManager';
+import { clearAllUserData } from './utils/helpers/clearUserData';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
 
@@ -100,7 +101,10 @@ const App: React.FC = () => {
 
     // Attendees
     students,
-    staff
+    staff,
+    
+    // State reset
+    resetAllState
   } = useAppState();
 
   // 로그인 처리
@@ -117,15 +121,29 @@ const App: React.FC = () => {
 
   // 로그아웃 처리
   const handleLogout = () => {
-    setUser(null);
-    setCurrentPage("dashboard");
-    setSearchTerm("");
-    localStorage.removeItem('user');
-    localStorage.removeItem('googleAccessToken');
-    localStorage.removeItem('searchTerm');
+    console.log('🚪 로그아웃 시작...');
+    
+    // 모든 사용자 데이터 정리 (localStorage, 전역 변수, Google API 토큰)
+    clearAllUserData();
+    
+    // useAppState의 모든 상태 초기화
+    resetAllState();
+    
+    // Google 계정 자동 선택 비활성화
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
     }
+    
+    // Zustand auth store도 초기화 (동기적으로)
+    try {
+      const { useAuthStore } = require('./hooks/features/auth/useAuthStore');
+      const authStoreLogout = useAuthStore.getState().logout;
+      authStoreLogout();
+    } catch (error) {
+      console.warn('Auth store 로그아웃 실패:', error);
+    }
+    
+    console.log('🚪 로그아웃 완료');
   };
 
   // Electron 이벤트 처리 (자동 로그아웃)
