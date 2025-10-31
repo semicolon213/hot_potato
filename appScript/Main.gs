@@ -267,6 +267,15 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // 공유 템플릿 삭제
+    if (req.action === 'deleteSharedTemplate') {
+      console.log('🗑️ 공유 템플릿 삭제 요청:', { id: req.fileId });
+      const result = deleteSharedTemplate(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // 스프레드시트 ID 목록 조회
     if (req.action === 'getSpreadsheetIds') {
       console.log('📊 스프레드시트 ID 목록 조회 요청:', req);

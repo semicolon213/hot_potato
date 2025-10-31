@@ -5,17 +5,18 @@ import { BiLoaderAlt } from "react-icons/bi";
 interface Props {
     templates: Template[];
     onUseTemplate: (type: string, title: string) => void;
-    onDeleteTemplate: (rowIndex: number) => void;
+    onDeleteTemplate: (template: Template) => void; // 템플릿 삭제 함수 (기본/개인)
     onEditTemplate?: (template: Template) => void;
     onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     defaultTags: string[];
     onToggleFavorite: (template: Template) => void;
     isLoading?: boolean;
+    isAdmin?: boolean; // 관리자 여부
 }
 
 const fixedTemplateTypes = initialTemplates.map(t => t.type);
 
-export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, onEditPersonal, defaultTags, onToggleFavorite, isLoading }: Props) {
+export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEditTemplate, onEditPersonal, defaultTags, onToggleFavorite, isLoading, isAdmin = false }: Props) {
     return (
         <div className="new-templates-container">
             {isLoading ? (
@@ -42,13 +43,15 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         id={id}
                         template={templateWithDocId} // Pass the enhanced template
                         onUse={onUseTemplate}
-                        onDelete={isPersonal ? () => {} : onDeleteTemplate} // 개인 템플릿은 삭제 불가
+                        onDelete={() => {}} // 더 이상 사용하지 않음 (onDeleteTemplate 사용)
+                        onDeleteTemplate={onDeleteTemplate} // 템플릿 삭제 함수 전달
                         onEdit={isPersonal ? undefined : onEditTemplate} // 개인 템플릿은 편집 불가
                         onEditPersonal={isPersonal ? onEditPersonal : undefined} // 개인 템플릿 수정 함수
                         isFixed={isFixed || isPersonal} // 개인 템플릿도 고정 템플릿으로 처리
                         defaultTags={defaultTags}
                         onToggleFavorite={onToggleFavorite}
                         isFavorite={!!template.favoritesTag || (template.isPersonal && template.favoritesTag)}
+                        isAdmin={isAdmin}
                     />
                 )
             })}

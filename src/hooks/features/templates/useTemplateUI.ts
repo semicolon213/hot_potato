@@ -182,7 +182,8 @@ export function useTemplateUI(
                   title: t.title,
                   description: t.description,
                   tag: t.tag || '기본',
-                  documentId: t.id
+                  documentId: t.id,
+                  mimeType: t.mimeType || 'application/vnd.google-apps.document' // 파일 타입 포함
                 }));
                 
                 setDynamicTemplates(processedTemplates);

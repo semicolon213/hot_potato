@@ -369,6 +369,50 @@ function updateSharedTemplateMeta(req) {
 }
 
 /**
+ * 공유 템플릿 삭제 (관리자 전용)
+ */
+function deleteSharedTemplate(req) {
+  try {
+    if (!req || !req.fileId) {
+      return { success: false, message: 'fileId가 필요합니다.' };
+    }
+    
+    // 관리자 검증 (요청에서 이메일 가져오기, 없으면 Session 사용)
+    var userEmail = req.userEmail || Session.getActiveUser().getEmail();
+    console.log('👤 기본 템플릿 삭제 요청자 이메일:', userEmail);
+    var status = checkUserStatus(userEmail);
+    if (!status.success || !status.data || !status.data.user || status.data.user.is_admin !== 'O') {
+      return { success: false, message: '관리자만 템플릿을 삭제할 수 있습니다.' };
+    }
+    
+    // 파일 존재 확인
+    try {
+      var file = Drive.Files.get(req.fileId);
+      if (!file) {
+        return { success: false, message: '템플릿을 찾을 수 없습니다.' };
+      }
+      console.log('📄 삭제할 템플릿:', file.name);
+      
+      // "빈 문서" 템플릿은 삭제 불가
+      if (file.name === '빈 문서' || file.name.trim() === '빈 문서') {
+        return { success: false, message: '빈 문서 템플릿은 삭제할 수 없습니다.' };
+      }
+    } catch (getError) {
+      return { success: false, message: '템플릿을 찾을 수 없습니다: ' + getError.message };
+    }
+    
+    // 파일 삭제
+    Drive.Files.remove(req.fileId);
+    console.log('✅ 기본 템플릿 삭제 완료:', req.fileId);
+    
+    return { success: true, message: '기본 템플릿이 삭제되었습니다.' };
+  } catch (e) {
+    console.error('❌ 기본 템플릿 삭제 오류:', e);
+    return { success: false, message: '템플릿 삭제 실패: ' + e.message };
+  }
+}
+
+/**
  * 공유 템플릿 목록(메타데이터 우선) 반환
  */
 function getSharedTemplates() {
@@ -382,7 +426,11 @@ function getSharedTemplates() {
       q: '\'' + folderRes.data.id + '\' in parents and trashed=false',
       fields: 'files(id,name,mimeType,modifiedTime,description,properties,owners)'
     });
-    var items = (files.files || []).filter(function(f){ return f.mimeType === 'application/vnd.google-apps.document'; }).map(function(file){
+    // 문서와 스프레드시트 모두 포함
+    var items = (files.files || []).filter(function(f){ 
+      return f.mimeType === 'application/vnd.google-apps.document' || 
+             f.mimeType === 'application/vnd.google-apps.spreadsheet'; 
+    }).map(function(file){
       var p = file.properties || {};
       return {
         id: file.id,
@@ -393,6 +441,7 @@ function getSharedTemplates() {
         createdDate: p.createdDate || '',
         fullTitle: file.name,
         modifiedDate: file.modifiedTime,
+        mimeType: file.mimeType || 'application/vnd.google-apps.document',
         owner: file.owners && file.owners.length > 0 ? file.owners[0].displayName : 'Unknown'
       };
     });

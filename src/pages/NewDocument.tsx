@@ -339,6 +339,63 @@ function NewDocument({
         }
     };
 
+    // 기본 템플릿 삭제 핸들러 (관리자 전용)
+    const handleDeleteDefaultTemplate = async (template: Template) => {
+        if (!isAdminUser) {
+            alert('기본 템플릿 삭제는 관리자만 가능합니다.');
+            return;
+        }
+        
+        // "빈 문서" 템플릿은 삭제 불가
+        if (template.type === 'empty' || template.title === '빈 문서') {
+            alert('빈 문서 템플릿은 삭제할 수 없습니다.');
+            return;
+        }
+        
+        if (!template.documentId) {
+            alert('템플릿을 찾을 수 없습니다.');
+            return;
+        }
+        
+        try {
+            const response = await apiClient.deleteSharedTemplate(template.documentId);
+            if (response.success) {
+                // 템플릿 목록 다시 로드
+                await loadDynamicTemplates();
+                alert('기본 템플릿이 삭제되었습니다.');
+            } else {
+                alert('기본 템플릿 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+            }
+        } catch (error) {
+            console.error('Error deleting default template:', error);
+            alert('기본 템플릿 삭제 중 오류가 발생했습니다.');
+        }
+    };
+    
+    // 개인 템플릿 삭제 핸들러
+    const handleDeletePersonalTemplate = async (template: Template) => {
+        if (!template.documentId) {
+            alert('템플릿을 찾을 수 없습니다.');
+            return;
+        }
+        
+        try {
+            // Google Drive API로 파일 삭제
+            await gapi.client.drive.files.delete({
+                fileId: template.documentId
+            });
+            
+            // 템플릿 목록 다시 로드 (usePersonalTemplates의 loadPersonalTemplates 호출)
+            // window.location.reload() 대신 개인 템플릿을 다시 로드하는 것이 더 나음
+            // 하지만 현재 구조상 새로고침이 가장 확실함
+            window.location.reload();
+            alert('개인 템플릿이 삭제되었습니다.');
+        } catch (error) {
+            console.error('Error deleting personal template:', error);
+            alert('개인 템플릿 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
     // 파일명 입력 모달 상태
     const [showFileNameModal, setShowFileNameModal] = useState(false);
     const [documentTitle, setDocumentTitle] = useState("");
@@ -1294,6 +1351,7 @@ function NewDocument({
                                                     template={template}
                                                     onUse={handleUseTemplateClick}
                                                     onDelete={() => {}}
+                                                    onDeleteTemplate={isAdminUser ? handleDeleteDefaultTemplate : undefined}
                                                     onEdit={isAdminUser ? (t)=>{
                                                       // 공유 템플릿 메타 수정 모달 열기
                                                       setEditingTemplate({ ...t });
@@ -1304,6 +1362,7 @@ function NewDocument({
                                                     defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                                     onToggleFavorite={toggleDefaultTemplateFavorite} // 기본 템플릿 즐겨찾기 토글
                                                     isFavorite={defaultTemplateFavorites.includes(template.title)} // 즐겨찾기 상태
+                                                    isAdmin={isAdminUser}
                                                 />
                                             ))}
                                         </>
@@ -1346,12 +1405,13 @@ function NewDocument({
                                 <TemplateList
                                     templates={filteredPersonalTemplates}
                                     onUseTemplate={handleUseTemplateClick}
-                                    onDeleteTemplate={() => {}} // 개인 템플릿은 삭제 불가
+                                    onDeleteTemplate={handleDeletePersonalTemplate} // 개인 템플릿 삭제 함수
                                     onEditTemplate={handleEditPersonalTemplate} // 개인 템플릿 수정 함수
                                     onEditPersonal={handleEditPersonalTemplate} // 개인 템플릿 수정 함수
                                     defaultTags={defaultTemplateTags} // Pass defaultTemplateTags
                                     onToggleFavorite={handleToggleFavorite} // Pass down the function
                                     isLoading={isTemplatesLoading || isLoadingPersonalTemplates}
+                                    isAdmin={isAdminUser}
                                 />
                             </SortableContext>
                         </DndContext>

@@ -8,15 +8,17 @@ interface Props {
     template: Template;
     onUse: (type: string, title: string) => void;
     onDelete: (rowIndex: number) => void;
+    onDeleteTemplate?: (template: Template) => void; // 템플릿 삭제 함수 (기본/개인)
     onEdit?: (template: Template) => void; // Make optional
     onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     isFixed: boolean;
     defaultTags: string[];
     onToggleFavorite?: (template: Template) => void;
     isFavorite?: boolean;
+    isAdmin?: boolean; // 관리자 여부
 }
 
-export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, onEditPersonal, isFixed, defaultTags, onToggleFavorite, isFavorite }: Props) {
+export function SortableTemplateCard({ id, template, onUse, onDelete, onDeleteTemplate, onEdit, onEditPersonal, isFixed, defaultTags, onToggleFavorite, isFavorite, isAdmin = false }: Props) {
     const {
         attributes,
         listeners,
@@ -37,6 +39,7 @@ export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, on
             template={template}
             onUse={onUse}
             onDelete={onDelete}
+            onDeleteTemplate={onDeleteTemplate}
             onEdit={onEdit}
             onEditPersonal={onEditPersonal}
             isFixed={isFixed}
@@ -46,6 +49,7 @@ export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, on
             onToggleFavorite={onToggleFavorite}
             isFavorite={isFavorite}
             allowFormEdit={!!template.isPersonal}
+            isAdmin={isAdmin}
         />
     );
 }

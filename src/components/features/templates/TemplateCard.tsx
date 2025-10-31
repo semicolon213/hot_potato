@@ -7,6 +7,7 @@ interface Props {
     template: Template;
     onUse: (type: string, title: string) => void;
     onDelete: (rowIndex: number) => void;
+    onDeleteTemplate?: (template: Template) => void; // 템플릿 삭제 함수 (기본/개인)
     onEdit?: (template: Template) => void; // Make optional
     onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     isFixed: boolean;
@@ -17,6 +18,7 @@ interface Props {
     onToggleFavorite?: (template: Template) => void; // 즐겨찾기 토글 함수
     isFavorite?: boolean; // 즐겨찾기 상태
     allowFormEdit?: boolean; // 양식 내용 수정 버튼 노출 여부
+    isAdmin?: boolean; // 관리자 여부
 }
 
 const tagToClassMap: { [key: string]: string } = {
@@ -39,7 +41,7 @@ function getCustomTagColorClass(tagName: string): string {
 }
 
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
-    ({ template, onUse, onDelete, onEdit, onEditPersonal, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite, allowFormEdit = true }, ref) => {
+    ({ template, onUse, onDelete, onDeleteTemplate, onEdit, onEditPersonal, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite, allowFormEdit = true, isAdmin = false }, ref) => {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const menuRef = useRef<HTMLDivElement>(null);
 
@@ -82,8 +84,8 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
 
         return (
             <div ref={ref} style={style} className="new-template-card">
-                {/* 개인 템플릿 파일 타입 표시 */}
-                {template.isPersonal && (
+                {/* 파일 타입 표시 (기본 템플릿 및 개인 템플릿 모두) */}
+                {template.mimeType && (
                     <div className="file-type-badge" title={
                         template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
                             ? '스프레드시트' 
@@ -125,6 +127,35 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                     <p className="new-card-description">{template.partTitle || template.description}</p>
                 </div>
                 <div className="new-card-footer">
+                    {/* 기본 템플릿 삭제 버튼 (관리자 전용, 왼쪽 하단, 빈 문서 제외) */}
+                    {!template.isPersonal && !isFixed && onDeleteTemplate && isAdmin && 
+                     template.type !== 'empty' && template.title !== '빈 문서' && (
+                        <button
+                            className="delete-template-button-footer"
+                            onClick={() => {
+                                if (window.confirm(`"${template.title}" 기본 템플릿을 삭제하시겠습니까?`)) {
+                                    onDeleteTemplate(template);
+                                }
+                            }}
+                            title="기본 템플릿 삭제 (관리자)"
+                        >
+                            <BiTrash />
+                        </button>
+                    )}
+                    {/* 개인 템플릿 삭제 버튼 (일반 사용자, 왼쪽 하단) */}
+                    {template.isPersonal && onDeleteTemplate && (
+                        <button
+                            className="delete-template-button-footer"
+                            onClick={() => {
+                                if (window.confirm(`"${template.title}" 개인 템플릿을 삭제하시겠습니까?`)) {
+                                    onDeleteTemplate(template);
+                                }
+                            }}
+                            title="개인 템플릿 삭제"
+                        >
+                            <BiTrash />
+                        </button>
+                    )}
                     {onToggleFavorite && (
                         <button
                             className={`favorite-button ${isFavorite ? 'favorited' : ''}`}

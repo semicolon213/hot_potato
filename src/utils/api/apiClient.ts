@@ -251,6 +251,13 @@ export class ApiClient {
     return this.request('getSharedTemplates');
   }
 
+  // 공유 템플릿 삭제 (관리자 전용)
+  async deleteSharedTemplate(fileId: string) {
+    // 사용자 이메일을 요청에 포함 (관리자 검증용)
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('deleteSharedTemplate', { fileId, userEmail: userInfo.email });
+  }
+
   async testDriveApi() {
     return this.request('testDriveApi');
   }
