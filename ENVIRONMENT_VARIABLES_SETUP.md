@@ -56,7 +56,9 @@ function setupScriptProperties() {
     'TEMPLATE_FOLDER_NAME': '양식',
     'SHARED_DOCUMENT_FOLDER_NAME': '공유 문서',
     'SHEET_NAME_USER': 'user',
-    'SHEET_NAME_ADMIN_KEYS': 'admin_keys'
+    'SHEET_NAME_ADMIN_KEYS': 'admin_keys',
+    'STATIC_TAG_SPREADSHEET_NAME': 'static_tag',
+    'STATIC_TAG_SHEET_NAME': 'tag'
   };
   
   const scriptProperties = PropertiesService.getScriptProperties();

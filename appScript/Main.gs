@@ -276,6 +276,42 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    // 기본 태그 목록 조회
+    if (req.action === 'getStaticTags') {
+      console.log('🏷️ 기본 태그 목록 조회 요청:', req);
+      const result = getStaticTags(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 추가
+    if (req.action === 'addStaticTag') {
+      console.log('🏷️ 기본 태그 추가 요청:', req);
+      const result = addStaticTag(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 수정
+    if (req.action === 'updateStaticTag') {
+      console.log('🏷️ 기본 태그 수정 요청:', req);
+      const result = updateStaticTag(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 삭제
+    if (req.action === 'deleteStaticTag') {
+      console.log('🏷️ 기본 태그 삭제 요청:', req);
+      const result = deleteStaticTag(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // 문서 삭제 액션 처리
     if (req.action === 'deleteDocuments') {
       console.log('🗑️ 문서 삭제 요청 받음:', req);

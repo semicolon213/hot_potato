@@ -321,23 +321,49 @@ function updateSharedTemplateMeta(req) {
     if (!req || !req.fileId) {
       return { success: false, message: 'fileId가 필요합니다.' };
     }
-    // 관리자 검증
-    var editorEmail = (req.meta && req.meta.creatorEmail) || req.editorEmail || '';
+    // 관리자 검증 (요청에서 이메일 가져오기, 없으면 Session 사용)
+    var editorEmail = req.editorEmail || (req.meta && req.meta.creatorEmail) || Session.getActiveUser().getEmail();
+    console.log('👤 기본 템플릿 수정 요청자 이메일:', editorEmail);
     var status = checkUserStatus(editorEmail);
     if (!status.success || !status.data || !status.data.user || status.data.user.is_admin !== 'O') {
       return { success: false, message: '관리자만 메타데이터를 수정할 수 있습니다.' };
     }
+    
+    var sanitize = function(s){ if(!s) return ''; s=String(s); s=s.replace(/[<>"'\\]/g,''); return s.substring(0,200); };
+    
+    // 파일명 업데이트를 위한 객체
+    var fileUpdate = {};
+    
+    // 제목(title)이 변경되면 파일명도 함께 업데이트
+    if (req.meta && req.meta.title !== undefined) {
+      var newFileName = sanitize(req.meta.title);
+      fileUpdate.name = newFileName;
+      console.log('📝 파일명 업데이트:', newFileName);
+    }
+    
+    // 메타데이터 업데이트
     var updateProps = {};
     if (req.meta) {
-      var sanitize = function(s){ if(!s) return ''; s=String(s); s=s.replace(/[<>"'\\]/g,''); return s.substring(0,200); };
       if (req.meta.title !== undefined) updateProps.title = sanitize(req.meta.title);
       if (req.meta.description !== undefined) updateProps.description = sanitize(req.meta.description);
       if (req.meta.tag !== undefined) updateProps.tag = sanitize(req.meta.tag);
       if (req.meta.creatorEmail !== undefined) updateProps.creatorEmail = sanitize(req.meta.creatorEmail);
     }
-    Drive.Files.update({ properties: updateProps }, req.fileId);
+    
+    // 파일명과 메타데이터를 함께 업데이트
+    if (Object.keys(updateProps).length > 0) {
+      fileUpdate.properties = updateProps;
+    }
+    
+    // 파일 업데이트 실행
+    if (Object.keys(fileUpdate).length > 0) {
+      Drive.Files.update(fileUpdate, req.fileId);
+      console.log('✅ 기본 템플릿 업데이트 완료:', req.fileId);
+    }
+    
     return { success: true };
   } catch (e) {
+    console.error('❌ 기본 템플릿 업데이트 오류:', e);
     return { success: false, message: '메타데이터 업데이트 실패: ' + e.message };
   }
 }

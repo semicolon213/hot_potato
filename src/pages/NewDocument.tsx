@@ -3,6 +3,12 @@ import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/f
 import type { Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
 import { apiClient } from "../utils/api/apiClient";
+import { 
+    addTag as addPersonalTag,
+    deleteTag as deletePersonalTag,
+    updateTag as updatePersonalTag,
+    fetchTags as fetchPersonalTags
+} from "../utils/database/personalTagManager";
 import { BiLoaderAlt } from "react-icons/bi";
 import "../components/features/templates/TemplateUI.css";
 import "../styles/pages/NewDocument.css";
@@ -54,6 +60,285 @@ function NewDocument({
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("전체");
     
+    // 기본 태그 상태 (Apps Script에서 로드)
+    const [staticTags, setStaticTags] = useState<string[]>([]);
+    const [isLoadingStaticTags, setIsLoadingStaticTags] = useState(false);
+    
+    // 관리자 여부 확인
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdminUser = userInfo?.is_admin === 'O' || userInfo?.isAdmin === true;
+    
+    // 기본 태그 추가 핸들러 (관리자 전용)
+    const handleAddStaticTag = async (newTag: string) => {
+        if (!isAdminUser) {
+            alert('기본 태그는 관리자만 추가할 수 있습니다.');
+            return;
+        }
+        
+        if (newTag && !staticTags.includes(newTag)) {
+            try {
+                const response = await apiClient.addStaticTag(newTag);
+                if (response.success) {
+                    // 기본 태그 목록 다시 로드
+                    const updatedResponse = await apiClient.getStaticTags();
+                    if (updatedResponse.success && updatedResponse.data) {
+                        setStaticTags(updatedResponse.data);
+                    }
+                    alert('기본 태그가 추가되었습니다.');
+                } else {
+                    alert('기본 태그 추가에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error adding static tag:', error);
+                alert('기본 태그 추가 중 오류가 발생했습니다.');
+            }
+        } else if (staticTags.includes(newTag)) {
+            alert('이미 존재하는 기본 태그입니다.');
+        }
+    };
+
+    // 기본 태그 수정 핸들러 (관리자 전용)
+    const handleUpdateStaticTag = async (oldTag: string, newTag: string) => {
+        if (!isAdminUser) {
+            alert('기본 태그는 관리자만 수정할 수 있습니다.');
+            return;
+        }
+        
+        if (!oldTag || !newTag || oldTag === newTag) {
+            return;
+        }
+
+        try {
+            // 먼저 영향 받는 템플릿 목록 확인
+            const checkResponse = await apiClient.updateStaticTag(oldTag, newTag, false);
+            if (!checkResponse.success || !checkResponse.data) {
+                alert('영향 받는 템플릿 확인 중 오류가 발생했습니다.');
+                return;
+            }
+            
+            const affectedShared = checkResponse.data.affectedSharedTemplates || [];
+            const affectedPersonal = checkResponse.data.affectedPersonalTemplates || [];
+            const totalAffected = affectedShared.length + affectedPersonal.length;
+            
+            if (totalAffected > 0) {
+                // 영향 받는 템플릿 목록 작성
+                let templateList = '';
+                if (affectedShared.length > 0) {
+                    templateList += '\n\n[기본 템플릿]\n';
+                    affectedShared.forEach((t: { name: string }) => {
+                        templateList += `  • ${t.name}\n`;
+                    });
+                }
+                if (affectedPersonal.length > 0) {
+                    templateList += '\n[개인 템플릿]\n';
+                    affectedPersonal.forEach((t: { name: string }) => {
+                        templateList += `  • ${t.name}\n`;
+                    });
+                }
+                
+                const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 템플릿들의 태그도 함께 변경됩니다:${templateList}\n정말로 수정하시겠습니까?`;
+                
+                if (!window.confirm(confirmMessage)) {
+                    return;
+                }
+            }
+            
+            // 실제 수정 수행
+            const response = await apiClient.updateStaticTag(oldTag, newTag, true);
+            if (response.success) {
+                // 기본 태그 목록 다시 로드
+                const updatedResponse = await apiClient.getStaticTags();
+                if (updatedResponse.success && updatedResponse.data) {
+                    setStaticTags(updatedResponse.data);
+                }
+                // 템플릿 목록 다시 로드 (태그 수정이 템플릿에 반영되었으므로)
+                await loadDynamicTemplates();
+                alert('기본 태그가 수정되었습니다.');
+            } else {
+                alert('기본 태그 수정에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+            }
+        } catch (error) {
+            console.error('Error updating static tag:', error);
+            alert('기본 태그 수정 중 오류가 발생했습니다.');
+        }
+    };
+
+    // 기본 태그 삭제 핸들러 (관리자 전용)
+    const handleDeleteStaticTag = async (tagToDelete: string) => {
+        if (!isAdminUser) {
+            alert('기본 태그는 관리자만 삭제할 수 있습니다.');
+            return;
+        }
+
+        try {
+            // 먼저 영향 받는 템플릿 목록 확인
+            const checkResponse = await apiClient.deleteStaticTag(tagToDelete, false, false);
+            if (!checkResponse.success || !checkResponse.data) {
+                alert('영향 받는 템플릿 확인 중 오류가 발생했습니다.');
+                return;
+            }
+            
+            const affectedShared = checkResponse.data.affectedSharedTemplates || [];
+            const affectedPersonal = checkResponse.data.affectedPersonalTemplates || [];
+            const totalAffected = affectedShared.length + affectedPersonal.length;
+            
+            if (totalAffected > 0) {
+                // 영향 받는 템플릿 목록 작성
+                let templateList = '';
+                if (affectedShared.length > 0) {
+                    templateList += '\n\n[기본 템플릿]\n';
+                    affectedShared.forEach((t: { name: string }) => {
+                        templateList += `  • ${t.name}\n`;
+                    });
+                }
+                if (affectedPersonal.length > 0) {
+                    templateList += '\n[개인 템플릿]\n';
+                    affectedPersonal.forEach((t: { name: string }) => {
+                        templateList += `  • ${t.name}\n`;
+                    });
+                }
+                
+                const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 템플릿들이 영향받습니다:${templateList}\n\n템플릿도 함께 삭제하시겠습니까?\n(취소를 누르면 개인 템플릿은 "기본" 태그로 변경됩니다)`;
+                
+                const deleteTemplates = window.confirm(confirmMessage);
+                
+                // 실제 삭제 수행
+                const response = await apiClient.deleteStaticTag(tagToDelete, true, deleteTemplates);
+                if (response.success) {
+                    // 기본 태그 목록 다시 로드
+                    const updatedResponse = await apiClient.getStaticTags();
+                    if (updatedResponse.success && updatedResponse.data) {
+                        setStaticTags(updatedResponse.data);
+                    }
+                    // 템플릿 목록 다시 로드
+                    await loadDynamicTemplates();
+                    
+                    if (deleteTemplates && response.data) {
+                        const deletedCount = (response.data.deletedSharedTemplates || 0) + (response.data.deletedPersonalTemplates || 0);
+                        alert(`기본 태그가 삭제되었습니다.\n${deletedCount}개의 템플릿도 함께 삭제되었습니다.`);
+                    } else if (response.data && response.data.updatedPersonalTemplates > 0) {
+                        alert(`기본 태그가 삭제되었습니다.\n${response.data.updatedPersonalTemplates}개의 개인 템플릿이 "기본" 태그로 변경되었습니다.`);
+                    } else {
+                        alert('기본 태그가 삭제되었습니다.');
+                    }
+                } else {
+                    alert('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+                }
+            } else {
+                // 영향 받는 템플릿이 없으면 바로 삭제
+                if (!window.confirm(`기본 태그 "${tagToDelete}"를 삭제하시겠습니까?`)) {
+                    return;
+                }
+                
+                const response = await apiClient.deleteStaticTag(tagToDelete, true, false);
+                if (response.success) {
+                    const updatedResponse = await apiClient.getStaticTags();
+                    if (updatedResponse.success && updatedResponse.data) {
+                        setStaticTags(updatedResponse.data);
+                    }
+                    alert('기본 태그가 삭제되었습니다.');
+                } else {
+                    alert('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting static tag:', error);
+            alert('기본 태그 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
+    // 개인 태그 추가 핸들러
+    const handleAddTag = async (newTag: string) => {
+        if (newTag && !tags.includes(newTag)) {
+            try {
+                const success = await addPersonalTag(newTag);
+                if (success) {
+                    // 태그 목록을 다시 로드
+                    const updatedTags = await fetchPersonalTags();
+                    setTags(updatedTags);
+                } else {
+                    console.log('태그 추가에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error saving tag:', error);
+                console.log('태그 저장 중 오류가 발생했습니다.');
+            }
+        }
+    };
+
+    // 개인 태그 삭제 핸들러
+    const handleDeleteTag = async (tagToDelete: string) => {
+        try {
+            const { checkTagDeletionImpact } = await import('../utils/database/personalTagManager');
+            
+            // 태그 삭제 시 영향받는 개인 양식들 확인
+            const impact = await checkTagDeletionImpact(tagToDelete);
+            
+            if (impact.affectedFiles.length > 0) {
+                const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
+                const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 개인 양식들도 함께 삭제됩니다:\n\n${affectedFilesList}\n\n정말로 삭제하시겠습니까?`;
+                
+                if (!window.confirm(confirmMessage)) {
+                    return;
+                }
+            } else {
+                if (!window.confirm(`'${tagToDelete}' 태그를 삭제하시겠습니까?`)) {
+                    return;
+                }
+            }
+
+            const success = await deletePersonalTag(tagToDelete);
+            if (success) {
+                const updatedTags = await fetchPersonalTags();
+                setTags(updatedTags);
+            } else {
+                alert('태그 삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Error deleting tag:', error);
+            alert('태그 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
+    // 개인 태그 수정 핸들러
+    const handleUpdateTag = async (oldTag: string, newTag: string) => {
+        if (!oldTag || !newTag || oldTag === newTag) {
+            return;
+        }
+
+        try {
+            const { checkTagUpdateImpact, updatePersonalTemplateMetadata } = await import('../utils/database/personalTagManager');
+            
+            const impact = await checkTagUpdateImpact(oldTag, newTag);
+            
+            if (impact.affectedFiles.length > 0) {
+                const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
+                const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 개인 양식들의 파일명도 함께 변경됩니다:\n\n${affectedFilesList}\n\n정말로 수정하시겠습니까?`;
+                
+                if (!window.confirm(confirmMessage)) {
+                    return;
+                }
+            }
+
+            const success = await updatePersonalTag(oldTag, newTag);
+            if (success) {
+                // 개인 템플릿 메타데이터 업데이트
+                if (impact.affectedFiles.length > 0) {
+                    await updatePersonalTemplateMetadata(oldTag, newTag);
+                }
+                
+                const updatedTags = await fetchPersonalTags();
+                setTags(updatedTags);
+                alert('태그가 수정되었습니다.');
+            } else {
+                alert('태그 수정에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Error updating tag:', error);
+            alert('태그 수정 중 오류가 발생했습니다.');
+        }
+    };
+
     // 파일명 입력 모달 상태
     const [showFileNameModal, setShowFileNameModal] = useState(false);
     const [documentTitle, setDocumentTitle] = useState("");
@@ -554,8 +839,6 @@ function NewDocument({
     const [showSharedUploadModal, setShowSharedUploadModal] = useState(false);
     const [sharedUploadFile, setSharedUploadFile] = useState<File | null>(null);
     const [sharedMeta, setSharedMeta] = useState({ title: '', description: '', tag: '' });
-    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const isAdminUser = userInfo?.is_admin === 'O' || userInfo?.isAdmin === true;
     const handleSharedFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
       const f = e.target.files?.[0] || null;
       setSharedUploadFile(f);
@@ -675,9 +958,20 @@ function NewDocument({
                     alert('개인 템플릿 수정 중 오류가 발생했습니다.');
                 }
             } else {
-                // 공유(기본) 템플릿 메타 수정 (문서 내용 수정 아님)
+                // 공유(기본) 템플릿 메타 수정 (문서 내용 수정 아님, 관리자 전용)
+                if (!isAdminUser) {
+                    alert('기본 템플릿 수정은 관리자만 가능합니다.');
+                    return;
+                }
+                
                 if (editingTemplate.documentId) {
                     try {
+                        // 기본 태그인지 확인
+                        if (!staticTags.includes(editingTemplate.tag)) {
+                            alert('기본 템플릿은 기본 태그만 사용할 수 있습니다.');
+                            return;
+                        }
+                        
                         const res = await apiClient.updateSharedTemplateMeta({
                             fileId: editingTemplate.documentId,
                             meta: {
@@ -687,15 +981,20 @@ function NewDocument({
                             }
                         });
                         if (res.success) {
-                            alert('공유 템플릿 정보가 수정되었습니다.');
+                            // 기본 템플릿 목록 다시 로드
+                            await loadDynamicTemplates();
+                            handleEditDocCancel();
+                            alert('기본 템플릿 정보가 수정되었습니다.');
                         } else {
                             alert('수정 실패: ' + (res.message || '알 수 없는 오류'));
                         }
                     } catch (e) {
+                        console.error('기본 템플릿 수정 오류:', e);
                         alert('수정 중 오류가 발생했습니다.');
                     }
+                } else {
+                    handleEditDocCancel();
                 }
-                handleEditDocCancel();
             }
         }
     };
@@ -733,6 +1032,30 @@ function NewDocument({
         closePermissionModal,
         uploadSharedTemplate,
     } = useTemplateUI([], onPageChange, searchTerm, activeTab); // 빈 배열로 시트 템플릿 제거
+
+    // 기본 태그 로드 (Apps Script에서)
+    useEffect(() => {
+        const loadStaticTags = async () => {
+            setIsLoadingStaticTags(true);
+            try {
+                console.log('🏷️ 기본 태그 로드 시작...');
+                const response = await apiClient.getStaticTags();
+                if (response.success && response.data) {
+                    setStaticTags(response.data);
+                    console.log('✅ 기본 태그 로드 완료:', response.data.length, '개');
+                } else {
+                    console.warn('⚠️ 기본 태그 로드 실패:', response.message);
+                    setStaticTags([]);
+                }
+            } catch (error) {
+                console.error('❌ 기본 태그 로드 오류:', error);
+                setStaticTags([]);
+            } finally {
+                setIsLoadingStaticTags(false);
+            }
+        };
+        loadStaticTags();
+    }, []);
 
     // 동적 템플릿이 로드되면 기본 템플릿 목록 업데이트
     useEffect(() => {
@@ -828,12 +1151,11 @@ function NewDocument({
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
     const orderedTags = useMemo(() => {
-        // Create a unique array of default tags, preserving their first-seen order.
-        const uniqueDefaultTags = [...new Set(defaultTemplateTags)];
-        const defaultTagSet = new Set(uniqueDefaultTags);
-        const customTags = tags.filter(tag => !defaultTagSet.has(tag));
-        return [...uniqueDefaultTags, ...customTags];
-    }, [tags]);
+        // 실제 기본 태그 (Apps Script에서 로드) 사용
+        const staticTagSet = new Set(staticTags);
+        const customTags = tags.filter(tag => !staticTagSet.has(tag));
+        return [...staticTags, ...customTags];
+    }, [staticTags, tags]);
 
     return (
         <div>
@@ -843,10 +1165,15 @@ function NewDocument({
                 setActiveTab={setActiveTab} 
                 tags={orderedTags} 
                 managedTags={tags}
+                staticTags={staticTags}
                 defaultTags={defaultTemplateTags}
-                addTag={addTag} 
-                deleteTag={deleteTag} 
-                updateTag={updateTag} 
+                isAdmin={isAdminUser}
+                addTag={handleAddTag} 
+                deleteTag={handleDeleteTag} 
+                updateTag={handleUpdateTag}
+                addStaticTag={handleAddStaticTag}
+                deleteStaticTag={handleDeleteStaticTag}
+                updateStaticTag={handleUpdateStaticTag}
             />
 
             <SearchBar
@@ -1181,11 +1508,11 @@ function NewDocument({
                                     <select
                                         id="doc-tag"
                                         className="form-select-large"
-                                        value={newDocData.tag}
+                                        value={newDocData.tag || ""}
                                         onChange={(e) => handleInputChange("tag", e.target.value)}
                                     >
-                                        <option value="" disabled>카테고리를 선택하세요</option>
-                                        {orderedTags.map(tag => (
+                                        <option value="">선택 안 함</option>
+                                        {(orderedTags.length > 0 ? orderedTags : ['기본']).map(tag => (
                                             <option key={tag} value={tag}>{tag}</option>
                                         ))}
                                     </select>
@@ -1255,16 +1582,22 @@ function NewDocument({
                                 <select
                                     id="edit-doc-tag"
                                     className="modal-input"
-                                    value={editingTemplate.tag}
+                                    value={editingTemplate.tag || ""}
                                     onChange={(e) => handleEditInputChange("tag", e.target.value)}
                                 >
-                                    {orderedTags.map(tag => (
+                                    <option value="">선택 안 함</option>
+                                    {/* 기본 템플릿은 기본 태그만, 개인 템플릿은 모든 태그 선택 가능 */}
+                                    {(editingTemplate.isPersonal 
+                                        ? orderedTags 
+                                        : (staticTags.length > 0 ? staticTags : ['기본'])
+                                    ).map(tag => (
                                         <option key={tag} value={tag}>{tag}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
                         <div className="modal-footer">
+                            {/* 개인 템플릿만 양식 내용 수정 가능 */}
                             {editingTemplate.isPersonal && editingTemplate.documentId && (
                                 <button 
                                     className="modal-button secondary" 
@@ -1276,11 +1609,21 @@ function NewDocument({
                                     양식 내용 수정
                                 </button>
                             )}
+                            {/* 기본 템플릿은 관리자만 수정 가능 (양식 내용 수정 불가) */}
+                            {!editingTemplate.isPersonal && !isAdminUser && (
+                                <div className="modal-info-text" style={{ color: '#666', fontSize: '12px', marginRight: 'auto' }}>
+                                    기본 템플릿 수정은 관리자만 가능합니다.
+                                </div>
+                            )}
                             <div className="modal-button-group">
                                 <button className="modal-button cancel" onClick={handleEditDocCancel}>
                                     취소
                                 </button>
-                                <button className="modal-button confirm" onClick={handleUpdateDocSubmit}>
+                                <button 
+                                    className="modal-button confirm" 
+                                    onClick={handleUpdateDocSubmit}
+                                    disabled={!editingTemplate.isPersonal && !isAdminUser}
+                                >
                                     저장
                                 </button>
                             </div>
@@ -1395,9 +1738,10 @@ function NewDocument({
                       </div>
                       <div className="form-group-large">
                         <label className="form-label-large"><span className="label-icon">🏷️</span>카테고리</label>
-                        <select className="form-select-large" value={sharedMeta.tag} onChange={(e)=>setSharedMeta({...sharedMeta, tag: e.target.value})}>
-                          <option value="" disabled>카테고리를 선택하세요</option>
-                          {orderedTags.map(tag => (<option key={tag} value={tag}>{tag}</option>))}
+                        <select className="form-select-large" value={sharedMeta.tag || ""} onChange={(e)=>setSharedMeta({...sharedMeta, tag: e.target.value})}>
+                          <option value="">선택 안 함</option>
+                          {/* 기본 템플릿은 기본 태그만 선택 가능 */}
+                          {(staticTags.length > 0 ? staticTags : ['기본']).map(tag => (<option key={tag} value={tag}>{tag}</option>))}
                         </select>
                       </div>
                     </div>

@@ -456,6 +456,52 @@ margin-left: 0;
     background-color: #f1f3f5;
 }
 
+/* 태그 배지 스타일 */
+.tag-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.tag-badge.static {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.tag-badge.personal {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+    border: 1px solid #c4b5fd;
+}
+
+/* 기본 태그와 개인 태그 추가 버튼 구분 */
+.add-tag-button.static {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.add-tag-button.static:hover {
+    background-color: #dbeafe;
+    border-color: #93c5fd;
+}
+
+.add-tag-button.personal {
+    background-color: #faf5ff;
+    color: #7c3aed;
+    border: 1px solid #e9d5ff;
+}
+
+.add-tag-button.personal:hover {
+    background-color: #f3e8ff;
+    border-color: #c4b5fd;
+}
+
 .add-tag-button {
     color: #007bff;
     cursor: pointer;
@@ -471,6 +517,17 @@ margin-left: 0;
     display: flex;
     align-items: center;
     margin-left: 20px;
+}
+
+/* 기본 태그와 개인 태그 입력 필드 구분 */
+.new-tag-input.static {
+    border-color: #93c5fd;
+    background-color: #eff6ff;
+}
+
+.new-tag-input.personal {
+    border-color: #c4b5fd;
+    background-color: #faf5ff;
 }
 
 .new-tag-input {

@@ -434,6 +434,10 @@
     const TEMPLATE_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME + '/' + TEMPLATE_FOLDER_NAME;
     const SHARED_DOCUMENT_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME + '/' + SHARED_DOCUMENT_FOLDER_NAME;
     
+    // 기본 태그 관리 설정 (스크립트 속성 또는 기본값 사용)
+    const STATIC_TAG_SPREADSHEET_NAME = PropertiesService.getScriptProperties().getProperty('STATIC_TAG_SPREADSHEET_NAME') || 'static_tag';
+    const STATIC_TAG_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('STATIC_TAG_SHEET_NAME') || 'tag';
+    
     // 역할별 스프레드시트 이름 매핑
     const ROLE_SPREADSHEET_MAP = {
         'student': '학생_문서관리',

@@ -234,7 +234,16 @@ export class ApiClient {
     fileId: string;
     meta: Partial<{ title: string; description: string; tag: string; creatorEmail: string }>;
   }) {
-    return this.request('updateSharedTemplateMeta', params);
+    // 사용자 이메일을 요청에 포함 (관리자 검증용)
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('updateSharedTemplateMeta', {
+      ...params,
+      meta: {
+        ...params.meta,
+        creatorEmail: params.meta?.creatorEmail || userInfo.email
+      },
+      editorEmail: userInfo.email
+    });
   }
 
   // 공유 템플릿 목록(메타데이터 우선)
@@ -272,6 +281,32 @@ export class ApiClient {
   // 스프레드시트 ID 목록 조회
   async getSpreadsheetIds(spreadsheetNames: string[]) {
     return this.request('getSpreadsheetIds', { spreadsheetNames });
+  }
+
+  // 기본 태그 목록 조회
+  async getStaticTags() {
+    return this.request<string[]>('getStaticTags');
+  }
+
+  // 기본 태그 추가 (관리자 전용)
+  async addStaticTag(tag: string) {
+    // 사용자 이메일을 요청에 포함
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('addStaticTag', { tag, userEmail: userInfo.email });
+  }
+
+  // 기본 태그 수정 (관리자 전용)
+  async updateStaticTag(oldTag: string, newTag: string, confirm: boolean = false) {
+    // 사용자 이메일을 요청에 포함
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('updateStaticTag', { oldTag, newTag, userEmail: userInfo.email, confirm });
+  }
+
+  // 기본 태그 삭제 (관리자 전용)
+  async deleteStaticTag(tag: string, confirm: boolean = false, deleteTemplates: boolean = false) {
+    // 사용자 이메일을 요청에 포함
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('deleteStaticTag', { tag, userEmail: userInfo.email, confirm, deleteTemplates });
   }
 
   // 테스트 API
