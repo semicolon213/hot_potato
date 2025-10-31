@@ -1,0 +1,350 @@
+/* WorkflowActionModal.css */
+
+.workflow-action-modal {
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.workflow-action-info {
+  margin-bottom: 24px;
+}
+
+.info-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: var(--border-radius-md);
+}
+
+.info-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 500;
+  color: var(--text-medium);
+  min-width: 80px;
+  margin-right: 12px;
+}
+
+.info-value {
+  color: var(--text-dark);
+}
+
+.document-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.document-link:hover {
+  text-decoration: underline;
+}
+
+.progress-info {
+  display: flex;
+  gap: 24px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-label {
+  font-weight: 500;
+  color: var(--text-medium);
+}
+
+.progress-value {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.workflow-line {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line-step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s;
+}
+
+.line-step-item.current {
+  border-color: var(--primary);
+  background-color: #e3f2fd;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.line-step-item.approved {
+  border-left: 3px solid var(--success);
+}
+
+.line-step-item.rejected {
+  border-left: 3px solid var(--error);
+}
+
+.line-step-item.held {
+  border-left: 3px solid #ff9800;
+}
+
+.line-step-item.pending {
+  border-left: 3px solid var(--border-color);
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.line-step-item.current .step-number {
+  background-color: var(--primary-dark);
+}
+
+.line-step-item.approved .step-number {
+  background-color: var(--success);
+}
+
+.line-step-item.rejected .step-number {
+  background-color: var(--error);
+}
+
+.line-step-item.held .step-number {
+  background-color: #ff9800;
+}
+
+.step-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.step-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.status-badge.approved {
+  background-color: #e8f5e9;
+  color: var(--success);
+}
+
+.status-badge.rejected {
+  background-color: #ffebee;
+  color: var(--error);
+}
+
+.status-badge.held {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.status-badge.pending {
+  background-color: var(--bg-light);
+  color: var(--text-medium);
+}
+
+.action-selection {
+  margin-bottom: 24px;
+}
+
+.resume-notice {
+  padding: 12px;
+  background-color: #fff3e0;
+  border-left: 4px solid #ff9800;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 16px;
+}
+
+.resume-notice p {
+  margin: 0;
+  font-size: 13px;
+  color: #e65100;
+  font-weight: 500;
+}
+
+.action-selection h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  background-color: #f8f9fa;
+}
+
+.action-btn.active.approve {
+  border-color: var(--success);
+  background-color: #e8f5e9;
+  color: var(--success);
+}
+
+.action-btn.active.reject {
+  border-color: var(--error);
+  background-color: #ffebee;
+  color: var(--error);
+}
+
+.action-btn.active.hold {
+  border-color: var(--warning);
+  background-color: #fff8e1;
+  color: var(--warning);
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-form {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.form-group label .required {
+  color: var(--error);
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.form-group textarea:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.modal-actions .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-actions .btn-secondary {
+  background-color: #f5f5f5;
+  color: var(--text-dark);
+}
+
+.modal-actions .btn-secondary:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+.modal-actions .btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.modal-actions .btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-dark);
+}
+
+.modal-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+

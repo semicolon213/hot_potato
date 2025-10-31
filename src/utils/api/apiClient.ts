@@ -9,8 +9,22 @@ import type {
   CreateDocumentResponse,
   RegistrationData,
   DocumentsListResponse,
-  UserNameResponse
+  UserNameResponse,
+  WorkflowRequestResponse,
+  WorkflowInfoResponse,
+  WorkflowListResponse,
+  WorkflowTemplateResponse,
+  WorkflowTemplatesListResponse
 } from '../../types/api/apiResponses';
+import type {
+  WorkflowRequestData,
+  SetWorkflowLineData,
+  GrantWorkflowPermissionsData,
+  ReviewActionData,
+  PaymentActionData,
+  MyPendingWorkflowsParams,
+  WorkflowHistoryParams
+} from '../../types/documents';
 
 // API 응답 타입 정의
 export interface ApiResponse<T = unknown> {
@@ -367,6 +381,147 @@ export class ApiClient {
       console.error('연결 테스트 실패:', error);
       return { success: false, error: (error as Error).message };
     }
+  }
+
+  // ===== 워크플로우 관련 API =====
+
+  // 워크플로우 요청
+  async requestWorkflow(data: WorkflowRequestData) {
+    return this.request<WorkflowRequestResponse>('requestWorkflow', data);
+  }
+
+  // 워크플로우 라인 설정
+  async setWorkflowLine(data: SetWorkflowLineData) {
+    return this.request('setWorkflowLine', data);
+  }
+
+  // 문서 권한 부여
+  async grantWorkflowPermissions(data: GrantWorkflowPermissionsData) {
+    return this.request('grantWorkflowPermissions', data);
+  }
+
+  // 검토 단계 승인
+  async approveReview(data: ReviewActionData) {
+    return this.request<WorkflowInfoResponse>('approveReview', data);
+  }
+
+  // 검토 단계 반려
+  async rejectReview(data: ReviewActionData) {
+    return this.request<WorkflowInfoResponse>('rejectReview', data);
+  }
+
+  // 검토 단계 보류
+  async holdReview(data: ReviewActionData) {
+    return this.request<WorkflowInfoResponse>('holdReview', data);
+  }
+
+  // 결재 단계 승인
+  async approvePayment(data: PaymentActionData) {
+    return this.request<WorkflowInfoResponse>('approvePayment', data);
+  }
+
+  // 결재 단계 반려
+  async rejectPayment(data: PaymentActionData) {
+    return this.request<WorkflowInfoResponse>('rejectPayment', data);
+  }
+
+  // 결재 단계 보류
+  async holdPayment(data: PaymentActionData) {
+    return this.request<WorkflowInfoResponse>('holdPayment', data);
+  }
+
+  // 워크플로우 상태 조회
+  async getWorkflowStatus(params: {
+    workflowId?: string;
+    documentId?: string;
+    workflowDocumentId?: string;
+  }) {
+    return this.request<WorkflowInfoResponse>('getWorkflowStatus', params);
+  }
+
+  // 내 담당 워크플로우 조회
+  async getMyPendingWorkflows(params: MyPendingWorkflowsParams) {
+    return this.request<WorkflowListResponse>('getMyPendingWorkflows', params);
+  }
+
+  // 내가 올린 결재 목록 조회
+  async getMyRequestedWorkflows(userEmail: string) {
+    return this.request<WorkflowListResponse>('getMyRequestedWorkflows', { userEmail });
+  }
+
+  // 결재 완료된 리스트 조회
+  async getCompletedWorkflows(params: {
+    userEmail: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    return this.request<WorkflowListResponse>('getCompletedWorkflows', params);
+  }
+
+  // 워크플로우 재제출
+  async resubmitWorkflow(data: {
+    workflowId: string;
+    userEmail: string;
+    userName?: string;
+    workflowTitle?: string;
+    workflowContent?: string;
+    reviewLine?: Array<{ step: number; email: string; name?: string }>;  // 재제출 시 새로운 검토 라인
+    paymentLine?: Array<{ step: number; email: string; name?: string }>;  // 재제출 시 새로운 결재 라인
+  }) {
+    return this.request<WorkflowInfoResponse>('resubmitWorkflow', data);
+  }
+
+  // 워크플로우 이력 조회
+  async getWorkflowHistory(params: WorkflowHistoryParams) {
+    return this.request('getWorkflowHistory', params);
+  }
+
+  // 워크플로우 템플릿 목록 조회
+  async getWorkflowTemplates() {
+    return this.request<WorkflowTemplatesListResponse>('getWorkflowTemplates');
+  }
+
+  // 워크플로우 템플릿 생성 (관리자 전용)
+  async createWorkflowTemplate(data: {
+    templateName: string;
+    documentTag: string;
+    reviewLine: Array<{ step: number; email: string; name: string }>;
+    paymentLine: Array<{ step: number; email: string; name: string }>;
+    isDefault?: boolean;
+    description?: string;
+  }) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request<WorkflowTemplateResponse>('createWorkflowTemplate', {
+      ...data,
+      createdBy: userInfo.email,
+      userEmail: userInfo.email
+    });
+  }
+
+  // 워크플로우 템플릿 수정 (관리자 전용)
+  async updateWorkflowTemplate(data: {
+    templateId: string;
+    templateName?: string;
+    documentTag?: string;
+    reviewLine?: Array<{ step: number; email: string; name: string }>;
+    paymentLine?: Array<{ step: number; email: string; name: string }>;
+    isDefault?: boolean;
+    description?: string;
+  }) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request<WorkflowTemplateResponse>('updateWorkflowTemplate', {
+      ...data,
+      userEmail: userInfo.email
+    });
+  }
+
+  // 워크플로우 템플릿 삭제 (관리자 전용)
+  async deleteWorkflowTemplate(templateId: string) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('deleteWorkflowTemplate', {
+      templateId,
+      userEmail: userInfo.email
+    });
   }
 }
 

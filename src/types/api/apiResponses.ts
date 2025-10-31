@@ -110,3 +110,118 @@ export interface UserNameResponse {
   name: string;
 }
 
+// 워크플로우 관련 응답 타입 (documents.ts에서 import할 수도 있지만, apiResponses.ts에도 정의)
+export interface WorkflowRequestResponse {
+  workflowId: string;
+  createWorkflowDocument: boolean;
+  attachDocument: boolean;
+  workflowDocumentId?: string;
+  workflowDocumentUrl?: string;
+  documentId?: string;
+  documentUrl?: string;
+  attachedDocumentIds?: string[];  // 여러 첨부 문서 ID 목록
+  attachedDocumentUrls?: string[];  // 여러 첨부 문서 URL 목록
+  attachedDocumentTitles?: string[];  // 여러 첨부 문서 제목 목록
+  attachedDocumentId?: string;  // 하위 호환성 (첫 번째 문서)
+  attachedDocumentUrl?: string;  // 하위 호환성 (첫 번째 문서)
+  attachedDocumentTitle?: string;  // 하위 호환성 (첫 번째 문서)
+  workflowStatus: string;
+  workflowRequestDate: string;
+  reviewLine: Array<{
+    step: number;
+    email: string;
+    name: string;
+    status?: string;
+    date?: string;
+    reason?: string;
+    opinion?: string;
+  }>;
+  paymentLine: Array<{
+    step: number;
+    email: string;
+    name: string;
+    status?: string;
+    date?: string;
+    reason?: string;
+    opinion?: string;
+  }>;
+  permissionResult: {
+    successCount: number;
+    failCount: number;
+    grantedUsers: string[];
+    failedUsers: string[];
+  };
+  requiresFrontendPermissionGrant?: boolean;  // 프론트엔드에서 권한 부여 필요 여부 (개인 문서)
+  personalDocuments?: Array<{                 // 프론트엔드에서 권한 부여할 문서 목록
+    documentId: string;
+    userEmails: string[];
+  }>;
+}
+
+export interface WorkflowInfoResponse {
+  workflowId: string;
+  workflowType: string;
+  documentId?: string;
+  documentTitle?: string;
+  documentUrl?: string;
+  workflowDocumentId?: string;
+  workflowDocumentTitle?: string;
+  workflowDocumentUrl?: string;
+  attachedDocumentIds?: string[];  // 여러 첨부 문서 ID 목록 (쉼표로 구분된 문자열을 파싱)
+  attachedDocumentUrls?: string[];  // 여러 첨부 문서 URL 목록 (쉼표로 구분된 문자열을 파싱)
+  attachedDocumentTitles?: string[];  // 여러 첨부 문서 제목 목록 (쉼표로 구분된 문자열을 파싱)
+  attachedDocumentId?: string;  // 하위 호환성 (첫 번째 문서 또는 단일 문서)
+  attachedDocumentTitle?: string;  // 하위 호환성 (첫 번째 문서 또는 단일 문서)
+  attachedDocumentUrl?: string;  // 하위 호환성 (첫 번째 문서 또는 단일 문서)
+  requesterEmail: string;
+  requesterName: string;
+  workflowStatus: string;
+  workflowRequestDate: string;
+  currentReviewStep?: number;
+  currentPaymentStep?: number;
+  reviewLine: Array<{
+    step: number;
+    email: string;
+    name: string;
+    status?: string;
+    date?: string;
+    reason?: string;
+    opinion?: string;
+  }>;
+  paymentLine: Array<{
+    step: number;
+    email: string;
+    name: string;
+    status?: string;
+    date?: string;
+    reason?: string;
+    opinion?: string;
+  }>;
+  workflowCompleteDate?: string;
+}
+
+export type WorkflowListResponse = WorkflowInfoResponse[];
+
+export interface WorkflowTemplateResponse {
+  templateId: string;
+  templateName: string;
+  documentTag: string;
+  reviewLine: Array<{
+    step: number;
+    email: string;
+    name: string;
+  }>;
+  paymentLine: Array<{
+    step: number;
+    email: string;
+    name: string;
+  }>;
+  isDefault: boolean;
+  createdDate: string;
+  updatedDate: string;
+  createdBy: string;
+  description?: string;
+}
+
+export type WorkflowTemplatesListResponse = WorkflowTemplateResponse[];
+

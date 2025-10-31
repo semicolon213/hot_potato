@@ -75,3 +75,249 @@ export interface InfoCardItem {
   type?: string;
   [key: string]: string | boolean | undefined;
 }
+
+/**
+ * 워크플로우 타입
+ */
+export type WorkflowType = 'direct' | 'workflow' | 'workflow_with_attachment';
+
+/**
+ * 워크플로우 상태
+ */
+export type WorkflowStatus = 
+  | '대기' 
+  | '검토중' 
+  | '검토완료' 
+  | '검토반려' 
+  | '검토보류'
+  | '결제중' 
+  | '결제완료' 
+  | '전체반려';
+
+/**
+ * 라인 단계 상태
+ */
+export type LineStepStatus = '대기' | '승인' | '반려' | '보류';
+
+/**
+ * 라인 타입
+ */
+export type LineType = 'review' | 'payment';
+
+/**
+ * 액션 타입
+ */
+export type ActionType = '요청' | '승인' | '반려' | '완료' | '보류' | '회송';
+
+/**
+ * 검토/결재 라인 단계 정보
+ */
+export interface WorkflowLineStep {
+  step: number;
+  email: string;
+  name: string;
+  status?: LineStepStatus;
+  date?: string;
+  reason?: string;
+  opinion?: string;
+}
+
+/**
+ * 검토 라인
+ */
+export type ReviewLine = WorkflowLineStep[];
+
+/**
+ * 결재 라인
+ */
+export type PaymentLine = WorkflowLineStep[];
+
+/**
+ * 권한 부여 결과
+ */
+export interface PermissionResult {
+  successCount: number;
+  failCount: number;
+  grantedUsers: string[];
+  failedUsers: string[];
+  details?: Array<{
+    email: string;
+    success: boolean;
+    message?: string;
+  }>;
+}
+
+/**
+ * 워크플로우 정보
+ */
+export interface WorkflowInfo {
+  workflowId: string;
+  workflowType: WorkflowType;
+  documentId?: string;
+  documentTitle?: string;
+  documentUrl?: string;
+  workflowDocumentId?: string;
+  workflowDocumentTitle?: string;
+  workflowDocumentUrl?: string;
+  attachedDocumentId?: string;
+  attachedDocumentTitle?: string;
+  attachedDocumentUrl?: string;
+  requesterEmail: string;
+  requesterName: string;
+  workflowStatus: WorkflowStatus;
+  workflowRequestDate: string;
+  currentReviewStep?: number;
+  currentPaymentStep?: number;
+  reviewLine: ReviewLine;
+  paymentLine: PaymentLine;
+  workflowCompleteDate?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * 워크플로우 템플릿
+ */
+export interface WorkflowTemplate {
+  templateId: string;
+  templateName: string;
+  documentTag: string;
+  reviewLine: ReviewLine;
+  paymentLine: PaymentLine;
+  isDefault: boolean;
+  createdDate: string;
+  updatedDate: string;
+  createdBy: string;
+  description?: string;
+}
+
+/**
+ * 워크플로우 이력
+ */
+export interface WorkflowHistory {
+  historyId: string;
+  workflowId: string;
+  documentId?: string;
+  documentTitle?: string;
+  lineType: LineType;
+  stepNumber: number;
+  actionType: ActionType;
+  actorEmail: string;
+  actorName: string;
+  actorPosition?: string;
+  actionDate: string;
+  opinion?: string;
+  rejectReason?: string;
+  previousStatus?: string;
+  newStatus?: string;
+  processingTime?: number;
+}
+
+/**
+ * 워크플로우 요청 데이터
+ */
+export interface WorkflowRequestData {
+  createWorkflowDocument: boolean;
+  attachDocument: boolean;
+  documentId?: string;              // 결재할 문서 ID (문서 직접 결재 시)
+  attachedDocumentIds?: string[];   // 첨부할 문서 ID 목록 (결재 문서 생성 + 첨부 시, 여러 개 가능)
+  attachedDocumentId?: string;       // 첨부할 문서 ID (단일, 하위 호환성용, deprecated)
+  isPersonalDocument?: boolean;  // 개인 문서 여부 (개인 문서는 프론트엔드에서 권한 부여)
+  workflowTitle?: string;
+  workflowContent?: string;
+  requesterEmail: string;
+  requesterName?: string;
+  reviewLine: ReviewLine;
+  paymentLine: PaymentLine;
+  useTemplate?: string;
+}
+
+/**
+ * 워크플로우 요청 응답
+ */
+export interface WorkflowRequestResponse {
+  workflowId: string;
+  createWorkflowDocument: boolean;
+  attachDocument: boolean;
+  workflowDocumentId?: string;
+  workflowDocumentUrl?: string;
+  documentId?: string;
+  documentUrl?: string;
+  attachedDocumentId?: string;
+  attachedDocumentUrl?: string;
+  workflowStatus: WorkflowStatus;
+  workflowRequestDate: string;
+  reviewLine: ReviewLine;
+  paymentLine: PaymentLine;
+  permissionResult: PermissionResult;
+}
+
+/**
+ * 라인 설정 요청 데이터
+ */
+export interface SetWorkflowLineData {
+  documentId?: string;
+  workflowDocumentId?: string;
+  userEmail: string;
+  reviewLine: ReviewLine;
+  paymentLine: PaymentLine;
+  updatePermissions?: boolean;
+}
+
+/**
+ * 권한 부여 요청 데이터
+ */
+export interface GrantWorkflowPermissionsData {
+  documentId?: string;
+  workflowDocumentId?: string;
+  attachedDocumentId?: string;
+  userEmails: string[];
+  permissionType?: 'reader' | 'writer';
+}
+
+/**
+ * 승인/반려 요청 데이터
+ */
+export interface ReviewActionData {
+  documentId?: string;
+  workflowDocumentId?: string;
+  userEmail: string;
+  step: number;
+  opinion?: string;
+  rejectReason?: string;
+  holdReason?: string;
+}
+
+/**
+ * 결재 승인/반려 요청 데이터
+ */
+export interface PaymentActionData {
+  documentId?: string;
+  workflowDocumentId?: string;
+  userEmail: string;
+  step: number;
+  opinion?: string;
+  rejectReason?: string;
+  holdReason?: string;
+}
+
+/**
+ * 내 담당 워크플로우 조회 파라미터
+ */
+export interface MyPendingWorkflowsParams {
+  userEmail: string;
+  lineType?: LineType;
+  status?: WorkflowStatus;
+}
+
+/**
+ * 워크플로우 이력 조회 파라미터
+ */
+export interface WorkflowHistoryParams {
+  workflowId?: string;
+  documentId?: string;
+  userEmail?: string;
+  lineType?: LineType;
+  startDate?: string;
+  endDate?: string;
+}

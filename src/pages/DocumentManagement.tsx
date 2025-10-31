@@ -12,8 +12,11 @@ import { formatRelativeTime } from "../utils/helpers/timeUtils";
 import { useTemplateUI, type Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
 import { fetchFavorites } from "../utils/database/personalFavoriteManager";
+import { apiClient } from "../utils/api/apiClient";
+import WorkflowRequestModal from "../components/features/workflow/WorkflowRequestModal";
 import type { DocumentMap } from "../types/documents";
 import type { DocumentInfo } from "../types/documents";
+import type { WorkflowRequestResponse } from "../types/api/apiResponses";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -43,6 +46,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
   const [favoriteTemplates, setFavoriteTemplates] = useState<InfoCardItem[]>([]);
   const { onUseTemplate, allDefaultTemplates, personalTemplates } = useTemplateUI(customTemplates, onPageChange, '', '전체');
+  
+  // 결재 관련 통계 상태
+  const [receivedCount, setReceivedCount] = useState<number>(0); // 수신 문서함 (내가 결재해야 하는 것)
+  const [sentCount, setSentCount] = useState<number>(0); // 발신 문서함 (내가 올린 결재)
+  const [myDocumentsCount, setMyDocumentsCount] = useState<number>(0); // 내 문서함 (내가 만든 문서)
+  
+  // 결재 요청 모달 상태
+  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState<boolean>(false);
+  const [selectedDocument, setSelectedDocument] = useState<{ id?: string; title?: string; documentType?: 'shared' | 'personal' } | null>(null);
 
   const handleDocClick = (doc: { url?: string }) => {
     if (doc.url) {
@@ -257,21 +269,69 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         onUseTemplate(templateType, templateName, 'user');
     };
 
+  // 결재 통계 로드
+  useEffect(() => {
+    const loadWorkflowStats = async () => {
+      try {
+        const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+        const userEmail = userInfo.email;
+        
+        if (!userEmail) {
+          console.warn('사용자 이메일이 없어 결재 통계를 로드할 수 없습니다.');
+          return;
+        }
+        
+        // 수신 문서함: 내가 결재해야 하는 문서 (대기 중인 결재)
+        const pendingResponse = await apiClient.getMyPendingWorkflows({
+          userEmail,
+          status: '검토중' // 검토중 상태만 카운트
+        });
+        if (pendingResponse.success && pendingResponse.data) {
+          setReceivedCount(pendingResponse.data.length);
+        }
+        
+        // 발신 문서함: 내가 올린 결재 문서
+        const requestedResponse = await apiClient.getMyRequestedWorkflows(userEmail);
+        if (requestedResponse.success && requestedResponse.data) {
+          setSentCount(requestedResponse.data.length);
+        }
+      } catch (error) {
+        console.error('❌ 결재 통계 로드 오류:', error);
+      }
+    };
+    
+    loadWorkflowStats();
+  }, []);
+  
+  // 내 문서함 개수 계산 (내가 만든 문서)
+  useEffect(() => {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    const userEmail = userInfo.email;
+    
+    if (userEmail && documents.length > 0) {
+      const myDocs = documents.filter(doc => {
+        const creatorEmail = doc.creator || doc.author;
+        return creatorEmail === userEmail || creatorEmail?.includes(userEmail);
+      });
+      setMyDocumentsCount(myDocs.length);
+    }
+  }, [documents]);
+
   const statCards = [
     {
-      count: 12,
+      count: receivedCount,
       title: "수신 문서함",
       backgroundColor: "var(--primary)",
       textColor: "white",
     },
     {
-      count: 8,
+      count: sentCount,
       title: "발신 문서함",
       backgroundColor: "var(--secondary)",
       textColor: "white",
     },
     {
-      count: 3,
+      count: myDocumentsCount,
       title: "내 문서함",
       backgroundColor: "rgb(243, 238, 234)",
       textColor: "#333",
@@ -325,6 +385,41 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         onPageChange={onPageChange}
         onRowClick={handleDocClick}
         isLoading={isLoading}
+        headerContent={
+          <button
+            className="btn-workflow-request"
+            onClick={() => {
+              setSelectedDocument(null);
+              setIsWorkflowModalOpen(true);
+            }}
+            title="결재 요청"
+          >
+            📋 결재 요청
+          </button>
+        }
+      />
+      
+      <WorkflowRequestModal
+        isOpen={isWorkflowModalOpen}
+        onClose={() => {
+          setIsWorkflowModalOpen(false);
+          setSelectedDocument(null);
+        }}
+        documentId={selectedDocument?.id}
+        documentTitle={selectedDocument?.title}
+        isPersonalDocument={selectedDocument?.documentType === 'personal'}
+        onSuccess={(response: WorkflowRequestResponse) => {
+          console.log('✅ 결재 요청 성공:', response);
+          // 통계 갱신
+          const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+          if (userInfo.email) {
+            apiClient.getMyRequestedWorkflows(userInfo.email).then(res => {
+              if (res.success && res.data) {
+                setSentCount(res.data.length);
+              }
+            });
+          }
+        }}
       />
 
       <div className="stats-container">

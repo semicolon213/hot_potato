@@ -26,6 +26,7 @@ import AnnouncementView from '../../pages/Announcements/AnnouncementView';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
+import WorkflowManagement from '../../pages/WorkflowManagement';
 
 interface PageRendererProps {
   currentPage: PageType;
@@ -218,6 +219,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return <Staff 
           onPageChange={onPageChange} 
           staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+      case 'workflow_management':
+        return <WorkflowManagement onPageChange={onPageChange} />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':

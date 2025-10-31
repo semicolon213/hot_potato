@@ -1,0 +1,278 @@
+.workflow-management-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.workflow-header h1 {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.btn-new-workflow {
+  padding: 10px 20px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-new-workflow:hover {
+  background-color: var(--primary-dark);
+}
+
+.workflow-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--primary);
+  background-color: var(--bg-light);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+.workflow-content {
+  min-height: 400px;
+}
+
+.loading-message,
+.empty-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-medium);
+  font-size: 16px;
+}
+
+.workflow-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.workflow-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--card-shadow);
+}
+
+.workflow-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.workflow-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.workflow-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-waiting {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.status-reviewing {
+  background-color: #2196f3;
+  color: white;
+}
+
+.status-review-complete {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-review-rejected {
+  background-color: #f44336;
+  color: white;
+}
+
+.status-review-hold {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status-payment {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status-payment-complete {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-rejected {
+  background-color: #f44336;
+  color: white;
+}
+
+.status-default {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.workflow-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workflow-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.info-label {
+  color: var(--text-medium);
+  font-weight: 500;
+  min-width: 70px;
+}
+
+.info-value {
+  color: var(--text-dark);
+}
+
+.document-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.document-link:hover {
+  text-decoration: underline;
+}
+
+.workflow-progress {
+  display: flex;
+  gap: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-label {
+  font-size: 13px;
+  color: var(--text-medium);
+  font-weight: 500;
+}
+
+.progress-value {
+  font-size: 14px;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.workflow-actions {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-action {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action.btn-approve {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-action.btn-approve:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-action.btn-resume {
+  background-color: #ff9800;
+  color: white;
+}
+
+.btn-action.btn-resume:hover {
+  background-color: #f57c00;
+}
+
+.btn-action.btn-resubmit {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.btn-action.btn-resubmit:hover {
+  background-color: #e0a800;
+}
+
+.btn-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+

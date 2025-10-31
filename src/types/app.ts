@@ -70,6 +70,7 @@ export type PageType =
   | 'proceedings' 
   | 'students' 
   | 'staff' 
+  | 'workflow_management'
   | 'google_appscript' 
   | 'google_sheets' 
   | 'google_docs' 
