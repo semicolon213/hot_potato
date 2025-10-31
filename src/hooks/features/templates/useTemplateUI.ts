@@ -177,7 +177,8 @@ export function useTemplateUI(
                 console.log('📄 동적 템플릿 로드 성공:', result.data);
                 
                 // 템플릿 데이터 그대로 사용 (JSON 파싱 제거)
-                const processedTemplates = (result.data as any[]).map((t) => ({
+                const templatesData = result.data as SharedTemplatesResponse;
+                const processedTemplates = templatesData.map((t) => ({
                   type: t.id, // 문서 ID 사용
                   title: t.title,
                   description: t.description,
@@ -420,7 +421,8 @@ export function useTemplateUI(
                 const result = await apiClient.createDocument(documentData);
 
                 if (result.success && result.data) {
-                    window.open(result.data.documentUrl, '_blank');
+                    const createDocResponse = result.data as CreateDocumentResponse;
+                    window.open(createDocResponse.documentUrl, '_blank');
                     alert('문서가 생성되고 권한이 설정되었습니다!');
                 } else {
                     alert('문서 생성에 실패했습니다: ' + (result.message || '알 수 없는 오류'));

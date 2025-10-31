@@ -1,11 +1,28 @@
 import { API_CONFIG, API_ACTIONS } from '../../config/api';
+import type {
+  SpreadsheetIdsResponse,
+  StaticTagsResponse,
+  AffectedTemplatesResponse,
+  DeleteTagResponse,
+  TagImpactCheckResponse,
+  SharedTemplatesResponse,
+  CreateDocumentResponse,
+  RegistrationData,
+  DocumentsListResponse,
+  UserNameResponse
+} from '../../types/api/apiResponses';
 
 // API 응답 타입 정의
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: string;
+  debug?: Record<string, unknown>;
+  permissionResult?: {
+    successCount: number;
+    failCount: number;
+  };
 }
 
 // API 요청 옵션 타입 정의
@@ -20,7 +37,7 @@ export class ApiClient {
   private baseUrl: string;
   private defaultTimeout: number;
   private defaultRetries: number;
-  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
 
   constructor() {
     // CSP 문제 해결을 위해 Vite 프록시 사용
@@ -38,24 +55,24 @@ export class ApiClient {
   }
 
   // 캐시에서 데이터 가져오기
-  private getCachedData(key: string, maxAge: number = 300000): any | null {
+  private getCachedData<T>(key: string, maxAge: number = 300000): T | null {
     const cached = this.cache.get(key);
     if (cached && (Date.now() - cached.timestamp) < maxAge) {
       console.log('프론트엔드 캐시에서 데이터 로드:', key);
-      return cached.data;
+      return cached.data as T;
     }
     return null;
   }
 
   // 캐시에 데이터 저장
-  private setCachedData(key: string, data: any): void {
+  private setCachedData(key: string, data: unknown): void {
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 
   // 공통 API 호출 메서드
-  async request<T = any>(
+  async request<T = unknown>(
     action: string,
-    data: any = {},
+    data: Record<string, unknown> = {},
     options: ApiRequestOptions = {}
   ): Promise<ApiResponse<T>> {
     const {
@@ -69,7 +86,7 @@ export class ApiClient {
     const cacheKey = `${action}_${JSON.stringify(data)}`;
     
     if (cacheableActions.includes(action)) {
-      const cachedData = this.getCachedData(cacheKey);
+      const cachedData = this.getCachedData<ApiResponse<T>>(cacheKey);
       if (cachedData) {
         return cachedData;
       }
@@ -124,7 +141,7 @@ export class ApiClient {
         
         // 성공한 응답을 캐시에 저장
         if (cacheableActions.includes(action) && result.success) {
-          this.setCachedData(cacheKey, result);
+          this.setCachedData(cacheKey, result as ApiResponse<T>);
         }
         
         console.log(`API 응답 성공:`, {
@@ -133,7 +150,7 @@ export class ApiClient {
           message: result.message
         });
 
-        return result;
+        return result as ApiResponse<T>;
       } catch (error) {
         lastError = error as Error;
         console.warn(`API 요청 실패 (시도 ${attempt + 1}/${retries + 1}):`, error);
@@ -177,7 +194,7 @@ export class ApiClient {
     return this.request('checkUserStatus', { email });
   }
 
-  async submitRegistrationRequest(registrationData: any) {
+  async submitRegistrationRequest(registrationData: RegistrationData) {
     return this.request('registerUser', registrationData);
   }
 
@@ -207,12 +224,12 @@ export class ApiClient {
     role?: string;
     tag?: string;
   }) {
-    return this.request('createDocument', documentData);
+    return this.request<CreateDocumentResponse>('createDocument', documentData);
   }
 
   // 이메일로 사용자 이름 조회
   async getUserNameByEmail(email: string) {
-    return this.request('getUserNameByEmail', { email });
+    return this.request<UserNameResponse>('getUserNameByEmail', { email });
   }
 
   async getTemplates() {
@@ -248,7 +265,7 @@ export class ApiClient {
 
   // 공유 템플릿 목록(메타데이터 우선)
   async getSharedTemplates() {
-    return this.request('getSharedTemplates');
+    return this.request<SharedTemplatesResponse>('getSharedTemplates');
   }
 
   // 공유 템플릿 삭제 (관리자 전용)
@@ -278,7 +295,7 @@ export class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    return this.request('getDocuments', params);
+    return this.request<DocumentsListResponse>('getDocuments', params);
   }
 
   async deleteDocuments(documentIds: string[], role: string) {
@@ -287,12 +304,12 @@ export class ApiClient {
 
   // 스프레드시트 ID 목록 조회
   async getSpreadsheetIds(spreadsheetNames: string[]) {
-    return this.request('getSpreadsheetIds', { spreadsheetNames });
+    return this.request<SpreadsheetIdsResponse>('getSpreadsheetIds', { spreadsheetNames });
   }
 
   // 기본 태그 목록 조회
   async getStaticTags() {
-    return this.request<string[]>('getStaticTags');
+    return this.request<StaticTagsResponse>('getStaticTags');
   }
 
   // 기본 태그 추가 (관리자 전용)
@@ -306,14 +323,22 @@ export class ApiClient {
   async updateStaticTag(oldTag: string, newTag: string, confirm: boolean = false) {
     // 사용자 이메일을 요청에 포함
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
-    return this.request('updateStaticTag', { oldTag, newTag, userEmail: userInfo.email, confirm });
+    if (confirm) {
+      return this.request<AffectedTemplatesResponse>('updateStaticTag', { oldTag, newTag, userEmail: userInfo.email, confirm });
+    } else {
+      return this.request<TagImpactCheckResponse>('updateStaticTag', { oldTag, newTag, userEmail: userInfo.email, confirm });
+    }
   }
 
   // 기본 태그 삭제 (관리자 전용)
   async deleteStaticTag(tag: string, confirm: boolean = false, deleteTemplates: boolean = false) {
     // 사용자 이메일을 요청에 포함
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
-    return this.request('deleteStaticTag', { tag, userEmail: userInfo.email, confirm, deleteTemplates });
+    if (confirm) {
+      return this.request<DeleteTagResponse>('deleteStaticTag', { tag, userEmail: userInfo.email, confirm, deleteTemplates });
+    } else {
+      return this.request<TagImpactCheckResponse>('deleteStaticTag', { tag, userEmail: userInfo.email, confirm, deleteTemplates });
+    }
   }
 
   // 테스트 API
@@ -370,7 +395,7 @@ export const clearUserCache = () =>
 export const checkUserRegistrationStatus = (email: string) =>
   apiClient.checkApprovalStatus(email);
 
-export const registerUser = (registrationData: any) =>
+export const registerUser = (registrationData: RegistrationData) =>
   apiClient.submitRegistrationRequest(registrationData);
 
 export const verifyAdminKey = (adminKey: string) =>

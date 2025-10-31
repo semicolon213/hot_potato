@@ -192,7 +192,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
         if (result.isApproved) {
           // 이미 승인된 회원 - 바로 메인 화면으로
           console.log('이미 승인된 회원 - 메인 화면으로 이동');
-          alert('이미 가입된 회원입니다. 로그인을 진행합니다.');
           onLogin({
             email: email,
             name: name,
@@ -206,7 +205,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
         } else {
           // 승인 대기 중 - 승인 대기 화면으로
           console.log('승인 대기 중인 사용자');
-          alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
           onLogin({
             email: email,
             name: name,
@@ -312,7 +310,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
       }
 
       if (result.success) {
-        alert(result.message);
         onLogin({
           email: formData.email,
           name: formData.name,

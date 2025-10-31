@@ -11,13 +11,14 @@ import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { ENV_CONFIG } from '../../config/environment';
 import { apiClient } from '../api/apiClient';
 import type { StaffMember, Committee as CommitteeType } from '../../types/features/staff';
+import type { SpreadsheetIdsResponse } from '../../types/api/apiResponses';
 
 // 헬퍼 함수들
-const addRow = async (spreadsheetId: string, sheetName: string, data: any) => {
+const addRow = async (spreadsheetId: string, sheetName: string, data: Record<string, unknown>) => {
   await append(spreadsheetId, sheetName, data);
 };
 
-const updateRow = async (spreadsheetId: string, sheetName: string, key: string, data: any) => {
+const updateRow = async (spreadsheetId: string, sheetName: string, key: string, data: Record<string, unknown>) => {
   await update(spreadsheetId, sheetName, key, data);
 };
 
@@ -169,7 +170,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
             };
         }
 
-        const ids = response.data;
+        const ids = response.data as SpreadsheetIdsResponse;
         
         // 찾지 못한 스프레드시트가 있으면 경고
         if (response.notFound && response.notFound.length > 0) {
@@ -720,8 +721,18 @@ export const fetchAttendees = async (): Promise<{ students: Student[], staff: St
     }
 };
 
+// 학생 이슈 타입 정의
+export interface StudentIssue {
+  id: string;
+  no_member: string;
+  date_issue: string;
+  type_issue: string;
+  level_issue: string;
+  content_issue: string;
+}
+
 // 학생 이슈 관련 함수들
-export const fetchStudentIssues = async (studentNo: string): Promise<any[]> => {
+export const fetchStudentIssues = async (studentNo: string): Promise<StudentIssue[]> => {
   try {
     if (!studentSpreadsheetId) {
       console.warn('Student spreadsheet ID not found');
@@ -992,11 +1003,11 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
       return [];
     }
     
-    const headers = data.values[0];
-    const staffData: Staff[] = data.values.slice(1).map((row: any[]) => {
+    const headers = data.values[0] as string[];
+    const staffData: Staff[] = data.values.slice(1).map((row: string[]) => {
       const staff: Partial<Staff> = {};
       headers.forEach((header: string, index: number) => {
-        (staff as any)[header] = row[index];
+        (staff as Record<string, unknown>)[header] = row[index];
       });
       return staff as Staff;
     });
@@ -1031,9 +1042,9 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
       return [];
     }
     
-    const headers = data.values[0];
-    const committeeData: Committee[] = data.values.slice(1).map((row: any[]) => {
-      const committee: { [key: string]: any } = {};
+    const headers = data.values[0] as string[];
+    const committeeData: Committee[] = data.values.slice(1).map((row: string[]) => {
+      const committee: Record<string, unknown> = {};
       headers.forEach((header: string, index: number) => {
         committee[header] = row[index];
       });

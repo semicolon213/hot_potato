@@ -3,6 +3,9 @@ import { useTemplateUI, defaultTemplates, defaultTemplateTags } from "../hooks/f
 import type { Template } from "../hooks/features/templates/useTemplateUI";
 import { ENV_CONFIG } from "../config/environment";
 import { apiClient } from "../utils/api/apiClient";
+import { useNotification } from "../hooks/ui/useNotification";
+import { NotificationModal, ConfirmModal } from "../components/ui/NotificationModal";
+import type { TagImpactCheckResponse, DeleteTagResponse, CreateDocumentResponse, TemplateInfo } from "../types/api/apiResponses";
 import { 
     addTag as addPersonalTag,
     deleteTag as deletePersonalTag,
@@ -68,10 +71,21 @@ function NewDocument({
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const isAdminUser = userInfo?.is_admin === 'O' || userInfo?.isAdmin === true;
     
+    // 알림 모달 훅
+    const {
+        notification,
+        confirm,
+        showNotification,
+        hideNotification,
+        showConfirm,
+        hideConfirm,
+        handleConfirm
+    } = useNotification();
+    
     // 기본 태그 추가 핸들러 (관리자 전용)
     const handleAddStaticTag = async (newTag: string) => {
         if (!isAdminUser) {
-            alert('기본 태그는 관리자만 추가할 수 있습니다.');
+            showNotification('기본 태그는 관리자만 추가할 수 있습니다.', 'warning');
             return;
         }
         
@@ -84,23 +98,23 @@ function NewDocument({
                     if (updatedResponse.success && updatedResponse.data) {
                         setStaticTags(updatedResponse.data);
                     }
-                    alert('기본 태그가 추가되었습니다.');
+                    showNotification('기본 태그가 추가되었습니다.', 'success');
                 } else {
-                    alert('기본 태그 추가에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+                    showNotification('기본 태그 추가에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
                 }
             } catch (error) {
                 console.error('Error adding static tag:', error);
-                alert('기본 태그 추가 중 오류가 발생했습니다.');
+                showNotification('기본 태그 추가 중 오류가 발생했습니다.', 'error');
             }
         } else if (staticTags.includes(newTag)) {
-            alert('이미 존재하는 기본 태그입니다.');
+            showNotification('이미 존재하는 기본 태그입니다.', 'warning');
         }
     };
 
     // 기본 태그 수정 핸들러 (관리자 전용)
     const handleUpdateStaticTag = async (oldTag: string, newTag: string) => {
         if (!isAdminUser) {
-            alert('기본 태그는 관리자만 수정할 수 있습니다.');
+            showNotification('기본 태그는 관리자만 수정할 수 있습니다.', 'warning');
             return;
         }
         
@@ -112,12 +126,13 @@ function NewDocument({
             // 먼저 영향 받는 템플릿 목록 확인
             const checkResponse = await apiClient.updateStaticTag(oldTag, newTag, false);
             if (!checkResponse.success || !checkResponse.data) {
-                alert('영향 받는 템플릿 확인 중 오류가 발생했습니다.');
+                showNotification('영향 받는 템플릿 확인 중 오류가 발생했습니다.', 'error');
                 return;
             }
             
-            const affectedShared = checkResponse.data.affectedSharedTemplates || [];
-            const affectedPersonal = checkResponse.data.affectedPersonalTemplates || [];
+            const impactData = checkResponse.data as TagImpactCheckResponse;
+            const affectedShared = impactData.affectedSharedTemplates || [];
+            const affectedPersonal = impactData.affectedPersonalTemplates || [];
             const totalAffected = affectedShared.length + affectedPersonal.length;
             
             if (totalAffected > 0) {
@@ -125,25 +140,43 @@ function NewDocument({
                 let templateList = '';
                 if (affectedShared.length > 0) {
                     templateList += '\n\n[기본 템플릿]\n';
-                    affectedShared.forEach((t: { name: string }) => {
+                    affectedShared.forEach((t: TemplateInfo) => {
                         templateList += `  • ${t.name}\n`;
                     });
                 }
                 if (affectedPersonal.length > 0) {
                     templateList += '\n[개인 템플릿]\n';
-                    affectedPersonal.forEach((t: { name: string }) => {
+                    affectedPersonal.forEach((t: TemplateInfo) => {
                         templateList += `  • ${t.name}\n`;
                     });
                 }
                 
                 const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 템플릿들의 태그도 함께 변경됩니다:${templateList}\n정말로 수정하시겠습니까?`;
                 
-                if (!window.confirm(confirmMessage)) {
-                    return;
-                }
+                showConfirm(
+                    confirmMessage,
+                    async () => {
+                        // 실제 수정 수행
+                        const response = await apiClient.updateStaticTag(oldTag, newTag, true);
+                        if (response.success) {
+                            // 기본 태그 목록 다시 로드
+                            const updatedResponse = await apiClient.getStaticTags();
+                            if (updatedResponse.success && updatedResponse.data) {
+                                setStaticTags(updatedResponse.data);
+                            }
+                            // 템플릿 목록 다시 로드 (태그 수정이 템플릿에 반영되었으므로)
+                            await loadDynamicTemplates();
+                            showNotification('기본 태그가 수정되었습니다.', 'success');
+                        } else {
+                            showNotification('기본 태그 수정에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
+                        }
+                    },
+                    { type: 'warning' }
+                );
+                return;
             }
             
-            // 실제 수정 수행
+            // 영향받는 템플릿이 없으면 바로 수정
             const response = await apiClient.updateStaticTag(oldTag, newTag, true);
             if (response.success) {
                 // 기본 태그 목록 다시 로드
@@ -153,20 +186,20 @@ function NewDocument({
                 }
                 // 템플릿 목록 다시 로드 (태그 수정이 템플릿에 반영되었으므로)
                 await loadDynamicTemplates();
-                alert('기본 태그가 수정되었습니다.');
+                showNotification('기본 태그가 수정되었습니다.', 'success');
             } else {
-                alert('기본 태그 수정에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+                showNotification('기본 태그 수정에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
             }
         } catch (error) {
             console.error('Error updating static tag:', error);
-            alert('기본 태그 수정 중 오류가 발생했습니다.');
+            showNotification('기본 태그 수정 중 오류가 발생했습니다.', 'error');
         }
     };
 
     // 기본 태그 삭제 핸들러 (관리자 전용)
     const handleDeleteStaticTag = async (tagToDelete: string) => {
         if (!isAdminUser) {
-            alert('기본 태그는 관리자만 삭제할 수 있습니다.');
+            showNotification('기본 태그는 관리자만 삭제할 수 있습니다.', 'warning');
             return;
         }
 
@@ -174,12 +207,13 @@ function NewDocument({
             // 먼저 영향 받는 템플릿 목록 확인
             const checkResponse = await apiClient.deleteStaticTag(tagToDelete, false, false);
             if (!checkResponse.success || !checkResponse.data) {
-                alert('영향 받는 템플릿 확인 중 오류가 발생했습니다.');
+                showNotification('영향 받는 템플릿 확인 중 오류가 발생했습니다.', 'error');
                 return;
             }
             
-            const affectedShared = checkResponse.data.affectedSharedTemplates || [];
-            const affectedPersonal = checkResponse.data.affectedPersonalTemplates || [];
+            const impactData = checkResponse.data as TagImpactCheckResponse;
+            const affectedShared = impactData.affectedSharedTemplates || [];
+            const affectedPersonal = impactData.affectedPersonalTemplates || [];
             const totalAffected = affectedShared.length + affectedPersonal.length;
             
             if (totalAffected > 0) {
@@ -187,63 +221,95 @@ function NewDocument({
                 let templateList = '';
                 if (affectedShared.length > 0) {
                     templateList += '\n\n[기본 템플릿]\n';
-                    affectedShared.forEach((t: { name: string }) => {
+                    affectedShared.forEach((t: TemplateInfo) => {
                         templateList += `  • ${t.name}\n`;
                     });
                 }
                 if (affectedPersonal.length > 0) {
                     templateList += '\n[개인 템플릿]\n';
-                    affectedPersonal.forEach((t: { name: string }) => {
+                    affectedPersonal.forEach((t: TemplateInfo) => {
                         templateList += `  • ${t.name}\n`;
                     });
                 }
                 
                 const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 템플릿들이 영향받습니다:${templateList}\n\n템플릿도 함께 삭제하시겠습니까?\n(취소를 누르면 개인 템플릿은 "기본" 태그로 변경됩니다)`;
                 
-                const deleteTemplates = window.confirm(confirmMessage);
-                
-                // 실제 삭제 수행
-                const response = await apiClient.deleteStaticTag(tagToDelete, true, deleteTemplates);
-                if (response.success) {
-                    // 기본 태그 목록 다시 로드
-                    const updatedResponse = await apiClient.getStaticTags();
-                    if (updatedResponse.success && updatedResponse.data) {
-                        setStaticTags(updatedResponse.data);
+                showConfirm(
+                    confirmMessage,
+                    async () => {
+                        // 확인: 템플릿도 함께 삭제
+                        const response = await apiClient.deleteStaticTag(tagToDelete, true, true);
+                        if (response.success) {
+                            const updatedResponse = await apiClient.getStaticTags();
+                            if (updatedResponse.success && updatedResponse.data) {
+                                setStaticTags(updatedResponse.data);
+                            }
+                            await loadDynamicTemplates();
+                            
+                            const deleteResponse = response.data as DeleteTagResponse;
+                            if (deleteResponse) {
+                                const deletedCount = (deleteResponse.deletedSharedTemplates || 0) + (deleteResponse.deletedPersonalTemplates || 0);
+                                if (deletedCount > 0) {
+                                    showNotification(`기본 태그가 삭제되었습니다.\n${deletedCount}개의 템플릿도 함께 삭제되었습니다.`, 'success');
+                                } else {
+                                    showNotification('기본 태그가 삭제되었습니다.', 'success');
+                                }
+                            } else {
+                                showNotification('기본 태그가 삭제되었습니다.', 'success');
+                            }
+                        } else {
+                            showNotification('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
+                        }
+                    },
+                    {
+                        type: 'danger',
+                        confirmText: '템플릿도 삭제',
+                        cancelText: '태그만 삭제',
+                        onCancel: async () => {
+                            // 취소: 태그만 삭제 (개인 템플릿은 "기본"으로 변경)
+                            const response = await apiClient.deleteStaticTag(tagToDelete, true, false);
+                            if (response.success) {
+                                const updatedResponse = await apiClient.getStaticTags();
+                                if (updatedResponse.success && updatedResponse.data) {
+                                    setStaticTags(updatedResponse.data);
+                                }
+                                await loadDynamicTemplates();
+                                
+                                const deleteResponse = response.data as DeleteTagResponse;
+                                if (deleteResponse && deleteResponse.updatedPersonalTemplates && deleteResponse.updatedPersonalTemplates > 0) {
+                                    showNotification(`기본 태그가 삭제되었습니다.\n${deleteResponse.updatedPersonalTemplates}개의 개인 템플릿이 "기본" 태그로 변경되었습니다.`, 'success');
+                                } else {
+                                    showNotification('기본 태그가 삭제되었습니다.', 'success');
+                                }
+                            } else {
+                                showNotification('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
+                            }
+                        }
                     }
-                    // 템플릿 목록 다시 로드
-                    await loadDynamicTemplates();
-                    
-                    if (deleteTemplates && response.data) {
-                        const deletedCount = (response.data.deletedSharedTemplates || 0) + (response.data.deletedPersonalTemplates || 0);
-                        alert(`기본 태그가 삭제되었습니다.\n${deletedCount}개의 템플릿도 함께 삭제되었습니다.`);
-                    } else if (response.data && response.data.updatedPersonalTemplates > 0) {
-                        alert(`기본 태그가 삭제되었습니다.\n${response.data.updatedPersonalTemplates}개의 개인 템플릿이 "기본" 태그로 변경되었습니다.`);
-                    } else {
-                        alert('기본 태그가 삭제되었습니다.');
-                    }
-                } else {
-                    alert('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
-                }
+                );
+                return;
             } else {
-                // 영향 받는 템플릿이 없으면 바로 삭제
-                if (!window.confirm(`기본 태그 "${tagToDelete}"를 삭제하시겠습니까?`)) {
-                    return;
-                }
-                
-                const response = await apiClient.deleteStaticTag(tagToDelete, true, false);
-                if (response.success) {
-                    const updatedResponse = await apiClient.getStaticTags();
-                    if (updatedResponse.success && updatedResponse.data) {
-                        setStaticTags(updatedResponse.data);
-                    }
-                    alert('기본 태그가 삭제되었습니다.');
-                } else {
-                    alert('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
-                }
+                // 영향 받는 템플릿이 없으면 바로 삭제 확인
+                showConfirm(
+                    `기본 태그 "${tagToDelete}"를 삭제하시겠습니까?`,
+                    async () => {
+                        const response = await apiClient.deleteStaticTag(tagToDelete, true, false);
+                        if (response.success) {
+                            const updatedResponse = await apiClient.getStaticTags();
+                            if (updatedResponse.success && updatedResponse.data) {
+                                setStaticTags(updatedResponse.data);
+                            }
+                            showNotification('기본 태그가 삭제되었습니다.', 'success');
+                        } else {
+                            showNotification('기본 태그 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
+                        }
+                    },
+                    { type: 'warning' }
+                );
             }
         } catch (error) {
             console.error('Error deleting static tag:', error);
-            alert('기본 태그 삭제 중 오류가 발생했습니다.');
+            showNotification('기본 태그 삭제 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -274,29 +340,27 @@ function NewDocument({
             // 태그 삭제 시 영향받는 개인 양식들 확인
             const impact = await checkTagDeletionImpact(tagToDelete);
             
-            if (impact.affectedFiles.length > 0) {
-                const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
-                const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 개인 양식들도 함께 삭제됩니다:\n\n${affectedFilesList}\n\n정말로 삭제하시겠습니까?`;
-                
-                if (!window.confirm(confirmMessage)) {
-                    return;
-                }
-            } else {
-                if (!window.confirm(`'${tagToDelete}' 태그를 삭제하시겠습니까?`)) {
-                    return;
-                }
-            }
-
-            const success = await deletePersonalTag(tagToDelete);
-            if (success) {
-                const updatedTags = await fetchPersonalTags();
-                setTags(updatedTags);
-            } else {
-                alert('태그 삭제에 실패했습니다.');
-            }
+            const confirmMessage = impact.affectedFiles.length > 0
+                ? `'${tagToDelete}' 태그를 삭제하면 다음 개인 양식들도 함께 삭제됩니다:\n\n${impact.affectedFiles.map(file => `• ${file}`).join('\n')}\n\n정말로 삭제하시겠습니까?`
+                : `'${tagToDelete}' 태그를 삭제하시겠습니까?`;
+            
+            showConfirm(
+                confirmMessage,
+                async () => {
+                    const success = await deletePersonalTag(tagToDelete);
+                    if (success) {
+                        const updatedTags = await fetchPersonalTags();
+                        setTags(updatedTags);
+                        showNotification('태그가 삭제되었습니다.', 'success');
+                    } else {
+                        showNotification('태그 삭제에 실패했습니다.', 'error');
+                    }
+                },
+                { type: 'warning' }
+            );
         } catch (error) {
             console.error('Error deleting tag:', error);
-            alert('태그 삭제 중 오류가 발생했습니다.');
+            showNotification('태그 삭제 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -315,45 +379,56 @@ function NewDocument({
                 const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
                 const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 개인 양식들의 파일명도 함께 변경됩니다:\n\n${affectedFilesList}\n\n정말로 수정하시겠습니까?`;
                 
-                if (!window.confirm(confirmMessage)) {
-                    return;
-                }
+                showConfirm(
+                    confirmMessage,
+                    async () => {
+                        const success = await updatePersonalTag(oldTag, newTag);
+                        if (success) {
+                            // 개인 템플릿 메타데이터 업데이트
+                            await updatePersonalTemplateMetadata(oldTag, newTag);
+                            
+                            const updatedTags = await fetchPersonalTags();
+                            setTags(updatedTags);
+                            showNotification('태그가 수정되었습니다.', 'success');
+                        } else {
+                            showNotification('태그 수정에 실패했습니다.', 'error');
+                        }
+                    },
+                    { type: 'warning' }
+                );
+                return;
             }
 
+            // 영향받는 파일이 없으면 바로 수정
             const success = await updatePersonalTag(oldTag, newTag);
             if (success) {
-                // 개인 템플릿 메타데이터 업데이트
-                if (impact.affectedFiles.length > 0) {
-                    await updatePersonalTemplateMetadata(oldTag, newTag);
-                }
-                
                 const updatedTags = await fetchPersonalTags();
                 setTags(updatedTags);
-                alert('태그가 수정되었습니다.');
+                showNotification('태그가 수정되었습니다.', 'success');
             } else {
-                alert('태그 수정에 실패했습니다.');
+                showNotification('태그 수정에 실패했습니다.', 'error');
             }
         } catch (error) {
             console.error('Error updating tag:', error);
-            alert('태그 수정 중 오류가 발생했습니다.');
+            showNotification('태그 수정 중 오류가 발생했습니다.', 'error');
         }
     };
 
     // 기본 템플릿 삭제 핸들러 (관리자 전용)
     const handleDeleteDefaultTemplate = async (template: Template) => {
         if (!isAdminUser) {
-            alert('기본 템플릿 삭제는 관리자만 가능합니다.');
+            showNotification('기본 템플릿 삭제는 관리자만 가능합니다.', 'warning');
             return;
         }
         
         // "빈 문서" 템플릿은 삭제 불가
         if (template.type === 'empty' || template.title === '빈 문서') {
-            alert('빈 문서 템플릿은 삭제할 수 없습니다.');
+            showNotification('빈 문서 템플릿은 삭제할 수 없습니다.', 'warning');
             return;
         }
         
         if (!template.documentId) {
-            alert('템플릿을 찾을 수 없습니다.');
+            showNotification('템플릿을 찾을 수 없습니다.', 'error');
             return;
         }
         
@@ -362,20 +437,20 @@ function NewDocument({
             if (response.success) {
                 // 템플릿 목록 다시 로드
                 await loadDynamicTemplates();
-                alert('기본 템플릿이 삭제되었습니다.');
+                showNotification('기본 템플릿이 삭제되었습니다.', 'success');
             } else {
-                alert('기본 템플릿 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+                showNotification('기본 템플릿 삭제에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
             }
         } catch (error) {
             console.error('Error deleting default template:', error);
-            alert('기본 템플릿 삭제 중 오류가 발생했습니다.');
+            showNotification('기본 템플릿 삭제 중 오류가 발생했습니다.', 'error');
         }
     };
     
     // 개인 템플릿 삭제 핸들러
     const handleDeletePersonalTemplate = async (template: Template) => {
         if (!template.documentId) {
-            alert('템플릿을 찾을 수 없습니다.');
+            showNotification('템플릿을 찾을 수 없습니다.', 'error');
             return;
         }
         
@@ -389,10 +464,10 @@ function NewDocument({
             // window.location.reload() 대신 개인 템플릿을 다시 로드하는 것이 더 나음
             // 하지만 현재 구조상 새로고침이 가장 확실함
             window.location.reload();
-            alert('개인 템플릿이 삭제되었습니다.');
+            showNotification('개인 템플릿이 삭제되었습니다.', 'success');
         } catch (error) {
             console.error('Error deleting personal template:', error);
-            alert('개인 템플릿 삭제 중 오류가 발생했습니다.');
+            showNotification('개인 템플릿 삭제 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -524,7 +599,8 @@ function NewDocument({
                     }
                 }
                 
-                setCreatedDocumentUrl(result.data.documentUrl);
+                const createDocResponse = result.data as CreateDocumentResponse;
+                setCreatedDocumentUrl(createDocResponse.documentUrl);
                 closePermissionModal();
                 setShowAfterCreateModal(true);
                 
@@ -534,16 +610,16 @@ function NewDocument({
                         console.log('✅ 메타데이터 저장 성공');
                     } else if (result.debug.metadataStatus === 'failed') {
                         console.warn('⚠️ 메타데이터 저장 실패:', result.debug.metadataError);
-                        alert(`문서는 생성되었지만 메타데이터 저장에 실패했습니다: ${result.debug.metadataError}`);
+                        showNotification(`문서는 생성되었지만 메타데이터 저장에 실패했습니다: ${result.debug.metadataError}`, 'warning');
                     }
                 }
             } else {
                 console.error('📄 문서 생성 실패:', result);
-                alert('문서 생성에 실패했습니다: ' + result.message);
+                showNotification('문서 생성에 실패했습니다: ' + result.message, 'error');
             }
         } catch (error) {
             console.error('📄 문서 생성 오류:', error);
-            alert('문서 생성 중 오류가 발생했습니다.');
+            showNotification('문서 생성 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -607,7 +683,7 @@ function NewDocument({
         ];
 
         if (!allowedTypes.includes(file.type)) {
-            alert('지원되는 파일 형식: .docx, .xlsx, .doc, .xls');
+            showNotification('지원되는 파일 형식: .docx, .xlsx, .doc, .xls', 'warning');
             return;
         }
 
@@ -618,7 +694,7 @@ function NewDocument({
     // 새 템플릿 생성 (파일 업로드 또는 새로 만들기)
     const handleCreateNewTemplate = async () => {
         if (!newDocData.title.trim() || !newDocData.description.trim() || !newDocData.tag.trim()) {
-            alert("모든 필드를 입력해주세요.");
+            showNotification("모든 필드를 입력해주세요.", 'warning');
             return;
         }
 
@@ -633,11 +709,11 @@ function NewDocument({
 
             // 모달 닫기 및 상태 초기화
             handleNewDocCancel();
-            alert('템플릿이 성공적으로 생성되었습니다!');
+            showNotification('템플릿이 성공적으로 생성되었습니다!', 'success');
             
         } catch (error) {
             console.error('❌ 템플릿 생성 오류:', error);
-            alert('템플릿 생성 중 오류가 발생했습니다.');
+            showNotification('템플릿 생성 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -974,13 +1050,13 @@ function NewDocument({
                 if (response.result.webViewLink) {
                     window.open(response.result.webViewLink, '_blank');
                 } else {
-                    alert('문서를 열 수 없습니다.');
+                    showNotification('문서를 열 수 없습니다.', 'error');
                 }
             });
             
         } catch (error) {
             console.error('❌ 개인 템플릿 내용 수정 오류:', error);
-            alert('문서를 열 수 없습니다.');
+            showNotification('문서를 열 수 없습니다.', 'error');
         }
     };
 
@@ -993,7 +1069,7 @@ function NewDocument({
     const handleUpdateDocSubmit = async () => {
         if (editingTemplate && originalTemplate) {
             if (!editingTemplate.title.trim() || !editingTemplate.description.trim() || !editingTemplate.tag.trim()) {
-                alert("모든 필드를 입력해주세요.");
+                showNotification("모든 필드를 입력해주세요.", 'warning');
                 return;
             }
             
@@ -1009,15 +1085,15 @@ function NewDocument({
                     // 모달 닫기
                     handleEditDocCancel();
                     
-                    alert('개인 템플릿 정보가 수정되었습니다.');
+                    showNotification('개인 템플릿 정보가 수정되었습니다.', 'success');
                     
                 } catch (error) {
-                    alert('개인 템플릿 수정 중 오류가 발생했습니다.');
+                    showNotification('개인 템플릿 수정 중 오류가 발생했습니다.', 'error');
                 }
             } else {
                 // 공유(기본) 템플릿 메타 수정 (문서 내용 수정 아님, 관리자 전용)
                 if (!isAdminUser) {
-                    alert('기본 템플릿 수정은 관리자만 가능합니다.');
+                    showNotification('기본 템플릿 수정은 관리자만 가능합니다.', 'warning');
                     return;
                 }
                 
@@ -1025,7 +1101,7 @@ function NewDocument({
                     try {
                         // 기본 태그인지 확인
                         if (!staticTags.includes(editingTemplate.tag)) {
-                            alert('기본 템플릿은 기본 태그만 사용할 수 있습니다.');
+                            showNotification('기본 템플릿은 기본 태그만 사용할 수 있습니다.', 'warning');
                             return;
                         }
                         
@@ -1041,13 +1117,13 @@ function NewDocument({
                             // 기본 템플릿 목록 다시 로드
                             await loadDynamicTemplates();
                             handleEditDocCancel();
-                            alert('기본 템플릿 정보가 수정되었습니다.');
+                            showNotification('기본 템플릿 정보가 수정되었습니다.', 'success');
                         } else {
-                            alert('수정 실패: ' + (res.message || '알 수 없는 오류'));
+                            showNotification('수정 실패: ' + (res.message || '알 수 없는 오류'), 'error');
                         }
                     } catch (e) {
                         console.error('기본 템플릿 수정 오류:', e);
-                        alert('수정 중 오류가 발생했습니다.');
+                        showNotification('수정 중 오류가 발생했습니다.', 'error');
                     }
                 } else {
                     handleEditDocCancel();
@@ -1231,6 +1307,8 @@ function NewDocument({
                 addStaticTag={handleAddStaticTag}
                 deleteStaticTag={handleDeleteStaticTag}
                 updateStaticTag={handleUpdateStaticTag}
+                onShowNotification={showNotification}
+                onShowConfirm={showConfirm}
             />
 
             <SearchBar
@@ -2025,6 +2103,27 @@ function NewDocument({
                 </div>
             )}
 
+            {/* 알림 모달 */}
+            <NotificationModal
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={hideNotification}
+                duration={notification.duration}
+            />
+
+            {/* 확인 모달 */}
+            <ConfirmModal
+                isOpen={confirm.isOpen}
+                message={confirm.message}
+                title={confirm.title}
+                confirmText={confirm.confirmText}
+                cancelText={confirm.cancelText}
+                type={confirm.type}
+                onConfirm={handleConfirm}
+                onCancel={hideConfirm}
+                onCancelAction={confirm.onCancelAction}
+            />
         </div>
     );
 }

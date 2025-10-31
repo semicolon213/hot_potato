@@ -8,6 +8,7 @@ import { generateDocumentNumber } from "./documentNumberGenerator";
 import type { DocumentInfo, GoogleFile } from "../../types/documents";
 import { formatDateTime } from "./timeUtils";
 import { apiClient } from "../api/apiClient";
+import type { DocumentInfoResponse, DocumentsListResponse } from "../../types/api/apiResponses";
 
 export interface FileWithDescription {
   id: string;
@@ -30,7 +31,8 @@ async function convertEmailToName(email: string): Promise<string> {
     const response = await apiClient.getUserNameByEmail(email);
     console.log('👤 API 응답:', response);
     
-    const resolvedName = (response as any).name || (response as any).data?.name;
+    const userNameResponse = response.data;
+    const resolvedName = userNameResponse?.name;
     if (response.success && resolvedName) {
       console.log('👤 사용자 이름 변환 성공:', email, '->', resolvedName);
       return resolvedName;
@@ -56,8 +58,8 @@ export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
       return [];
     }
 
-    const rows = (result.data || []) as any[];
-    const documents: DocumentInfo[] = rows.map((row: any, index: number) => {
+    const rows = (result.data || []) as DocumentInfoResponse[];
+    const documents: DocumentInfo[] = rows.map((row: DocumentInfoResponse, index: number) => {
       const mimeType = row.mimeType || row.type || '';
       const created = row.createdTime || row.created_at || undefined;
       const id = row.id || row.documentId || row.fileId || '';

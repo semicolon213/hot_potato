@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { NotificationModal, ConfirmModal } from '../../ui/NotificationModal';
 
 interface Props {
     activeTab: string;
@@ -14,6 +15,8 @@ interface Props {
     addStaticTag?: (newTag: string) => void; // 기본 태그 추가 (관리자 전용)
     deleteStaticTag?: (tagToDelete: string) => void; // 기본 태그 삭제 (관리자 전용)
     updateStaticTag?: (oldTag: string, newTag: string) => void; // 기본 태그 수정 (관리자 전용)
+    onShowNotification?: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void; // 알림 표시 함수
+    onShowConfirm?: (message: string, onConfirm: () => void, options?: { title?: string; confirmText?: string; cancelText?: string; type?: 'danger' | 'warning' | 'info' }) => void; // 확인 모달 표시 함수
 }
 
 export function CategoryTabs({ 
@@ -29,7 +32,9 @@ export function CategoryTabs({
     updateTag,
     addStaticTag,
     deleteStaticTag,
-    updateStaticTag
+    updateStaticTag,
+    onShowNotification,
+    onShowConfirm
 }: Props) {
     const [isAdding, setIsAdding] = useState(false);
     const [newTag, setNewTag] = useState("");
@@ -38,6 +43,10 @@ export function CategoryTabs({
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingTag, setEditingTag] = useState<string | null>(null);
     const [editingText, setEditingText] = useState("");
+    
+    // 입력 필드 ref (포커스 복원용)
+    const staticTagInputRef = useRef<HTMLInputElement>(null);
+    const personalTagInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!isEditMode) {
@@ -51,13 +60,29 @@ export function CategoryTabs({
         if (trimmedTag === "") return;
 
         if (managedTags && managedTags.length >= 10) {
-            alert("최대 10개의 개인 태그만 추가할 수 있습니다.");
+            if (onShowNotification) {
+                onShowNotification("최대 10개의 개인 태그만 추가할 수 있습니다.", "warning");
+            } else {
+                alert("최대 10개의 개인 태그만 추가할 수 있습니다.");
+            }
+            // 알림 후 포커스 복원
+            setTimeout(() => {
+                personalTagInputRef.current?.focus();
+            }, 100);
             setIsAdding(false);
             return;
         }
 
         if (trimmedTag.length > 8) {
-            alert("태그 이름은 최대 8글자까지 가능합니다.");
+            if (onShowNotification) {
+                onShowNotification("태그 이름은 최대 8글자까지 가능합니다.", "warning");
+            } else {
+                alert("태그 이름은 최대 8글자까지 가능합니다.");
+            }
+            // 알림 후 포커스 복원
+            setTimeout(() => {
+                personalTagInputRef.current?.focus();
+            }, 100);
             return;
         }
 
@@ -69,7 +94,11 @@ export function CategoryTabs({
     // 기본 태그 추가 (관리자 전용)
     const handleAddStaticTag = () => {
         if (!isAdmin || !addStaticTag) {
-            alert("기본 태그는 관리자만 추가할 수 있습니다.");
+            if (onShowNotification) {
+                onShowNotification("기본 태그는 관리자만 추가할 수 있습니다.", "warning");
+            } else {
+                alert("기본 태그는 관리자만 추가할 수 있습니다.");
+            }
             setIsAddingStatic(false);
             return;
         }
@@ -78,12 +107,28 @@ export function CategoryTabs({
         if (trimmedTag === "") return;
 
         if (trimmedTag.length > 8) {
-            alert("태그 이름은 최대 8글자까지 가능합니다.");
+            if (onShowNotification) {
+                onShowNotification("태그 이름은 최대 8글자까지 가능합니다.", "warning");
+            } else {
+                alert("태그 이름은 최대 8글자까지 가능합니다.");
+            }
+            // 알림 후 포커스 복원
+            setTimeout(() => {
+                staticTagInputRef.current?.focus();
+            }, 100);
             return;
         }
 
         if (staticTags.includes(trimmedTag)) {
-            alert("이미 존재하는 기본 태그입니다.");
+            if (onShowNotification) {
+                onShowNotification("이미 존재하는 기본 태그입니다.", "warning");
+            } else {
+                alert("이미 존재하는 기본 태그입니다.");
+            }
+            // 알림 후 포커스 복원
+            setTimeout(() => {
+                staticTagInputRef.current?.focus();
+            }, 100);
             return;
         }
 
@@ -102,14 +147,22 @@ export function CategoryTabs({
             if (isStatic) {
                 // 기본 태그 수정 (관리자 전용)
                 if (!isAdmin || !updateStaticTag) {
-                    alert("기본 태그는 관리자만 수정할 수 있습니다.");
+                    if (onShowNotification) {
+                        onShowNotification("기본 태그는 관리자만 수정할 수 있습니다.", "warning");
+                    } else {
+                        alert("기본 태그는 관리자만 수정할 수 있습니다.");
+                    }
                     setEditingTag(null);
                     setEditingText("");
                     return;
                 }
                 
                 if (trimmedNewTag.length > 8) {
-                    alert("태그 이름은 최대 8글자까지 가능합니다.");
+                    if (onShowNotification) {
+                        onShowNotification("태그 이름은 최대 8글자까지 가능합니다.", "warning");
+                    } else {
+                        alert("태그 이름은 최대 8글자까지 가능합니다.");
+                    }
                     return;
                 }
                 
@@ -117,7 +170,11 @@ export function CategoryTabs({
             } else {
                 // 개인 태그 수정
                 if (trimmedNewTag.length > 8) {
-                    alert("태그 이름은 최대 8글자까지 가능합니다.");
+                    if (onShowNotification) {
+                        onShowNotification("태그 이름은 최대 8글자까지 가능합니다.", "warning");
+                    } else {
+                        alert("태그 이름은 최대 8글자까지 가능합니다.");
+                    }
                     return;
                 }
                 
@@ -172,7 +229,13 @@ export function CategoryTabs({
                                                 </button>
                                                 <button 
                                                     onClick={() => {
-                                                        if (window.confirm(`기본 태그 "${tab}"를 삭제하시겠습니까?`)) {
+                                                        if (onShowConfirm) {
+                                                            onShowConfirm(
+                                                                `기본 태그 "${tab}"를 삭제하시겠습니까?`,
+                                                                () => deleteStaticTag(tab),
+                                                                { type: 'warning' }
+                                                            );
+                                                        } else if (window.confirm(`기본 태그 "${tab}"를 삭제하시겠습니까?`)) {
                                                             deleteStaticTag(tab);
                                                         }
                                                     }} 
@@ -199,7 +262,13 @@ export function CategoryTabs({
                                                 </button>
                                                 <button 
                                                     onClick={() => {
-                                                        if (window.confirm(`개인 태그 "${tab}"를 삭제하시겠습니까?`)) {
+                                                        if (onShowConfirm) {
+                                                            onShowConfirm(
+                                                                `개인 태그 "${tab}"를 삭제하시겠습니까?`,
+                                                                () => deleteTag(tab),
+                                                                { type: 'warning' }
+                                                            );
+                                                        } else if (window.confirm(`개인 태그 "${tab}"를 삭제하시겠습니까?`)) {
                                                             deleteTag(tab);
                                                         }
                                                     }} 
@@ -224,6 +293,7 @@ export function CategoryTabs({
                                 isAddingStatic ? (
                                     <div className="new-tag-input-container">
                                         <input
+                                            ref={staticTagInputRef}
                                             type="text"
                                             value={newStaticTag}
                                             onChange={(e) => {
@@ -268,6 +338,7 @@ export function CategoryTabs({
                                 isAdding ? (
                                     <div className="new-tag-input-container">
                                         <input
+                                            ref={personalTagInputRef}
                                             type="text"
                                             value={newTag}
                                             onChange={(e) => {
