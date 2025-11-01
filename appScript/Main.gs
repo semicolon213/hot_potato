@@ -123,29 +123,35 @@ function doPost(e) {
               currentEditors: []
             };
           } else {
-            // 권한 설정 전 현재 상태 확인
-            const beforePermissions = file.getEditors();
-            console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+            // 권한 설정 전 현재 상태 확인 (Drive API 사용)
+            const beforePermissions = Drive.Permissions.list(documentId);
+            const beforePermissionsList = beforePermissions.items || [];
+            console.log('🔐 권한 설정 전 편집자:', beforePermissionsList.map(p => p.emailAddress));
             
             let successCount = 0;
             let failCount = 0;
             
-            // 각 사용자에게 편집 권한 부여
+            // 각 사용자에게 편집 권한 부여 (Drive API - 메일 알림 없음)
             for (const userEmail of allUsers) {
               try {
                 console.log('🔐 권한 부여 시도:', userEmail);
                 
                 // 이미 권한이 있는지 확인
-                const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+                const hasPermission = beforePermissionsList.some(p => p.emailAddress === userEmail && p.role === 'writer');
                 if (hasPermission) {
                   console.log('✅ 이미 권한이 있는 사용자:', userEmail);
                   successCount++;
                   continue;
                 }
                 
-                // 권한 부여
-                file.addEditor(userEmail);
-                console.log('✅ 편집 권한 부여 완료:', userEmail);
+                // 권한 부여 (메일 알림 없이)
+                Drive.Permissions.insert({
+                  role: 'writer',
+                  type: 'user',
+                  value: userEmail,
+                  sendNotificationEmails: false
+                }, documentId);
+                console.log('✅ 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
                 successCount++;
                 
                 // 잠시 대기 (API 제한 방지)
@@ -158,14 +164,15 @@ function doPost(e) {
             }
             
             // 권한 설정 후 결과 확인
-            const afterPermissions = file.getEditors();
-            console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+            const afterPermissions = Drive.Permissions.list(documentId);
+            const afterPermissionsList = afterPermissions.items || [];
+            console.log('🔐 권한 설정 후 편집자:', afterPermissionsList.map(p => p.emailAddress));
             
             permissionResult = {
               success: successCount > 0,
               message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
               grantedUsers: allUsers,
-              currentEditors: afterPermissions.map(p => p.getEmail()),
+              currentEditors: afterPermissionsList.map(p => p.emailAddress),
               successCount: successCount,
               failCount: failCount
             };
@@ -494,6 +501,70 @@ function doPost(e) {
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 회계 관련 액션
+    if (req.action === 'createLedger') {
+      console.log('📁 장부 생성 요청:', req);
+      try {
+        const result = createLedgerStructure(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 장부 생성 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '장부 생성 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (req.action === 'getLedgerList') {
+      console.log('📋 장부 목록 조회 요청');
+      try {
+        const result = getLedgerList();
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            data: result
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 장부 목록 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '장부 목록 조회 중 오류가 발생했습니다: ' + error.message,
+            data: []
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (req.action === 'getAccountingFolderId') {
+      console.log('📁 회계 폴더 ID 조회 요청');
+      try {
+        const folderId = initializeAccountingFolder();
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            data: {
+              accountingFolderId: folderId
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 회계 폴더 ID 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '회계 폴더 ID 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     // UserManagement.gs의 doPostAuthInternal 함수 호출
@@ -1310,29 +1381,35 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
       };
     }
     
-    // 권한 설정 전 현재 상태 확인
-    const beforePermissions = file.getEditors();
-    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+    // 권한 설정 전 현재 상태 확인 (Drive API 사용)
+    const beforePermissions = Drive.Permissions.list(documentId);
+    const beforePermissionsList = beforePermissions.items || [];
+    console.log('🔐 권한 설정 전 편집자:', beforePermissionsList.map(p => p.emailAddress));
     
     let successCount = 0;
     let failCount = 0;
     
-    // 각 사용자에게 편집 권한 부여
+    // 각 사용자에게 편집 권한 부여 (Drive API - 메일 알림 없음)
     for (const userEmail of allUsers) {
       try {
         console.log('🔐 권한 부여 시도:', userEmail);
         
         // 이미 권한이 있는지 확인
-        const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+        const hasPermission = beforePermissionsList.some(p => p.emailAddress === userEmail && p.role === 'writer');
         if (hasPermission) {
           console.log('✅ 이미 권한이 있는 사용자:', userEmail);
           successCount++;
           continue;
         }
         
-        // 권한 부여
-        file.addEditor(userEmail);
-        console.log('✅ 편집 권한 부여 완료:', userEmail);
+        // 권한 부여 (메일 알림 없이)
+        Drive.Permissions.insert({
+          role: 'writer',
+          type: 'user',
+          value: userEmail,
+          sendNotificationEmails: false
+        }, documentId);
+        console.log('✅ 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
         successCount++;
         
         // 잠시 대기 (API 제한 방지)
@@ -1345,14 +1422,15 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
     }
     
     // 권한 설정 후 결과 확인
-    const afterPermissions = file.getEditors();
-    console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+    const afterPermissions = Drive.Permissions.list(documentId);
+    const afterPermissionsList = afterPermissions.items || [];
+    console.log('🔐 권한 설정 후 편집자:', afterPermissionsList.map(p => p.emailAddress));
     
     const result = {
       success: successCount > 0,
       message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
       grantedUsers: allUsers,
-      currentEditors: afterPermissions.map(p => p.getEmail()),
+      currentEditors: afterPermissionsList.map(p => p.emailAddress),
       successCount: successCount,
       failCount: failCount
     };
