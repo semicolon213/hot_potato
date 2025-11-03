@@ -23,6 +23,7 @@
     background-color: #f3f3f3;
     border-top-left-radius: var(--border-radius-lg);
     border-top-right-radius: var(--border-radius-lg);
+    cursor: move;
 }
 
 .event-detail-header h2 {

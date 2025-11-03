@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import './EventDetailModal.css';
 import { type Event } from '../../../../hooks/features/calendar/useCalendarContext';
@@ -13,9 +13,45 @@ interface EventDetailModalProps {
     position?: { top: number; left: number };
 }
 
-const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position }) => {
+const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position: positionFromProp }) => {
     const { students, staff } = useCalendarContext();
     const [isAttendeesExpanded, setIsAttendeesExpanded] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [position, setPosition] = useState(positionFromProp || { top: window.innerHeight / 2, left: window.innerWidth / 2 });
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - position.left, y: e.clientY - position.top });
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+        if (isDragging) {
+            setPosition({
+                top: e.clientY - dragStart.y,
+                left: e.clientX - dragStart.x,
+            });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        } else {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging]);
 
     const attendees = useMemo(() => {
         if (!event.attendees || !students || !staff) {
@@ -71,13 +107,13 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
     };
 
     const modalStyle = (position && position.top !== 0 && position.left !== 0)
-        ? { top: position.top, left: position.left }
+        ? { top: position.top, left: position.left, transform: 'none' }
         : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
     const modalContent = (
         <div className="event-detail-modal-overlay" onClick={onClose}>
             <div className={`event-detail-container ${isAttendeesExpanded ? 'expanded' : ''}`} style={modalStyle} onClick={(e) => e.stopPropagation()}>
-                <div className="event-detail-header">
+                <div className="event-detail-header" onMouseDown={handleMouseDown}>
                     <h2>{event.title}</h2>
                     <div className="header-actions">
                         <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
