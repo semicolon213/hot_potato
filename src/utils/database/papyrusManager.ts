@@ -646,16 +646,16 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
   }
 };
 
-export const addCalendarEvent = async (spreadsheetId: string, eventData: Omit<Event, 'id'>): Promise<void> => {
+export const addCalendarEvent = async (spreadsheetId: string, eventData: Omit<Event, 'id'>, userType: string): Promise<void> => {
   try {
     if (!spreadsheetId) {
       throw new Error('Calendar spreadsheet ID not found');
     }
 
     const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
-    const existingIds = data && data.values ? data.values.slice(1).map(row => row[0]).filter(id => id && id.startsWith('cal-')).map(id => parseInt(id.substring(4), 10)).filter(num => !isNaN(num)) : [];
+    const existingIds = data && data.values ? data.values.slice(1).map(row => row[0]).filter(id => id && id.includes('-cal-')).map(id => parseInt(id.split('-').pop() || '0', 10)).filter(num => !isNaN(num)) : [];
     const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
-    const newEventId = `cal-${maxId + 1}`;
+    const newEventId = `${userType}-cal-${maxId + 1}`;
 
     const newEventForSheet = [
       newEventId,

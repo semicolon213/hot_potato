@@ -233,7 +233,10 @@ const App: React.FC = () => {
       if (!activeCalendarSpreadsheetId) {
         throw new Error("Active calendar spreadsheet ID not found");
       }
-      await addCalendarEvent(activeCalendarSpreadsheetId, eventData);
+      if (!user || !user.userType) {
+        throw new Error("User or user type not found");
+      }
+      await addCalendarEvent(activeCalendarSpreadsheetId, eventData, user.userType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);

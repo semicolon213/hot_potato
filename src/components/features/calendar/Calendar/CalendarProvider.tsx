@@ -537,7 +537,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
         // Heuristic: Google Calendar event IDs are alphanumeric and do not contain hyphens.
         // Our sheet events have composite IDs that always contain a hyphen (spreadsheetId-eventIdInSheet).
-        if (eventId.includes('-')) {
+        if (eventId.includes('-cal-')) {
             updateSheetEvent(eventId, event);
         }
         else {
@@ -577,7 +577,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     };
 
     const deleteEvent = (id: string) => {
-        if (id.startsWith('cal-')) {
+        if (id.includes('-cal-')) {
             deleteSheetEvent(id);
         } else {
             deleteGoogleEvent(id);
