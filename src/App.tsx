@@ -230,13 +230,71 @@ const App: React.FC = () => {
   // 캘린더 이벤트 추가 핸들러
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
     try {
-      if (!activeCalendarSpreadsheetId) {
-        throw new Error("Active calendar spreadsheet ID not found");
+      const getAttendeeUserType = (attendeeId: string): string | null => {
+        const student = students.find(s => s.no_student === attendeeId);
+        if (student) {
+          return student.council ? 'council' : 'student';
+        }
+
+        const staffMember = staff.find(s => s.no === attendeeId);
+        if (staffMember) {
+          if (staffMember.pos === '외부강사' || staffMember.pos === '시간강사') {
+            return 'ADprofessor';
+          }
+          if (staffMember.pos === '조교') {
+            return 'support';
+          }
+          if (staffMember.pos === '교수') {
+            return 'professor';
+          }
+        }
+        return null;
+      };
+
+      const permissionHierarchy = ['student', 'council', 'support', 'ADprofessor', 'professor'];
+
+      let targetSpreadsheetId = activeCalendarSpreadsheetId;
+
+      if (eventData.attendees) {
+        const attendeeIds = eventData.attendees.split(',');
+        const attendeeUserTypes = attendeeIds.map(getAttendeeUserType).filter(Boolean) as string[];
+
+        if (attendeeUserTypes.length > 0) {
+          const lowestPermissionType = attendeeUserTypes.reduce((lowest, current) => {
+            const lowestIndex = permissionHierarchy.indexOf(lowest);
+            const currentIndex = permissionHierarchy.indexOf(current);
+            return currentIndex < lowestIndex ? current : lowest;
+          }, attendeeUserTypes[0]);
+
+          switch (lowestPermissionType) {
+            case 'student':
+              targetSpreadsheetId = calendarStudentSpreadsheetId;
+              break;
+            case 'council':
+              targetSpreadsheetId = calendarCouncilSpreadsheetId;
+              break;
+            case 'support':
+              targetSpreadsheetId = calendarSuppSpreadsheetId;
+              break;
+            case 'ADprofessor':
+              targetSpreadsheetId = calendarADProfessorSpreadsheetId;
+              break;
+            case 'professor':
+              targetSpreadsheetId = calendarProfessorSpreadsheetId;
+              break;
+            default:
+              targetSpreadsheetId = activeCalendarSpreadsheetId;
+          }
+        }
+      }
+
+      if (!targetSpreadsheetId) {
+        throw new Error("Target calendar spreadsheet ID not found");
       }
       if (!user || !user.userType) {
         throw new Error("User or user type not found");
       }
-      await addCalendarEvent(activeCalendarSpreadsheetId, eventData, user.userType);
+      await addCalendarEvent(targetSpreadsheetId, eventData, user.userType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
