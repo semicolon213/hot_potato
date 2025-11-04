@@ -227,33 +227,34 @@ const App: React.FC = () => {
     }
   };
 
+  const getAttendeeUserType = (attendeeId: string): string | null => {
+    const student = students.find(s => s.no_student === attendeeId);
+    if (student) {
+      return student.council ? 'council' : 'student';
+    }
+
+    const staffMember = staff.find(s => s.no === attendeeId);
+    if (staffMember) {
+      if (staffMember.pos === '외부강사' || staffMember.pos === '시간강사') {
+        return 'ADprofessor';
+      }
+      if (staffMember.pos === '조교') {
+        return 'support';
+      }
+      if (staffMember.pos === '교수') {
+        return 'professor';
+      }
+    }
+    return null;
+  };
+
+  const permissionHierarchy = ['student', 'council', 'support', 'ADprofessor', 'professor'];
+
   // 캘린더 이벤트 추가 핸들러
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
     try {
-      const getAttendeeUserType = (attendeeId: string): string | null => {
-        const student = students.find(s => s.no_student === attendeeId);
-        if (student) {
-          return student.council ? 'council' : 'student';
-        }
-
-        const staffMember = staff.find(s => s.no === attendeeId);
-        if (staffMember) {
-          if (staffMember.pos === '외부강사' || staffMember.pos === '시간강사') {
-            return 'ADprofessor';
-          }
-          if (staffMember.pos === '조교') {
-            return 'support';
-          }
-          if (staffMember.pos === '교수') {
-            return 'professor';
-          }
-        }
-        return null;
-      };
-
-      const permissionHierarchy = ['student', 'council', 'support', 'ADprofessor', 'professor'];
-
-      let targetSpreadsheetId = activeCalendarSpreadsheetId;
+      let eventOwnerType = user.userType;
+      let targetSpreadsheetId = activeCalendarSpreadsheetId; // Initialize here
 
       if (eventData.attendees) {
         const attendeeIds = eventData.attendees.split(',');
@@ -265,6 +266,8 @@ const App: React.FC = () => {
             const currentIndex = permissionHierarchy.indexOf(current);
             return currentIndex < lowestIndex ? current : lowest;
           }, attendeeUserTypes[0]);
+
+          eventOwnerType = lowestPermissionType;
 
           switch (lowestPermissionType) {
             case 'student':
@@ -291,10 +294,10 @@ const App: React.FC = () => {
       if (!targetSpreadsheetId) {
         throw new Error("Target calendar spreadsheet ID not found");
       }
-      if (!user || !user.userType) {
-        throw new Error("User or user type not found");
+      if (!eventOwnerType) {
+        throw new Error("Event owner type not found");
       }
-      await addCalendarEvent(targetSpreadsheetId, eventData, user.userType);
+      await addCalendarEvent(targetSpreadsheetId, eventData, eventOwnerType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
