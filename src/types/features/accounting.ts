@@ -71,8 +71,9 @@ export interface BudgetPlan {
   requestedDate: string;           // 신청일
   plannedExecutionDate: string;     // 계획된 집행일
   status: 'pending' | 'reviewed' | 'approved' | 'executed' | 'rejected'; // 상태
-  subManagerReviewed: boolean;    // 부관리인 검토 여부
-  subManagerReviewDate?: string;   // 부관리인 검토일
+  subManagerReviewed: boolean;    // 부관리인 검토 여부 (하위 호환성)
+  subManagerReviewDate?: string;   // 부관리인 검토일 (하위 호환성)
+  subManagerReviews: Array<{ email: string; date: string }>; // 서브 관리자별 검토 목록
   mainManagerApproved: boolean;    // 주관리인 승인 여부
   mainManagerApprovalDate?: string; // 주관리인 승인일
   executedDate?: string;           // 집행일
@@ -89,6 +90,7 @@ export interface BudgetPlanDetail {
   category: string;                 // 카테고리
   description: string;              // 설명
   amount: number;                   // 금액
+  plannedDate?: string;             // 항목별 집행 예정일
 }
 
 /**

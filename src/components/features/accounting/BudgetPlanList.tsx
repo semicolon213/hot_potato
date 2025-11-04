@@ -9,6 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { getBudgetPlans, reviewBudgetPlan, approveBudgetPlan, rejectBudgetPlan, executeBudgetPlan } from '../../../utils/database/accountingBudgetManager';
 import { getAccounts } from '../../../utils/database/accountingManager';
+import { apiClient } from '../../../utils/api/apiClient';
 import { CreateBudgetPlanModal } from './CreateBudgetPlanModal';
 import { BudgetPlanDetail } from './BudgetPlanDetail';
 import type { BudgetPlan, Account } from '../../../types/features/accounting';
@@ -31,9 +32,16 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
+  const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
 
   useEffect(() => {
     loadAccounts();
+    // 현재 사용자 이메일 가져오기
+    const userInfo = typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('user') || '{}')
+      : {};
+    setCurrentUserEmail(userInfo.email || userInfo.studentId || '');
   }, [spreadsheetId]);
 
   useEffect(() => {
@@ -45,7 +53,12 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
 
   useEffect(() => {
     loadBudgetPlans();
-  }, [spreadsheetId, selectedAccountId, statusFilter]);
+    // 선택된 통장 정보 업데이트
+    if (accounts.length > 0 && selectedAccountId) {
+      const account = accounts.find(acc => acc.accountId === selectedAccountId);
+      setCurrentAccount(account || null);
+    }
+  }, [spreadsheetId, selectedAccountId, statusFilter, accounts]);
 
   const loadAccounts = async () => {
     try {
@@ -53,6 +66,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       setAccounts(accountsData);
       if (accountsData.length > 0 && !selectedAccountId) {
         setSelectedAccountId(accountsData[0].accountId);
+        setCurrentAccount(accountsData[0]);
+      } else if (accountsData.length > 0) {
+        const account = accountsData.find(acc => acc.accountId === selectedAccountId) || accountsData[0];
+        setCurrentAccount(account);
       }
     } catch (err) {
       console.error('❌ 통장 목록 로드 오류:', err);
@@ -89,7 +106,18 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
         ? JSON.parse(localStorage.getItem('user') || '{}')
         : {};
       
-      await reviewBudgetPlan(spreadsheetId, budgetId, userInfo.studentId || userInfo.email || 'unknown');
+      const reviewerEmail = userInfo.studentId || userInfo.email || currentUserEmail;
+      
+      // 서브 관리자인지 확인
+      if (!currentAccount) {
+        throw new Error('통장 정보를 찾을 수 없습니다.');
+      }
+      
+      if (!currentAccount.subManagerIds.includes(reviewerEmail)) {
+        throw new Error('서브 관리자만 검토할 수 있습니다.');
+      }
+      
+      await reviewBudgetPlan(spreadsheetId, budgetId, reviewerEmail);
       await loadBudgetPlans();
     } catch (err: any) {
       alert(err.message || '검토 처리에 실패했습니다.');
@@ -116,7 +144,12 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
     }
 
     try {
-      await rejectBudgetPlan(spreadsheetId, budgetId, reason);
+      const userInfo = typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('user') || '{}')
+        : {};
+      
+      const rejecterEmail = userInfo.studentId || userInfo.email || currentUserEmail;
+      await rejectBudgetPlan(spreadsheetId, budgetId, reason, rejecterEmail);
       await loadBudgetPlans();
     } catch (err: any) {
       alert(err.message || '반려 처리에 실패했습니다.');
@@ -161,6 +194,35 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       'rejected': '#f44336'
     };
     return colors[status];
+  };
+
+  // 현재 사용자가 서브 관리자인지 확인
+  const isSubManager = currentAccount ? currentAccount.subManagerIds.includes(currentUserEmail) : false;
+  
+  // 현재 사용자가 주 관리자인지 확인
+  const isMainManager = currentAccount ? currentAccount.mainManagerId === currentUserEmail : false;
+  
+  // 검토 진행률 계산 (서브 관리자 검토 완료율)
+  const getReviewProgress = (plan: BudgetPlan) => {
+    if (!currentAccount || currentAccount.subManagerIds.length === 0) {
+      return { completed: 0, total: 0, percentage: 0 };
+    }
+    
+    const totalSubManagers = currentAccount.subManagerIds.length;
+    const reviewedCount = plan.subManagerReviews.filter(review => 
+      currentAccount.subManagerIds.includes(review.email)
+    ).length;
+    
+    return {
+      completed: reviewedCount,
+      total: totalSubManagers,
+      percentage: Math.round((reviewedCount / totalSubManagers) * 100)
+    };
+  };
+  
+  // 현재 사용자가 이미 검토했는지 확인
+  const hasUserReviewed = (plan: BudgetPlan) => {
+    return plan.subManagerReviews.some(r => r.email === currentUserEmail);
   };
 
   return (
@@ -227,12 +289,27 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                   <td>{plan.title}</td>
                   <td>{plan.totalAmount.toLocaleString()}원</td>
                   <td>
-                    <span
-                      className="status-badge"
-                      style={{ color: getStatusColor(plan.status) }}
-                    >
-                      {getStatusLabel(plan.status)}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span
+                        className="status-badge"
+                        style={{ color: getStatusColor(plan.status) }}
+                      >
+                        {getStatusLabel(plan.status)}
+                      </span>
+                      {plan.status === 'pending' && currentAccount && currentAccount.subManagerIds.length > 0 && (
+                        <div className="review-progress-container">
+                          <div className="review-progress-bar">
+                            <div 
+                              className="review-progress-fill"
+                              style={{ width: `${getReviewProgress(plan).percentage}%` }}
+                            />
+                          </div>
+                          <span className="review-progress-text">
+                            검토 진행: {getReviewProgress(plan).completed}/{getReviewProgress(plan).total}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td>{new Date(plan.requestedDate).toLocaleDateString('ko-KR')}</td>
                   <td>{new Date(plan.plannedExecutionDate).toLocaleDateString('ko-KR')}</td>
@@ -244,7 +321,7 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                       >
                         상세
                       </button>
-                      {plan.status === 'pending' && (
+                      {plan.status === 'pending' && isSubManager && !hasUserReviewed(plan) && (
                         <button
                           onClick={() => handleReview(plan.budgetId)}
                           className="action-btn review-btn"
@@ -252,7 +329,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                           검토
                         </button>
                       )}
-                      {plan.status === 'reviewed' && (
+                      {plan.status === 'pending' && isSubManager && hasUserReviewed(plan) && (
+                        <span className="reviewed-badge">검토 완료</span>
+                      )}
+                      {plan.status === 'reviewed' && isMainManager && (
                         <>
                           <button
                             onClick={() => handleApprove(plan.budgetId)}

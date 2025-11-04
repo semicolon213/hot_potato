@@ -56,7 +56,12 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
       }
 
       setBudgetPlan(plan);
-      setDetails(plan.details.map(d => ({ category: d.category, description: d.description, amount: d.amount })));
+      setDetails(plan.details.map(d => ({ 
+        category: d.category, 
+        description: d.description, 
+        amount: d.amount,
+        plannedDate: d.plannedDate 
+      })));
       setCategories(categoriesData);
       
       const foundAccount = accountsData.find(acc => acc.accountId === plan.accountId);
@@ -72,7 +77,7 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
   };
 
   const handleAddDetail = () => {
-    setDetails([...details, { category: '', description: '', amount: 0 }]);
+    setDetails([...details, { category: '', description: '', amount: 0, plannedDate: '' }]);
     setHasChanges(true);
   };
 
@@ -83,7 +88,7 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
 
   const handleDetailChange = (index: number, field: keyof Omit<BudgetPlanDetail, 'detailId'>, value: string | number) => {
     const newDetails = [...details];
-    newDetails[index] = { ...newDetails[index], [field]: value };
+    newDetails[index] = { ...newDetails[index], [field]: value } as Omit<BudgetPlanDetail, 'detailId'>;
     setDetails(newDetails);
     setHasChanges(true);
   };
@@ -249,6 +254,15 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
                         step="1"
                         className="detail-amount-input"
                         required
+                      />
+                    </div>
+                    <div className="detail-field">
+                      <label>집행 예정일</label>
+                      <input
+                        type="date"
+                        value={detail.plannedDate || ''}
+                        onChange={(e) => handleDetailChange(index, 'plannedDate', e.target.value)}
+                        className="detail-date-input"
                       />
                     </div>
                   </div>
