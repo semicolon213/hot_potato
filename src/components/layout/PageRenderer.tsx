@@ -59,8 +59,10 @@ interface PageRendererProps {
   searchTerm: string;
   onPageChange: (pageName: string) => void;
   onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
-  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; attachment: File | null; }) => Promise<void>;
+  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; attachments: File[]; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
+  onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; }) => Promise<void>;
+  onDeleteAnnouncement: (announcementId: string) => Promise<void>;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
   onDeleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -117,6 +119,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onAddPost,
   onAddAnnouncement,
   onSelectAnnouncement,
+  onUpdateAnnouncement,
+  onDeleteAnnouncement,
   onAddCalendarEvent,
   onUpdateCalendarEvent,
   onDeleteCalendarEvent,
@@ -173,6 +177,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
             post={selectedAnnouncement}
             user={user}
             onBack={() => onPageChange('announcements')}
+            onUpdate={onUpdateAnnouncement}
+            onDelete={onDeleteAnnouncement}
           />
         ) : (
           // A fallback in case the page is accessed directly without a selected announcement

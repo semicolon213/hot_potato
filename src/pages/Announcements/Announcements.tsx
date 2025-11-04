@@ -150,7 +150,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
               </thead>
               <tbody>
                 {currentPosts.map((post, index) => (
-                  <tr key={post.id} onDoubleClick={() => onSelectAnnouncement(post)}>
+                  <tr key={post.id} onClick={() => onSelectAnnouncement(post)}>
                     <td className="col-number">{filteredPosts.length - (indexOfFirstPost + index)}</td>
                     <td className="col-title">{post.title}</td>
                     <td className="col-author">{post.author}</td>

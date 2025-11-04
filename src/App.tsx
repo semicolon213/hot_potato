@@ -32,7 +32,9 @@ import {
     fetchTemplates,
     fetchCalendarEvents,
     updateCalendarEvent,
-    incrementViewCount
+    incrementViewCount,
+    updateAnnouncement,
+    deleteAnnouncement
   } from './utils/database/papyrusManager';
 import { 
   addTag as addPersonalTag,
@@ -215,7 +217,7 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachment: File | null; }) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
@@ -245,6 +247,35 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Failed to increment view count:', error);
       // Optionally, revert the optimistic update here
+    }
+  };
+
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+    try {
+      await updateAnnouncement(announcementId, postData);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await deleteAnnouncement(announcementSpreadsheetId, announcementId);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
     }
   };
 
@@ -566,6 +597,8 @@ const App: React.FC = () => {
               onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
+              onUpdateAnnouncement={handleUpdateAnnouncement}
+              onDeleteAnnouncement={handleDeleteAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}
