@@ -218,9 +218,6 @@ export const reviewBudgetPlan = async (
       throw new Error('이미 검토한 예산 계획입니다.');
     }
     
-    // 검토 목록에 추가
-    subManagerReviews.push({ email: reviewerId, date: reviewDate });
-    
     // 통장 정보 가져오기 (서브 관리자 목록 확인용)
     const { getAccounts } = await import('./accountingManager');
     const accounts = await getAccounts(spreadsheetId);
@@ -236,10 +233,36 @@ export const reviewBudgetPlan = async (
       throw new Error('통장 정보를 찾을 수 없습니다.');
     }
     
+    // 검토자가 서브 관리자인지 확인 (이메일로 비교)
+    const isSubManager = account.subManagerIds.includes(reviewerId);
+    if (!isSubManager) {
+      throw new Error('서브 관리자만 검토할 수 있습니다.');
+    }
+    
+    // 검토 목록에 추가 (이메일 형식으로 저장)
+    subManagerReviews.push({ email: reviewerId, date: reviewDate });
+    
+    console.log('🔍 검토 처리:', {
+      reviewerId,
+      subManagerIds: account.subManagerIds,
+      subManagerReviews: subManagerReviews,
+      currentReviewsCount: subManagerReviews.length,
+      totalSubManagers: account.subManagerIds.length
+    });
+    
     // 모든 서브 관리자가 검토했는지 확인
     const allSubManagersReviewed = account.subManagerIds.every(subManagerId => 
       subManagerReviews.some(r => r.email === subManagerId)
     );
+    
+    console.log('🔍 검토 완료 확인:', {
+      allSubManagersReviewed,
+      subManagerIds: account.subManagerIds,
+      reviewedEmails: subManagerReviews.map(r => r.email),
+      missingReviews: account.subManagerIds.filter(subManagerId => 
+        !subManagerReviews.some(r => r.email === subManagerId)
+      )
+    });
     
     // 상태 업데이트: 모든 서브 관리자가 검토 완료하면 'reviewed', 아니면 'pending' 유지
     const newStatus = allSubManagersReviewed ? 'reviewed' : 'pending';

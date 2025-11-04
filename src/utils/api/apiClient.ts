@@ -339,6 +339,14 @@ export class ApiClient {
     return this.request<{ success: boolean; data: any[] }>('getLedgerList', {});
   }
 
+  async updateAccountSubManagers(data: {
+    spreadsheetId: string;
+    accountId: string;
+    subManagerEmails: string[];
+  }) {
+    return this.request('updateAccountSubManagers', data);
+  }
+
   async getAccountingFolderId() {
     return this.request<{ success: boolean; data: { accountingFolderId: string } }>('getAccountingFolderId', {});
   }

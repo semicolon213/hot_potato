@@ -553,6 +553,24 @@ function doPost(e) {
       }
     }
     
+    if (req.action === 'updateAccountSubManagers') {
+      console.log('👥 서브 관리자 목록 업데이트 요청:', req);
+      try {
+        const result = updateAccountSubManagers(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 서브 관리자 목록 업데이트 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '서브 관리자 목록 업데이트 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     if (req.action === 'getAccountingFolderId') {
       console.log('📁 회계 폴더 ID 조회 요청');
       try {

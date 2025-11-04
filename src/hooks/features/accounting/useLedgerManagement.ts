@@ -25,19 +25,36 @@ export const useLedgerManagement = () => {
     setError(null);
     
     try {
-      // 방법 1: Google Drive API로 직접 조회 (권장)
-      const ledgerList = await getLedgerFolders();
-      setLedgers(ledgerList);
+      // Apps Script를 통해 장부 목록 조회 (회계 폴더 ID 문제 회피)
+      console.log('📋 Apps Script를 통해 장부 목록 조회 시작...');
+      const response = await apiClient.getLedgerList();
       
-      // 방법 2: Apps Script로 조회 (대안)
-      // const response = await apiClient.getLedgerList();
-      // if (response.success && response.data) {
-      //   setLedgers(response.data);
-      // }
+      if (response.success && response.data) {
+        console.log('✅ 장부 목록 조회 성공:', response.data.length, '개');
+        // Apps Script 응답을 LedgerInfo 형식으로 변환
+        const ledgers: LedgerInfo[] = response.data.map((ledger: any) => ({
+          folderId: ledger.folderId || '',
+          folderName: ledger.folderName || '',
+          spreadsheetId: ledger.spreadsheetId || '',
+          evidenceFolderId: ledger.evidenceFolderId || '',
+          createdDate: ledger.createdDate || ''
+        }));
+        setLedgers(ledgers);
+      } else {
+        console.warn('⚠️ Apps Script 응답에서 장부 목록을 찾을 수 없습니다.');
+        console.warn('⚠️ 응답:', response);
+        setLedgers([]);
+      }
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ 장부 목록 조회 오류:', err);
-      setError('장부 목록을 불러오는데 실패했습니다.');
+      const errorMessage = err?.message || '장부 목록을 불러오는데 실패했습니다.';
+      setError(errorMessage);
+      
+      // 403 권한 오류인 경우 특별 처리
+      if (err?.status === 403 || err?.message?.includes('PERMISSION_DENIED')) {
+        setError('Google Drive 권한이 없습니다. 권한을 확인해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -94,9 +111,14 @@ export const useLedgerManagement = () => {
     }
   }, []);
 
-  // 초기 로드
+  // 초기 로드 (Google API 초기화 후 실행)
   useEffect(() => {
-    refreshLedgers();
+    // 약간의 지연을 주어 Google API 초기화가 완료될 시간을 확보
+    const timer = setTimeout(() => {
+      refreshLedgers();
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [refreshLedgers]);
 
   return {

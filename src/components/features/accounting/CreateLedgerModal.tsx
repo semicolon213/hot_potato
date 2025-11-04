@@ -111,12 +111,21 @@ export const CreateLedgerModal: React.FC<CreateLedgerModalProps> = ({
         ? JSON.parse(localStorage.getItem('user') || '{}')
         : {};
 
+      // 관리자들을 accessUsers에 자동으로 포함 (중복 제거)
+      const allAccessUsers = [
+        ...accessUsers,
+        mainManagerEmail,
+        ...subManagerEmails
+      ].filter((email, index, arr) => 
+        email && email.trim() !== '' && arr.indexOf(email) === index
+      );
+
       const request: CreateLedgerRequest = {
         ledgerName: ledgerName.trim(),
         accountName: accountName.trim(),
         initialBalance: balanceNum,
         creatorEmail: userInfo.email || '',
-        accessUsers,
+        accessUsers: allAccessUsers,
         accessGroups,
         mainManagerEmail,
         subManagerEmails
@@ -235,16 +244,31 @@ export const CreateLedgerModal: React.FC<CreateLedgerModalProps> = ({
               label="별도 관리인"
               placeholder="별도 관리인 검색..."
             />
+            <p className="form-hint">관리자들은 자동으로 접근 권한에 포함됩니다.</p>
           </div>
 
           <div className="form-group">
             <UserMultiSelect
-              users={users}
-              selectedUsers={accessUsers}
-              onSelectionChange={setAccessUsers}
+              users={users.filter(user => 
+                user.email !== mainManagerEmail && 
+                !subManagerEmails.includes(user.email)
+              )}
+              selectedUsers={accessUsers.filter(email => 
+                email !== mainManagerEmail && 
+                !subManagerEmails.includes(email)
+              )}
+              onSelectionChange={(selected) => {
+                // 관리자 제외하고 업데이트
+                const filtered = selected.filter(email => 
+                  email !== mainManagerEmail && 
+                  !subManagerEmails.includes(email)
+                );
+                setAccessUsers(filtered);
+              }}
               label="접근 권한 - 개인 사용자"
               placeholder="사용자 검색..."
             />
+            <p className="form-hint">주관리인과 별도 관리인은 자동으로 포함됩니다.</p>
           </div>
 
           <div className="form-group">

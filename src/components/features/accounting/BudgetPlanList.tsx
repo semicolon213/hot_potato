@@ -106,20 +106,44 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
         ? JSON.parse(localStorage.getItem('user') || '{}')
         : {};
       
-      const reviewerEmail = userInfo.studentId || userInfo.email || currentUserEmail;
+      // 이메일을 우선 사용 (서브 관리자 목록이 이메일로 저장되어 있음)
+      const reviewerEmail = userInfo.email || userInfo.studentId || currentUserEmail;
+      
+      console.log('🔍 검토 시작:', {
+        budgetId,
+        reviewerEmail,
+        currentUserEmail,
+        userInfo: {
+          studentId: userInfo.studentId,
+          email: userInfo.email
+        },
+        currentAccount: currentAccount ? {
+          accountId: currentAccount.accountId,
+          mainManagerId: currentAccount.mainManagerId,
+          subManagerIds: currentAccount.subManagerIds
+        } : null
+      });
       
       // 서브 관리자인지 확인
       if (!currentAccount) {
         throw new Error('통장 정보를 찾을 수 없습니다.');
       }
       
+      console.log('🔍 서브 관리자 확인:', {
+        reviewerEmail,
+        subManagerIds: currentAccount.subManagerIds,
+        isSubManager: currentAccount.subManagerIds.includes(reviewerEmail)
+      });
+      
       if (!currentAccount.subManagerIds.includes(reviewerEmail)) {
-        throw new Error('서브 관리자만 검토할 수 있습니다.');
+        throw new Error(`서브 관리자만 검토할 수 있습니다. 현재 사용자: ${reviewerEmail}, 서브 관리자 목록: ${currentAccount.subManagerIds.join(', ')}`);
       }
       
       await reviewBudgetPlan(spreadsheetId, budgetId, reviewerEmail);
       await loadBudgetPlans();
+      alert('검토가 완료되었습니다.');
     } catch (err: any) {
+      console.error('❌ 검토 오류:', err);
       alert(err.message || '검토 처리에 실패했습니다.');
     }
   };
@@ -148,7 +172,8 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
         ? JSON.parse(localStorage.getItem('user') || '{}')
         : {};
       
-      const rejecterEmail = userInfo.studentId || userInfo.email || currentUserEmail;
+      // 이메일을 우선 사용 (서브 관리자 목록이 이메일로 저장되어 있음)
+      const rejecterEmail = userInfo.email || userInfo.studentId || currentUserEmail;
       await rejectBudgetPlan(spreadsheetId, budgetId, reason, rejecterEmail);
       await loadBudgetPlans();
     } catch (err: any) {
@@ -196,11 +221,39 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
     return colors[status];
   };
 
-  // 현재 사용자가 서브 관리자인지 확인
-  const isSubManager = currentAccount ? currentAccount.subManagerIds.includes(currentUserEmail) : false;
+  // 현재 사용자가 서브 관리자인지 확인 (이메일 또는 학번으로 확인)
+  const getUserIdentifier = () => {
+    if (typeof window === 'undefined') return '';
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    return userInfo.email || userInfo.studentId || currentUserEmail;
+  };
   
-  // 현재 사용자가 주 관리자인지 확인
-  const isMainManager = currentAccount ? currentAccount.mainManagerId === currentUserEmail : false;
+  const userIdentifier = getUserIdentifier();
+  const isSubManager = currentAccount ? currentAccount.subManagerIds.includes(userIdentifier) : false;
+  
+  // 현재 사용자가 주 관리자인지 확인 (이메일 또는 학번으로 확인)
+  const isMainManager = currentAccount ? (
+    currentAccount.mainManagerId === userIdentifier || 
+    currentAccount.mainManagerId === (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}').email : '') ||
+    currentAccount.mainManagerId === (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}').studentId : '')
+  ) : false;
+  
+  // 디버깅 로그
+  if (currentAccount) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    console.log('🔍 주 관리자 확인:', {
+      userIdentifier,
+      mainManagerId: currentAccount.mainManagerId,
+      userEmail: userInfo.email,
+      userStudentId: userInfo.studentId,
+      isMainManager,
+      matches: {
+        byIdentifier: currentAccount.mainManagerId === userIdentifier,
+        byEmail: currentAccount.mainManagerId === userInfo.email,
+        byStudentId: currentAccount.mainManagerId === userInfo.studentId
+      }
+    });
+  }
   
   // 검토 진행률 계산 (서브 관리자 검토 완료율)
   const getReviewProgress = (plan: BudgetPlan) => {
@@ -220,9 +273,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
     };
   };
   
-  // 현재 사용자가 이미 검토했는지 확인
+  // 현재 사용자가 이미 검토했는지 확인 (이메일 또는 학번으로 확인)
   const hasUserReviewed = (plan: BudgetPlan) => {
-    return plan.subManagerReviews.some(r => r.email === currentUserEmail);
+    const userIdentifier = getUserIdentifier();
+    return plan.subManagerReviews.some(r => r.email === userIdentifier);
   };
 
   return (
@@ -284,32 +338,34 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
               </tr>
             </thead>
             <tbody>
-              {budgetPlans.map(plan => (
+              {budgetPlans.map(plan => {
+                // 디버깅: 각 계획의 상태와 조건 확인
+                if (plan.status === 'reviewed') {
+                  console.log('🔍 검토 완료된 계획:', {
+                    budgetId: plan.budgetId,
+                    title: plan.title,
+                    status: plan.status,
+                    isMainManager,
+                    currentAccount: currentAccount ? {
+                      accountId: currentAccount.accountId,
+                      mainManagerId: currentAccount.mainManagerId
+                    } : null,
+                    userIdentifier,
+                    subManagerReviews: plan.subManagerReviews
+                  });
+                }
+                
+                return (
                 <tr key={plan.budgetId}>
                   <td>{plan.title}</td>
                   <td>{plan.totalAmount.toLocaleString()}원</td>
                   <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span
-                        className="status-badge"
-                        style={{ color: getStatusColor(plan.status) }}
-                      >
-                        {getStatusLabel(plan.status)}
-                      </span>
-                      {plan.status === 'pending' && currentAccount && currentAccount.subManagerIds.length > 0 && (
-                        <div className="review-progress-container">
-                          <div className="review-progress-bar">
-                            <div 
-                              className="review-progress-fill"
-                              style={{ width: `${getReviewProgress(plan).percentage}%` }}
-                            />
-                          </div>
-                          <span className="review-progress-text">
-                            검토 진행: {getReviewProgress(plan).completed}/{getReviewProgress(plan).total}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    <span
+                      className="status-badge"
+                      style={{ color: getStatusColor(plan.status) }}
+                    >
+                      {getStatusLabel(plan.status)}
+                    </span>
                   </td>
                   <td>{new Date(plan.requestedDate).toLocaleDateString('ko-KR')}</td>
                   <td>{new Date(plan.plannedExecutionDate).toLocaleDateString('ko-KR')}</td>
@@ -321,16 +377,19 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                       >
                         상세
                       </button>
-                      {plan.status === 'pending' && isSubManager && !hasUserReviewed(plan) && (
+                      {plan.status === 'pending' && (
                         <button
                           onClick={() => handleReview(plan.budgetId)}
-                          className="action-btn review-btn"
+                          className={`action-btn review-btn review-btn-with-progress ${!isSubManager || hasUserReviewed(plan) ? 'disabled' : ''}`}
+                          disabled={!isSubManager || hasUserReviewed(plan)}
+                          style={{
+                            '--progress-percentage': `${getReviewProgress(plan).percentage}%`
+                          } as React.CSSProperties}
                         >
-                          검토
+                          <span className="review-btn-text">
+                            검토 {getReviewProgress(plan).completed}/{getReviewProgress(plan).total}
+                          </span>
                         </button>
-                      )}
-                      {plan.status === 'pending' && isSubManager && hasUserReviewed(plan) && (
-                        <span className="reviewed-badge">검토 완료</span>
                       )}
                       {plan.status === 'reviewed' && isMainManager && (
                         <>
@@ -362,7 +421,8 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

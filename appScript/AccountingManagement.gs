@@ -588,8 +588,8 @@ function getLedgerList() {
       ledgers.push({
         folderId: folder.getId(),
         folderName: folderName,
-        spreadsheetId: spreadsheetId,
-        evidenceFolderId: evidenceFolderId,
+        spreadsheetId: spreadsheetId || '',
+        evidenceFolderId: evidenceFolderId || '',
         createdDate: folder.getDateCreated().toISOString()
       });
     }
@@ -625,6 +625,94 @@ function getLedgerSpreadsheetId(folderId) {
   } catch (error) {
     console.error('❌ 스프레드시트 ID 조회 오류:', error);
     return null;
+  }
+}
+
+/**
+ * 통장 서브 관리자 목록 업데이트
+ * @param {Object} req - 요청 데이터
+ * @returns {Object} 업데이트 결과
+ */
+function updateAccountSubManagers(req) {
+  try {
+    const { spreadsheetId, accountId, subManagerEmails } = req;
+    
+    if (!spreadsheetId || !accountId) {
+      return {
+        success: false,
+        message: '스프레드시트 ID와 통장 ID가 필요합니다.'
+      };
+    }
+    
+    console.log('👥 서브 관리자 목록 업데이트 시작:', { spreadsheetId, accountId, subManagerEmails });
+    
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const accountSheet = spreadsheet.getSheetByName('통장');
+    
+    if (!accountSheet) {
+      return {
+        success: false,
+        message: '통장 시트를 찾을 수 없습니다.'
+      };
+    }
+    
+    // 통장 데이터 찾기
+    const data = accountSheet.getDataRange().getValues();
+    const headers = data[0];
+    const accountIdIndex = headers.indexOf('account_id');
+    
+    if (accountIdIndex === -1) {
+      return {
+        success: false,
+        message: '통장 시트의 헤더를 찾을 수 없습니다.'
+      };
+    }
+    
+    // 해당 account_id를 가진 행 찾기
+    let rowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][accountIdIndex] === accountId) {
+        rowIndex = i + 1; // 1-based index
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return {
+        success: false,
+        message: '통장을 찾을 수 없습니다.'
+      };
+    }
+    
+    // 서브 관리자 목록 업데이트 (sub_manager_ids 컬럼, 6번째 컬럼, F열)
+    const subManagerIdsIndex = headers.indexOf('sub_manager_ids');
+    if (subManagerIdsIndex === -1) {
+      return {
+        success: false,
+        message: '서브 관리자 컬럼을 찾을 수 없습니다.'
+      };
+    }
+    
+    const subManagerIdsJson = JSON.stringify(subManagerEmails || []);
+    accountSheet.getRange(rowIndex, subManagerIdsIndex + 1).setValue(subManagerIdsJson);
+    
+    console.log('✅ 서브 관리자 목록 업데이트 완료:', accountId);
+    
+    return {
+      success: true,
+      message: '서브 관리자 목록이 성공적으로 업데이트되었습니다.',
+      data: {
+        accountId: accountId,
+        subManagerEmails: subManagerEmails
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ 서브 관리자 목록 업데이트 오류:', error);
+    return {
+      success: false,
+      message: '서브 관리자 목록 업데이트 중 오류가 발생했습니다: ' + error.message
+    };
   }
 }
 
