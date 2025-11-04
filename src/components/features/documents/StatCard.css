@@ -8,14 +8,20 @@
 
 .stat-card {
   flex: 1;
-  padding: 20px;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--card-shadow);
+  padding: clamp(16px, 1.85vh, 24px);
+  border-radius: var(--sidebar-radius-sm);
+  box-shadow: var(--shadow-base);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  transition: var(--transition-base);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
 }
 
 .stat-count {

@@ -10,50 +10,118 @@ interface AdminUser {
   isApproved: boolean;
   requestDate: string;
   approvalDate?: string | null;
+  userType: string;
 }
 
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
-import { fetchPendingUsers, sendAdminKeyEmail, approveUser, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
+import { fetchAllUsers, sendAdminKeyEmail, approveUserWithGroup, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
 import type { ApiResponse } from '../../../config/api';
+import { tokenManager } from '../../../utils/auth/tokenManager';
 
 export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
+  const [approvedUsers, setApprovedUsers] = useState<AdminUser[]>([]);
   const [emailToSend, setEmailToSend] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [emailStatus, setEmailStatus] = useState<EmailStatus>('idle');
+  const [debugInfo, setDebugInfo] = useState('');
   
   const { user, setUser } = useAuthStore();
 
   // 사용자 목록 가져오기
   const loadUsers = async () => {
     try {
-      console.log('loadUsers 함수 시작');
+      console.log('🔍 관리자 패널 - 모든 사용자 목록 로딩 시작');
       setIsLoading(true);
-      console.log('fetchPendingUsers 호출 중...');
-      const result = await fetchPendingUsers() as ApiResponse<{ users: AdminUser[] }>;
-      console.log('fetchPendingUsers 응답:', result);
+      console.log('fetchAllUsers 호출 중...');
+      const result = await fetchAllUsers() as ApiResponse<{ users: AdminUser[] }>;
+      console.log('🔍 fetchAllUsers 응답 전체:', result);
+      console.log('🔍 응답 구조 분석:', {
+        'result.success': result.success,
+        'result.users': result.users,
+        'result.data': result.data,
+        'result.message': result.message,
+        'result.error': result.error,
+        'result.debug': result.debug,
+        'result의 모든 키': Object.keys(result)
+      });
+      
+      // 디버그 정보 출력
+      if (result.debug) {
+        console.log('🔍 앱스크립트 디버그 정보:', result.debug);
+        console.log('📊 스프레드시트 ID:', result.debug.spreadsheetId);
+        console.log('📊 시트 이름:', result.debug.sheetName);
+        console.log('📊 원본 데이터 길이:', result.debug.rawDataLength);
+        console.log('📊 헤더:', result.debug.header);
+        console.log('📊 사용자 데이터 샘플:', result.debug.userDataSample);
+        console.log('📊 분류 결과:', result.debug.classification);
+      }
       
       if (result.success && Array.isArray(result.users)) {
-        console.log('=== 사용자 목록 받음 ===');
-        console.log('사용자 수:', result.users.length);
-        console.log('사용자 목록:', result.users.map((user: AdminUser) => ({
+        console.log('=== 모든 사용자 목록 받음 ===');
+        console.log('전체 사용자 수:', result.users.length);
+        console.log('승인 대기 사용자 수:', result.pendingUsers?.length || 0);
+        console.log('승인된 사용자 수:', result.approvedUsers?.length || 0);
+        
+        const userListDebug = result.users.map((user: AdminUser) => ({
           id: user.id,
           studentId: user.studentId,
           name: user.name,
           email: user.email,
-          isApproved: user.isApproved
-        })));
+          userType: user.userType,
+          isApproved: user.isApproved,
+          isAdmin: user.isAdmin
+        }));
+        
+        console.log('사용자 목록:', userListDebug);
+        
+        // 디버깅 정보를 상태에 저장
+        setDebugInfo(`사용자 수: ${result.users.length}\n승인 대기: ${result.pendingUsers?.length || 0}\n승인됨: ${result.approvedUsers?.length || 0}\n\n사용자 목록:\n${JSON.stringify(userListDebug.slice(0, 3), null, 2)}`);
+        
         console.log('setUsers 호출 전 현재 users 상태:', users);
-        setUsers(result.users);
+        
+        // Apps Script에서 받은 데이터를 AdminUser 타입으로 변환
+        const convertedUsers = result.users.map((user: any) => ({
+          id: user.id || user.no_member || `user_${Math.random()}`,
+          email: user.email || '',
+          studentId: user.studentId || user.no_member || '',
+          name: user.name || user.name_member || '',
+          isAdmin: user.isAdmin || (user.is_admin === 'O'),
+          isApproved: user.isApproved || (user.Approval === 'O'),
+          requestDate: user.requestDate || user.approval_date || new Date().toISOString().split('T')[0],
+          approvalDate: user.approvalDate || (user.Approval === 'O' ? user.approval_date : null),
+          userType: user.userType || user.user_type || 'student'
+        }));
+        
+        console.log('변환된 사용자 데이터:', convertedUsers.slice(0, 2));
+        
+        setUsers(convertedUsers);
+        setPendingUsers(result.pendingUsers || []);
+        setApprovedUsers(result.approvedUsers || []);
         console.log('setUsers 호출 완료');
       } else {
+        console.log('❌ 사용자 목록 로딩 실패:', {
+          success: result.success,
+          hasUsers: Array.isArray(result.users),
+          usersLength: result.users?.length,
+          error: result.error,
+          message: result.message,
+          debug: result.debug
+        });
+        
+        // 에러 디버그 정보 출력
+        if (result.debug) {
+          console.log('❌ 에러 디버그 정보:', result.debug);
+        }
+        
         setUsers([]);
         setMessage('사용자 목록을 가져오는데 실패했습니다.');
       }
     } catch (error) {
-      console.error('사용자 목록 조회 실패:', error);
+      console.error('❌ 사용자 목록 조회 실패:', error);
       setUsers([]);
       setMessage('사용자 목록을 가져오는데 실패했습니다.');
     } finally {
@@ -61,29 +129,30 @@ export const useAdminPanel = () => {
     }
   };
 
-  // 사용자 승인
-  const handleApproveUser = async (userId: string) => {
+  // 사용자 승인 (그룹스 권한과 함께)
+  const handleApproveUser = async (studentId: string, groupRole: string) => {
     try {
       setIsLoading(true);
       setMessage('');
       
       console.log('=== 승인 요청 데이터 ===');
-      console.log('userId:', userId);
+      console.log('studentId:', studentId);
+      console.log('groupRole:', groupRole);
       
-      const result = await approveUser(userId);
+      const result = await approveUserWithGroup(studentId, groupRole);
       
       if (result.success) {
-        setMessage('사용자가 승인되었습니다.');
+        setMessage('사용자가 승인되었습니다. 그룹스 관리자에게 알림이 전송되었습니다.');
         
         // 즉시 로컬 상태 업데이트 (UI 즉시 반영)
-        const approvedUser = users.find(u => u.id === userId);
+        const approvedUser = users.find(u => u.studentId === studentId);
         if (approvedUser) {
           console.log('승인된 사용자 찾음:', approvedUser);
           
           // 로컬 users 상태에서 해당 사용자의 isApproved를 true로 업데이트
           setUsers(prevUsers => 
             prevUsers.map(u => 
-              u.id === userId 
+              u.studentId === studentId 
                 ? { ...u, isApproved: true, approvalDate: new Date().toISOString().split('T')[0] }
                 : u
             )
@@ -181,11 +250,11 @@ export const useAdminPanel = () => {
           console.log('useAuthStore에서 토큰 발견:', user.googleAccessToken.substring(0, 20) + '...');
           adminAccessToken = user.googleAccessToken;
         } 
-        // 2순위: localStorage에서 토큰 확인
+        // 2순위: tokenManager를 통해 토큰 확인 (만료 체크 포함)
         else {
-          const storedToken = localStorage.getItem('googleAccessToken');
+          const storedToken = tokenManager.get();
           if (storedToken) {
-            console.log('localStorage에서 토큰 발견:', storedToken.substring(0, 20) + '...');
+            console.log('tokenManager에서 토큰 발견:', storedToken.substring(0, 20) + '...');
             adminAccessToken = storedToken;
           } else {
             // 3순위: gapi client에서 직접 가져오기 (Auth2 대신)
@@ -298,11 +367,14 @@ export const useAdminPanel = () => {
 
   return {
     users,
+    pendingUsers,
+    approvedUsers,
     emailToSend,
     setEmailToSend,
     isLoading,
     message,
     emailStatus,
+    debugInfo,
     handleApproveUser,
     handleRejectUser,
     handleSendAdminKey,

@@ -63,23 +63,23 @@ Object.defineProperty(window, 'gapi', {
         spreadsheets: {
           get: jest.fn(),
           values: {
-            get: jest.fn(),
-            update: jest.fn(),
-            append: jest.fn(),
-            clear: jest.fn(),
+            get: jest.fn().mockResolvedValue({ result: { values: [] } }),
+            update: jest.fn().mockResolvedValue({}),
+            append: jest.fn().mockResolvedValue({}),
+            clear: jest.fn().mockResolvedValue({}),
           },
           batchUpdate: jest.fn(),
         },
       },
       drive: {
         files: {
-          list: jest.fn(),
+          list: jest.fn().mockResolvedValue({ result: { files: [] } }),
           create: jest.fn(),
         },
       },
       docs: {
         documents: {
-          create: jest.fn(),
+          create: jest.fn().mockResolvedValue({ result: {} }),
         },
       },
     },

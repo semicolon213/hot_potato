@@ -27,13 +27,13 @@
 }
 
 .proceedings-container {
-  padding: 20px;
-  max-width: 900px;
+  padding: clamp(16px, 1.85vh, 24px);
+  max-width: clamp(800px, 46.88vw, 1000px);
   margin: 0 auto;
   border: 1px solid #e0e0e0;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--sidebar-radius-sm);
   background-color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-base);
 }
 
 .proceedings-header {
@@ -52,36 +52,40 @@
 }
 
 .save-button {
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 500;
-  background-color: var(--primary);
+  padding: clamp(8px, 0.93vh, 14px) clamp(16px, 2.08vw, 24px);
+  font-size: clamp(14px, 1.62vh, 18px);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--sidebar-primary);
   color: #f8f8f7;
   border: none;
-  border-radius: var(--border-radius-md);
+  border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: var(--transition-base);
 }
 
 .save-button:hover {
-  background-color: var(--secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  filter: brightness(1.05);
 }
 
 .export-button {
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 500;
-  background-color: #28a745; /* 초록색 계열 */
+  padding: clamp(8px, 0.93vh, 14px) clamp(16px, 2.08vw, 24px);
+  font-size: clamp(14px, 1.62vh, 18px);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--sidebar-primary);
   color: #f8f8f7;
   border: none;
-  border-radius: var(--border-radius-md);
+  border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
-  margin-left: 10px; /* 저장 버튼과의 간격 */
+  transition: var(--transition-base);
+  margin-left: clamp(8px, 1.04vw, 14px);
 }
 
 .export-button:hover {
-  background-color: #218838; /* 호버 시 약간 어두운 초록색 */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  filter: brightness(1.05);
 }
 
 .proceedings-section {
@@ -99,8 +103,8 @@
   width: 100%;
   border-collapse: collapse;
   border-style: hidden;
-  box-shadow: 0 0 0 1px #e0e0e0;
-  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--sidebar-radius-sm);
   overflow: hidden;
 }
 
@@ -122,18 +126,18 @@
 .table-textarea {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid #ddd;
-  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--sidebar-radius-sm);
   font-size: 14px;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: var(--transition-base);
 }
 
 .table-input:focus,
 .table-textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(56, 67, 86, 0.1);
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .table-textarea {
@@ -241,7 +245,7 @@
 }
 
 input:checked + label {
-  background-color: var(--primary);
+  background-color: var(--sidebar-primary);
 }
 
 input:checked + label:before {

@@ -7,8 +7,12 @@
  */
 
 .staff-page {
-  min-height: 100vh;
-  background: #f8f9fa;
+  width: 100%;
+  padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 40px);
+  margin: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: transparent;
 }
 
 .error-message {
@@ -24,13 +28,22 @@
 }
 
 .error-message button {
-  background: #dc3545;
-  color: white;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
   border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+  border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  transition: var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.error-message button:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
+  border: 1px solid #1a1a1a;
 }
 
 .loading-overlay {
@@ -51,7 +64,7 @@
   width: 40px;
   height: 40px;
   border: 4px solid #e3e3e3;
-  border-top: 4px solid #007bff;
+  border-top: 4px solid var(--sidebar-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
@@ -62,40 +75,26 @@
   100% { transform: rotate(360deg); }
 }
 
-/* 구분 배지 스타일 */
+/* 구분 배지 스타일 - 검은색/흰색 테마로 통일 */
 .position-badge {
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(12px, 1.39vh, 14px);
+  font-weight: var(--font-weight-medium);
   text-align: center;
   min-width: 60px;
+  background-color: var(--sidebar-primary);
+  color: #f8f8f7;
 }
 
-.position-badge.전임교수 {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.position-badge.조교 {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
-.position-badge.외부강사 {
-  background: #fff3e0;
-  color: #f57c00;
-}
-
-.position-badge.겸임교수 {
-  background: #e8f5e8;
-  color: #388e3c;
-}
-
+.position-badge.전임교수,
+.position-badge.조교,
+.position-badge.외부강사,
+.position-badge.겸임교수,
 .position-badge.시간강사 {
-  background: #fce4ec;
-  color: #c2185b;
+  background-color: var(--sidebar-primary);
+  color: #f8f8f7;
 }
 
 /* 반응형 디자인 */

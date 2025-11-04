@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { User, PageType, Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { User, PageType, Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce } from '../../utils/google/googleApiInitializer';
 import { 
@@ -15,10 +15,12 @@ import {
     fetchPosts, 
     fetchAnnouncements, 
     fetchTemplates, 
-    fetchTags,
-    fetchCalendarEvents 
+    fetchCalendarEvents,
+    fetchAttendees
 } from '../../utils/database/papyrusManager';
+import { fetchTags as fetchPersonalTags } from '../../utils/database/personalTagManager';
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../../utils/auth/tokenManager';
 
 /**
  * @brief 전역 애플리케이션 상태 관리 훅
@@ -45,12 +47,14 @@ export const useAppState = () => {
 
     // State for Announcements
     const [announcements, setAnnouncements] = useState<Post[]>([]);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<Post | null>(null);
     const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
     const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
     const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
     const [boardSpreadsheetId, setBoardSpreadsheetId] = useState<string | null>(null);
     const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
     const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
+    const [staffSpreadsheetId, setStaffSpreadsheetId] = useState<string | null>(null);
     const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
     const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -64,6 +68,10 @@ export const useAppState = () => {
     const [gradeEntryPeriod, setGradeEntryPeriod] = useState<DateRange>({ start: null, end: null });
     const [customPeriods, setCustomPeriods] = useState<CustomPeriod[]>([]);
 
+    // State for Attendees
+    const [students, setStudents] = useState<Student[]>([]);
+    const [staff, setStaff] = useState<Staff[]>([]);
+
     // 환경변수에서 시트 이름 가져오기
     const boardSheetName = ENV_CONFIG.BOARD_SHEET_NAME;
     const announcementSheetName = ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME;
@@ -73,14 +81,15 @@ export const useAppState = () => {
     useEffect(() => {
         const initApp = async () => {
             const savedUser = localStorage.getItem('user');
-            const savedToken = localStorage.getItem('googleAccessToken');
+            // tokenManager를 통해 토큰 가져오기 (만료 체크 포함)
+            const savedToken = tokenManager.get();
             const savedSearchTerm = localStorage.getItem('searchTerm');
             
             // URL 파라미터에서 페이지 상태 복원 (리팩터링 전 방식)
             const urlParams = new URLSearchParams(window.location.search);
             const pageFromUrl = urlParams.get('page');
             if (pageFromUrl) {
-                console.log('URL에서 페이지 상태 복원:', pageFromUrl);
+                // console.log('URL에서 페이지 상태 복원:', pageFromUrl);
                 setCurrentPage(pageFromUrl as PageType);
             } else {
                 // URL에 페이지 파라미터가 없으면 기본값 사용
@@ -89,10 +98,11 @@ export const useAppState = () => {
             
             // 검색어 상태 복원
             if (savedSearchTerm) {
-                console.log('검색어 상태 복원:', savedSearchTerm);
+                // console.log('검색어 상태 복원:', savedSearchTerm);
                 setSearchTerm(savedSearchTerm);
             }
             
+            // 토큰이 유효하고 사용자 정보가 있으면 로그인 상태 복원
             if (savedUser && savedToken) {
                 const userData = JSON.parse(savedUser);
                 setUser(userData);
@@ -100,10 +110,10 @@ export const useAppState = () => {
                 
                 // 승인된 사용자인 경우 데이터 초기화
                 if (userData.isApproved) {
-                    console.log('새로고침 후 사용자 상태 복원 - 데이터 로딩 시작');
+                    // console.log('새로고침 후 사용자 상태 복원 - 데이터 로딩 시작');
                     
                     try {
-                        console.log("Google API 초기화 시작");
+                        // console.log("Google API 초기화 시작");
                         await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
                         
                         // 스프레드시트 ID들 초기화
@@ -116,12 +126,13 @@ export const useAppState = () => {
                         setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
                         setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                         setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
+                        setStaffSpreadsheetId(spreadsheetIds.staffSpreadsheetId);
                         
                         setIsGapiReady(true);
                         setIsGoogleAuthenticatedForAnnouncements(true);
                         setIsGoogleAuthenticatedForBoard(true);
                         
-                        console.log("✅ 새로고침 후 Papyrus DB 연결 완료");
+                        // console.log("✅ 새로고침 후 Papyrus DB 연결 완료");
                     } catch (error) {
                         console.error("Error during refresh initialization", error);
                         // Google API 초기화 실패해도 계속 진행
@@ -152,11 +163,11 @@ export const useAppState = () => {
     // 사용자 로그인 시 데이터 자동 로딩 (새로 로그인한 경우)
     useEffect(() => {
         if (user && user.isApproved && !isLoading) {
-            console.log('새로운 로그인 감지 - 데이터 로딩 시작');
+            // console.log('새로운 로그인 감지 - 데이터 로딩 시작');
             
             const initAndFetch = async () => {
                 try {
-                    console.log("로그인 후 Google API 초기화 시작");
+                    // console.log("로그인 후 Google API 초기화 시작");
                     await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
                     
                     // 스프레드시트 ID들 초기화 및 상태 업데이트
@@ -169,13 +180,14 @@ export const useAppState = () => {
                     setBoardSpreadsheetId(spreadsheetIds.boardSpreadsheetId);
                     setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                     setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
+                    setStaffSpreadsheetId(spreadsheetIds.staffSpreadsheetId);
                     
                     setIsGapiReady(true);
                     setIsGoogleAuthenticatedForAnnouncements(true);
                     setIsGoogleAuthenticatedForBoard(true);
                     
-                    console.log("✅ 로그인 후 Papyrus DB 연결 완료");
-                    console.log("스프레드시트 ID들:", spreadsheetIds);
+                    // console.log("✅ 로그인 후 Papyrus DB 연결 완료");
+                    // console.log("스프레드시트 ID들:", spreadsheetIds);
                 } catch (error) {
                     console.error("Error during login initialization", error);
                     console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
@@ -253,18 +265,19 @@ export const useAppState = () => {
     }, [isGapiReady, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
 
     useEffect(() => {
-        if (isGapiReady && hotPotatoDBSpreadsheetId) {
+        if (isGapiReady) {
             const fetchTemplateData = async () => {
                 try {
                     console.log('템플릿 데이터 로딩 시작...');
                     const [templates, tags] = await Promise.all([
                         fetchTemplates(),
-                        fetchTags()
+                        fetchPersonalTags()
                     ]);
                     
                     setCustomTemplates(templates);
                     setTags(tags);
                     console.log('템플릿 데이터 로딩 완료:', templates.length, '개');
+                    console.log('태그 데이터 로딩 완료:', tags.length, '개');
                 } catch (error) {
                     console.error("Error during template data fetch", error);
                 } finally {
@@ -273,7 +286,24 @@ export const useAppState = () => {
             };
             fetchTemplateData();
         }
-    }, [isGapiReady, hotPotatoDBSpreadsheetId]);
+    }, [isGapiReady]);
+
+    useEffect(() => {
+        if (isGapiReady && studentSpreadsheetId && staffSpreadsheetId) {
+            const loadAttendees = async () => {
+                try {
+                    console.log('참석자 데이터 로딩 시작...');
+                    const { students, staff } = await fetchAttendees();
+                    setStudents(students);
+                    setStaff(staff);
+                    console.log('참석자 데이터 로딩 완료:', students.length, '명 학생,', staff.length, '명 교직원');
+                } catch (error) {
+                    console.error('Error loading attendees:', error);
+                }
+            };
+            loadAttendees();
+        }
+    }, [isGapiReady, studentSpreadsheetId, staffSpreadsheetId]);
 
     return {
         // User state
@@ -309,6 +339,8 @@ export const useAppState = () => {
         // Announcements state
         announcements,
         setAnnouncements,
+        selectedAnnouncement,
+        setSelectedAnnouncement,
         isGoogleAuthenticatedForAnnouncements,
         setIsGoogleAuthenticatedForAnnouncements,
         isAnnouncementsLoading,
@@ -332,6 +364,10 @@ export const useAppState = () => {
         setCustomPeriods,
         calendarProfessorSpreadsheetId,
         calendarStudentSpreadsheetId,
+
+        // Attendees state
+        students,
+        staff,
         
         // Other spreadsheet IDs
         hotPotatoDBSpreadsheetId,

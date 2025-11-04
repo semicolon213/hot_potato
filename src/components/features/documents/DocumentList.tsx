@@ -27,32 +27,31 @@ interface DocumentListProps<T extends object> {
   showViewAll?: boolean;
   isLoading?: boolean;
   onRowDoubleClick?: (row: T) => void;
+  headerContent?: React.ReactNode;
 }
 
-const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick }: DocumentListProps<T>) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick, headerContent }: DocumentListProps<T>) => {
   return (
     <div className="document-container">
       <div className="table-container">
         <div
           className="section-header"
-          style={{ backgroundColor: "var(--primary)" }}
+          style={{ backgroundColor: "var(--primary)", display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: '20px' }}
         >
-          <div className="section-title-container">
-            <div className="section-title no-line" style={{ color: "white", margin: "10px 0 0 20px" }}>
-              {title}
-            </div>
-          </div>
-          {showViewAll && (
-            <div
-              className="submenu-item"
-              onClick={() => onPageChange("docbox")}
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <div className="view-all-button" style={{ color: "#e0e0e0" }}>
-                모두 보기
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {headerContent}
+            {showViewAll && (
+              <div
+                className="submenu-item"
+                onClick={() => onPageChange("docbox")}
+                style={{ textDecoration: "none", color: "inherit", marginLeft: '20px' }}
+              >
+                <div className="view-all-button" style={{ color: "#e0e0e0" }}>
+                  모두 보기
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="table-header">
@@ -93,7 +92,7 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
             >
               {columns.map((col) => (
                 <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
-                  {col.render ? col.render(row) : (row as any)[col.key] as React.ReactNode}
+                  {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '') as React.ReactNode}
                 </div>
               ))}
             </div>

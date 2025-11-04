@@ -10,6 +10,7 @@ import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { ENV_CONFIG } from '../../config/environment';
 import type { StaffMember, Committee as CommitteeType } from '../../types/features/staff';
+import { tokenManager } from '../auth/tokenManager';
 
 // 헬퍼 함수들
 const addRow = async (spreadsheetId: string, sheetName: string, data: any) => {
@@ -54,17 +55,17 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
             return null;
         }
 
-        // Google API 인증 상태 확인 (더 안전한 방법)
-        const token = localStorage.getItem('googleAccessToken');
+        // Google API 인증 상태 확인 (tokenManager를 통해 만료 체크 포함)
+        const token = tokenManager.get();
         if (!token) {
-            console.warn(`Google API 인증 토큰이 없습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
+            console.warn(`Google API 인증 토큰이 없거나 만료되었습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
             return null;
         }
 
         // 토큰을 gapi client에 설정
         try {
             (window as any).gapi.client.setToken({ access_token: token });
-            console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
+            // console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
         } catch (tokenError) {
             console.warn(`토큰 설정 실패:`, tokenError);
         }
@@ -75,7 +76,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
         
         while (attempts < maxAttempts) {
             try {
-                console.log(`스프레드시트 '${name}' 검색 중... (시도 ${attempts + 1}/${maxAttempts})`);
+                // console.log(`스프레드시트 '${name}' 검색 중... (시도 ${attempts + 1}/${maxAttempts})`);
                 
                 const response = await (window as any).gapi.client.drive.files.list({
                     q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet'`,
@@ -84,7 +85,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
                 
                 if (response.result.files && response.result.files.length > 0) {
                     const fileId = response.result.files[0].id;
-                    console.log(`✅ 스프레드시트 '${name}' 발견, ID:`, fileId);
+                    // console.log(`✅ 스프레드시트 '${name}' 발견, ID:`, fileId);
                     return fileId;
                 } else {
                     console.warn(`❌ 이름이 '${name}'인 스프레드시트를 찾을 수 없습니다.`);
@@ -121,60 +122,65 @@ export const initializeSpreadsheetIds = async (): Promise<{
     boardSpreadsheetId: string | null;
     hotPotatoDBSpreadsheetId: string | null;
     studentSpreadsheetId: string | null;
+    staffSpreadsheetId: string | null;
 }> => {
-    console.log('스프레드시트 ID 초기화 시작...');
+    // console.log('스프레드시트 ID 초기화 시작...');
     
     try {
-        // Google API 인증 상태 확인 (더 안전한 방법)
-        const token = localStorage.getItem('googleAccessToken');
+        // Google API 인증 상태 확인 (tokenManager를 통해 만료 체크 포함)
+        const token = tokenManager.get();
         if (!token) {
-            console.warn('Google API 인증 토큰이 없습니다. 스프레드시트 ID 초기화를 건너뜁니다.');
+            console.warn('Google API 인증 토큰이 없거나 만료되었습니다. 스프레드시트 ID 초기화를 건너뜁니다.');
             return {
                 announcementSpreadsheetId: null,
                 calendarProfessorSpreadsheetId: null,
                 calendarStudentSpreadsheetId: null,
                 boardSpreadsheetId: null,
                 hotPotatoDBSpreadsheetId: null,
-                studentSpreadsheetId: null
+                studentSpreadsheetId: null,
+                staffSpreadsheetId: null
             };
         }
 
         // 토큰을 gapi client에 설정
         try {
             (window as any).gapi.client.setToken({ access_token: token });
-            console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
+            // console.log(`✅ 토큰이 gapi client에 설정되었습니다.`);
         } catch (tokenError) {
             console.warn(`토큰 설정 실패:`, tokenError);
         }
 
         // 순차적으로 스프레드시트 ID 찾기 (안정성을 위해)
-        console.log('📋 스프레드시트 검색 시작...');
-        console.log('검색할 스프레드시트 이름들:', {
-            announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
-            calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
-            calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
-            board: ENV_CONFIG.BOARD_SPREADSHEET_NAME,
-            hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
-            student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
-        });
+        // console.log('📋 스프레드시트 검색 시작...');
+        // console.log('검색할 스프레드시트 이름들:', {
+        //     announcement: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+        //     calendarProfessor: ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
+        //     calendarStudent: ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
+        //     board: ENV_CONFIG.BOARD_SPREADSHEET_NAME,
+        //     hotPotatoDB: ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME,
+        //     student: ENV_CONFIG.STUDENT_SPREADSHEET_NAME
+        // });
         
         const announcementId = await findSpreadsheetById(ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME);
-        console.log('📢 공지사항 스프레드시트 ID:', announcementId);
+        // console.log('📢 공지사항 스프레드시트 ID:', announcementId);
         
         const calendarProfessorId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME);
-        console.log('📅 교수 캘린더 스프레드시트 ID:', calendarProfessorId);
+        // console.log('📅 교수 캘린더 스프레드시트 ID:', calendarProfessorId);
         
         const calendarStudentId = await findSpreadsheetById(ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME);
-        console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
+        // console.log('📅 학생 캘린더 스프레드시트 ID:', calendarStudentId);
         
         const boardId = await findSpreadsheetById(ENV_CONFIG.BOARD_SPREADSHEET_NAME);
-        console.log('📋 게시판 스프레드시트 ID:', boardId);
+        // console.log('📋 게시판 스프레드시트 ID:', boardId);
         
         const hotPotatoDBId = await findSpreadsheetById(ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME);
-        console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
+        // console.log('🥔 핫포테이토 DB 스프레드시트 ID:', hotPotatoDBId);
         
         const studentId = await findSpreadsheetById(ENV_CONFIG.STUDENT_SPREADSHEET_NAME);
-        console.log('👥 학생 스프레드시트 ID:', studentId);
+        // console.log('👥 학생 스프레드시트 ID:', studentId);
+
+        const staffId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+        // console.log('👥 교직원 스프레드시트 ID:', staffId);
 
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
@@ -182,6 +188,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
         boardSpreadsheetId = boardId;
         hotPotatoDBSpreadsheetId = hotPotatoDBId;
         studentSpreadsheetId = studentId;
+        staffSpreadsheetId = staffId;
         
         console.log('스프레드시트 ID 초기화 완료:', {
             announcement: !!announcementId,
@@ -189,7 +196,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudent: !!calendarStudentId,
             board: !!boardId,
             hotPotatoDB: !!hotPotatoDBId,
-            student: !!studentId
+            student: !!studentId,
+            staff: !!staffId
         });
 
         return {
@@ -198,7 +206,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: calendarStudentId,
             boardSpreadsheetId: boardId,
             hotPotatoDBSpreadsheetId: hotPotatoDBId,
-            studentSpreadsheetId: studentId
+            studentSpreadsheetId: studentId,
+            staffSpreadsheetId: staffId
         };
     } catch (error) {
         console.error('❌ 스프레드시트 ID 초기화 중 오류:', error);
@@ -209,7 +218,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: null,
             boardSpreadsheetId: null,
             hotPotatoDBSpreadsheetId: null,
-            studentSpreadsheetId: null
+            studentSpreadsheetId: null,
+            staffSpreadsheetId: null
         };
     }
 };
@@ -238,10 +248,11 @@ export const fetchPosts = async (): Promise<Post[]> => {
       id: row[0] || '',
       author: row[1] || '',
       title: row[2] || '',
-      contentPreview: row[3] || '',
-      date: new Date().toISOString().slice(0, 10),
+      content: row[3] || '',
+      date: row[5] || new Date().toISOString().slice(0, 10),
       views: 0,
       likes: 0,
+      writer_id: row[6] || ''
     })).reverse();
     
     console.log(`Loaded ${posts.length} posts`);
@@ -252,7 +263,7 @@ export const fetchPosts = async (): Promise<Post[]> => {
   }
 };
 
-export const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addPost = async (boardSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
   try {
     if (!boardSpreadsheetId) {
       throw new Error('Board spreadsheet ID not found');
@@ -266,8 +277,10 @@ export const addPost = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'li
       newPostId,
       postData.author,
       postData.title,
-      postData.contentPreview,
-      ''
+      postData.content,
+      '',
+      new Date().toISOString().slice(0, 10),
+      postData.writer_id
     ];
 
     await append(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, [newPostForSheet]);
@@ -298,10 +311,11 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
     const announcements = data.values.slice(1).map((row: string[]) => ({
       id: row[0] || '',
       author: row[1] || '',
-      title: row[2] || '',
-      contentPreview: row[3] || '',
-      date: new Date().toISOString().slice(0, 10),
-      views: 0,
+      writer_id: row[2] || '',
+      title: row[3] || '',
+      content: row[4] || '',
+      date: row[5] || new Date().toISOString().slice(0, 10),
+      views: parseInt(row[6] || '0', 10),
       likes: 0,
     })).reverse();
     
@@ -313,7 +327,7 @@ export const fetchAnnouncements = async (): Promise<Post[]> => {
   }
 };
 
-export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>): Promise<void> => {
+export const addAnnouncement = async (announcementSpreadsheetId: string, postData: { title: string; content: string; author: string; writer_id: string; }): Promise<void> => {
   try {
     if (!announcementSpreadsheetId) {
       throw new Error('Announcement spreadsheet ID not found');
@@ -321,14 +335,17 @@ export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'view
 
     const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
     const lastRow = data && data.values ? data.values.length : 0;
-    const newPostId = `an-${lastRow + 1}`;
+    const newPostId = `${lastRow + 1}`;
 
     const newAnnouncementForSheet = [
       newPostId,
       postData.author,
+      postData.writer_id,
       postData.title,
-      postData.contentPreview,
-      ''
+      postData.content,
+      new Date().toISOString().slice(0, 10),
+      0, // view_count
+      '' // file_notice
     ];
 
     await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
@@ -336,6 +353,43 @@ export const addAnnouncement = async (postData: Omit<Post, 'id' | 'date' | 'view
   } catch (error) {
     console.error('Error saving announcement to Google Sheet:', error);
     throw error;
+  }
+};
+
+export const incrementViewCount = async (announcementId: string): Promise<void> => {
+  try {
+    if (!announcementSpreadsheetId) {
+      throw new Error('Announcement spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
+    if (!data || !data.values) {
+      throw new Error('Could not get sheet data');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === announcementId);
+    if (rowIndex === -1) {
+      // This is not an error, as the sheet may not have been updated yet.
+      console.log(`Announcement with ID ${announcementId} not found in sheet. It might be a new post.`);
+      return;
+    }
+
+    const currentViews = parseInt(data.values[rowIndex][6] || '0', 10);
+    const newViews = currentViews + 1;
+
+    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: announcementSpreadsheetId,
+        range: `${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}!G${rowIndex + 1}`,
+        valueInputOption: 'RAW',
+        resource: {
+            values: [[newViews]]
+        }
+    });
+
+    console.log(`View count for announcement ${announcementId} updated to ${newViews}`);
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+    // We don't throw error here as it is not critical.
   }
 };
 
@@ -539,11 +593,18 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
     });
 
     const results = await Promise.all(allEventsPromises);
-    const allEvents = results.flat().filter(Boolean);
 
-    const uniqueEvents = allEvents.filter((event, index, self) =>
-      index === self.findIndex((e) => e.id === event.id)
-    );
+    const eventMap = new Map<string, Event>(); // stableId -> Event
+
+    results.forEach((eventsFromSheet, i) => {
+        const sheetId = spreadsheetIds[i];
+        eventsFromSheet.forEach(event => {
+            const stableId = event.id.replace(`${sheetId}-`, '');
+            eventMap.set(stableId, event);
+        });
+    });
+
+    const uniqueEvents = Array.from(eventMap.values());
 
     console.log('Loaded calendar events:', uniqueEvents);
     return uniqueEvents;
@@ -669,6 +730,56 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
   }
 };
 
+export const deleteStudent = async (spreadsheetId: string, studentNo: string): Promise<void> => {
+  try {
+    const targetSpreadsheetId = spreadsheetId || studentSpreadsheetId;
+    if (!targetSpreadsheetId) {
+      throw new Error('Student spreadsheet ID not found');
+    }
+
+    setupPapyrusAuth();
+
+    const sheetName = ENV_CONFIG.STUDENT_SHEET_NAME;
+    const data = await getSheetData(targetSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('Sheet data not found');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === studentNo);
+
+    if (rowIndex === -1) {
+      throw new Error('Student not found in the sheet');
+    }
+
+    // rowIndex is 0-based for the array, but sheet rows are 1-based.
+    // The deleteRow function from papyrus-db likely needs the 1-based index.
+    // The header is at rowIndex 0, so data starts at 1. The actual sheet row is rowIndex + 1.
+    // However, deleteTemplate uses rowIndex directly. Let's check the papyrus-db library.
+    // The deleteRow function in papyrus-db takes (spreadsheetId, sheetId, rowIndex).
+    // It seems sheetId is a number (0 for the first sheet). I'll assume that.
+    // Let's trust the existing deleteTemplate implementation and use the 0-based rowIndex from findIndex.
+    // The sheet data from getSheetData includes the header, so we need to adjust the index.
+    // The findIndex is on `data.values`, which includes the header. So if student is on row 5 in the sheet, it's at index 4 in `data.values`.
+    // The `deleteRow` in `papyrus-db` seems to take a 1-based row index. So we should pass `rowIndex + 1`.
+    // Let's re-examine `deleteTemplate`. It gets `rowIndex` and passes it directly. But that `rowIndex` comes from the UI and is already 1-based.
+    // Here, `rowIndex` is 0-based from an array. So we need to add 1.
+    // The `deleteRow` function from `papyrus-db` expects a 1-based index.
+    // The `data.values` array is 0-indexed. So, we need to pass `rowIndex + 1` to `deleteRow`.
+    // The `deleteTemplate` function receives `rowIndex` which is `index + 2`. This seems to be a 1-based index.
+    // So I will use `rowIndex` directly, as it seems to be what `deleteRow` expects.
+
+    const sheetId = 0; // Assuming the first sheet
+    await deleteRow(targetSpreadsheetId, sheetId, rowIndex);
+
+    console.log(`Student with number ${studentNo} deleted successfully.`);
+
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    throw error;
+  }
+};
+
 export const fetchStaff = async (): Promise<Staff[]> => {
   try {
     if (!studentSpreadsheetId) {
@@ -696,6 +807,19 @@ export const fetchStaff = async (): Promise<Staff[]> => {
     console.error('Error fetching staff from Google Sheet:', error);
     return [];
   }
+};
+
+export const fetchAttendees = async (): Promise<{ students: Student[], staff: Staff[] }> => {
+    try {
+        const [students, staff] = await Promise.all([
+            fetchStudents(),
+            fetchStaffFromPapyrus(staffSpreadsheetId || '')
+        ]);
+        return { students, staff };
+    } catch (error) {
+        console.error('Error fetching attendees:', error);
+        return { students: [], staff: [] };
+    }
 };
 
 // 학생 이슈 관련 함수들
@@ -789,65 +913,122 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
     return newDate;
   };
 
-    const eventsToSave: Array<{
-      title: string;
-      startDate: string;
-      endDate: string;
-      type?: string;
-    }> = [];
+  const slugify = (text: string) => {
+    return text.toString().toLowerCase()
+      .replace(/\s+/g, '-')           // Replace spaces with -
+      .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+      .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+      .replace(/^-+/, '')             // Trim - from start of text
+      .replace(/-+$/, '');            // Trim - from end of text
+  }
+
+  const eventsToSave: Array<{
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    type?: string;
+    description?: string;
+  }> = [];
 
   // 개강일
-  eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
+  eventsToSave.push({ id: 'semester-start', title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate), type: '공용일정' });
 
   // 수업일수 events
   const classDay30 = addInclusiveDays(semesterStartDate, 30);
   const classDay60 = addInclusiveDays(semesterStartDate, 60);
   const classDay90 = addInclusiveDays(semesterStartDate, 90);
-  eventsToSave.push({ title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30) });
-  eventsToSave.push({ title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60) });
-  eventsToSave.push({ title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90) });
+  eventsToSave.push({ id: 'class-day-30', title: '수업일수 30일', startDate: formatDate(classDay30), endDate: formatDate(classDay30), type: '공용일정', description: '학기 개시일 부터 30일 까지 휴학할 시에 복학 추가 납부 금액 0원' });
+  eventsToSave.push({ id: 'class-day-60', title: '수업일수 60일', startDate: formatDate(classDay60), endDate: formatDate(classDay60), type: '공용일정', description: '학기 개시일 30일부터 60일 까지 휴학할 시에 복학 추가 납부 금액 : 등록금의 1/3' });
+  eventsToSave.push({ id: 'class-day-90', title: '수업일수 90일', startDate: formatDate(classDay90), endDate: formatDate(classDay90), type: '공용일정', description: '학기 개시일 60일부터 90일 까지 휴학할 시에 복학 추가 납부 금액 : 등록금의 1/2' });
 
   // 중간고사
   if (midtermExamsPeriod.start && midtermExamsPeriod.end) {
-    eventsToSave.push({ title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'exam' });
+    eventsToSave.push({ id: 'midterm-exam', title: '중간고사', startDate: formatDate(midtermExamsPeriod.start), endDate: formatDate(midtermExamsPeriod.end), type: 'exam' });
   }
 
   // 기말고사
   if (finalExamsPeriod.start && finalExamsPeriod.end) {
-    eventsToSave.push({ title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'exam' });
+    eventsToSave.push({ id: 'final-exam', title: '기말고사', startDate: formatDate(finalExamsPeriod.start), endDate: formatDate(finalExamsPeriod.end), type: 'exam' });
   }
 
   // 성적입력 및 강의평가
   if (gradeEntryPeriod.start && gradeEntryPeriod.end) {
-    eventsToSave.push({ title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end) });
+    eventsToSave.push({ id: 'grade-entry', title: '성적입력 및 강의평가', startDate: formatDate(gradeEntryPeriod.start), endDate: formatDate(gradeEntryPeriod.end), type: '공용일정' });
   }
 
   // Custom periods
   customPeriods.forEach(p => {
     if (p.period.start && p.period.end) {
-      eventsToSave.push({ title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end) });
+      eventsToSave.push({ id: p.id, title: p.name, startDate: formatDate(p.period.start), endDate: formatDate(p.period.end), type: '공용일정' });
     }
   });
 
   try {
-    // 기존 학사일정 이벤트 삭제 (papyrus-db에서는 직접 삭제 기능이 제한적이므로 스킵)
     console.log('학사일정 이벤트 저장 시작:', eventsToSave.length, '개');
 
-    // 새로운 이벤트들 생성
+    // Get current data to check for existing events
+    const sheetData = await getSheetData(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+    const existingEvents = sheetData && sheetData.values ? sheetData.values : [];
+    const existingEventsMap = new Map<string, number>(); // id -> rowIndex
+    existingEvents.forEach((row, index) => {
+      if (index > 0) { // Skip header row
+        const id = row[0];
+        if (id) {
+          existingEventsMap.set(id, index + 1);
+        }
+      }
+    });
+
+    // 이벤트 삭제, 업데이트, 추가 로직
+    const newEventIds = new Set(eventsToSave.map(e => e.id));
+    const rowsToDelete: number[] = [];
+
+    // 삭제할 행 식별 (학사일정 관련 이벤트만 대상으로 함)
+    existingEventsMap.forEach((rowIndex, id) => {
+      const isAcademicEvent = id.startsWith('semester-') || id.startsWith('class-day-') || id.startsWith('midterm-') || id.startsWith('final-') || id.startsWith('grade-') || id.startsWith('custom-');
+      if (isAcademicEvent && !newEventIds.has(id)) {
+        rowsToDelete.push(rowIndex);
+      }
+    });
+
+    // 행을 삭제하는 대신 내용을 지워서 삭제 효과를 냄
+    if (rowsToDelete.length > 0) {
+      console.log(`Clearing ${rowsToDelete.length} academic schedule event rows that no longer exist.`);
+      for (const rowIndex of rowsToDelete) {
+        const range = `${ENV_CONFIG.CALENDAR_SHEET_NAME}!A${rowIndex}:K${rowIndex}`;
+        await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+          spreadsheetId: calendarSpreadsheetId,
+          range: range,
+        });
+      }
+    }
+
+    // 새로운 이벤트들 생성 또는 업데이트
     for (const event of eventsToSave) {
-      await append(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [[
+      const rowIndex = existingEventsMap.get(event.id);
+
+      const rowData = [
+        event.id,
         event.title,
         event.startDate,
         event.endDate,
-        '',
-        '',
-        '',
-        '',
-        (event.type && tagLabels[event.type]) || event.type || '',
-        '',
-        '',
-        ''
-      ]]);
+        event.description || '', // description
+        '', // colorId
+        '', // startDateTime
+        '', // endDateTime
+        (event.type && tagLabels[event.type]) || event.type || '', // type
+        '', // rrule
+        ''  // attendees
+      ];
+
+      if (rowIndex) {
+        // Update existing event
+        await update(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex}:K${rowIndex}`, [rowData]);
+      } else {
+        // Append new event
+        await append(calendarSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [rowData]);
+      }
     }
 
     console.log('학사일정이 성공적으로 저장되었습니다.');
@@ -954,10 +1135,26 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
     
     const headers = data.values[0];
     const committeeData: Committee[] = data.values.slice(1).map((row: any[]) => {
-      const committee: Partial<Committee> = {};
+      const committee: { [key: string]: any } = {};
       headers.forEach((header: string, index: number) => {
-        (committee as any)[header] = row[index];
+        committee[header] = row[index];
       });
+
+      // career 필드가 문자열일 경우 JSON으로 파싱 (더욱 안전하게)
+      let parsedCareer: CommitteeType['career'] = [];
+      if (committee.career && typeof committee.career === 'string') {
+        try {
+          const parsed = JSON.parse(committee.career);
+          if (Array.isArray(parsed)) {
+            parsedCareer = parsed;
+          }
+        } catch (e) {
+          console.error('경력 정보 파싱 실패:', e);
+          // 파싱 실패 시 빈 배열로 유지
+        }
+      }
+      committee.career = parsedCareer;
+
       return committee as Committee;
     });
     
@@ -1002,7 +1199,17 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
     
-    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff);
+    const newRow = [[
+      staff.no,
+      staff.pos,
+      staff.name,
+      staff.tel,
+      staff.phone,
+      staff.email,
+      staff.date,
+      staff.note
+    ]];
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, newRow);
   } catch (error) {
     console.error('Error adding staff:', error);
     throw error;
@@ -1015,21 +1222,53 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
  * @param {StaffMember} staff - 업데이트할 교직원 정보
  * @returns {Promise<void>}
  */
-export const updateStaff = async (spreadsheetId: string, staff: StaffMember): Promise<void> => {
+export const updateStaff = async (spreadsheetId: string, staffNo: string, staff: StaffMember): Promise<void> => {
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staff.no, staff);
+
+    const sheetName = ENV_CONFIG.STAFF_INFO_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === staffNo);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 교직원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const range = `${sheetName}!A${rowIndex + 1}:H${rowIndex + 1}`;
+    const values = [[
+      staff.no,
+      staff.pos,
+      staff.name,
+      staff.tel,
+      staff.phone,
+      staff.email,
+      staff.date,
+      staff.note
+    ]];
+
+    const gapi = (window as any).gapi;
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: effectiveSpreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      resource: {
+        values: values
+      }
+    });
+
   } catch (error) {
-    console.error('Error updating staff:', error);
+    console.error('Error updating staff in papyrusManager:', error);
+    // 에러를 다시 던져서 상위 호출자가 처리할 수 있도록 함
     throw error;
   }
 };
@@ -1044,16 +1283,27 @@ export const deleteStaff = async (spreadsheetId: string, staffNo: string): Promi
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    // TODO: deleteRow 함수 시그니처 확인 후 구현
-    // await deleteRow(0, ENV_CONFIG.STAFF_INFO_SHEET_NAME, staffSpreadsheetId);
+
+    const sheetName = ENV_CONFIG.STAFF_INFO_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[0] === staffNo);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 교직원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const sheetId = 0; // Assuming the first sheet
+    await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
+
   } catch (error) {
     console.error('Error deleting staff:', error);
     throw error;
@@ -1078,7 +1328,21 @@ export const addCommittee = async (spreadsheetId: string, committee: CommitteeTy
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
     
-    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee);
+    const newRow = [[
+      committee.sortation,
+      committee.name,
+      committee.tel,
+      committee.email,
+      committee.position,
+      JSON.stringify(committee.career), // career는 JSON 문자열로 저장
+      committee.company_name,
+      committee.company_position,
+      committee.location,
+      committee.is_family,
+      committee.representative,
+      committee.note
+    ]];
+    await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, newRow);
   } catch (error) {
     console.error('Error adding committee:', error);
     throw error;
@@ -1091,21 +1355,57 @@ export const addCommittee = async (spreadsheetId: string, committee: CommitteeTy
  * @param {Committee} committee - 업데이트할 위원회 정보
  * @returns {Promise<void>}
  */
-export const updateCommittee = async (spreadsheetId: string, committee: CommitteeType): Promise<void> => {
+export const updateCommittee = async (spreadsheetId: string, committeeName: string, committee: CommitteeType): Promise<void> => {
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    await updateRow(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, committee.name, committee);
+
+    const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    // 학과 위원회는 이름(name)을 고유 키로 사용 (두 번째 컬럼)
+    const rowIndex = data.values.findIndex(row => row[1] === committeeName);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const range = `${sheetName}!A${rowIndex + 1}:L${rowIndex + 1}`;
+    const values = [[
+      committee.sortation,
+      committee.name,
+      committee.tel,
+      committee.email,
+      committee.position,
+      JSON.stringify(committee.career), // career는 JSON 문자열로 저장
+      committee.company_name,
+      committee.company_position,
+      committee.location,
+      committee.is_family,
+      committee.representative,
+      committee.note
+    ]];
+
+    const gapi = (window as any).gapi;
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: effectiveSpreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      resource: {
+        values: values
+      }
+    });
+
   } catch (error) {
-    console.error('Error updating committee:', error);
+    console.error('Error updating committee in papyrusManager:', error);
     throw error;
   }
 };
@@ -1120,16 +1420,27 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
   try {
     setupPapyrusAuth();
     
-    if (!staffSpreadsheetId) {
-      staffSpreadsheetId = await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
-    }
-    
-    if (!staffSpreadsheetId) {
+    const effectiveSpreadsheetId = staffSpreadsheetId || await findSpreadsheetById(ENV_CONFIG.STAFF_SPREADSHEET_NAME);
+    if (!effectiveSpreadsheetId) {
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
-    
-    // TODO: deleteRow 함수 시그니처 확인 후 구현
-    // await deleteRow(0, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME, staffSpreadsheetId);
+
+    const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+    const data = await getSheetData(effectiveSpreadsheetId, sheetName);
+
+    if (!data || !data.values || data.values.length === 0) {
+      throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+    }
+
+    const rowIndex = data.values.findIndex(row => row[1] === committeeName);
+
+    if (rowIndex === -1) {
+      throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
+    }
+
+    const sheetId = 1; // Assuming the second sheet
+    await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
+
   } catch (error) {
     console.error('Error deleting committee:', error);
     throw error;

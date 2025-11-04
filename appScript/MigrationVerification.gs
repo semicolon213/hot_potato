@@ -1,12 +1,15 @@
 /**
  * MigrationVerification.gs
- * 마이그레이션 검증 및 최적화 확인
+ * 마이그레이션 검증 함수들
  * Hot Potato Admin Key Management System
  */
 
 // ===== 마이그레이션 검증 함수들 =====
 
-// 전체 마이그레이션 검증
+/**
+ * 전체 마이그레이션 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyMigration() {
   console.log('=== 마이그레이션 검증 시작 ===');
   
@@ -32,7 +35,10 @@ function verifyMigration() {
   };
 }
 
-// 설정 검증
+/**
+ * 설정 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyConfig() {
   try {
     console.log('설정 검증 중...');
@@ -66,18 +72,29 @@ function verifyConfig() {
   }
 }
 
-// 함수 가용성 검증
+/**
+ * 함수 가용성 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyFunctionAvailability() {
   try {
     console.log('함수 가용성 검증 중...');
     
     const requiredFunctions = {
-      'Encryption.gs': ['generateExtendedMultiLayerKey', 'applyEncryption', 'applyDecryption'],
-      'KeyManagement.gs': ['getKSTTime', 'verifyAdminKey', 'handleDailyKeyUpdate'],
-      'SpreadsheetUtils.gs': ['findHpMemberSheet', 'getAllUsers', 'approveUser', 'rejectUser'],
-      'UserManagement.gs': ['handleGetPendingUsers', 'handleApproveUser', 'handleRejectUser'],
+      'EncryptionCore.gs': ['applyEncryption', 'applyDecryption'],
+      'EncryptionKeyManagement.gs': ['generateExtendedMultiLayerKey'],
+      'KeyVerification.gs': ['verifyAdminKey'],
+      'KeyGeneration.gs': ['generateAdminKey'],
+      'TimeUtils.gs': ['getKSTTime'],
+      'SpreadsheetCore.gs': ['getHpMemberSpreadsheet', 'getSheetData'],
+      'UserAuth.gs': ['handleCheckUserStatus', 'handleLogin', 'handleLogout'],
+      'UserApproval.gs': ['handleGetPendingUsers', 'handleApproveUser', 'handleRejectUser'],
+      'UserRegistration.gs': ['handleSubmitRegistrationRequest', 'handleCheckApprovalStatus'],
       'Main.gs': ['doPost', 'doGet', 'executeWithRetry'],
-      'Test.gs': ['runSimpleTest', 'runReversibilityTest', 'runAllTests']
+      'TestBasic.gs': ['runSimpleTest', 'runAllBasicTests'],
+      'TestSpreadsheet.gs': ['runAllSpreadsheetTests'],
+      'TestUserManagement.gs': ['runAllUserManagementTests'],
+      'TestDocumentManagement.gs': ['runAllDocumentManagementTests']
     };
     
     const missingFunctions = {};
@@ -106,7 +123,10 @@ function verifyFunctionAvailability() {
   }
 }
 
-// 암호화 시스템 검증
+/**
+ * 암호화 시스템 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyEncryptionSystem() {
   try {
     console.log('암호화 시스템 검증 중...');
@@ -146,7 +166,7 @@ function verifyEncryptionSystem() {
     // 키 생성 테스트
     let keyGenerationTest = false;
     try {
-      const { key, layers, originalKey } = generateExtendedMultiLayerKey();
+      const { key, layers, originalKey } = EncryptionKeyManagement.generateExtendedMultiLayerKey();
       
       let decryptedKey = key;
       for (let i = layers.length - 1; i >= 0; i--) {
@@ -175,14 +195,25 @@ function verifyEncryptionSystem() {
   }
 }
 
-// 스프레드시트 연결 검증
+/**
+ * 스프레드시트 연결 검증
+ * @returns {Object} 검증 결과
+ */
 function verifySpreadsheetConnection() {
   try {
     console.log('스프레드시트 연결 검증 중...');
     
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
+    const spreadsheetId = SpreadsheetCore.getHpMemberSpreadsheetId();
     
-    // 시트 존재 확인
+    if (!spreadsheetId) {
+      return {
+        success: false,
+        error: '스프레드시트 ID를 찾을 수 없습니다',
+        message: '스프레드시트 연결에 문제가 있습니다'
+      };
+    }
+    
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     const adminKeysSheet = spreadsheet.getSheetByName('admin_keys');
     const userSheet = spreadsheet.getSheetByName('user');
     
@@ -220,29 +251,28 @@ function verifySpreadsheetConnection() {
   }
 }
 
-// 사용자 관리 검증
+/**
+ * 사용자 관리 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyUserManagement() {
   try {
     console.log('사용자 관리 검증 중...');
-    
-    // ROT13 암호화/복호화 테스트
-    const rot13Test = testRot13Encryption();
     
     // 사용자 관리 함수들 테스트
     let userManagementTest = false;
     try {
       // 함수들이 에러 없이 호출되는지 확인
-      handleGetPendingUsers();
+      UserApproval.handleGetPendingUsers();
       userManagementTest = true;
     } catch (error) {
       console.error('사용자 관리 함수 테스트 실패:', error);
     }
     
     return {
-      success: rot13Test.allTestsPassed && userManagementTest,
-      rot13Test: rot13Test,
+      success: userManagementTest,
       userManagementTest: userManagementTest,
-      message: (rot13Test.allTestsPassed && userManagementTest) ? '사용자 관리 시스템이 정상 작동합니다' : '사용자 관리 시스템에 문제가 있습니다'
+      message: userManagementTest ? '사용자 관리 시스템이 정상 작동합니다' : '사용자 관리 시스템에 문제가 있습니다'
     };
     
   } catch (error) {
@@ -254,7 +284,10 @@ function verifyUserManagement() {
   }
 }
 
-// 성능 검증
+/**
+ * 성능 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyPerformance() {
   try {
     console.log('성능 검증 중...');
@@ -295,7 +328,10 @@ function verifyPerformance() {
   }
 }
 
-// 에러 처리 검증
+/**
+ * 에러 처리 검증
+ * @returns {Object} 검증 결과
+ */
 function verifyErrorHandling() {
   try {
     console.log('에러 처리 검증 중...');
@@ -347,114 +383,36 @@ function verifyErrorHandling() {
   }
 }
 
-// ===== 최적화 확인 함수들 =====
-
-// 캐싱 시스템 확인
-function verifyCachingSystem() {
-  try {
-    console.log('캐싱 시스템 확인 중...');
-    
-    const testData = { test: 'caching verification' };
-    const cacheKey = 'test_cache_key';
-    
-    // 캐시 저장 테스트
-    setCachedData(cacheKey, testData, 60); // 60초 만료
-    
-    // 캐시 읽기 테스트
-    const cachedData = getCachedData(cacheKey);
-    const cacheWorking = cachedData && cachedData.test === testData.test;
-    
-    // 캐시 무효화 테스트
-    invalidateCache(cacheKey);
-    const cacheInvalidated = !getCachedData(cacheKey);
-    
-    return {
-      success: cacheWorking && cacheInvalidated,
-      cacheWorking: cacheWorking,
-      cacheInvalidated: cacheInvalidated,
-      message: (cacheWorking && cacheInvalidated) ? '캐싱 시스템이 정상 작동합니다' : '캐싱 시스템에 문제가 있습니다'
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      message: '캐싱 시스템 확인 중 오류 발생'
-    };
-  }
-}
-
-// 설정 최적화 확인
-function verifyConfigOptimization() {
-  try {
-    console.log('설정 최적화 확인 중...');
-    
-    // 설정 값들이 제대로 로드되는지 확인
-    const spreadsheetId = getConfig('spreadsheet_id');
-    const encryptionMethods = getConfig('encryption_methods');
-    const layerConfig = getConfig('layer_config');
-    
-    const configsLoaded = !!(spreadsheetId && encryptionMethods && layerConfig);
-    
-    // 환경별 설정 확인
-    const envConfig = getEnvironmentConfig();
-    const envConfigLoaded = !!(envConfig && envConfig.enableLogging !== undefined);
-    
-    return {
-      success: configsLoaded && envConfigLoaded,
-      configsLoaded: configsLoaded,
-      envConfigLoaded: envConfigLoaded,
-      message: (configsLoaded && envConfigLoaded) ? '설정 최적화가 완료되었습니다' : '설정 최적화에 문제가 있습니다'
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      message: '설정 최적화 확인 중 오류 발생'
-    };
-  }
-}
-
-// 전체 최적화 확인
-function verifyOptimization() {
-  console.log('=== 최적화 확인 시작 ===');
-  
-  const results = {
-    cachingSystem: verifyCachingSystem(),
-    configOptimization: verifyConfigOptimization()
-  };
-  
-  const allOptimized = Object.values(results).every(result => result.success);
-  
-  console.log('=== 최적화 확인 완료 ===');
-  console.log('전체 최적화:', allOptimized ? '✅' : '❌');
-  
+// ===== 배포 정보 =====
+function getMigrationVerificationInfo() {
   return {
-    success: allOptimized,
-    results: results,
-    message: allOptimized ? '모든 최적화가 완료되었습니다' : '일부 최적화가 필요합니다'
-  };
-}
-
-// ===== 종합 검증 =====
-function runCompleteVerification() {
-  console.log('=== 종합 검증 시작 ===');
-  
-  const migrationResults = verifyMigration();
-  const optimizationResults = verifyOptimization();
-  
-  const overallSuccess = migrationResults.success && optimizationResults.success;
-  
-  console.log('=== 종합 검증 완료 ===');
-  console.log('마이그레이션 성공:', migrationResults.success ? '✅' : '❌');
-  console.log('최적화 완료:', optimizationResults.success ? '✅' : '❌');
-  console.log('전체 성공:', overallSuccess ? '✅' : '❌');
-  
-  return {
-    success: overallSuccess,
-    migration: migrationResults,
-    optimization: optimizationResults,
-    message: overallSuccess ? '마이그레이션과 최적화가 모두 성공적으로 완료되었습니다' : '일부 검증이 실패했습니다'
+    version: '1.0.0',
+    description: '마이그레이션 검증 함수들',
+    functions: [
+      'verifyMigration',
+      'verifyConfig',
+      'verifyFunctionAvailability',
+      'verifyEncryptionSystem',
+      'verifySpreadsheetConnection',
+      'verifyUserManagement',
+      'verifyPerformance',
+      'verifyErrorHandling'
+    ],
+    dependencies: [
+      'EncryptionCore.gs',
+      'EncryptionKeyManagement.gs',
+      'KeyVerification.gs',
+      'KeyGeneration.gs',
+      'TimeUtils.gs',
+      'SpreadsheetCore.gs',
+      'UserAuth.gs',
+      'UserApproval.gs',
+      'UserRegistration.gs',
+      'Main.gs',
+      'TestBasic.gs',
+      'TestSpreadsheet.gs',
+      'TestUserManagement.gs',
+      'TestDocumentManagement.gs'
+    ]
   };
 }

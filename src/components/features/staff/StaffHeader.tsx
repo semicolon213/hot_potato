@@ -28,7 +28,6 @@ const StaffHeader: React.FC<StaffHeaderProps> = ({
   return (
     <div className="students-header">
       <div className="header-left">
-        <h1>교직원 관리</h1>
         <div className="header-stats">
           <span className="stat-item">
             <span className="stat-number">{totalStaff}</span>

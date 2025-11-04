@@ -40,15 +40,17 @@
     // ===== 사용자 관리 설정 =====
     // 사용자 시트 컬럼 설정
     const USER_SHEET_COLUMNS = {
-    EMAIL: 0,           // A열 - 이메일
-    APPROVAL_STATUS: 1, // B열 - 승인상태
-    IS_ADMIN: 2,        // C열 - 관리자여부
-    STUDENT_ID: 3,      // D열 - 학생번호
-    REGISTERED_AT: 4    // E열 - 등록일시
+      NO_MEMBER: 0,       // A열 - 학번/교번
+      USER_TYPE: 1,       // B열 - 사용자 유형
+      NAME_MEMBER: 2,     // C열 - 이름
+      GOOGLE_MEMBER: 3,   // D열 - Google 계정 이메일 (암호화)
+      APPROVAL: 4,        // E열 - 승인 상태
+      IS_ADMIN: 5,        // F열 - 관리자 여부
+      APPROVAL_DATE: 6    // G열 - 승인 날짜
     };
-    
+
     // 사용자 시트 헤더
-    const USER_SHEET_HEADERS = ['이메일', '승인상태', '관리자여부', '학생번호', '등록일시'];
+    const USER_SHEET_HEADERS = ['no_member', 'user_type', 'name_member', 'google_member', 'Approval', 'is_admin', 'approval_date'];
     
     // 승인 상태 상수
     const APPROVAL_STATUS = {
@@ -69,7 +71,7 @@
     // 이메일 암호화 방식 설정
     const EMAIL_ENCRYPTION_CONFIG = {
     // 사용할 암호화 방법 (ENCRYPTION_METHODS에서 선택)
-    METHOD: 'ROT13', // 'ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution' 등
+    METHOD: 'Base64', // 'ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution' 등
     
     // 암호화 레이어 수 (1 = 단일 암호화, 2+ = 다중 레이어)
     LAYERS: 1,
@@ -419,4 +421,171 @@
         errors: errors,
         config: config
     };
+    }
+
+    // ===== 문서 관리 설정 =====
+    // 문서 저장 폴더 경로
+    const DOCUMENT_FOLDER_PATH = 'hot potato/문서';
+    
+    // 템플릿 폴더 경로
+    const TEMPLATE_FOLDER_PATH = 'hot potato/문서/양식';
+    
+    // 공유 문서 폴더 경로
+    const SHARED_DOCUMENT_FOLDER_PATH = 'hot potato/문서/공유 문서';
+    
+    // 역할별 스프레드시트 이름 매핑
+    const ROLE_SPREADSHEET_MAP = {
+        'student': '학생_문서관리',
+        'professor': '교수_문서관리',
+        'admin': '관리자_문서관리'
+    };
+    
+    // 기본 역할
+    const DEFAULT_ROLE = 'student';
+    
+    // 문서 상태
+    const DOCUMENT_STATUS = {
+        CREATED: '생성됨',
+        UPDATED: '수정됨',
+        DELETED: '삭제됨'
+    };
+    
+    // 스프레드시트 컬럼 설정
+    const DOCUMENT_SHEET_COLUMNS = {
+        CREATED_AT: 0,      // A열 - 생성일시
+        TITLE: 1,           // B열 - 문서제목
+        CREATOR: 2,         // C열 - 생성자
+        URL: 3,             // D열 - 문서URL
+        STATUS: 4           // E열 - 상태
+    };
+    
+    // ===== 문서 관리 설정 함수들 =====
+    
+    /**
+     * 문서 저장 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getDocumentFolderPath() {
+        return DOCUMENT_FOLDER_PATH;
+    }
+    
+    /**
+     * 템플릿 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getTemplateFolderPath() {
+        return TEMPLATE_FOLDER_PATH;
+    }
+    
+    /**
+     * 공유 문서 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getSharedDocumentFolderPath() {
+        return SHARED_DOCUMENT_FOLDER_PATH;
+    }
+    
+    /**
+     * 역할에 따른 스프레드시트 이름 반환
+     * @param {string} role - 사용자 역할
+     * @returns {string} 스프레드시트 이름
+     */
+    function getSpreadsheetNameByRole(role) {
+        return ROLE_SPREADSHEET_MAP[role] || ROLE_SPREADSHEET_MAP[DEFAULT_ROLE];
+    }
+    
+    /**
+     * 기본 역할 반환
+     * @returns {string} 기본 역할
+     */
+    function getDefaultRole() {
+        return DEFAULT_ROLE;
+    }
+    
+    /**
+     * 문서 상태 반환
+     * @returns {Object} 문서 상태 객체
+     */
+    function getDocumentStatus() {
+        return DOCUMENT_STATUS;
+    }
+    
+    /**
+     * 문서 스프레드시트 컬럼 설정 반환
+     * @returns {Object} 컬럼 설정 객체
+     */
+    function getDocumentSheetColumns() {
+        return DOCUMENT_SHEET_COLUMNS;
+    }
+    
+    // ===== 그룹스 역할 매핑 (관리자, 개발자 제외) =====
+    const GROUP_ROLE_MAPPING = {
+        'ad_professor': {
+            name: '겸임교원',
+            email: 'ad_professor_hp@googlegroups.com',
+            description: '뜨거운 감자 겸임 교원'
+        },
+        'professor': {
+            name: '교수',
+            email: 'professor_hp@googlegroups.com', 
+            description: '뜨거운 감자 교수 그룹'
+        },
+        'supp': {
+            name: '조교',
+            email: 'hp_supp@googlegroups.com',
+            description: '뜨거운 감자 조교 그룹'
+        },
+        'std_council': {
+            name: '집행부',
+            email: 'std_council_hp@googlegroups.com',
+            description: '뜨거운 감자 집행부 그룹'
+        },
+        'student': {
+            name: '학생',
+            email: 'student_hp@googlegroups.com',
+            description: '뜨거운 감자 학생 그룹'
+        }
+    };
+    
+    // 그룹스 역할 목록 (사용자 선택용)
+    const AVAILABLE_GROUP_ROLES = [
+        { value: 'student', label: '학생' },
+        { value: 'std_council', label: '집행부' },
+        { value: 'supp', label: '조교' },
+        { value: 'professor', label: '교수' },
+        { value: 'ad_professor', label: '겸임교원' }
+    ];
+    
+    /**
+     * 그룹스 역할 매핑 반환
+     * @returns {Object} 그룹스 역할 매핑 객체
+     */
+    function getGroupRoleMapping() {
+        return GROUP_ROLE_MAPPING;
+    }
+    
+    /**
+     * 사용 가능한 그룹스 역할 목록 반환
+     * @returns {Array} 그룹스 역할 목록
+     */
+    function getAvailableGroupRoles() {
+        return AVAILABLE_GROUP_ROLES;
+    }
+    
+    /**
+     * 그룹스 역할에 따른 이메일 반환
+     * @param {string} role - 그룹스 역할
+     * @returns {string} 그룹스 이메일
+     */
+    function getGroupEmailByRole(role) {
+        return GROUP_ROLE_MAPPING[role]?.email || '';
+    }
+    
+    /**
+     * 그룹스 역할에 따른 이름 반환
+     * @param {string} role - 그룹스 역할
+     * @returns {string} 그룹스 이름
+     */
+    function getGroupNameByRole(role) {
+        return GROUP_ROLE_MAPPING[role]?.name || '알 수 없는 그룹스';
     }

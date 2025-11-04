@@ -27,7 +27,7 @@
 
 .week-navigation-item {
     padding: 8px 12px;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
     margin-bottom: 4px;
 }
@@ -72,4 +72,16 @@
 .filter-item input[type="checkbox"] {
     margin-right: 10px;
     cursor: pointer;
+}
+
+.filter-checkbox-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.filter-checkbox-label input[type="checkbox"] {
+    accent-color: var(--sidebar-primary);
+    margin-right: 10px;
 }

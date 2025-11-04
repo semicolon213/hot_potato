@@ -4,7 +4,7 @@ import type { Post, User } from '../../types/app';
 
 interface NewBoardPostProps {
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => void;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => void;
   user: User | null;
   isAuthenticated: boolean;
 }
@@ -28,15 +28,15 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, us
 
     onAddPost({
       title,
-      contentPreview: content,
+      content: content,
       author: user?.name || 'Unknown',
+      writer_id: user?.email || ''
     });
   };
 
   return (
     <div className="new-post-container">
       <div className="new-post-header">
-        <h1>새 글 작성</h1>
         <div className="header-buttons">
             <button onClick={() => onPageChange('board')} className="cancel-button">취소</button>
             <button onClick={handleSavePost} className="save-button" disabled={!isAuthenticated}>

@@ -1,10 +1,10 @@
 .new-post-container {
-    padding: 40px;
-    max-width: 900px;
-    margin: 40px auto;
+    padding: clamp(32px, 3.7vh, 48px);
+    max-width: clamp(800px, 46.88vw, 1000px);
+    margin: clamp(32px, 3.7vh, 48px) auto;
     background-color: #f8f8f7;
-    border-radius: var(--border-radius-md);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: var(--sidebar-radius-sm);
+    box-shadow: var(--shadow-base);
 }
 
 .new-post-header {
@@ -23,18 +23,21 @@
 }
 
 .header-buttons .save-button {
-    background-color: var(--primary);
+    background-color: var(--sidebar-primary);
     color: #f8f8f7;
     border: none;
-    padding: 10px 20px;
-    border-radius: var(--border-radius-sm);
+    padding: clamp(8px, 0.93vh, 14px) clamp(16px, 2.08vw, 24px);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+    font-size: clamp(15px, 1.74vh, 20px);
+    transition: var(--transition-base);
+    font-weight: var(--font-weight-medium);
 }
 
 .header-buttons .save-button:hover {
-    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    filter: brightness(1.05);
 }
 
 .header-buttons .save-button:disabled {
@@ -46,26 +49,36 @@
     background-color: var(--text-light);
     color: #f8f8f7;
     border: none;
-    padding: 10px 20px;
-    border-radius: var(--border-radius-sm);
+    padding: clamp(8px, 0.93vh, 14px) clamp(16px, 2.08vw, 24px);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
-    font-size: 16px;
-    margin-right: 10px;
-    transition: background-color 0.3s ease;
+    font-size: clamp(15px, 1.74vh, 20px);
+    margin-right: clamp(8px, 1.04vw, 14px);
+    transition: var(--transition-base);
+    font-weight: var(--font-weight-medium);
 }
 
 .header-buttons .cancel-button:hover {
-    background-color: var(--text-medium);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    filter: brightness(0.95);
 }
 
 
 .new-post-form .title-input {
     width: 100%;
-    padding: 15px;
-    font-size: 22px;
+    padding: clamp(12px, 1.39vh, 20px);
+    font-size: clamp(20px, 2.31vh, 26px);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 20px;
+    border-radius: var(--sidebar-radius-sm);
+    margin-bottom: clamp(16px, 1.85vh, 24px);
+    transition: var(--transition-base);
+}
+
+.new-post-form .title-input:focus {
+    outline: none;
+    border-color: var(--sidebar-primary);
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .author-info {
@@ -76,13 +89,20 @@
 
 .new-post-form .content-textarea {
     width: 100%;
-    height: 400px;
-    padding: 15px;
-    font-size: 16px;
+    height: clamp(350px, 40.51vh, 450px);
+    padding: clamp(12px, 1.39vh, 20px);
+    font-size: clamp(15px, 1.74vh, 20px);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     resize: vertical;
     line-height: 1.6;
+    transition: var(--transition-base);
+}
+
+.new-post-form .content-textarea:focus {
+    outline: none;
+    border-color: var(--sidebar-primary);
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .file-upload {
@@ -96,6 +116,6 @@
 }
 
 .file-upload .file-name {
-    margin-left: 10px;
-    color: var(--primary);
+    margin-left: clamp(8px, 1.04vw, 14px);
+    color: var(--sidebar-primary);
 }

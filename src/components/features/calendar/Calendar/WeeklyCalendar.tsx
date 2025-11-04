@@ -5,6 +5,8 @@ import { RRule } from 'rrule';
 
 interface WeeklyCalendarProps {
     selectedWeek: number;
+    onAddEvent: () => void;
+    onSelectEvent: (event: Event, rect: DOMRect) => void;
 }
 
 // Helper function to calculate event layout
@@ -77,8 +79,8 @@ const calculateAllDayEventLayout = (events: Event[], weekDays: { date: string }[
 };
 
 
-const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
-    const { events, setSelectedEvent, dispatch, currentDate, semesterStartDate } = useCalendarContext();
+const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEvent, onSelectEvent }) => {
+    const { events, setSelectedEvent, dispatch, currentDate, semesterStartDate, selectedDate } = useCalendarContext();
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
@@ -102,6 +104,20 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
         return days;
     }, [selectedWeek, semesterStartDate]);
 
+    const handleTimeSlotClick = (day: { date: string }, e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickY = e.clientY - rect.top;
+        const totalHeight = rect.height;
+        const hour = Math.floor((clickY / totalHeight) * 24);
+
+        const parts = day.date.split('-').map(Number);
+        const clickedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        clickedDate.setHours(hour, 0, 0, 0);
+
+        selectedDate.selectDate(clickedDate);
+        onAddEvent();
+    };
+    
     const expandedEvents = useMemo(() => {
         if (weekDays.length === 0) {
             return events;
@@ -194,16 +210,28 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
         };
     };
 
+    const todayDateString = new Date().toISOString().split('T')[0];
+
     return (
         <div className="weekly-calendar-container">
             <div className="weekly-header">
                 <div className="time-column-header"></div>
-                {weekDays.map((day, index) => (
-                    <div key={day.date} className={`day-header ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
-                        <span className="day-name">{daysOfWeek[index]}</span>
-                        <span className="day-number">{day.day}</span>
-                    </div>
-                ))}
+                {weekDays.map((day, index) => {
+                    const isToday = day.date === todayDateString;
+                    const dayHeaderClasses = [
+                        'day-header',
+                        index === 0 ? 'sunday' : '',
+                        index === 6 ? 'saturday' : '',
+                        isToday ? 'today' : ''
+                    ].filter(Boolean).join(' ');
+
+                    return (
+                        <div key={day.date} className={dayHeaderClasses}>
+                            <span className="day-name">{daysOfWeek[index]}</span>
+                            <span className="day-number">{day.day}</span>
+                        </div>
+                    );
+                })}
             </div>
 
             <div className="weekly-all-day-section">
@@ -231,7 +259,10 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                                     top: `${top}px`,
                                     backgroundColor: event.color,
                                 }}
-                                onClick={() => setSelectedEvent(event)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectEvent(event, e.currentTarget.getBoundingClientRect());
+                                }}
                             >
                                 <span className="event-title">{event.icon} {event.title}</span>
                             </div>
@@ -251,14 +282,17 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek }) => {
                         const timedEvents = expandedEvents.filter(event => event.startDate === day.date && event.startDateTime);
                         return (
                             <div key={day.date} className={`day-column ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`}>
-                                <div className="timed-events-grid">
+                                <div className="timed-events-grid" onClick={(e) => handleTimeSlotClick(day, e)}>
                                     {hours.map(hour => <div key={hour} className="time-grid-line"></div>)}
                                     {timedEvents.map(event => (
                                         <div
                                             key={`${event.id}-${event.startDate}`}
                                             className="timed-event-item"
                                             style={{ ...getEventPosition(event), backgroundColor: event.color }}
-                                            onClick={() => setSelectedEvent(event)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onSelectEvent(event, e.currentTarget.getBoundingClientRect());
+                                            }}
                                         >
                                             <span className="event-title">{event.title}</span>
                                         </div>

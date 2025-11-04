@@ -7,6 +7,7 @@
  */
 
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../auth/tokenManager';
 
 const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
@@ -109,10 +110,10 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                         
                         console.log('gapi.client.init 호출 완료');
 
-                        // 저장된 토큰이 있으면 복원 시도
-                        const savedToken = localStorage.getItem('googleAccessToken');
+                        // 저장된 토큰이 있으면 복원 시도 (tokenManager를 통해 만료 체크 포함)
+                        const savedToken = tokenManager.get();
                         if (savedToken) {
-                            console.log("저장된 토큰 발견:", savedToken);
+                            console.log("저장된 토큰 발견:", savedToken.substring(0, 20) + '...');
                             try {
                                 // 토큰을 gapi client에 직접 설정
                                 (window as any).gapi.client.setToken({ access_token: savedToken });
@@ -120,6 +121,8 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                             } catch (tokenError) {
                                 console.warn("토큰 설정 실패:", tokenError);
                             }
+                        } else {
+                            console.log("유효한 토큰이 없습니다. 로그인이 필요합니다.");
                         }
 
                         console.log("Google API Client Library 초기화 성공!");

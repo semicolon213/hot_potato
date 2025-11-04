@@ -9,7 +9,7 @@ interface EventDetailModalProps {
     onClose: () => void;
     onDelete: (id: string) => void;
     onEdit: (event: Event) => void;
-    position: { top: number; left: number };
+    position?: { top: number; left: number };
 }
 
 const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position }) => {
@@ -48,25 +48,31 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         }
     };
 
+    const modalStyle = (position && position.top !== 0 && position.left !== 0)
+        ? { top: position.top, left: position.left }
+        : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+
     const modalContent = (
-        <div className="event-detail-container" style={{ top: position.top, left: position.left }} onClick={(e) => e.stopPropagation()}>
-            <div className="event-detail-header">
-                <h2>{event.title}</h2>
-                <div className="header-actions">
-                    <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
-                    <BiTrashAlt onClick={handleDelete} className="header-icon" />
-                    <BiX onClick={onClose} className="header-icon close-button" />
-                </div>
-            </div>
-            <div className="event-detail-body">
-                <div className="detail-item">
-                    <p>{formatEventDate(event.startDate, event.endDate)}</p>
-                </div>
-                {event.description && (
-                    <div className="detail-item">
-                        <p>{event.description}</p>
+        <div className="event-detail-modal-overlay" onClick={onClose}>
+            <div className="event-detail-container" style={modalStyle} onClick={(e) => e.stopPropagation()}>
+                <div className="event-detail-header">
+                    <h2>{event.title}</h2>
+                    <div className="header-actions">
+                        <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
+                        <BiTrashAlt onClick={handleDelete} className="header-icon" />
+                        <BiX onClick={onClose} className="header-icon close-button" />
                     </div>
-                )}
+                </div>
+                <div className="event-detail-body">
+                    <div className="detail-item">
+                        <p>{formatEventDate(event.startDate, event.endDate)}</p>
+                    </div>
+                    {event.description && (
+                        <div className="detail-item">
+                            <p>{event.description}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

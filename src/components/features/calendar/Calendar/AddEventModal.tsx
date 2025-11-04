@@ -14,13 +14,13 @@ interface AddEventModalProps {
 type RecurrenceFreq = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) => {
-  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles } = useCalendarContext();
+  const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles, formatDate, students, staff } = useCalendarContext();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState(selectedDate.date);
-  const [endDate, setEndDate] = useState(selectedDate.date);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [showTime, setShowTime] = useState(false);
   const [startTime, setStartTime] = useState('00:00');
   const [endTime, setEndTime] = useState('00:00');
@@ -33,8 +33,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   
   // Attendee States
   const [isAttendeeSearchVisible, setIsAttendeeSearchVisible] = useState(false);
-  const [students] = useState<Student[]>([]);
-  const [staff] = useState<Staff[]>([]);
   const [attendeeSearchTerm, setAttendeeSearchTerm] = useState('');
   const [isLoadingAttendees, setIsLoadingAttendees] = useState(false);
   const [selectedAttendees, setSelectedAttendees] = useState<(Student | Staff)[]>([]);
@@ -115,29 +113,32 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         setRecurrenceFreq('NONE');
       }
     } else {
-      // Reset for Add Mode
+      // Add Mode: Initialize based on selectedDate
+      const initialDate = selectedDate.date;
+      setStartDate(formatDate(initialDate));
+      setEndDate(formatDate(initialDate));
+
+      if (initialDate.getHours() !== 0 || initialDate.getMinutes() !== 0 || initialDate.getSeconds() !== 0) {
+        setShowTime(true);
+        const startHours = initialDate.getHours().toString().padStart(2, '0');
+        const startMinutes = initialDate.getMinutes().toString().padStart(2, '0');
+        setStartTime(`${startHours}:${startMinutes}`);
+
+        const oneHourLater = new Date(initialDate.getTime() + 60 * 60 * 1000);
+        const endHours = oneHourLater.getHours().toString().padStart(2, '0');
+        const endMinutes = oneHourLater.getMinutes().toString().padStart(2, '0');
+        setEndTime(`${endHours}:${endMinutes}`);
+      } else {
+        // Reset time for all-day events from monthly view
+        setShowTime(false);
+        setStartTime('00:00');
+        setEndTime('00:00');
+      }
+
       setSaveTarget('google');
       setSelectedAttendees([]);
     }
   }, [eventToEdit, isEditMode, eventTypes]);
-
-  // Fetch attendee data when modal opens for a sheet event
-  useEffect(() => {
-    if (saveTarget === 'sheet' && (students.length === 0 || staff.length === 0)) {
-      const fetchData = async () => {
-        setIsLoadingAttendees(true);
-        try {
-            // 학생 및 교직원 데이터는 이미 상위 컴포넌트에서 로드됨
-            // 필요시 여기서 추가 로딩 로직 구현
-        } catch (error) {
-            console.error("Error fetching attendee data:", error);
-        } finally {
-            setIsLoadingAttendees(false);
-        }
-      };
-      fetchData();
-    }
-  }, [saveTarget]);
 
   // Pre-populate selected attendees in edit mode once data is loaded
   useEffect(() => {
@@ -213,6 +214,12 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAttendeeSearchVisible, students, staff]);
 
+  useEffect(() => {
+    if (isAttendeeSearchVisible) {
+      setSaveTarget('sheet');
+    }
+  }, [isAttendeeSearchVisible]);
+
   const handleSave = () => {
     if (title.trim()) {
       const eventData: Partial<Event> & { rrule?: string; attendees?: string; } = {
@@ -225,7 +232,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               eventData.type = customTag;
               eventData.color = customColor;
           } else {
-              eventData.type = tag;
+              eventData.type = tagLabels[tag] || tag;
           }
           eventData.attendees = selectedAttendees.map(a => 'no_student' in a ? a.no_student : a.no).join(',');
       } else {
@@ -317,7 +324,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
             {!isEditMode && (
                 <div className="save-target-group">
-                  <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
+                  {!isAttendeeSearchVisible && (
+                    <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
+                  )}
                   <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => setSaveTarget('sheet')}>공유</button>
                 </div>
             )}
@@ -325,7 +334,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
             {saveTarget === 'sheet' && (
                 <>
                     <div className="tag-selection-group">
-                        {eventTypes.map(type => (
+                        {eventTypes
+                            .filter(type => {
+                                if (user?.userType === 'student') {
+                                    return type === 'meeting';
+                                }
+                                return true;
+                            })
+                            .map(type => (
                             <button
                                 key={type}
                                 type="button"
@@ -336,7 +352,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                 {tagLabels[type] || type}
                             </button>
                         ))}
-                        <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                        {user?.userType !== 'student' && (
+                            <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                        )}
                     </div>
                     {isCustomTag && (
                         <div className="custom-tag-container">

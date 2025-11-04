@@ -13,18 +13,18 @@
 
 .add-event-modal-overlay .modal-content {
   background: white;
-  padding: 20px;
-  padding-top: 45px; /* Space for close icon */
-  border-radius: var(--border-radius-md);
-  width: 520px; /* Increased base width */
+  padding: clamp(16px, 1.85vh, 24px);
+  padding-top: clamp(36px, 4.17vh, 48px);
+  border-radius: var(--sidebar-radius-sm);
+  width: clamp(460px, 27.08vw, 580px);
   max-width: 90vw;
   max-height: 80vh;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-base);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  transition: width 0.3s ease-in-out;
+  gap: clamp(12px, 1.39vh, 20px);
+  transition: var(--transition-base);
 }
 
 .add-event-modal-overlay .modal-content.wide {
@@ -67,7 +67,7 @@
 .attendee-search-input {
   width: 100%;
   padding: 8px;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   border: 1px solid #ccc;
   margin-bottom: 10px;
 }
@@ -76,7 +76,7 @@
   flex: 1;
   overflow-y: auto;
   border: 1px solid #eee;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .attendee-results-list ul {
@@ -110,7 +110,7 @@
   align-self: flex-start;
   padding: 6px 12px;
   border: 1px solid #ccc;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   background-color: #f8f9fa;
   cursor: pointer;
 }
@@ -122,7 +122,7 @@
   margin-top: 10px;
   padding: 8px;
   border: 1px solid #eee;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   min-height: 40px;
 }
 
@@ -130,7 +130,7 @@
   display: flex;
   align-items: center;
   background-color: #e9ecef;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   padding: 4px 8px;
   font-size: 14px;
 }
@@ -177,7 +177,7 @@
 
 .modal-content input {
   padding: 8px;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   border: 1px solid #ccc;
 }
 
@@ -192,7 +192,7 @@
 .add-event-modal-overlay .modal-content .modal-actions .submit-button, .add-event-modal-overlay .modal-content .modal-actions .cancel-button {
     padding: 10px 15px;
     border: none;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
     font-size: 16px;
 }
@@ -229,7 +229,7 @@
 .recurrence-select {
   width: fit-content;
   padding: 8px;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   border: 1px solid #ccc;
   background-color: #fff;
 }
@@ -238,7 +238,7 @@
   flex: 1;
   padding: 10px;
   border: 1px solid #ccc;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   background-color: #f8f9fa;
   cursor: pointer;
   text-align: center;
@@ -266,7 +266,7 @@
 .custom-tag-input {
     flex-grow: 1;
     padding: 8px;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     border: 1px solid #ccc;
 }
 
@@ -288,7 +288,7 @@
     right: 0;
     background: white;
     border: 1px solid #ccc;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     padding: 5px;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -324,7 +324,7 @@
 .time-add-button-inline {
     padding: 8px 12px;
     border: 1px solid #ccc;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     background-color: #f8f9fa;
     cursor: pointer;
     height: 37px; /* To match input height */
@@ -334,7 +334,7 @@
     width: 100%;
     box-sizing: border-box;
     padding: 8px;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     border: 1px solid #ccc;
     min-height: 80px; /* Provide a decent minimum height */
     max-height: 150px; /* Limit growth */
@@ -355,7 +355,7 @@
   gap: 8px;
   padding: 8px;
   background-color: #f8f9fa;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .recurrence-details input[type="number"] {

@@ -152,12 +152,16 @@ export class ApiClient {
   }
 
   // 사용자 관리 API
+  async getAllUsers() {
+    return this.request(API_ACTIONS.GET_ALL_USERS);
+  }
+
   async getPendingUsers() {
     return this.request(API_ACTIONS.GET_PENDING_USERS);
   }
 
-  async approveUser(studentId: string) {
-    return this.request(API_ACTIONS.APPROVE_USER, { studentId });
+  async approveUserWithGroup(studentId: string, groupRole: string) {
+    return this.request(API_ACTIONS.APPROVE_USER_WITH_GROUP, { studentId, groupRole });
   }
 
   async rejectUser(studentId: string) {
@@ -192,6 +196,54 @@ export class ApiClient {
   // 이메일 마이그레이션 API
   async migrateEmails() {
     return this.request(API_ACTIONS.MIGRATE_EMAILS);
+  }
+
+  // 문서 관리 API
+  async createDocument(documentData: {
+    title: string;
+    templateType?: string;
+    creatorEmail: string;
+    editors?: string[];
+    role?: string;
+    tag?: string;
+  }) {
+    return this.request('createDocument', documentData);
+  }
+
+  // 이메일로 사용자 이름 조회
+  async getUserNameByEmail(email: string) {
+    return this.request('getUserNameByEmail', { email });
+  }
+
+  async getTemplates() {
+    return this.request('getTemplates');
+  }
+
+  async testDriveApi() {
+    return this.request('testDriveApi');
+  }
+
+  async testTemplateFolderDebug() {
+    return this.request('testTemplateFolderDebug');
+  }
+
+  async testSpecificFolder() {
+    return this.request('testSpecificFolder');
+  }
+
+  async getDocuments(params: {
+    role: string;
+    searchTerm?: string;
+    author?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.request('getDocuments', params);
+  }
+
+  async deleteDocuments(documentIds: string[], role: string) {
+    return this.request('deleteDocuments', { documentIds, role });
   }
 
   // 테스트 API
@@ -230,11 +282,14 @@ export const apiClient = new ApiClient();
 export const sendAdminKeyEmail = (userEmail: string, adminAccessToken: string) =>
   apiClient.sendAdminKeyEmail(userEmail, adminAccessToken);
 
+export const fetchAllUsers = () =>
+  apiClient.getAllUsers();
+
 export const fetchPendingUsers = () =>
   apiClient.getPendingUsers();
 
-export const approveUser = (userId: string) =>
-  apiClient.approveUser(userId);
+export const approveUserWithGroup = (studentId: string, groupRole: string) =>
+  apiClient.approveUserWithGroup(studentId, groupRole);
 
 export const rejectUser = (userId: string) =>
   apiClient.rejectUser(userId);

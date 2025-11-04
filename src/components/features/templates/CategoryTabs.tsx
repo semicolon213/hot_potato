@@ -58,68 +58,87 @@ export function CategoryTabs({ activeTab, setActiveTab, tags, managedTags, defau
     };
 
     return (
-        <div className="new-tabs-container">
-            {["전체", ...tags].map((tab) => (
-                <div
-                    key={tab}
-                    className={`new-tab ${activeTab === tab ? "new-active" : ""}`}
-                    onClick={() => !isEditMode && !editingTag && setActiveTab(tab)}
-                >
-                    {editingTag === tab ? (
-                        <input 
-                            type="text"
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateTag()}
-                            onBlur={handleUpdateTag}
-                            autoFocus
-                        />
-                    ) : (
-                        <>{tab}</>
-                    )}
+        <div className="category-tabs-wrapper">
+            <div className="tabs-header">
+                <div className="new-tabs-container">
+                    {["전체", ...tags].map((tab) => (
+                        <div
+                            key={tab}
+                            className={`new-tab ${activeTab === tab ? "new-active" : ""}`}
+                            onClick={() => !isEditMode && !editingTag && setActiveTab(tab)}
+                        >
+                            {editingTag === tab ? (
+                                <input 
+                                    type="text"
+                                    value={editingText}
+                                    onChange={(e) => setEditingText(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleUpdateTag()}
+                                    onBlur={handleUpdateTag}
+                                    autoFocus
+                                />
+                            ) : (
+                                <>{tab}</>
+                            )}
 
-                    {isEditMode && tab !== '전체' && managedTags?.includes(tab) && !defaultTags?.includes(tab) && (
-                        <>
-                            <button onClick={() => startEditing(tab)} className="edit-tag-button">E</button>
-                            <button onClick={() => deleteTag(tab)} className="delete-tag-button">X</button>
-                        </>
+                            {isEditMode && tab !== '전체' && managedTags?.includes(tab) && !defaultTags?.includes(tab) && (
+                                <>
+                                    <button 
+                                        onClick={() => startEditing(tab)} 
+                                        className="edit-tag-button"
+                                        title="태그 수정"
+                                    >
+                                        ✏️
+                                    </button>
+                                    <button 
+                                        onClick={() => deleteTag(tab)} 
+                                        className="delete-tag-button"
+                                        title="태그 삭제"
+                                    >
+                                        🗑️
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    ))}
+                    
+                    {!isEditMode && (
+                        managedTags && managedTags.length < 10 ? (
+                            isAdding ? (
+                                <div className="new-tag-input-container">
+                                    <input
+                                        type="text"
+                                        value={newTag}
+                                        onChange={(e) => {
+                                            if (e.target.value.length <= 8) {
+                                                setNewTag(e.target.value);
+                                            }
+                                        }}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                                        className="new-tag-input"
+                                        autoFocus
+                                    />
+                                    <button onClick={handleAddTag} className="new-tag-button">추가</button>
+                                    <button onClick={() => setIsAdding(false)} className="new-tag-button cancel">취소</button>
+                                </div>
+                            ) : (
+                                <div className="new-tab add-tag-button" onClick={() => setIsAdding(true)}>
+                                    + 새 태그
+                                </div>
+                            )
+                        ) : (
+                            <div className="new-tab add-tag-button disabled" title="최대 10개의 태그만 추가할 수 있습니다.">
+                                최대 태그 수 도달
+                            </div>
+                        )
                     )}
                 </div>
-            ))}
-            
-            {!isEditMode && (
-                managedTags && managedTags.length < 10 ? (
-                    isAdding ? (
-                        <div className="new-tag-input-container">
-                            <input
-                                type="text"
-                                value={newTag}
-                                onChange={(e) => {
-                                    if (e.target.value.length <= 8) {
-                                        setNewTag(e.target.value);
-                                    }
-                                }}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                                className="new-tag-input"
-                                autoFocus
-                            />
-                            <button onClick={handleAddTag} className="new-tag-button">추가</button>
-                            <button onClick={() => setIsAdding(false)} className="new-tag-button cancel">취소</button>
-                        </div>
-                    ) : (
-                        <div className="new-tab add-tag-button" onClick={() => setIsAdding(true)}>
-                            + 새 태그
-                        </div>
-                    )
-                ) : (
-                    <div className="new-tab add-tag-button disabled" title="최대 10개의 태그만 추가할 수 있습니다.">
-                        최대 태그 수 도달
-                    </div>
-                )
-            )}
 
-            <div className="new-tab manage-tag-button" onClick={() => setIsEditMode(!isEditMode)}>
-                {isEditMode ? '완료' : '태그 관리'}
+                <button 
+                    className={`tag-management-toggle ${isEditMode ? 'active' : ''}`}
+                    onClick={() => setIsEditMode(!isEditMode)}
+                >
+                    {isEditMode ? '완료' : '태그 관리'}
+                </button>
             </div>
         </div>
     );

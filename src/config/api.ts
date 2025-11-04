@@ -32,8 +32,10 @@ export const API_CONFIG = {
  */
 export const API_ACTIONS = {
   // 사용자 관리
+  GET_ALL_USERS: 'getAllUsers',
   GET_PENDING_USERS: 'getPendingUsers',
   APPROVE_USER: 'approveUser',
+  APPROVE_USER_WITH_GROUP: 'approveUserWithGroup',
   REJECT_USER: 'rejectUser',
   
   // 인증

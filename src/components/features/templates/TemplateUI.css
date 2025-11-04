@@ -33,7 +33,7 @@ justify-content: center;
 width: 36px;
 height: 36px;
 border-radius: 50%;
-background-color: var(--primary);
+background-color: var(--sidebar-primary);
 color: #f8f8f7;
 margin-right: 12px;
 }
@@ -94,6 +94,49 @@ transition: background-color 0.2s;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* 태그 관리 레이아웃 개선 */
+.category-tabs-wrapper {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-left: 30px;
+}
+
+.tabs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.tag-management-toggle {
+    padding: 8px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #f8fafc;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
+}
+
+.tag-management-toggle:hover {
+    border-color: var(--sidebar-primary);
+    background-color: var(--accent);
+    color: var(--sidebar-primary);
+}
+
+.tag-management-toggle.active {
+    border-color: var(--sidebar-primary);
+    background-color: var(--sidebar-primary);
+    color: white;
+}
+
+.tag-management-toggle.active:hover {
+    background-color: var(--primary-dark);
+}
+
 /* 무선 탭 스타일 */
 .new-tabs-container {
 display: flex;
@@ -109,12 +152,15 @@ position: relative;
 
 .new-tab {
 position: relative;
-margin-right: 30px;
-padding: 8px 0;
+margin-right: 20px;
+padding: 6px 0;
 font-size: 14px;
 color: #6b7280;
 cursor: pointer;
 transition: color 0.2s;
+display: flex;
+align-items: center;
+gap: 4px;
 }
 
 .new-tab.new-active {
@@ -165,6 +211,22 @@ margin-left: 0;
     font-size: 12px;
     font-weight: 500;
     margin-bottom: 12px;
+}
+
+/* 태그 컨테이너 */
+.new-card-tag-container {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+/* 개인 템플릿 태그 */
+.personal-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-weight: 600;
+    border: 1px solid #5a67d8;
 }
 
 .new-card-tag.new-meeting {
@@ -256,6 +318,57 @@ margin-left: 0;
 
 .favorite-button.favorited svg {
     fill: #facc15; /* 즐겨찾기 노란색 */
+}
+
+.edit-personal-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+}
+
+.edit-personal-button:hover {
+    background-color: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+.edit-personal-button svg {
+    width: 18px;
+    height: 18px;
+    color: #6b7280;
+    transition: color 0.2s ease-in-out;
+}
+
+.edit-personal-button:hover svg {
+    color: #374151;
+}
+
+.file-type-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.file-type-badge:hover {
+    background-color: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+    transition: all 0.2s ease-in-out;
 }
 
 .new-usage-count {
@@ -382,37 +495,50 @@ margin-left: 0;
     background-color: #6c757d;
 }
 
-.manage-tag-button {
-    margin-left: auto; /* Pushes the button to the far right */
-    color: #6c757d;
-}
-
 .delete-tag-button {
-    margin-left: 8px;
+    margin-left: 4px;
     background: #dc3545;
-    color: #f8f8f7;
+    color: white;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
-    font-size: 12px;
-    line-height: 20px;
+    font-size: 10px;
+    line-height: 18px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.delete-tag-button:hover {
+    background: #c82333;
+    transform: scale(1.1);
 }
 
 .edit-tag-button {
-    margin-left: 8px;
+    margin-left: 4px;
     background: #ffc107;
-    color: #f8f8f7;
+    color: #212529;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
-    font-size: 12px;
-    line-height: 20px;
+    font-size: 10px;
+    line-height: 18px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.edit-tag-button:hover {
+    background: #e0a800;
+    transform: scale(1.1);
 }
 
 .template-section {
@@ -435,12 +561,12 @@ margin-left: 0;
 
 .layout-sidebar {
     flex: 1;
-    padding-right: 20px;
+    padding: 0 20px;
 }
 
 .layout-main {
     flex: 1;
-    padding-left: 20px;
+    padding: 0 20px;
 }
 
 .default-templates-list {
@@ -509,7 +635,7 @@ margin-left: 0;
 .add-template-button {
     padding: 10px 20px;
     border-radius: var(--border-radius-md);
-    background-color: var(--primary);
+    background-color: var(--sidebar-primary);
     color: #f8f8f7;
     font-weight: 500;
     cursor: pointer;
@@ -545,8 +671,8 @@ margin-left: 0;
     padding: 30px;
     border-radius: var(--border-radius-lg);
     width: 90%;
-    max-width: 500px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .modal-content h2 {
@@ -591,7 +717,7 @@ margin-left: 0;
 }
 
 .modal-content .modal-actions .save-btn {
-    background-color: var(--primary);
+    background-color: var(--sidebar-primary);
     color: #f8f8f7;
 }
 
@@ -628,6 +754,183 @@ margin-left: 0;
     font-size: 15px;
     color: #4a5568;
     margin-bottom: 25px;
+    padding: 15px;
+    background-color: #f7fafc;
+    border-radius: var(--border-radius-md);
+    border-left: 4px solid var(--primary);
+}
+
+.permission-type-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.permission-button {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: var(--border-radius-md);
+    background-color: #f8f8f7;
+    color: #495057;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.permission-button:hover {
+    border-color: var(--sidebar-primary);
+    background-color: #f0f8ff;
+}
+
+.permission-button.active {
+    border-color: var(--sidebar-primary);
+    background-color: var(--sidebar-primary);
+    color: white;
+}
+
+.email-input-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.email-input-group input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius-md);
+    font-size: 14px;
+}
+
+.email-input-group input:focus {
+    outline: none;
+    border-color: var(--sidebar-primary);
+}
+
+.group-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius-md);
+    border: 1px solid #e9ecef;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 14px 16px;
+    border-radius: var(--border-radius-md);
+    transition: all 0.2s;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+}
+
+.checkbox-label:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+}
+
+.checkbox-label:has(input:checked) {
+    background-color: #e3f2fd;
+    border-color: var(--sidebar-primary);
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--sidebar-primary);
+}
+
+.checkbox-text {
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    user-select: none;
+}
+
+/* 개별 이메일 입력 스타일 */
+.individual-emails-container {
+    margin-top: 8px;
+}
+
+.email-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.email-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius-md);
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.email-input:focus {
+    outline: none;
+    border-color: var(--sidebar-primary);
+}
+
+.remove-email-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background-color: #f44336;
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.remove-email-btn:hover {
+    background-color: #d32f2f;
+    transform: scale(1.1);
+}
+
+.add-email-btn {
+    width: 100%;
+    padding: 10px 16px;
+    border: 2px dashed #ccc;
+    background-color: #f8f8f7;
+    color: #666;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.add-email-btn:hover {
+    border-color: var(--sidebar-primary);
+    background-color: #f0f8ff;
+    color: var(--sidebar-primary);
+}
+
+.add-email-btn::before {
+    content: '+';
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .role-selection-container {
@@ -647,14 +950,14 @@ margin-left: 0;
 }
 
 .role-option:hover {
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
 }
 
 .role-option input[type="radio"] {
     margin-right: 15px;
     width: 18px;
     height: 18px;
-    accent-color: var(--primary);
+    accent-color: var(--sidebar-primary);
 }
 
 .role-option .role-name {
@@ -663,5 +966,5 @@ margin-left: 0;
 }
 
 .role-option input[type="radio"]:checked + .role-name {
-    color: var(--primary);
+    color: var(--sidebar-primary);
 }

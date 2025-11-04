@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import type { PageType, User, Post, Event, DateRange, CustomPeriod } from '../../types/app';
+import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
@@ -24,6 +24,7 @@ import NewDocument from '../../pages/NewDocument';
 import Board from '../../pages/Board/Board';
 import NewBoardPost from '../../pages/Board/NewBoardPost';
 import AnnouncementsPage from '../../pages/Announcements/Announcements';
+import AnnouncementView from '../../pages/Announcements/AnnouncementView';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
@@ -33,6 +34,7 @@ interface PageRendererProps {
   user: User | null;
   posts: Post[];
   announcements: Post[];
+  selectedAnnouncement: Post | null;
   isGoogleAuthenticatedForBoard: boolean;
   isGoogleAuthenticatedForAnnouncements: boolean;
   boardSpreadsheetId: string | null;
@@ -51,10 +53,13 @@ interface PageRendererProps {
   customPeriods: CustomPeriod[];
   hotPotatoDBSpreadsheetId: string | null;
   studentSpreadsheetId: string | null;
+  students: Student[];
+  staff: Staff[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => Promise<void>;
-  onAddAnnouncement: (postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>) => Promise<void>;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onSelectAnnouncement: (post: Post) => void;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
   onDeleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -84,6 +89,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   user,
   posts,
   announcements,
+  selectedAnnouncement,
   isGoogleAuthenticatedForBoard,
   isGoogleAuthenticatedForAnnouncements,
   boardSpreadsheetId,
@@ -102,10 +108,13 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   customPeriods,
   hotPotatoDBSpreadsheetId,
   studentSpreadsheetId,
+  students,
+  staff,
   searchTerm,
   onPageChange,
   onAddPost,
   onAddAnnouncement,
+  onSelectAnnouncement,
   onAddCalendarEvent,
   onUpdateCalendarEvent,
   onDeleteCalendarEvent,
@@ -142,6 +151,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "announcements":
         return <AnnouncementsPage
           onPageChange={onPageChange}
+          onSelectAnnouncement={onSelectAnnouncement}
           posts={announcements}
           isAuthenticated={isGoogleAuthenticatedForAnnouncements}
           announcementSpreadsheetId={announcementSpreadsheetId}
@@ -153,6 +163,16 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           onAddPost={onAddAnnouncement} 
           user={user} 
           isAuthenticated={isGoogleAuthenticatedForAnnouncements} />;
+      case "announcement-view":
+        return selectedAnnouncement ? (
+          <AnnouncementView
+            post={selectedAnnouncement}
+            onBack={() => onPageChange('announcements')}
+          />
+        ) : (
+          // A fallback in case the page is accessed directly without a selected announcement
+          <div>공지사항을 선택해주세요.</div>
+        );
       case "document_management":
         return (
           <DocumentManagement
@@ -199,6 +219,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           customPeriods={customPeriods}
           setCustomPeriods={onSetCustomPeriods}
           onSaveAcademicSchedule={onSaveAcademicSchedule}
+          students={students}
+          staff={staff}
         />;
       case "preferences":
         return (

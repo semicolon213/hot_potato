@@ -1,6 +1,7 @@
 // 학생 관리 헤더 컴포넌트
 
 import React from 'react';
+import { FaListUl, FaUsers } from 'react-icons/fa';
 
 interface StudentHeaderProps {
   totalStudents: number;
@@ -20,7 +21,6 @@ const StudentHeader: React.FC<StudentHeaderProps> = ({
   return (
     <div className="students-header">
       <div className="header-left">
-        <h1>{isStaffMode ? '교직원 관리' : '학생 관리'}</h1>
         <div className="header-stats">
           <span className="stat-item">
             <span className="stat-number">{totalStudents}</span>
@@ -37,13 +37,15 @@ const StudentHeader: React.FC<StudentHeaderProps> = ({
           className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => onTabChange('list')}
         >
-          📋 {isStaffMode ? '교직원 목록' : '학생 목록'}
+          <FaListUl className="tab-icon" />
+          <span>{isStaffMode ? '교직원 목록' : '학생 목록'}</span>
         </button>
         <button 
           className={`tab-button ${activeTab === 'council' ? 'active' : ''}`}
           onClick={() => onTabChange('council')}
         >
-          👥 {isStaffMode ? '학과 위원회' : '학생회'}
+          <FaUsers className="tab-icon" />
+          <span>{isStaffMode ? '학과 위원회' : '학생회'}</span>
         </button>
       </div>
     </div>

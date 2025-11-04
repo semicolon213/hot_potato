@@ -9,6 +9,7 @@ export interface User {
   studentId?: string;
   teacherId?: string;
   role: 'student' | 'teacher' | 'admin';
+  userType?: string;
   isApproved: boolean;
   googleAccessToken?: string;
 }

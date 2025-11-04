@@ -55,7 +55,6 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, isAuthenticated, boa
   return (
     <div className="board-container">
       <div className="board-header">
-        <h1 className="board-title">자유게시판</h1>
         <div className="header-actions">
           <div className="search-box">
             <input

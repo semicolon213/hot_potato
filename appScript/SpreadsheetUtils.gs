@@ -1,623 +1,421 @@
 /**
  * SpreadsheetUtils.gs
- * Google Sheets 연동 관련 함수들
+ * 스프레드시트 유틸리티 함수들
  * Hot Potato Admin Key Management System
  */
 
-// ===== 스프레드시트 관련 함수들 =====
-// hp_member 스프레드시트 가져오기 (연결된 스프레드시트 사용)
-function getHpMemberSpreadsheet() {
-  try {
-    // Apps Script 프로젝트에 연결된 스프레드시트 사용
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    if (spreadsheet) {
-      console.log('연결된 스프레드시트 사용:', spreadsheet.getName());
-      return spreadsheet;
-    }
-  } catch (error) {
-    console.warn('연결된 스프레드시트를 찾을 수 없습니다:', error.message);
-  }
-  
-  // 연결된 스프레드시트가 없으면 CONFIG에서 ID로 찾기
-  const spreadsheetId = getSpreadsheetId();
-  if (spreadsheetId && spreadsheetId !== 'YOUR_SPREADSHEET_ID_HERE') {
-    console.log('CONFIG의 스프레드시트 ID 사용:', spreadsheetId);
-    return SpreadsheetApp.openById(spreadsheetId);
-  }
-  
-  throw new Error('스프레드시트를 찾을 수 없습니다. Apps Script 프로젝트에 스프레드시트를 연결하거나 CONFIG.gs에서 스프레드시트 ID를 설정하세요.');
-}
+// ===== 스프레드시트 유틸리티 함수들 =====
 
-// hp_member 스프레드시트 ID 가져오기 (하위 호환성 유지)
-function getHpMemberSpreadsheetId() {
+/**
+ * 스프레드시트 이름으로 ID 찾기
+ * @param {string} sheetName - 스프레드시트 이름
+ * @returns {string} 스프레드시트 ID
+ */
+function getSheetIdByName(sheetName) {
   try {
-    const spreadsheet = getHpMemberSpreadsheet();
-    return spreadsheet.getId();
+    console.log('📊 스프레드시트 ID 찾기 시작:', sheetName);
+
+    const query = `name='${sheetName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+    console.log('📊 스프레드시트 검색 쿼리:', query);
+
+    const files = Drive.Files.list({
+      q: query,
+      fields: 'files(id,name)'
+    });
+
+    if (files.files && files.files.length > 0) {
+      const spreadsheetId = files.files[0].id;
+      console.log('📊 스프레드시트 ID 찾기 성공:', spreadsheetId);
+      return spreadsheetId;
+    } else {
+      console.warn('📊 스프레드시트를 찾을 수 없습니다:', sheetName);
+      return null;
+    }
+
   } catch (error) {
-    console.error('스프레드시트 ID 가져오기 실패:', error);
+    console.error('📊 스프레드시트 ID 찾기 오류:', error);
     return null;
   }
 }
 
-// ===== 캐싱 관련 함수들 =====
-// 캐시에서 데이터 가져오기
-function getCachedData(key) {
+/**
+ * 문서 ID로 행 삭제
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @param {Array} documentIds - 삭제할 문서 ID 배열
+ * @returns {Object} 삭제 결과
+ */
+function deleteRowsByDocIds(spreadsheetId, sheetName, documentIds) {
   try {
-    const cache = CacheService.getScriptCache();
-    const cached = cache.get(key);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-  } catch (error) {
-    console.warn('캐시 읽기 실패:', error);
-  }
-  return null;
-}
+    console.log('🗑️ 문서 ID로 행 삭제 시작:', { spreadsheetId, sheetName, documentIds });
 
-// 데이터를 캐시에 저장
-function setCachedData(key, data, expirationSeconds = null) {
-  try {
-    const cache = CacheService.getScriptCache();
-    const cacheExpiry = expirationSeconds || (getConfig('cache_expiry_minutes') * 60);
-    cache.put(key, JSON.stringify(data), cacheExpiry);
-  } catch (error) {
-    console.warn('캐시 저장 실패:', error);
-  }
-}
-
-// 캐시 무효화
-function invalidateCache(pattern) {
-  try {
-    console.log(`캐시 무효화 시도: ${pattern}`);
-    const cache = CacheService.getScriptCache();
-    cache.remove(pattern);
-    console.log(`✅ 캐시 무효화 완료: ${pattern}`);
-  } catch (error) {
-    console.warn('캐시 무효화 실패:', error);
-  }
-}
-
-// hp_member 스프레드시트 찾기
-function findHpMemberSheet() {
-  try {
-    const spreadsheet = getHpMemberSpreadsheet();
-    const spreadsheetId = spreadsheet.getId();
-    
-    if (!spreadsheet) {
-      throw new Error('hp_member 스프레드시트를 찾을 수 없습니다');
-    }
-    
-    console.log(`hp_member 스프레드시트 찾음: ${spreadsheetId}`);
-    
-    return { 
-      spreadsheetId, 
-      spreadsheet: spreadsheet,
-      sheets: spreadsheet
-    };
-  } catch (error) {
-    console.error('스프레드시트 찾기 실패:', error);
-    throw new Error('hp_member 스프레드시트를 찾을 수 없습니다');
-  }
-}
-
-// ===== 사용자 데이터 관련 함수들 =====
-// 모든 사용자 목록 가져오기 (승인 대기 + 승인된 사용자)
-function getAllUsers() {
-  try {
-    console.log('getAllUsers 호출됨 - 실시간 데이터 로드 (캐시 사용 안함)');
-    
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    
-    const sheet = spreadsheet.getSheetByName('user');
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    // user 시트에서 모든 사용자 조회
-    const data = sheet.getRange('A:Z').getValues();
-    
-    if (!data || data.length === 0) {
+    const data = getSheetData(spreadsheetId, sheetName, 'A:Z');
+    if (!data || data.length <= 1) {
       return {
         success: true,
-        users: []
-      };
-    }
-    
-    const allUsers = [];
-    
-    // 헤더 행 제외하고 데이터 검색
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const studentId = row[0]; // A열: 학번/교번
-      const active = row[1]; // B열: 활성화 상태
-      const name = row[2]; // C열: 이름
-      const encryptedEmail = row[3]; // D열: Google 계정 이메일 (암호화됨)
-      const email = decryptEmailMain(encryptedEmail); // 복호화된 이메일
-      const approvalStatus = row[4]; // E열: 승인 상태
-      const isAdmin = row[5]; // F열: 관리자 여부
-      const approvalDate = row[6]; // G열: 승인 날짜
-      
-      // Google 계정이 연결된 사용자만 포함 (승인 대기 + 승인된 사용자)
-      if (email && email.trim() !== '' && (approvalStatus === 'X' || approvalStatus === 'O')) {
-        // 승인된 사용자는 승인일, 승인 대기 사용자는 요청일 표시
-        const currentKST = getKSTTime();
-        const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
-        const displayDate = approvalStatus === 'O' && approvalDate ? approvalDate : currentDate;
-        
-        allUsers.push({
-          id: studentId,
-          email: email,
-          studentId: studentId,
-          name: name,
-          isAdmin: isAdmin === 'O',
-          isApproved: approvalStatus === 'O',
-          requestDate: displayDate,
-          approvalDate: approvalDate || null
-        });
-      }
-    }
-    
-    console.log(`총 사용자 ${allUsers.length}명 발견 (승인 대기 + 승인된 사용자)`);
-    console.log('사용자 목록:', allUsers.map(user => ({
-      name: user.name,
-      email: user.email,
-      isApproved: user.isApproved,
-      requestDate: user.requestDate,
-      approvalDate: user.approvalDate
-    })));
-    
-    const result = {
-      success: true,
-      users: allUsers
-    };
-    
-    // 캐시 사용 안함 - 실시간 데이터 처리
-    console.log('✅ 사용자 데이터 실시간 처리 완료');
-    console.log('처리된 데이터 크기:', JSON.stringify(result).length, 'bytes');
-    
-    return result;
-    
-  } catch (error) {
-    console.error('사용자 목록 조회 실패:', error);
-    throw error;
-  }
-}
-
-// 사용자 승인
-function approveUser(studentId) {
-  try {
-    console.log('=== 승인 요청 시작 ===');
-    console.log('학번:', studentId);
-    
-    if (!studentId) {
-      throw new Error('학번이 필요합니다.');
-    }
-    
-    console.log('✅ 학번 확인됨:', studentId);
-    
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    const sheet = spreadsheet.getSheetByName('user');
-    
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    // user 시트에서 해당 사용자 찾기
-    const data = sheet.getRange('A:Z').getValues();
-    let userRowIndex = -1;
-    let isAdminValue = ''; // 기존 is_admin 값 저장
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (row[0] === studentId) {
-        userRowIndex = i + 1;
-        isAdminValue = row[5] || ''; // F열(is_admin) 값 저장
-        break;
-      }
-    }
-    
-    if (userRowIndex === -1) {
-      throw new Error('해당 사용자를 찾을 수 없습니다.');
-    }
-    
-    // E열(승인 상태)을 'O'로, F열(is_admin)을 기존 값 유지, G열(승인 날짜)을 현재 KST 날짜로 업데이트
-    const currentKST = getKSTTime();
-    const currentDate = formatKSTTime(currentKST).split(' ')[0]; // YYYY-MM-DD 형식
-    sheet.getRange(`E${userRowIndex}:G${userRowIndex}`).setValues([['O', isAdminValue, currentDate]]);
-    
-    console.log(`사용자 승인 완료: ${studentId}, 승인 날짜: ${currentDate}, is_admin: ${isAdminValue}`);
-    
-    // 캐시 사용 안함 - 실시간 데이터 처리
-    
-    return {
-      success: true,
-      message: '사용자가 승인되었습니다.',
-      approvalDate: currentDate
-    };
-    
-  } catch (error) {
-    console.error('사용자 승인 실패:', error);
-    throw error;
-  }
-}
-
-// 사용자 거부
-function rejectUser(studentId) {
-  try {
-    console.log('=== 거부 요청 시작 ===');
-    console.log('학번:', studentId);
-    
-    if (!studentId) {
-      throw new Error('학번이 필요합니다.');
-    }
-    
-    console.log('✅ 학번 확인됨:', studentId);
-    
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    const sheet = spreadsheet.getSheetByName('user');
-    
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    // user 시트에서 해당 사용자 찾기
-    const data = sheet.getRange('A:Z').getValues();
-    let userRowIndex = -1;
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (row[0] === studentId) {
-        userRowIndex = i + 1;
-        break;
-      }
-    }
-    
-    if (userRowIndex === -1) {
-      throw new Error('해당 사용자를 찾을 수 없습니다.');
-    }
-    
-    // D열(Google 계정), E열(승인 상태), F열(is_admin), G열(승인 날짜)을 모두 비우기
-    sheet.getRange(`D${userRowIndex}:G${userRowIndex}`).setValues([['', '', '', '']]);
-    
-    console.log(`사용자 거부 완료: ${studentId}`);
-    
-    // 캐시 사용 안함 - 실시간 데이터 처리
-    
-    return {
-      success: true,
-      message: '사용자가 거부되었습니다.'
-    };
-    
-  } catch (error) {
-    console.error('사용자 거부 실패:', error);
-    throw error;
-  }
-}
-
-// ===== 사용자 등록 상태 확인 함수 =====
-// Google 로그인 후 가입 요청 전에 사용자 상태를 확인하는 함수
-function checkUserRegistrationStatus(email) {
-  try {
-    console.log('checkUserRegistrationStatus 시작, 이메일:', email);
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    console.log('스프레드시트 찾기 완료, ID:', spreadsheetId);
-    
-    const sheet = spreadsheet.getSheetByName('user');
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    // user 시트에서 사용자 정보 조회
-    console.log('user 시트 데이터 조회 시작');
-    const data = sheet.getRange('A:Z').getValues();
-    console.log('user 시트 데이터 조회 완료');
-
-    if (!data || data.length === 0) {
-      return {
-        success: true,
-        isRegistered: false,
-        isApproved: false,
-        message: '등록되지 않은 사용자입니다. 가입 요청을 진행할 수 있습니다.'
+        message: '삭제할 데이터가 없습니다.'
       };
     }
 
-    console.log('전체 사용자 데이터:', data);
-    console.log('검색할 이메일:', email);
-    
-    // 헤더 행 제외하고 데이터 검색
+    const header = data[0];
+    const documentIdColumnIndex = header.indexOf('document_id');
+
+    if (documentIdColumnIndex === -1) {
+      return {
+        success: false,
+        message: 'document_id 컬럼을 찾을 수 없습니다.'
+      };
+    }
+
+    const rowsToDelete = [];
+
+    // 삭제할 행 찾기
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      console.log(`행 ${i} 데이터:`, row);
-      
-      const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
-      // ROT13으로 복호화하여 비교 (Cloud Run과 동일한 방식)
-      const userEmail = encryptedUserEmail ? decryptEmailMain(encryptedUserEmail) : '';
-      const approvalStatus = row[4]; // Approval 컬럼 (E열)
-      const isAdmin = row[5]; // is_admin 컬럼 (F열)
-      const studentId = row[0]; // no_member 컬럼 (A열)
-      const name = row[2]; // name_member 컬럼 (C열)
-      
-      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, ROT13 복호화: ${userEmail}, 검색 이메일: ${email}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}, 이름: ${name}`);
+      const docId = row[documentIdColumnIndex];
 
-      if (userEmail === email) {
-        const isApproved = approvalStatus === 'O';
-        const isAdminUser = isAdmin === 'O';
-        
-        console.log(`사용자 찾음! 승인: ${isApproved}, 관리자: ${isAdminUser}`);
+      if (documentIds.includes(docId)) {
+        rowsToDelete.push(i + 1); // 스프레드시트 행 번호 (1부터 시작)
+      }
+    }
 
-        if (isApproved) {
-          return {
-            success: true,
-            isRegistered: true,
-            isApproved: true,
-            isAdmin: isAdminUser,
-            studentId: studentId || '',
-            name: name || '',
-            message: '이미 승인된 회원입니다. 로그인을 진행하세요.'
-          };
-        } else {
-          return {
-            success: true,
-            isRegistered: true,
-            isApproved: false,
-            isAdmin: isAdminUser,
-            studentId: studentId || '',
-            name: name || '',
-            message: '가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.'
-          };
+    if (rowsToDelete.length === 0) {
+      return {
+        success: true,
+        message: '삭제할 문서를 찾을 수 없습니다.'
+      };
+    }
+
+    // 행 삭제 (역순으로 삭제하여 인덱스 문제 방지)
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+    rowsToDelete.sort((a, b) => b - a).forEach(rowIndex => {
+      sheet.deleteRow(rowIndex);
+    });
+
+    console.log('🗑️ 문서 ID로 행 삭제 완료:', rowsToDelete.length, '행');
+
+    return {
+      success: true,
+      message: `${rowsToDelete.length}개의 문서가 삭제되었습니다.`
+    };
+
+  } catch (error) {
+    console.error('🗑️ 문서 ID로 행 삭제 오류:', error);
+    return {
+      success: false,
+      message: '문서 삭제 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
+ * 스프레드시트 데이터 검색
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @param {string} searchTerm - 검색어
+ * @param {string} column - 검색할 컬럼
+ * @returns {Array} 검색 결과
+ */
+function searchSpreadsheetData(spreadsheetId, sheetName, searchTerm, column = null) {
+  try {
+    console.log('🔍 스프레드시트 데이터 검색 시작:', { spreadsheetId, sheetName, searchTerm, column });
+
+    const data = getSheetData(spreadsheetId, sheetName, 'A:Z');
+    if (!data || data.length <= 1) {
+      return [];
+    }
+
+    const header = data[0];
+    const results = [];
+
+    // 검색할 컬럼 인덱스 찾기
+    let searchColumnIndex = -1;
+    if (column) {
+      searchColumnIndex = header.indexOf(column);
+      if (searchColumnIndex === -1) {
+        console.warn('검색할 컬럼을 찾을 수 없습니다:', column);
+        return [];
+      }
+    }
+
+    // 데이터 검색
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      if (searchColumnIndex !== -1) {
+        // 특정 컬럼에서 검색
+        const cellValue = row[searchColumnIndex];
+        if (cellValue && cellValue.toString().toLowerCase().includes(searchTerm.toLowerCase())) {
+          const result = {};
+          header.forEach((key, index) => {
+            result[key] = row[index];
+          });
+          results.push(result);
+        }
+      } else {
+        // 모든 컬럼에서 검색
+        const found = row.some(cellValue =>
+          cellValue && cellValue.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        if (found) {
+          const result = {};
+          header.forEach((key, index) => {
+            result[key] = row[index];
+          });
+          results.push(result);
         }
       }
     }
 
-    // 사용자를 찾지 못한 경우 (새로운 사용자)
-    return {
-      success: true,
-      isRegistered: false,
-      isApproved: false,
-      message: '등록되지 않은 사용자입니다. 가입 요청을 진행할 수 있습니다.'
-    };
+    console.log('🔍 스프레드시트 데이터 검색 완료:', results.length, '개 결과');
+    return results;
 
   } catch (error) {
-    console.error('사용자 등록 상태 확인 실패:', error);
-    throw new Error('사용자 등록 상태 확인 중 오류가 발생했습니다.');
+    console.error('🔍 스프레드시트 데이터 검색 오류:', error);
+    return [];
   }
 }
 
-// 승인 상태 확인 함수
-function checkUserApprovalStatus(email) {
+/**
+ * 스프레드시트 데이터 정렬
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @param {string} column - 정렬할 컬럼
+ * @param {boolean} ascending - 오름차순 여부
+ * @returns {boolean} 성공 여부
+ */
+function sortSpreadsheetData(spreadsheetId, sheetName, column, ascending = true) {
   try {
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    const sheet = spreadsheet.getSheetByName('user');
-    
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    // user 시트에서 사용자 정보 조회
-    const data = sheet.getRange('A:Z').getValues();
+    console.log('📊 스프레드시트 데이터 정렬 시작:', { spreadsheetId, sheetName, column, ascending });
 
-    if (!data || data.length === 0) {
+    const data = getSheetData(spreadsheetId, sheetName, 'A:Z');
+    if (!data || data.length <= 1) {
+      return false;
+    }
+
+    const header = data[0];
+    const columnIndex = header.indexOf(column);
+
+    if (columnIndex === -1) {
+      console.warn('정렬할 컬럼을 찾을 수 없습니다:', column);
+      return false;
+    }
+
+    // 데이터 정렬 (헤더 제외)
+    const dataRows = data.slice(1);
+    dataRows.sort((a, b) => {
+      const aValue = a[columnIndex];
+      const bValue = b[columnIndex];
+
+      if (ascending) {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
+
+    // 정렬된 데이터로 시트 업데이트
+    const sortedData = [header, ...dataRows];
+    const range = `A1:${String.fromCharCode(65 + header.length - 1)}${sortedData.length}`;
+
+    return setSheetData(spreadsheetId, sheetName, range, sortedData);
+
+  } catch (error) {
+    console.error('📊 스프레드시트 데이터 정렬 오류:', error);
+    return false;
+  }
+}
+
+/**
+ * 스프레드시트 데이터 필터링
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @param {Object} filters - 필터 조건
+ * @returns {Array} 필터링된 데이터
+ */
+function filterSpreadsheetData(spreadsheetId, sheetName, filters) {
+  try {
+    console.log('🔍 스프레드시트 데이터 필터링 시작:', { spreadsheetId, sheetName, filters });
+
+    const data = getSheetData(spreadsheetId, sheetName, 'A:Z');
+    if (!data || data.length <= 1) {
+      return [];
+    }
+
+    const header = data[0];
+    const results = [];
+
+    // 데이터 필터링
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      let matches = true;
+
+      // 각 필터 조건 확인
+      Object.keys(filters).forEach(column => {
+        const columnIndex = header.indexOf(column);
+        if (columnIndex !== -1) {
+          const cellValue = row[columnIndex];
+          const filterValue = filters[column];
+
+          if (cellValue !== filterValue) {
+            matches = false;
+          }
+        }
+      });
+
+      if (matches) {
+        const result = {};
+        header.forEach((key, index) => {
+          result[key] = row[index];
+        });
+        results.push(result);
+      }
+    }
+
+    console.log('🔍 스프레드시트 데이터 필터링 완료:', results.length, '개 결과');
+    return results;
+
+  } catch (error) {
+    console.error('🔍 스프레드시트 데이터 필터링 오류:', error);
+    return [];
+  }
+}
+
+/**
+ * 스프레드시트 데이터 통계
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @param {string} column - 통계할 컬럼
+ * @returns {Object} 통계 결과
+ */
+function getSpreadsheetStats(spreadsheetId, sheetName, column) {
+  try {
+    console.log('📊 스프레드시트 데이터 통계 시작:', { spreadsheetId, sheetName, column });
+
+    const data = getSheetData(spreadsheetId, sheetName, 'A:Z');
+    if (!data || data.length <= 1) {
       return {
-        success: true,
-        isApproved: false,
-        message: '등록되지 않은 사용자입니다.'
+        total: 0,
+        unique: 0,
+        mostCommon: null,
+        leastCommon: null
       };
     }
 
-    // 디버깅을 위한 로그 추가
-    console.log('전체 데이터:', data);
-    console.log('검색할 이메일:', email);
-    
-    // 헤더 행 제외하고 데이터 검색
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      console.log(`행 ${i} 데이터:`, row);
-      
-      const encryptedUserEmail = row[3]; // google_member 컬럼 (D열) - 암호화된 이메일
-      const userEmail = decryptEmail(encryptedUserEmail); // 복호화된 이메일
-      const approvalStatus = row[4]; // Approval 컬럼 (E열)
-      const isAdmin = row[5]; // is_admin 컬럼 (F열)
-      const studentId = row[0]; // no_member 컬럼 (A열)
-      
-      console.log(`행 ${i} - 암호화된 이메일: ${encryptedUserEmail}, 복호화된 이메일: ${userEmail}, 승인: ${approvalStatus}, 관리자: ${isAdmin}, 학번: ${studentId}`);
+    const header = data[0];
+    const columnIndex = header.indexOf(column);
 
-      if (userEmail === email) {
-        const isApproved = approvalStatus === 'O';
-        const isAdminUser = isAdmin === 'O';
-        
-        console.log(`사용자 찾음! 승인: ${isApproved}, 관리자: ${isAdminUser}`);
-
-        return {
-          success: true,
-          isApproved: isApproved,
-          isAdmin: isAdminUser,
-          studentId: studentId || '',
-          message: isApproved ? '승인된 사용자입니다.' : '승인 대기 중입니다.'
-        };
-      }
+    if (columnIndex === -1) {
+      console.warn('통계할 컬럼을 찾을 수 없습니다:', column);
+      return null;
     }
 
-    // 사용자를 찾지 못한 경우
+    const values = data.slice(1).map(row => row[columnIndex]);
+    const valueCounts = {};
+
+    // 값 카운트
+    values.forEach(value => {
+      if (value) {
+        valueCounts[value] = (valueCounts[value] || 0) + 1;
+      }
+    });
+
+    // 통계 계산
+    const total = values.length;
+    const unique = Object.keys(valueCounts).length;
+
+    let mostCommon = null;
+    let leastCommon = null;
+    let maxCount = 0;
+    let minCount = Infinity;
+
+    Object.keys(valueCounts).forEach(value => {
+      const count = valueCounts[value];
+      if (count > maxCount) {
+        maxCount = count;
+        mostCommon = value;
+      }
+      if (count < minCount) {
+        minCount = count;
+        leastCommon = value;
+      }
+    });
+
+    const stats = {
+      total: total,
+      unique: unique,
+      mostCommon: mostCommon,
+      leastCommon: leastCommon,
+      valueCounts: valueCounts
+    };
+
+    console.log('📊 스프레드시트 데이터 통계 완료');
+    return stats;
+
+  } catch (error) {
+    console.error('📊 스프레드시트 데이터 통계 오류:', error);
+    return null;
+  }
+}
+
+/**
+ * 스프레드시트 백업 생성
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @returns {Object} 백업 결과
+ */
+function createSpreadsheetBackup(spreadsheetId) {
+  try {
+    console.log('💾 스프레드시트 백업 생성 시작:', spreadsheetId);
+
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const backupName = `${spreadsheet.getName()}_backup_${new Date().toISOString().split('T')[0]}`;
+
+    // 백업 스프레드시트 생성
+    const backupSpreadsheet = SpreadsheetApp.create(backupName);
+
+    // 모든 시트 복사
+    const sheets = spreadsheet.getSheets();
+    sheets.forEach(sheet => {
+      const backupSheet = backupSpreadsheet.insertSheet(sheet.getName());
+      const data = sheet.getDataRange().getValues();
+      backupSheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+    });
+
+    // 원본 시트 삭제
+    backupSpreadsheet.deleteSheet(backupSpreadsheet.getSheets()[0]);
+
+    console.log('💾 스프레드시트 백업 생성 완료:', backupSpreadsheet.getId());
+
     return {
       success: true,
-      isApproved: false,
-      message: '등록되지 않은 사용자입니다.'
+      message: '백업이 생성되었습니다.',
+      backupId: backupSpreadsheet.getId(),
+      backupUrl: backupSpreadsheet.getUrl()
     };
 
   } catch (error) {
-    console.error('승인 상태 확인 실패:', error);
-    throw new Error('승인 상태 확인 중 오류가 발생했습니다.');
-  }
-}
-
-// ===== 사용자 가입 요청 추가 함수 =====
-// user 시트에 새로운 사용자 가입 요청 추가
-function addUserRegistrationRequest(userData) {
-  try {
-    console.log('=== addUserRegistrationRequest 시작 ===');
-    console.log('받은 사용자 데이터:', userData);
-    console.log('사용자 이메일:', userData.userEmail);
-    console.log('사용자 이름:', userData.userName);
-    console.log('학번:', userData.studentId);
-    
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    
-    const sheet = spreadsheet.getSheetByName('user');
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    // user 시트에서 기존 사용자 정보 찾기
-    console.log('user 시트에서 기존 사용자 정보 조회');
-    const data = sheet.getRange('A:Z').getValues();
-    
-    if (!data || data.length === 0) {
-      throw new Error('user 시트에 데이터가 없습니다.');
-    }
-    
-    // 해당 학번의 사용자 찾기 (A열: 학번/교번)
-    let userRowIndex = -1;
-    console.log('검색할 학번:', userData.studentId);
-    console.log('학번 타입:', typeof userData.studentId);
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const studentId = row[0]; // A열: 학번/교번
-      console.log(`행 ${i} - 시트 학번: "${studentId}" (타입: ${typeof studentId}), 검색 학번: "${userData.studentId}" (타입: ${typeof userData.studentId})`);
-      
-      if (studentId == userData.studentId) { // == 사용하여 타입 무관 비교
-        userRowIndex = i + 1; // 시트 행 번호 (1부터 시작)
-        console.log(`학번 일치! 행 ${userRowIndex}에서 발견`);
-        break;
-      }
-    }
-    
-    // 승인 상태와 관리자 상태 변수 선언
-    let approvalStatus = 'X'; // 기본값: 승인 대기
-    let isAdminStatus = 'X'; // 기본값: 일반 사용자
-    
-    if (userRowIndex === -1) {
-      // 학번이 일치하는 사용자를 찾을 수 없음
-      throw new Error('해당 학번의 사용자 정보를 찾을 수 없습니다. 학번과 이름을 확인해주세요.');
-    } else {
-      // 기존 사용자 발견 - 학번과 이름이 일치하는지 확인
-      const existingName = data[userRowIndex - 1][2]; // C열: 이름
-      console.log(`기존 사용자 발견 - 학번: ${userData.studentId}, 기존 이름: ${existingName}, 입력된 이름: ${userData.userName}`);
-      
-      if (existingName !== userData.userName) {
-        throw new Error('학번과 이름이 일치하지 않습니다. 학번과 이름을 확인해주세요.');
-      }
-      
-      // D열(google_member)에 이미 이메일이 있는지 확인
-      const existingEmail = data[userRowIndex - 1][3]; // D열: google_member
-      if (existingEmail && existingEmail.trim() !== '') {
-        throw new Error('이미 가입된 사용자입니다.');
-      }
-      
-      // 가입 요청 처리
-      approvalStatus = 'X'; // 승인 대기
-      isAdminStatus = userData.isAdminVerified ? 'O' : 'X';
-      
-      // D열(google_member), E열(승인 상태), F열(관리자 여부) 업데이트
-      // 통합 암호화 방식 사용 (Base64)
-      const encryptedEmail = encryptEmailMain(userData.userEmail);
-      sheet.getRange(`D${userRowIndex}:F${userRowIndex}`).setValues([[encryptedEmail, approvalStatus, isAdminStatus]]);
-      console.log(`사용자 가입 요청 완료: ${userData.studentId} (${userData.userEmail}) - 승인 대기: ${approvalStatus}, 관리자: ${isAdminStatus}`);
-    }
-    
-    console.log(`사용자 가입 요청 업데이트: ${userData.studentId} (${userData.userEmail}) - 승인: ${approvalStatus}, 관리자: ${isAdminStatus}`);
-    
-    // 캐시 사용 안함 - 실시간 데이터 처리
-    
+    console.error('💾 스프레드시트 백업 생성 오류:', error);
     return {
-      success: true,
-      message: '가입 요청이 제출되었습니다.'
+      success: false,
+      message: '백업 생성 중 오류가 발생했습니다: ' + error.message
     };
-    
-  } catch (error) {
-    console.error('사용자 가입 요청 업데이트 실패:', error);
-    console.error('오류 상세 정보:', error.message);
-    console.error('오류 스택:', error.stack);
-    throw new Error('가입 요청 처리 중 오류가 발생했습니다: ' + error.message);
   }
 }
 
-// ===== 데이터 정리 함수 =====
-// 잘못된 Approval 값 정리 (1 -> X)
-function cleanupInvalidApprovalValues() {
-  try {
-    console.log('=== 잘못된 Approval 값 정리 시작 ===');
-    const { spreadsheetId, spreadsheet } = findHpMemberSheet();
-    const sheet = spreadsheet.getSheetByName('user');
-    
-    if (!sheet) {
-      throw new Error('user 시트를 찾을 수 없습니다');
-    }
-    
-    const data = sheet.getRange('A:Z').getValues();
-    let fixedCount = 0;
-    
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const approvalStatus = row[4]; // E열: Approval
-      
-      if (approvalStatus === 1 || approvalStatus === '1') {
-        console.log(`행 ${i + 1}의 잘못된 Approval 값 발견: ${approvalStatus} -> X로 수정`);
-        sheet.getRange(`E${i + 1}`).setValue('X');
-        fixedCount++;
-      }
-    }
-    
-    console.log(`총 ${fixedCount}개의 잘못된 Approval 값을 수정했습니다.`);
-    return { success: true, fixedCount };
-    
-  } catch (error) {
-    console.error('Approval 값 정리 실패:', error);
-    throw error;
-  }
-}
-
-// ===== 이메일 암호화/복호화 함수들 (Main.gs로 이동됨) =====
-// 이 함수들은 Main.gs의 encryptEmailMain, decryptEmailMain으로 통합되었습니다.
-// 하위 호환성을 위해 래퍼 함수로 유지합니다.
-
-function encryptEmail(email) {
-  // Main.gs의 통합 암호화 함수 호출
-  return encryptEmailMain(email);
-}
-
-function decryptEmail(encryptedEmail) {
-  // Main.gs의 통합 복호화 함수 호출
-  return decryptEmailMain(encryptedEmail);
-}
-
-// 이메일이 이미 암호화되었는지 확인하는 함수 (간단한 패턴 기반)
-function isEncryptedEmail(email) {
-  if (!email) return false;
-  
-  // Base64 암호화된 데이터는 일반적으로 길고 특수문자를 포함
-  // 일반적인 이메일 패턴과 전화번호 패턴을 제외
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phonePattern = /^010-\d{4}-\d{4}$/;
-  
-  // 이메일이나 전화번호 패턴이면 암호화되지 않음
-  if (emailPattern.test(email) || phonePattern.test(email)) {
-    return false;
-  }
-  
-  // 길이가 20자 이상이고 특수문자를 포함하면 암호화된 것으로 간주
-  return email.length > 20 && /[^a-zA-Z0-9@.-]/.test(email);
-}
-
-// ===== 하위 호환성 함수들 (Main.gs로 통합됨) =====
-// 이 함수들은 Main.gs의 통합 함수로 대체되었습니다.
-
-function rot13Encrypt(text) {
-  // Main.gs의 통합 암호화 함수 호출
-  return encryptEmailMain(text);
-}
-
-function rot13Decrypt(text) {
-  // Main.gs의 통합 복호화 함수 호출
-  return decryptEmailMain(text);
+// ===== 배포 정보 =====
+function getSpreadsheetUtilsInfo() {
+  return {
+    version: '1.0.0',
+    description: '스프레드시트 유틸리티 함수들',
+    functions: [
+      'deleteRowsByDocIds',
+      'searchSpreadsheetData',
+      'sortSpreadsheetData',
+      'filterSpreadsheetData',
+      'getSpreadsheetStats',
+      'createSpreadsheetBackup'
+    ],
+    dependencies: ['SpreadsheetCore.gs']
+  };
 }

@@ -1,6 +1,7 @@
 // 학생 관리 액션 버튼 컴포넌트
 
 import React, { useRef } from 'react';
+import { FaDownload, FaFileDownload, FaUpload } from 'react-icons/fa';
 
 interface StudentActionButtonsProps {
   onExportCSV: () => void;
@@ -39,21 +40,21 @@ const StudentActionButtons: React.FC<StudentActionButtonsProps> = ({
     <div className="action-buttons">
       <div className="action-left">
         <button className="export-btn" onClick={onExportCSV}>
-          <span className="btn-icon">⬇️</span>
+          <FaDownload className="btn-icon" />
           <span className="btn-text">CSV 다운로드</span>
         </button>
         <button 
           className="template-btn"
           onClick={onDownloadTemplate}
         >
-          <span className="btn-icon">📄</span>
+          <FaFileDownload className="btn-icon" />
           <span className="btn-text">양식 다운로드</span>
         </button>
         <button 
           className="import-btn"
           onClick={() => fileInputRef.current?.click()}
         >
-          <span className="btn-icon">📤</span>
+          <FaUpload className="btn-icon" />
           <span className="btn-text">일괄 업로드</span>
         </button>
         <input

@@ -29,6 +29,10 @@ interface StudentListProps {
   onSort: (key: string) => void;
   onStudentDoubleClick: (student: StudentWithCouncil) => void;
   isStaffMode?: boolean; // 교직원 모드 추가
+  onAddStaff?: () => void;
+  onAddCommittee?: () => void;
+  onAddStudent?: () => void; // 학생 추가 버튼
+  staffTabType?: 'staff' | 'committee';
 }
 
 const StudentList: React.FC<StudentListProps> = ({
@@ -37,7 +41,11 @@ const StudentList: React.FC<StudentListProps> = ({
   sortConfig,
   onSort,
   onStudentDoubleClick,
-  isStaffMode = false
+  isStaffMode = false,
+  onAddStaff,
+  onAddCommittee,
+  onAddStudent, // 학생 추가 버튼
+  staffTabType = 'staff'
 }) => {
   const enhancedColumns = columns.map(col => ({
     ...col,
@@ -54,16 +62,43 @@ const StudentList: React.FC<StudentListProps> = ({
     ) : col.render
   }));
 
+  const getTitle = () => {
+    if (isStaffMode) {
+      if (staffTabType === 'committee') {
+        return `위원회 목록 (${students.length}명)`;
+      }
+      return `교직원 목록 (${students.length}명)`;
+    }
+    return `학생 목록 (${students.length}명)`;
+  };
+
+  const headerContent = isStaffMode ? (
+    staffTabType === 'staff' && onAddStaff ? (
+        <button className="add-staff-button" onClick={onAddStaff}>
+        + 교직원 추가
+        </button>
+    ) : staffTabType === 'committee' && onAddCommittee ? (
+        <button className="add-staff-button" onClick={onAddCommittee}>
+        + 위원 추가
+        </button>
+    ) : undefined
+) : onAddStudent ? (
+    <button className="add-staff-button" onClick={onAddStudent}>
+    + 학생 추가
+    </button>
+) : undefined;
+
   return (
     <DocumentList
       columns={enhancedColumns}
       data={students}
       onPageChange={() => {}} // 빈 함수로 전달
-      title={isStaffMode ? `교직원 목록 (${students.length}명)` : `학생 목록 (${students.length}명)`}
+      title={getTitle()}
       sortConfig={sortConfig}
       onSort={onSort}
       showViewAll={false}
       onRowDoubleClick={onStudentDoubleClick}
+      headerContent={headerContent}
     />
   );
 };

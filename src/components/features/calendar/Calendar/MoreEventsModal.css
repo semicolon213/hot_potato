@@ -2,10 +2,10 @@
   position: absolute;
   background-color: #f8f8f7;
   border: 1px solid #ccc;
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--sidebar-radius-sm);
+  box-shadow: var(--shadow-base);
   z-index: 1001;
-  width: 250px;
+  width: clamp(220px, 22.92vw, 280px);
 }
 
 .more-events-modal-header {
@@ -39,7 +39,7 @@
 .more-event-item {
   padding: 4px 8px;
   font-size: 12px;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
   margin-bottom: 3px;
   color: #fff;
   cursor: pointer;
@@ -48,4 +48,14 @@
 
 .more-event-item:hover {
     filter: brightness(90%);
+}
+
+.more-events-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    z-index: 1000;
 }

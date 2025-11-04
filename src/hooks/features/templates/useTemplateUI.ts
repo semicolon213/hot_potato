@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import {
     copyGoogleDocument,
     getSheetIdByName,
@@ -16,6 +16,14 @@ import {
     appendSheetData
 } from "../../../utils/google/googleSheetUtils";
 import { ENV_CONFIG } from "../../../config/environment";
+import { apiClient } from "../../../utils/api/apiClient";
+import { usePersonalTemplates } from "./usePersonalTemplates";
+import { 
+  addFavorite,
+  removeFavorite,
+  isFavorite as checkIsFavorite
+} from "../../../utils/database/personalFavoriteManager";
+import { initializePersonalConfigFile } from "../../../utils/database/personalConfigManager";
 
 /**
  * @brief 템플릿 데이터 타입 정의
@@ -30,19 +38,16 @@ export interface Template {
     partTitle?: string;    // For filtering
     documentId?: string;   // Google Doc ID
     favoritesTag?: string; // 즐겨찾기 태그
+    isPersonal?: boolean;  // 개인 템플릿 여부
+    mimeType?: string;    // 파일 MIME 타입 (문서/스프레드시트 구분용)
 }
 
 /**
- * @brief 기본 템플릿 목록
- * @details 시스템에서 제공하는 기본 템플릿들의 배열입니다.
+ * @brief 기본 템플릿 목록 (동적으로 로드됨)
+ * @details 앱스크립트에서 hot_potato/문서/양식 폴더의 파일들을 가져와서 사용합니다.
  */
 export const defaultTemplates: Template[] = [
     { type: "empty", title: "빈 문서", description: "아무것도 없는 빈 문서에서 시작합니다.", tag: "기본" },
-    { type: "meeting", title: "회의록", description: "회의 내용을 기록하는 템플릿", tag: "회의" },
-    { type: "receipt", title: "영수증", description: "지출 증빙을 위한 영수증 템플릿", tag: "재정" },
-    { type: "confirmation", title: "학과 행사 대표자 확인서", description: "학과 행사에 대한 대표자의 확인 서명 템플릿", tag: "증명" },
-    { type: "supporting_document_confirmation", title: "증빙서류 확인서", description: "증빙 서류 확인을 위한 템플릿", tag: "증명" },
-    { type: "fee_deposit_list", title: "학회비 입금자 명단", description: "학회비 입금자 명단 확인용 템플릿", tag: "재정" },
 ];
 
 /**
@@ -72,7 +77,196 @@ export function useTemplateUI(
     searchTerm: string,
     activeTab: string
 ) {
-    
+    // 동적 템플릿 상태
+  const [dynamicTemplates, setDynamicTemplates] = useState<Template[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  
+  // 개인 템플릿 훅 사용
+  const { 
+    personalTemplates, 
+    isLoading: isLoadingPersonalTemplates, 
+    error: personalTemplateError,
+    convertToTemplates,
+    togglePersonalTemplateFavorite,
+    generateFileNameFromTemplate
+  } = usePersonalTemplates();
+  
+  // 권한 설정 모달 상태
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [permissionType, setPermissionType] = useState<'private' | 'shared'>('private');
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [individualEmails, setIndividualEmails] = useState<string[]>([]);
+
+  // 기본 템플릿 즐겨찾기 상태
+  const [defaultTemplateFavorites, setDefaultTemplateFavorites] = useState<string[]>([]);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+
+    // 동적 템플릿 로드 함수
+    const testDriveApi = useCallback(async () => {
+        try {
+            console.log('🔧 Drive API 테스트 시작');
+            const result = await apiClient.testDriveApi();
+            console.log('🔧 Drive API 테스트 결과:', result);
+            
+            if (result && result.success) {
+                console.log('✅ Drive API 연결 성공');
+                return { success: true, message: 'Drive API 연결 성공' };
+            } else {
+                const errorMessage = result ? result.message : 'Drive API 테스트 실패';
+                console.error('❌ Drive API 테스트 실패:', errorMessage);
+                return { success: false, message: errorMessage };
+            }
+        } catch (error) {
+            console.error('❌ Drive API 테스트 오류:', error);
+            return { success: false, message: 'Drive API 테스트 중 오류가 발생했습니다' };
+        }
+    }, []);
+
+    const testTemplateFolderDebug = useCallback(async () => {
+        try {
+            console.log('🔍 템플릿 폴더 디버깅 테스트 시작');
+            const result = await apiClient.testTemplateFolderDebug();
+            console.log('🔍 템플릿 폴더 디버깅 테스트 결과:', result);
+            
+            if (result && result.success) {
+                console.log('✅ 디버깅 테스트 성공');
+                return { success: true, message: '디버깅 테스트 성공', data: result };
+            } else {
+                const errorMessage = result ? result.message : '디버깅 테스트 실패';
+                console.error('❌ 디버깅 테스트 실패:', errorMessage);
+                return { success: false, message: errorMessage };
+            }
+        } catch (error) {
+            console.error('❌ 디버깅 테스트 오류:', error);
+            return { success: false, message: '디버깅 테스트 중 오류가 발생했습니다' };
+        }
+    }, []);
+
+    const testSpecificFolder = useCallback(async () => {
+        try {
+            console.log('🔍 특정 폴더 ID 테스트 시작');
+            const result = await apiClient.testSpecificFolder();
+            console.log('🔍 특정 폴더 ID 테스트 결과:', result);
+            
+            if (result && result.success) {
+                console.log('✅ 특정 폴더 테스트 성공');
+                return { success: true, message: '특정 폴더 테스트 성공', data: result };
+            } else {
+                const errorMessage = result ? result.message : '특정 폴더 테스트 실패';
+                console.error('❌ 특정 폴더 테스트 실패:', errorMessage);
+                return { success: false, message: errorMessage };
+            }
+        } catch (error) {
+            console.error('❌ 특정 폴더 테스트 오류:', error);
+            return { success: false, message: '특정 폴더 테스트 중 오류가 발생했습니다' };
+        }
+    }, []);
+
+    const loadDynamicTemplates = useCallback(async () => {
+        setIsLoadingTemplates(true);
+        setTemplateError(null);
+        
+        try {
+            console.log('📄 동적 템플릿 로드 시작');
+            const result = await apiClient.getTemplates();
+            console.log('📄 API 응답:', result);
+            
+            if (result && result.success && result.data) {
+                console.log('📄 동적 템플릿 로드 성공:', result.data);
+                
+                // 템플릿 데이터 그대로 사용 (JSON 파싱 제거)
+                const processedTemplates = result.data;
+                
+                setDynamicTemplates(processedTemplates);
+            } else {
+                const errorMessage = result ? result.message : 'API 응답이 null입니다';
+                console.error('📄 동적 템플릿 로드 실패:', errorMessage);
+                console.error('📄 디버깅 정보:', (result as any)?.debugInfo);
+                setTemplateError(errorMessage || '템플릿을 불러올 수 없습니다');
+            }
+        } catch (error) {
+            console.error('📄 동적 템플릿 로드 오류:', error);
+            setTemplateError('템플릿을 불러오는 중 오류가 발생했습니다');
+        } finally {
+            setIsLoadingTemplates(false);
+        }
+    }, []);
+
+    // 컴포넌트 마운트 시 동적 템플릿 로드
+    useEffect(() => {
+        loadDynamicTemplates();
+    }, [loadDynamicTemplates]);
+
+    // 기본 템플릿 즐겨찾기 로드
+    const loadDefaultTemplateFavorites = useCallback(async () => {
+        setIsLoadingFavorites(true);
+        try {
+            console.log('⭐ 기본 템플릿 즐겨찾기 로드 시작');
+            
+            // 개인 설정 파일 초기화
+            await initializePersonalConfigFile();
+            
+            // 기본 템플릿 즐겨찾기 목록 가져오기
+            const { getFavoritesByType } = await import('../../../utils/database/personalFavoriteManager');
+            const favorites = await getFavoritesByType('기본');
+            
+            setDefaultTemplateFavorites(favorites);
+            console.log('✅ 기본 템플릿 즐겨찾기 로드 완료:', favorites.length + '개');
+        } catch (error) {
+            console.error('❌ 기본 템플릿 즐겨찾기 로드 오류:', error);
+        } finally {
+            setIsLoadingFavorites(false);
+        }
+    }, []);
+
+    // 기본 템플릿 즐겨찾기 토글
+    const toggleDefaultTemplateFavorite = useCallback(async (template: Template) => {
+        try {
+            console.log('⭐ 기본 템플릿 즐겨찾기 토글:', template);
+            
+            const favoriteData = {
+                type: '기본' as const,
+                favorite: template.title
+            };
+
+            const isCurrentlyFavorite = defaultTemplateFavorites.includes(template.title);
+            
+            if (isCurrentlyFavorite) {
+                // 즐겨찾기 해제
+                const success = await removeFavorite(favoriteData);
+                if (success) {
+                    setDefaultTemplateFavorites(prev => prev.filter(fav => fav !== template.title));
+                    console.log('✅ 기본 템플릿 즐겨찾기 해제 완료');
+                }
+            } else {
+                // 즐겨찾기 추가
+                const success = await addFavorite(favoriteData);
+                if (success) {
+                    setDefaultTemplateFavorites(prev => [...prev, template.title]);
+                    console.log('✅ 기본 템플릿 즐겨찾기 추가 완료');
+                }
+            }
+        } catch (error) {
+            console.error('❌ 기본 템플릿 즐겨찾기 토글 오류:', error);
+        }
+    }, [defaultTemplateFavorites]);
+
+    // 컴포넌트 마운트 시 기본 템플릿 즐겨찾기 로드
+    useEffect(() => {
+        loadDefaultTemplateFavorites();
+    }, [loadDefaultTemplateFavorites]);
+
+    // 개인 템플릿을 일반 템플릿 형식으로 변환
+    const convertedPersonalTemplates = useMemo(() => {
+        return convertToTemplates(personalTemplates);
+    }, [personalTemplates, convertToTemplates]);
+
+    // 기본 템플릿과 동적 템플릿만 결합 (개인 템플릿은 별도 처리)
+    const allDefaultTemplates = useMemo(() => {
+        return [...defaultTemplates, ...dynamicTemplates];
+    }, [dynamicTemplates]);
 
     // 필터링 및 정렬된 템플릿 목록을 계산 (searchTerm, filterOption, activeTab이 바뀔 때마다 재계산)
     const filteredTemplates = useMemo(() => {
@@ -91,206 +285,173 @@ export function useTemplateUI(
     }, [templates, searchTerm, activeTab]);
 
     // 템플릿 사용 버튼 클릭 시 실행되는 함수
-    const onUseTemplate = useCallback(async (type: string, title: string, role: string) => {
+    const onUseTemplate = useCallback((type: string, title: string, role: string) => {
+        console.log('📄 템플릿 사용 시작:', { type, title, role });
         
-        const getSpreadsheetNameByRole = (role: string): string => {
-            switch (role) {
-                case 'professor': return '교수용_DB';
-                case 'assistant': return '조교용_DB';
-                case 'executive': return '집행부용_DB';
-                case 'adjunct':
-                case 'student':
-                default:
-                    return ENV_CONFIG.HOT_POTATO_DB_SPREADSHEET_NAME;
-            }
-        };
-
-        const SPREADSHEET_NAME = getSpreadsheetNameByRole(role);
-        const DOC_SHEET_NAME = 'documents';
-
-        const isDefault = defaultTemplates.some(t => t.type === type);
-
-        // Default templates with specific URLs
-        const defaultTemplateUrls: { [key: string]: string } = {
-            "empty": "https://docs.google.com/document/d/1l4Vl6cHIdD8tKZ1heMkaGCHbQsLHYpDm7oRJyLXAnz8/edit?tab=t.0",
-            "meeting": "https://docs.google.com/document/d/1ntJqprRvlOAYyq9t008rfErSRkool6d9-KHJD6bZ5Ow/edit?tab=t.0#heading=h.cx6zo1dlxkku",
-            "receipt": "https://docs.google.com/document/d/1u4kPt9Pmv0t90f6J5fq_v7K8dVz_nLQr_o80_352w4k/edit?tab=t.0",
-            "confirmation": "https://docs.google.com/document/d/104ZD6cKXob-0Hc0FiZS4HjbVlWeF2WO_XQVpy-xFqTM/edit?tab=t.0#heading=h.3i5cswa5iygh",
-            "supporting_document_confirmation": "https://docs.google.com/document/d/1R7fR9o8lqrwmhCiy4OR2Kbc3tomGY4yDkH9J0gAq2zE/edit?tab=t.0",
+        const isDefault = allDefaultTemplates.some(t => t.type === type);
+        
+        // 템플릿 찾기 (type이 Google Doc ID이므로 title로도 검색)
+        const foundTemplate = allDefaultTemplates.find(t => t.type === type || t.title === title);
+        
+        // 특별한 처리가 필요한 템플릿들 (스프레드시트 등)
+        const specialTemplateUrls: { [key: string]: string } = {
             "fee_deposit_list": "https://docs.google.com/spreadsheets/d/1Detd9Qwc9vexjMTFYAPtISvFJ3utMx-96OxTVCth24w/edit?gid=0#gid=0",
         };
 
-        if (defaultTemplateUrls[type]) {
-            window.open(defaultTemplateUrls[type].replace('/edit', '/copy'), '_blank');
+        // 스프레드시트 템플릿의 경우 기존 방식 사용 (URL 복사)
+        if (specialTemplateUrls[type]) {
+            window.open(specialTemplateUrls[type].replace('/edit', '/copy'), '_blank');
             return;
         }
 
+        // URL인 경우 직접 열기
         if (type.startsWith('http')) {
             window.open(type, '_blank');
             return;
         }
 
-        // "내 템플릿" 로직
-        if (!isDefault) {
-            const storageKey = `template_doc_id_${title}`;
-            const documentId = localStorage.getItem(storageKey);
+        // 템플릿 정보를 모달에 전달하고 모달 열기 (tag 포함)
+        const template: Template = {
+            type,
+            title,
+            description: foundTemplate?.description || '',
+            tag: foundTemplate?.tag || '기본',  // 템플릿의 tag 사용
+            documentId: type.length > 20 ? type : undefined
+        };
+        
+        setSelectedTemplate(template);
+        setPermissionType('private'); // 기본값: 나만 보기
+        setSelectedGroups([]);
+        setIndividualEmails([]);
+        setIsPermissionModalOpen(true);
+    }, [onPageChange, allDefaultTemplates]);
 
-            if (documentId) {
-                const newTitle = `[사본] ${title}`;
-                const copiedDocument = await copyGoogleDocument(documentId, newTitle);
+    // 실제 문서 생성 함수 (모달에서 호출)
+    const createDocument = useCallback(async () => {
+        if (!selectedTemplate) return;
 
-                if (copiedDocument) {
-                    const spreadsheetId = await getSheetIdByName(SPREADSHEET_NAME);
-                    if (!spreadsheetId) return;
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        const creatorEmail = userInfo.email || '';
 
-                    const sheetExists = await checkSheetExists(spreadsheetId, DOC_SHEET_NAME);
-                    if (!sheetExists) {
-                        await createNewSheet(spreadsheetId, DOC_SHEET_NAME);
-                        const header = [['document_id', 'document_number', 'title', 'author', 'created_at', 'last_modified', 'approval_date', 'status', 'url', 'permission']];
-                        await appendSheetData(spreadsheetId, DOC_SHEET_NAME, header);
-                    }
-                    
-                    const today = new Date();
-                    const datePrefix = today.getFullYear().toString() + 
-                                     ('0' + (today.getMonth() + 1)).slice(-2) + 
-                                     ('0' + today.getDate()).slice(-2);
-
-                    const docData = await getSheetData(spreadsheetId, DOC_SHEET_NAME, 'B:B');
-                    const todayDocs = docData ? docData.filter(row => row[0] && row[0].startsWith(datePrefix)) : [];
-                    const newSeq = ('000' + (todayDocs.length + 1)).slice(-3);
-                    const newDocNumber = `${datePrefix}-${newSeq}`;
-
-                    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-                    const newRow = [
-                        copiedDocument.id,
-                        newDocNumber,
-                        newTitle,
-                        userInfo.name || '알 수 없음',
-                        today.toISOString(),
-                        new Date().toLocaleDateString('ko-KR'),
-                        '',
-                        '진행중',
-                        copiedDocument.webViewLink,
-                        role, // Save the selected role
-                    ];
-
-                    await appendSheetData(spreadsheetId, DOC_SHEET_NAME, [newRow]);
-                    
-                    window.open(copiedDocument.webViewLink, '_blank');
-                }
-                return;
-            }
+        if (!creatorEmail) {
+            alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+            return;
         }
 
-        // Creation logic (for first use or if the previous doc was deleted)
         try {
-            const gapi = (window as any).gapi;
-            
-            console.log('Google Docs API 사용 시도 - gapi 상태:', {
-              'gapi': !!gapi,
-              'gapi.client': !!gapi?.client,
-              'gapi.client.docs': !!gapi?.client?.docs,
-              'gapi.client.docs.documents': !!gapi?.client?.docs?.documents
-            });
-            
-            // Google Docs API가 실제로 사용 가능한지 테스트
-            let docsApiAvailable = false;
-            try {
-                // API 객체가 존재하고 create 메서드가 있는지 확인
-                if (gapi.client && gapi.client.docs && gapi.client.docs.documents && 
-                    typeof gapi.client.docs.documents.create === 'function') {
-                    docsApiAvailable = true;
-                    console.log('Google Docs API 사용 가능 확인됨');
+            if (permissionType === 'private') {
+                // 나만 보기: 프론트엔드에서 직접 Google Drive API 사용
+                console.log('📄 개인 드라이브에 문서 생성:', selectedTemplate);
+                
+                if (selectedTemplate.documentId) {
+                    // 커스텀 템플릿 복사 (태그 포함)
+                    const copyResult = await copyGoogleDocument(selectedTemplate.documentId, selectedTemplate.title, selectedTemplate.tag);
+                    if (copyResult && copyResult.webViewLink) {
+                        window.open(copyResult.webViewLink, '_blank');
+                        alert('문서가 개인 드라이브에 생성되었습니다!');
+                    }
                 } else {
-                    console.warn('Google Docs API 객체는 존재하지만 create 메서드가 없습니다.');
-                    
-                    // 잠시 대기 후 다시 시도 (타이밍 문제 해결)
-                    console.log('1초 후 Google Docs API 재확인 시도...');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    // 재확인
-                    if (gapi.client && gapi.client.docs && gapi.client.docs.documents && 
-                        typeof gapi.client.docs.documents.create === 'function') {
-                        docsApiAvailable = true;
-                        console.log('Google Docs API 재확인 성공 - 사용 가능');
-                    } else {
-                        console.warn('Google Docs API 재확인 실패 - 여전히 사용할 수 없습니다.');
+                    // 기본 템플릿 (빈 문서 등) - Google Docs 새 문서 생성 URL 사용
+                    try {
+                        // Google Docs의 새 문서 생성 URL을 사용
+                        const newDocUrl = 'https://docs.google.com/document/create';
+                        window.open(newDocUrl, '_blank');
+                        alert('새 문서가 생성되었습니다!');
+                    } catch (error) {
+                        console.error('📄 개인 문서 생성 오류:', error);
+                        alert('문서 생성 중 오류가 발생했습니다.');
                     }
                 }
-            } catch (error) {
-                console.warn('Google Docs API 사용 가능성 테스트 실패:', error);
-            }
-            
-            // Google Docs API가 로드되지 않았거나 사용할 수 없는 경우
-            if (!docsApiAvailable) {
-                console.warn('Google Docs API가 사용할 수 없습니다. Google Drive API를 사용합니다.');
+            } else {
+                // 권한 부여: 앱스크립트에 요청
+                console.log('📄 권한 부여 문서 생성:', { selectedTemplate, selectedGroups, individualEmails });
                 
-                // Google Drive API를 사용하여 문서 생성 (fallback)
-                if (!gapi.client.drive || !gapi.client.drive.files) {
-                    console.error('Google Drive API도 로드되지 않았습니다.');
-                    alert('Google API를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
-                    return;
-                }
+                // 선택된 그룹들을 이메일로 변환
+                const groupEmails = selectedGroups.map(groupKey => ENV_CONFIG.GROUP_EMAILS[groupKey as keyof typeof ENV_CONFIG.GROUP_EMAILS]);
+                // 빈 이메일은 제외
+                const validIndividualEmails = individualEmails.filter(email => email.trim() !== '');
+                const allEditors = [...groupEmails, ...validIndividualEmails];
                 
-                console.log('Google Drive API를 사용하여 문서 생성 시도...');
-                
-                // Google Drive API로 새 문서 생성
-                const response = await gapi.client.drive.files.create({
-                    resource: {
-                        name: title,
-                        mimeType: 'application/vnd.google-apps.document'
-                    }
+                console.log('📄 선택된 템플릿 정보:', {
+                    title: selectedTemplate.title,
+                    documentId: selectedTemplate.documentId,
+                    type: selectedTemplate.type,
+                    templateType: selectedTemplate.documentId || selectedTemplate.type,
+                    tag: selectedTemplate.tag
                 });
                 
-                const docId = response.result.id;
-                console.log(`Created document '${title}' with ID: ${docId} (via Drive API)`);
+                const documentData = {
+                    title: selectedTemplate.title,
+                    templateType: selectedTemplate.documentId || selectedTemplate.type,
+                    creatorEmail: creatorEmail,
+                    editors: allEditors,
+                    role: 'student', // 기본값으로 student 설정
+                    tag: selectedTemplate.tag // 태그 추가
+                };
                 
-                let docUrl;
-                if (!isDefault) {
-                    const storageKey = `template_doc_id_${title}`;
-                    localStorage.setItem(storageKey, docId);
-                    docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+                console.log('📄 API로 전송할 데이터:', documentData);
+                
+                const result = await apiClient.createDocument(documentData);
+
+                if (result.success && result.data) {
+                    window.open(result.data.documentUrl, '_blank');
+                    alert('문서가 생성되고 권한이 설정되었습니다!');
                 } else {
-                    docUrl = `https://docs.google.com/document/d/${docId}/edit`;
+                    alert('문서 생성에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
                 }
-                window.open(docUrl, '_blank');
-                return;
             }
-            
-            console.log('Google Docs API로 문서 생성 시도...');
-            const response = await gapi.client.docs.documents.create({
-                title: title,
-            });
-
-            const docId = response.result.documentId;
-            console.log(`Created document '${title}' with ID: ${docId} (via Docs API)`);
-
-            let docUrl;
-            if (!isDefault) {
-                const storageKey = `template_doc_id_${title}`;
-                localStorage.setItem(storageKey, docId);
-                // Open with /edit the FIRST time so the user can create the template
-                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
-            } else {
-                docUrl = `https://docs.google.com/document/d/${docId}/edit`;
-            }
-            window.open(docUrl, '_blank');
-
         } catch (error) {
-            console.error('Error creating Google Doc:', error);
-            
-            // 403 Forbidden 오류인 경우 스코프 문제일 가능성이 높음
-            if ((error as any).status === 403 || ((error as any).result && (error as any).result.error && (error as any).result.error.code === 403)) {
-                alert('Google Docs API 사용 권한이 없습니다. 로그아웃 후 다시 로그인해주세요.');
-            } else {
-                alert('Google Docs에서 문서를 생성하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
-            }
+            console.error('📄 문서 생성 오류:', error);
+            alert('문서 생성 중 오류가 발생했습니다.');
+        } finally {
+            // 모달 닫기
+            setIsPermissionModalOpen(false);
+            setSelectedTemplate(null);
         }
-    }, [onPageChange]);
+    }, [selectedTemplate, permissionType, selectedGroups, individualEmails]);
+
+    // 모달 닫기 함수
+    const closePermissionModal = useCallback(() => {
+        setIsPermissionModalOpen(false);
+        setSelectedTemplate(null);
+        setPermissionType('private');
+        setSelectedGroups([]);
+        setIndividualEmails([]);
+    }, []);
 
     // 훅에서 관리하는 상태, 함수들을 객체로 반환
     return {
         filteredTemplates, // 필터링/정렬된 템플릿 목록
         onUseTemplate,     // 템플릿 사용 함수
+        allDefaultTemplates, // 모든 기본 템플릿 (정적 + 동적 + 개인)
+        isLoadingTemplates: isLoadingTemplates || isLoadingPersonalTemplates, // 전체 템플릿 로딩 상태
+        templateError: templateError || personalTemplateError, // 템플릿 로딩 오류
+        loadDynamicTemplates, // 동적 템플릿 다시 로드 함수
+        // 개인 템플릿 관련
+        personalTemplates: convertedPersonalTemplates, // 개인 템플릿 목록
+        isLoadingPersonalTemplates, // 개인 템플릿 로딩 상태
+        personalTemplateError, // 개인 템플릿 오류
+        togglePersonalTemplateFavorite, // 개인 템플릿 즐겨찾기 토글
+        generateFileNameFromTemplate, // 파일명 생성 함수
+        // 기본 템플릿 즐겨찾기 관련
+        defaultTemplateFavorites, // 기본 템플릿 즐겨찾기 목록
+        isLoadingFavorites, // 즐겨찾기 로딩 상태
+        toggleDefaultTemplateFavorite, // 기본 템플릿 즐겨찾기 토글
+        testDriveApi, // Drive API 테스트 함수
+        testTemplateFolderDebug, // 템플릿 폴더 디버깅 테스트 함수
+        testSpecificFolder, // 특정 폴더 ID 테스트 함수
+        // 권한 설정 모달 관련
+        isPermissionModalOpen,
+        setIsPermissionModalOpen,
+        selectedTemplate,
+        setSelectedTemplate,
+        permissionType,
+        setPermissionType,
+        selectedGroups,
+        setSelectedGroups,
+        individualEmails,
+        setIndividualEmails,
+        createDocument,
+        closePermissionModal,
     };
 }

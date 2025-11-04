@@ -9,13 +9,14 @@ interface Props {
     onUse: (type: string, title: string) => void;
     onDelete: (rowIndex: number) => void;
     onEdit?: (template: Template) => void; // Make optional
+    onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
     isFixed: boolean;
     defaultTags: string[];
     onToggleFavorite?: (template: Template) => void;
     isFavorite?: boolean;
 }
 
-export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, isFixed, defaultTags, onToggleFavorite, isFavorite }: Props) {
+export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, onEditPersonal, isFixed, defaultTags, onToggleFavorite, isFavorite }: Props) {
     const {
         attributes,
         listeners,
@@ -37,6 +38,7 @@ export function SortableTemplateCard({ id, template, onUse, onDelete, onEdit, is
             onUse={onUse}
             onDelete={onDelete}
             onEdit={onEdit}
+            onEditPersonal={onEditPersonal}
             isFixed={isFixed}
             defaultTags={defaultTags}
             attributes={attributes}

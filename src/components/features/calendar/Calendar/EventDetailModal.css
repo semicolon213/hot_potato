@@ -2,10 +2,10 @@
 .event-detail-container {
     position: absolute;
     background-color: white;
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    width: 90%;
-    max-width: 400px;
+    border-radius: var(--sidebar-radius-sm);
+    box-shadow: var(--shadow-base);
+    width: 100%;
+    max-width: clamp(450px, 26.04vw, 600px);
     display: flex;
     flex-direction: column;
     animation: fadeIn 0.15s ease-out;
@@ -21,8 +21,8 @@
     padding: 16px 24px;
     border-bottom: 1px solid #e0e0e0;
     background-color: #f3f3f3;
-    border-top-left-radius: var(--border-radius-lg);
-    border-top-right-radius: var(--border-radius-lg);
+    border-top-left-radius: var(--sidebar-radius-sm);
+    border-top-right-radius: var(--sidebar-radius-sm);
 }
 
 .event-detail-header h2 {
@@ -69,6 +69,7 @@
     font-size: 1rem;
     color: #3c4043;
     line-height: 1.5;
+    word-break: break-all;
 }
 
 /* 참석자 목록 스타일 */
@@ -81,7 +82,7 @@
 .attendee {
     background-color: #f1f3f4;
     padding: 4px 8px;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--sidebar-radius-sm);
     font-size: 0.9rem;
 }
 
@@ -97,5 +98,15 @@
         opacity: 1;
         transform: scale(1);
     }
+}
+
+.event-detail-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    z-index: 1001;
 }
 

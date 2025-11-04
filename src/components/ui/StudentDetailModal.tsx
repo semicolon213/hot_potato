@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { fetchStudentIssues, addStudentIssue } from '../../utils/database/papyrusManager';
 import { getSheetData } from 'papyrus-db';
 import type { Student, StudentWithCouncil } from '../../types/features/students/student';
+import type { CareerItem } from '../../types/features/staff';
 import './StudentDetailModal.css';
+import { ENV_CONFIG } from '../../config/environment';
 
 type ModalMode = 'student' | 'staff' | 'committee';
 
@@ -11,8 +13,10 @@ interface StudentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedStudent: StudentWithCouncil) => void;
+  onDelete: (studentToDelete: StudentWithCouncil) => void;
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
+  isAdding?: boolean;
 }
 
 interface StudentIssue {
@@ -24,17 +28,32 @@ interface StudentIssue {
   content_issue: string;
 }
 
+const emptyStaff: StudentWithCouncil = {
+  no_student: '',
+  name: '',
+  phone_num: '',
+  email: '',
+  grade: '',
+  state: '',
+  address: '',
+  council: '',
+  parsedCouncil: [],
+  career: [],
+};
+
 const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   student,
   isOpen,
   onClose,
   onUpdate,
+  onDelete,
   studentSpreadsheetId,
-  mode = 'student'
+  mode = 'student',
+  isAdding = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'issues'>('info');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedStudent, setEditedStudent] = useState<StudentWithCouncil | null>(null);
+  const [isEditing, setIsEditing] = useState(isAdding);
+  const [editedStudent, setEditedStudent] = useState<StudentWithCouncil | null>(isAdding ? emptyStaff : student);
   const [issues, setIssues] = useState<StudentIssue[]>([]);
   const [newIssue, setNewIssue] = useState<Omit<StudentIssue, 'id'>>({
     no_member: '',
@@ -44,6 +63,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     content_issue: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleDelete = () => {
+    if (window.confirm('정말로 이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      if (editedStudent) {
+        onDelete(editedStudent);
+        onClose();
+      }
+    }
+  };
 
   // App Script를 통한 암복호화 함수들
   const decryptPhone = async (encryptedPhone: string): Promise<string> => {
@@ -162,7 +190,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       editedStudent.grade !== student.grade ||
       editedStudent.state !== student.state ||
       editedStudent.address !== student.address ||
-      editedStudent.council !== student.council
+      editedStudent.council !== student.council ||
+      (editedStudent.email || '') !== (student.email || '')
     );
   };
 
@@ -186,27 +215,32 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   useEffect(() => {
-    if (student && isOpen) {
-      // 연락처 복호화 후 학생 데이터 설정
-      const loadStudentData = async () => {
-        const decryptedPhone = await decryptPhone(student.phone_num);
-        setEditedStudent({ 
-          ...student, 
-          phone_num: decryptedPhone 
-        });
-        setNewIssue({
-          no_member: student.no_student,
-          date_issue: '',
-          type_issue: '',
-          level_issue: '',
-          content_issue: ''
-        });
-        loadStudentIssues();
-      };
-      
-      loadStudentData();
+    if (isOpen) {
+      setIsEditing(isAdding); // Reset editing state every time modal opens
+      if (isAdding) {
+        setEditedStudent(emptyStaff);
+      } else if (student) {
+        // 연락처 복호화 후 학생 데이터 설정
+        const loadStudentData = async () => {
+          const decryptedPhone = await decryptPhone(student.phone_num);
+          setEditedStudent({ 
+            ...student, 
+            phone_num: decryptedPhone 
+          });
+          setNewIssue({
+            no_member: student.no_student,
+            date_issue: '',
+            type_issue: '',
+            level_issue: '',
+            content_issue: ''
+          });
+          loadStudentIssues();
+        };
+        
+        loadStudentData();
+      }
     }
-  }, [student, isOpen]);
+  }, [student, isOpen, isAdding]);
 
   const loadStudentIssues = async () => {
     if (!student) return;
@@ -222,59 +256,112 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
   };
 
+  const handleCareerChange = (index: number, field: keyof CareerItem, value: string) => {
+    if (!editedStudent || !Array.isArray(editedStudent.career)) return;
+    const newCareer = [...editedStudent.career];
+    newCareer[index] = { ...newCareer[index], [field]: value };
+    setEditedStudent(prev => prev ? { ...prev, career: newCareer } : null);
+  };
+
+  const addCareerItem = () => {
+    if (!editedStudent) return;
+    const newCareerItem: CareerItem = { company: '', position: '', period: '', description: '' };
+    const newCareer = [...(editedStudent.career || []), newCareerItem];
+    setEditedStudent(prev => prev ? { ...prev, career: newCareer } : null);
+  };
+
+  const removeCareerItem = (index: number) => {
+    if (!editedStudent || !Array.isArray(editedStudent.career)) return;
+    const newCareer = editedStudent.career.filter((_, i) => i !== index);
+    setEditedStudent(prev => prev ? { ...prev, career: newCareer } : null);
+  };
+
   const handleSave = async () => {
-    if (!editedStudent || !studentSpreadsheetId) return;
+    if (!editedStudent) return;
 
-    try {
-      // 연락처 암호화
-      const encryptedPhone = await encryptPhone(editedStudent.phone_num);
-      
-      const gapi = (window as any).gapi;
-      const spreadsheet = await gapi.client.sheets.spreadsheets.get({
-        spreadsheetId: studentSpreadsheetId
-      });
-      
-      const sheets = spreadsheet.result.sheets;
-      const firstSheetName = sheets[0].properties.title;
-      
-      const data = await getSheetData(studentSpreadsheetId, firstSheetName);
-      if (data && data.values && data.values.length > 1) {
-        const rowIndex = data.values.findIndex((row: any) => row[0] === student?.no_student);
-        if (rowIndex !== -1) {
-          const range = `${firstSheetName}!A${rowIndex + 1}:G${rowIndex + 1}`;
-          await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: studentSpreadsheetId,
-            range: range,
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-              values: [[
-                editedStudent.no_student,
-                editedStudent.name,
-                editedStudent.address,
-                encryptedPhone, // 암호화된 연락처 저장
-                editedStudent.grade,
-                editedStudent.state,
-                editedStudent.council
-              ]]
-            }
-          });
-
-          // 업데이트된 학생 데이터 (암호화된 연락처 포함)
-          const updatedStudent = { ...editedStudent, phone_num: encryptedPhone };
-          onUpdate(updatedStudent);
-          setIsEditing(false);
-          alert('학생 정보가 성공적으로 업데이트되었습니다.');
-          onClose(); // 저장 완료 후 모달 닫기
-        } else {
-          alert('해당 학생을 찾을 수 없습니다.');
-        }
-      } else {
-        alert('학생 데이터를 찾을 수 없습니다.');
+    // 연락처와 이메일 유효성 검사
+    if (mode === 'staff' || mode === 'committee') {
+      const phone = editedStudent.phone_num;
+      if (!/^\d{3}-\d{3,4}-\d{4}$/.test(phone)) {
+        alert('연락처는 하이픈(-)을 포함한 12~13자리 숫자로 입력해야 합니다.');
+        return;
       }
-    } catch (error) {
-      console.error('학생 정보 업데이트 실패:', error);
-      alert('학생 정보 업데이트에 실패했습니다.');
+      if (!editedStudent.email.includes('@')) {
+        alert('이메일 형식이 올바르지 않습니다. "@"를 포함해야 합니다.');
+        return;
+      }
     }
+
+    if (mode === 'staff') {
+      const requiredFields = [
+        { key: 'no_student', name: '교번' },
+        { key: 'grade', name: '구분' },
+        { key: 'name', name: '이름' },
+        { key: 'address', name: '내선번호' },
+        { key: 'phone_num', name: '연락처' },
+        { key: 'email', name: '이메일' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        if (typeof value !== 'string' || !value.trim()) {
+          alert(`${field.name}은(는) 필수 입력 항목입니다.`);
+          return; // 저장 중단
+        }
+      }
+    }
+
+    // 위원회 필수 항목 유효성 검사
+    if (mode === 'committee') {
+      const requiredFields = [
+        { key: 'grade', name: '위원회 구분' },
+        { key: 'name', name: '이름' },
+        { key: 'phone_num', name: '연락처' },
+        { key: 'email', name: '이메일' },
+        { key: 'state', name: '직책' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        if (typeof value !== 'string' || !value.trim()) {
+          alert(`${field.name}은(는) 필수 입력 항목입니다.`);
+          return; // 저장 중단
+        }
+      }
+    }
+
+    // 학생 필수 항목 유효성 검사
+    if (mode === 'student') {
+      const requiredFields = [
+        { key: 'no_student', name: '학번' },
+        { key: 'name', name: '이름' },
+        { key: 'phone_num', name: '연락처' },
+        { key: 'grade', name: '학년' },
+        { key: 'address', name: '주소' },
+      ];
+
+      for (const field of requiredFields) {
+        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        if (typeof value !== 'string' || !value.trim()) {
+          alert(`${field.name}은(는) 필수 입력 항목입니다.`);
+          return; // 저장 중단
+        }
+      }
+    }
+
+    // 저장하기 전 비어있는 경력 항목 자동 삭제
+    const cleanedStudent = { ...editedStudent };
+    if (cleanedStudent.career && Array.isArray(cleanedStudent.career)) {
+      cleanedStudent.career = cleanedStudent.career.filter(
+        item => item.period.trim() !== '' || item.company.trim() !== '' || item.position.trim() !== ''
+      );
+    }
+
+    // The modal should not handle the update logic itself.
+    // It should pass the cleaned data back to the parent component.
+    onUpdate(cleanedStudent);
+    setIsEditing(false);
+    onClose();
   };
 
   const handleAddIssue = async () => {
@@ -329,41 +416,62 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
   };
 
-  if (!isOpen || !student || !editedStudent) return null;
+  if (!isOpen || (!student && !isAdding) || !editedStudent) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleCloseModal}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+    <>
+      <style>{`
+        .career-editor {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .career-item {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .career-item input {
+          flex-grow: 1;
+          min-width: 0;
+        }
+        .career-item .remove-btn {
+          flex-shrink: 0;
+        }
+        .career-display input.career-view-item {
+          width: 100%;
+          box-sizing: border-box;
+          margin-bottom: 4px; /* 보기 모드에서 경력 아이템 간 여백 추가 */
+        }
+        .career-editor .form-group {
+          margin-bottom: 4px; /* 경력 아이템 간 세로 여백 줄이기 */
+        }
+      `}</style>
+      <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
         <div className="modal-header">
           <h2>
-            {mode === 'staff' ? '교직원 정보' : 
-             mode === 'committee' ? '위원회 정보' : 
-             '학생 정보'}
+            {isAdding
+              ? (mode === 'staff' ? '교직원 추가' : '위원 추가')
+              : (mode === 'staff' ? '교직원 정보' :
+                 mode === 'committee' ? '위원회 정보' :
+                 '학생 정보')}
           </h2>
           <div className="header-actions">
             {!isEditing ? (
-              <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                수정
-              </button>
+              <>
+                <button className="delete-btn" onClick={handleDelete}>
+                  삭제
+                </button>
+                <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                  수정
+                </button>
+              </>
             ) : (
               <div className="edit-actions">
                 <button className="save-btn" onClick={handleSave}>
                   저장
-                </button>
-                <button className="cancel-btn" onClick={() => {
-                  if (hasUnsavedChanges()) {
-                    const shouldDiscard = window.confirm('수정된 내용이 있습니다. 변경사항을 취소하시겠습니까?');
-                    if (shouldDiscard) {
-                      setIsEditing(false);
-                      setEditedStudent({ ...student });
-                    }
-                  } else {
-                    setIsEditing(false);
-                    setEditedStudent({ ...student });
-                  }
-                }}>
-                  취소
                 </button>
               </div>
             )}
@@ -403,7 +511,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   // 교직원 필드들 (8개 필드)
                   <>
                     <div className="form-group">
-                      <label>교번</label>
+                      <label>교번<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.no_student}
@@ -414,7 +522,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>구분</label>
+                      <label>구분<span style={{color: 'red'}}>*</span></label>
                       <select
                         value={editedStudent.grade}
                         onChange={(e) => handleInputChange('grade', e.target.value)}
@@ -431,7 +539,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이름</label>
+                      <label>이름<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.name}
@@ -442,7 +550,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>내선번호</label>
+                      <label>내선번호<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.address}
@@ -454,14 +562,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>연락처</label>
+                      <label>연락처<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[0] || ''}
+                        value={mode === 'staff' || mode === 'committee' ? editedStudent.phone_num : (editedStudent.council.split(' / ')[0] || '')}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
+                          if (mode === 'staff' || mode === 'committee') {
+                            handleInputChange('phone_num', e.target.value);
+                          } else {
+                            const parts = editedStudent.council.split(' / ');
+                            const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
+                            handleInputChange('council', newCouncil);
+                          }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -470,14 +582,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이메일</label>
+                      <label>이메일<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="email"
-                        value={editedStudent.council.split(' / ')[1] || ''}
+                        value={mode === 'staff' || mode === 'committee' ? (editedStudent.email || '') : (editedStudent.council.split(' / ')[1] || '')}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
+                          if (mode === 'staff' || mode === 'committee') {
+                            handleInputChange('email', e.target.value);
+                          } else {
+                            const parts = editedStudent.council.split(' / ');
+                            const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
+                            handleInputChange('council', newCouncil);
+                          }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -500,11 +616,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>비고</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[2] || ''}
+                        value={mode === 'staff' || mode === 'committee' ? editedStudent.council : (editedStudent.council.split(' / ')[2] || '')}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
-                          handleInputChange('council', newCouncil);
+                          if (mode === 'staff' || mode === 'committee') {
+                            handleInputChange('council', e.target.value);
+                          } else {
+                            const parts = editedStudent.council.split(' / ');
+                            const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
+                            handleInputChange('council', newCouncil);
+                          }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -513,12 +633,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
                   </>
                 ) : mode === 'committee' ? (
-                  // 위원회 필드들 (12개 필드)
+                  // 위원회 필드들 (올바른 데이터 바인딩으로 전면 수정)
                   <>
                     <div className="form-group">
-                      <label>위원회 구분</label>
+                      <label>위원회 구분<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.grade}
+                        value={editedStudent.grade} // sortation -> grade
                         onChange={(e) => handleInputChange('grade', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -532,7 +652,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이름</label>
+                      <label>이름<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.name}
@@ -543,15 +663,11 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>연락처</label>
+                      <label>연락처<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[0] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
-                        }}
+                        value={editedStudent.phone_num} // phone_num 직접 사용
+                        onChange={(e) => handleInputChange('phone_num', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
@@ -559,15 +675,11 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이메일</label>
+                      <label>이메일<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="email"
-                        value={editedStudent.council.split(' / ')[1] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
-                        }}
+                        value={editedStudent.email || ''} // email 직접 사용
+                        onChange={(e) => handleInputChange('email', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="example@company.com"
@@ -575,9 +687,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>직책</label>
+                      <label>직책<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.state}
+                        value={editedStudent.state} // position -> state
                         onChange={(e) => handleInputChange('state', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -591,42 +703,10 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>업체명</label>
-                      <input
-                        type="text"
-                        value={editedStudent.council.split(' / ')[0] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
-                        }}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                        placeholder="업체명을 입력하세요"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>직위</label>
-                      <input
-                        type="text"
-                        value={editedStudent.council.split(' / ')[1] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
-                          handleInputChange('council', newCouncil);
-                        }}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                        placeholder="대표이사, 부장, 과장 등"
-                      />
-                    </div>
-
-                    <div className="form-group">
                       <label>소재지</label>
                       <input
                         type="text"
-                        value={editedStudent.address}
+                        value={editedStudent.address} // location -> address
                         onChange={(e) => handleInputChange('address', e.target.value)}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
@@ -634,53 +714,87 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       />
                     </div>
 
+                    <div className="form-group full-width">
+                      <label>경력</label>
+                      {isEditing ? (
+                        <div className="career-editor">
+                          {editedStudent.career?.map((item, index) => (
+                            <div key={index} className="form-group">
+                              <div className="career-item">
+                              <input
+                                type="text"
+                                placeholder="근무기간 (예: 2020-2023)"
+                                value={item.period}
+                                onChange={(e) => handleCareerChange(index, 'period', e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                placeholder="회사명"
+                                value={item.company}
+                                onChange={(e) => handleCareerChange(index, 'company', e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                placeholder="직책"
+                                value={item.position}
+                                onChange={(e) => handleCareerChange(index, 'position', e.target.value)}
+                              />
+                              <button type="button" className="remove-btn" onClick={() => removeCareerItem(index)}>-</button>
+                            </div>
+                          </div>
+                          ))}
+                          <button type="button" className="add-btn" onClick={addCareerItem}>+ 경력 추가</button>
+                        </div>
+                      ) : (
+                        <div className="career-display">
+                          {(editedStudent.career && editedStudent.career.length > 0) ? (
+                            editedStudent.career.map((item, index) => (
+                              <input
+                                key={index}
+                                type="text"
+                                className="career-view-item"
+                                value={`${item.period || ''}: ${item.company || ''} (${item.position || ''})`}
+                                disabled
+                              />
+                            ))
+                          ) : (
+                            <input
+                              type="text"
+                              value="입력된 경력 정보가 없습니다."
+                              disabled
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="form-group">
-                      <label>가족회사여부</label>
-                      <select
-                        value={editedStudent.council.split(' / ')[2] || ''}
+                      <label>업체명</label>
+                      <input
+                        type="text"
+                        value={(editedStudent.council || '').split(' / ')[0] || ''}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
+                          const parts = (editedStudent.council || '').split(' / ');
+                          const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
                           handleInputChange('council', newCouncil);
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
-                      >
-                        <option value="">선택하세요</option>
-                        <option value="예">예</option>
-                        <option value="아니오">아니오</option>
-                      </select>
+                      />
                     </div>
 
                     <div className="form-group">
                       <label>대표자</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[3] || ''}
+                        value={(editedStudent.council || '').split(' / ')[1] || ''}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${parts[2] || ''} / ${e.target.value}`;
+                          const parts = (editedStudent.council || '').split(' / ');
+                          const newCouncil = `${parts[0] || ''} / ${e.target.value} / ${parts[2] || ''}`;
                           handleInputChange('council', newCouncil);
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
-                        placeholder="대표자명을 입력하세요"
-                      />
-                    </div>
-
-                    <div className="form-group full-width">
-                      <label>경력</label>
-                      <textarea
-                        value={editedStudent.council.split(' / ')[4] || ''}
-                        onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${parts[2] || ''} / ${parts[3] || ''} / ${e.target.value}`;
-                          handleInputChange('council', newCouncil);
-                        }}
-                        disabled={!isEditing}
-                        onFocus={handleInputFocus}
-                        placeholder="경력 정보를 입력하세요 (예: 2020-2023: ABC회사 대표이사, 2018-2020: XYZ회사 부장)"
-                        rows={3}
                       />
                     </div>
 
@@ -688,10 +802,10 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <label>비고</label>
                       <input
                         type="text"
-                        value={editedStudent.council.split(' / ')[5] || ''}
+                        value={editedStudent.council?.split(' / ')[2] || ''}
                         onChange={(e) => {
-                          const parts = editedStudent.council.split(' / ');
-                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${parts[2] || ''} / ${parts[3] || ''} / ${parts[4] || ''} / ${e.target.value}`;
+                          const parts = editedStudent.council?.split(' / ') || ['', '', ''];
+                          const newCouncil = `${parts[0] || ''} / ${parts[1] || ''} / ${e.target.value}`;
                           handleInputChange('council', newCouncil);
                         }}
                         disabled={!isEditing}
@@ -704,7 +818,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   // 학생 필드들 (기존)
                   <>
                     <div className="form-group">
-                      <label>학번</label>
+                      <label>학번<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.no_student}
@@ -715,7 +829,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>이름</label>
+                      <label>이름<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.name}
@@ -726,7 +840,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>연락처</label>
+                      <label>연락처<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.phone_num}
@@ -738,7 +852,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group">
-                      <label>학년</label>
+                      <label>학년<span style={{color: 'red'}}>*</span></label>
                       <select
                         value={editedStudent.grade}
                         onChange={(e) => handleInputChange('grade', e.target.value)}
@@ -770,7 +884,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     </div>
 
                     <div className="form-group full-width">
-                      <label>주소</label>
+                      <label>주소<span style={{color: 'red'}}>*</span></label>
                       <input
                         type="text"
                         value={editedStudent.address}
@@ -893,9 +1007,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-};
+              </div>
+            </div>
+          </>
+        );};
 
 export default StudentDetailModal;

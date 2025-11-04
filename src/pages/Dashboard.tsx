@@ -36,14 +36,11 @@ const Dashboard: React.FC<DashboardProps> = ({ hotPotatoDBSpreadsheetId }) => {
   }, [widgets, hotPotatoDBSpreadsheetId]);
 
   return (
-    <div className="main-content ml-[10px]">
+    <div className="main-content">
       <div className="dashboard-header">
-        <h1>대시보드</h1>
-        <div className="dashboard-actions">
-          <button className="add-widget-btn" onClick={() => setIsModalOpen(true)}>
-            <i className="fas fa-plus"></i>위젯 추가
-          </button>
-        </div>
+        <button className="add-widget-btn" onClick={() => setIsModalOpen(true)}>
+          위젯 추가
+        </button>
       </div>
 
       {isLoading ? (

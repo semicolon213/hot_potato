@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../auth/tokenManager';
 
 const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
@@ -43,7 +44,8 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
               ],
             });
-            const token = localStorage.getItem('googleAccessToken');
+            // tokenManager를 통해 토큰 가져오기 (만료 체크 포함)
+            const token = tokenManager.get();
             if (token) {
               gapi.client.setToken({ access_token: token });
             }
@@ -323,21 +325,131 @@ export const updateLastModifiedInSheetByDocId = async (
   }
 };
 
-export const copyGoogleDocument = async (fileId: string, newTitle: string): Promise<{ id: string, webViewLink: string } | null> => {
-  await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+/**
+ * @brief 개인 문서 폴더 찾기
+ * @details hot potato/문서/개인 문서 폴더를 찾습니다
+ */
+export const findPersonalDocumentFolder = async (): Promise<string | null> => {
+  const gapi = window.gapi;
+  if (!gapi?.client?.drive) {
+    console.error('Google Drive API가 초기화되지 않았습니다.');
+    return null;
+  }
 
   try {
-    const response = await gapi.client.drive.files.copy({
+    // 1단계: 루트에서 "hot potato" 폴더 찾기
+    const hotPotatoResponse = await gapi.client.drive.files.list({
+      q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
+
+    if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
+      console.log('❌ hot potato 폴더를 찾을 수 없습니다');
+      return null;
+    }
+
+    const hotPotatoFolder = hotPotatoResponse.result.files[0];
+
+    // 2단계: "문서" 폴더 찾기
+    const documentResponse = await gapi.client.drive.files.list({
+      q: `'${hotPotatoFolder.id}' in parents and name='문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
+
+    if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
+      console.log('❌ 문서 폴더를 찾을 수 없습니다');
+      return null;
+    }
+
+    const documentFolder = documentResponse.result.files[0];
+
+    // 3단계: "개인 문서" 폴더 찾기
+    const personalDocResponse = await gapi.client.drive.files.list({
+      q: `'${documentFolder.id}' in parents and name='개인 문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id,name)',
+      spaces: 'drive',
+      orderBy: 'name'
+    });
+
+    if (!personalDocResponse.result.files || personalDocResponse.result.files.length === 0) {
+      console.log('❌ 개인 문서 폴더를 찾을 수 없습니다. 폴더를 생성합니다.');
+      
+      // 개인 문서 폴더 생성
+      const DriveAPI = gapi.client.drive.files as unknown as {
+        create: (params: {
+          resource: { name: string; mimeType: string; parents: string[] };
+          fields: string;
+        }) => Promise<{ result: { id: string } }>;
+      };
+      
+      const createResponse = await DriveAPI.create({
+        resource: {
+          name: '개인 문서',
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [documentFolder.id]
+        },
+        fields: 'id'
+      });
+      
+      return createResponse.result.id;
+    }
+
+    return personalDocResponse.result.files[0].id as string;
+  } catch (error) {
+    console.error('❌ 개인 문서 폴더 찾기 오류:', error);
+    return null;
+  }
+};
+
+export const copyGoogleDocument = async (fileId: string, newTitle: string, tag?: string): Promise<{ id: string, webViewLink: string } | null> => {
+  await initializeGoogleAPIOnce();
+  const gapi = window.gapi;
+  if (!gapi?.client?.drive) {
+    console.error('Google Drive API가 초기화되지 않았습니다.');
+    return null;
+  }
+
+  try {
+    // 개인 문서 폴더 찾기
+    const personalDocFolderId = await findPersonalDocumentFolder();
+    
+    if (!personalDocFolderId) {
+      console.error('❌ 개인 문서 폴더를 찾을 수 없습니다.');
+      alert('개인 문서 폴더를 찾을 수 없습니다.');
+      return null;
+    }
+
+    console.log('✅ 개인 문서 폴더 찾음:', personalDocFolderId);
+
+    // 개인 문서 폴더에 문서 복사
+    const DriveAPI = gapi.client.drive.files as unknown as {
+      copy: (params: {
+        fileId: string;
+        resource: { name: string; parents: string[] };
+        fields: string;
+      }) => Promise<{ result: { id: string; webViewLink: string } }>;
+    };
+    
+    const response = await DriveAPI.copy({
       fileId: fileId,
       resource: {
         name: newTitle,
+        parents: [personalDocFolderId] // 개인 문서 폴더에 저장
       },
       fields: 'id, webViewLink',
     });
+    
+    console.log('✅ 문서가 개인 문서 폴더에 복사되었습니다:', response.result.id);
+    
+    // 문서명은 원래 제목 그대로 유지 (사용자가 변경 가능)
+    
     return response.result;
   } catch (error) {
-    console.error('Error copying Google Document:', error);
+    console.error('❌ Google 문서 복사 오류:', error);
     alert('Google 문서를 복사하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
     return null;
   }

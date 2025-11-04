@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaEnvelope, FaPaperPlane, FaSpinner, FaCheck } from 'react-icons/fa';
 // 타입 정의
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -27,7 +28,7 @@ const AdminKeySection: React.FC<AdminKeySectionProps> = ({
           type="email"
           value={emailToSend}
           onChange={(e) => setEmailToSend(e.target.value)}
-          placeholder="📧 관리자 키를 받을 이메일 주소를 입력하세요"
+          placeholder="관리자 키를 받을 이메일 주소를 입력하세요"
           className="email-input"
         />
         <button 
@@ -35,7 +36,22 @@ const AdminKeySection: React.FC<AdminKeySectionProps> = ({
           disabled={isLoading || !emailToSend}
           className={`send-key-btn ${emailStatus === 'sending' ? 'sending' : emailStatus === 'success' ? 'success' : emailStatus === 'error' ? 'error' : ''}`}
         >
-          {isLoading ? '⏳ 전송 중...' : emailStatus === 'success' ? '✅ 전송 완료' : '🚀 관리자 키 전송'}
+          {isLoading ? (
+            <>
+              <FaSpinner className="btn-icon spinning" />
+              <span>전송 중...</span>
+            </>
+          ) : emailStatus === 'success' ? (
+            <>
+              <FaCheck className="btn-icon" />
+              <span>전송 완료</span>
+            </>
+          ) : (
+            <>
+              <FaPaperPlane className="btn-icon" />
+              <span>관리자 키 전송</span>
+            </>
+          )}
         </button>
       </div>
       {message && (
