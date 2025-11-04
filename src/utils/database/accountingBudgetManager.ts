@@ -42,7 +42,15 @@ export const getBudgetPlans = async (
       return [];
     }
 
-    return data.values.slice(1).map((row: any[]) => {
+    // 통장 정보 미리 로드 (무결성 검사용)
+    const accounts = await getAccounts(spreadsheetId);
+
+    // 각 행을 처리하면서 무결성 검사 및 수정
+    const plans: BudgetPlan[] = [];
+    for (let i = 0; i < data.values.length - 1; i++) {
+      const row = data.values[i + 1]; // 헤더 제외
+      const actualRowNumber = i + 2; // 실제 스프레드시트 행 번호 (헤더 포함)
+      
       const detailsJson = row[14] || '[]';
       let details: BudgetPlanDetail[] = [];
       try {
@@ -63,14 +71,66 @@ export const getBudgetPlans = async (
         }
       }
 
-      return {
+      const currentStatus = (row[6] || 'pending') as BudgetPlan['status'];
+      const planAccountId = row[1] || '';
+      
+      // 통장 정보 가져오기
+      const account = accounts.find(acc => acc.accountId === planAccountId);
+      
+      // 무결성 검사: 모든 서브 관리자가 검토했는데 상태가 pending이면 reviewed로 수정
+      if (account && account.subManagerIds.length > 0 && currentStatus === 'pending') {
+        const allSubManagersReviewed = account.subManagerIds.every(subManagerId => 
+          subManagerReviews.some(r => r.email === subManagerId)
+        );
+        
+        if (allSubManagersReviewed) {
+          console.log('🔧 데이터 무결성 수정:', {
+            budgetId: row[0],
+            title: row[2],
+            currentStatus,
+            subManagerReviews: subManagerReviews.map(r => r.email),
+            subManagerIds: account.subManagerIds
+          });
+          
+          // 상태를 reviewed로 업데이트
+          await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `G${actualRowNumber}`, [['reviewed']]);
+          await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `H${actualRowNumber}`, [['TRUE']]);
+          if (subManagerReviews.length > 0) {
+            await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `I${actualRowNumber}`, [[subManagerReviews[subManagerReviews.length - 1].date]]);
+          }
+          
+          // 수정된 상태로 반환
+          plans.push({
+            budgetId: row[0] || '',
+            accountId: planAccountId,
+            title: row[2] || '',
+            totalAmount: parseFloat(row[3] || '0'),
+            requestedDate: row[4] || '',
+            plannedExecutionDate: row[5] || '',
+            status: 'reviewed', // 수정된 상태
+            subManagerReviewed: true,
+            subManagerReviewDate: row[8] || subManagerReviews[subManagerReviews.length - 1]?.date || undefined,
+            subManagerReviews,
+            mainManagerApproved: row[9] === 'TRUE' || row[9] === true,
+            mainManagerApprovalDate: row[10] || undefined,
+            executedDate: row[11] || undefined,
+            createdBy: row[12] || '',
+            rejectionReason: row[13] || undefined,
+            details
+          });
+          continue;
+        }
+      }
+
+      // 무결성 문제가 없으면 그대로 반환
+      plans.push({
         budgetId: row[0] || '',
-        accountId: row[1] || '',
+        accountId: planAccountId,
         title: row[2] || '',
         totalAmount: parseFloat(row[3] || '0'),
         requestedDate: row[4] || '',
         plannedExecutionDate: row[5] || '',
-        status: (row[6] || 'pending') as BudgetPlan['status'],
+        status: currentStatus,
         subManagerReviewed: row[7] === 'TRUE' || row[7] === true || subManagerReviews.length > 0,
         subManagerReviewDate: row[8] || undefined,
         subManagerReviews,
@@ -80,8 +140,11 @@ export const getBudgetPlans = async (
         createdBy: row[12] || '',
         rejectionReason: row[13] || undefined,
         details
-      };
-    }).filter((plan: BudgetPlan) => {
+      });
+    }
+
+    // 필터링
+    return plans.filter((plan: BudgetPlan) => {
       if (accountId) {
         return plan.budgetId && plan.accountId === accountId;
       }
@@ -316,9 +379,18 @@ export const approveBudgetPlan = async (
       throw new Error('모든 서브 관리자의 검토가 완료되어야 승인할 수 있습니다.');
     }
     
-    // 주 관리자인지 확인
-    if (account.mainManagerId !== approverId) {
-      throw new Error('주 관리자만 승인할 수 있습니다.');
+    // 주 관리자인지 확인 (이메일 또는 학번으로 비교)
+    const isMainManager = account.mainManagerId === approverId;
+    
+    console.log('🔍 승인 권한 확인:', {
+      approverId,
+      mainManagerId: account.mainManagerId,
+      isMainManager,
+      accountId: account.accountId
+    });
+    
+    if (!isMainManager) {
+      throw new Error(`주 관리자만 승인할 수 있습니다. (현재: ${approverId}, 주 관리자: ${account.mainManagerId})`);
     }
     
     const approvalDate = new Date().toISOString();

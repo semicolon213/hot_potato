@@ -154,9 +154,22 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
         ? JSON.parse(localStorage.getItem('user') || '{}')
         : {};
       
-      await approveBudgetPlan(spreadsheetId, budgetId, userInfo.studentId || userInfo.email || 'unknown');
+      // 이메일을 우선 사용 (주 관리자 목록이 이메일로 저장되어 있음)
+      const approverId = userInfo.email || userInfo.studentId || currentUserEmail;
+      
+      console.log('🔍 승인 시작:', {
+        budgetId,
+        approverId,
+        userEmail: userInfo.email,
+        userStudentId: userInfo.studentId,
+        currentUserEmail
+      });
+      
+      await approveBudgetPlan(spreadsheetId, budgetId, approverId);
       await loadBudgetPlans();
+      alert('승인이 완료되었습니다.');
     } catch (err: any) {
+      console.error('❌ 승인 오류:', err);
       alert(err.message || '승인 처리에 실패했습니다.');
     }
   };
