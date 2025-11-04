@@ -41,12 +41,12 @@ function addDocumentToSpreadsheet(documentId, title, creatorEmail, documentUrl, 
     const now = new Date();
     const timestamp = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
     
-    // 문서 정보를 스프레드시트에 추가
+    // 문서 정보를 스프레드시트에 추가 (이메일로 저장, 조회 시 이름으로 변환)
     const sheet = SpreadsheetApp.openById(spreadsheetId).getActiveSheet();
     sheet.appendRow([
       documentId,
       title,
-      creatorEmail,
+      creatorEmail,  // 이메일로 저장 (조회 시 이름으로 변환됨)
       documentUrl,
       timestamp,
       '생성됨'
@@ -254,11 +254,33 @@ function handleGetDocuments(req) {
       header.forEach((key, hIndex) => {
         doc[key] = row[hIndex];
       });
+      
+      // 스프레드시트에 저장된 author가 이메일인 경우 이름으로 변환
+      let authorName = doc.author || '';
+      let authorEmail = '';
+      try {
+        if (doc.author && typeof doc.author === 'string' && doc.author.indexOf('@') !== -1) {
+          // 이메일 형식이면 이름으로 변환 시도
+          authorEmail = doc.author;
+          var nameResult = getUserNameByEmail(doc.author);
+          if (nameResult && nameResult.success && nameResult.name) {
+            authorName = nameResult.name;
+          }
+        } else {
+          // 이미 이름이면 그대로 사용
+          authorName = doc.author;
+        }
+      } catch (nameErr) {
+        // 변환 실패 시 원본 유지
+        console.warn('이메일을 이름으로 변환 실패:', doc.author, nameErr);
+      }
+      
       return {
         id: doc.document_id,
         documentNumber: doc.document_number,
         title: doc.title,
-        author: doc.author,
+        author: authorName,  // 변환된 이름 사용
+        authorEmail: authorEmail,  // 이메일도 함께 제공
         lastModified: doc.last_modified,
         approvalDate: doc.approval_date,
         status: doc.status,

@@ -37,12 +37,8 @@ function handleCreateDocument(req) {
     const documentId = document.data.id;
     const documentUrl = document.data.webViewLink;
     
-    // 이메일로 사용자 이름 조회
-    const userNameResult = getUserNameByEmail(creatorEmail);
-    const creatorName = userNameResult.success ? userNameResult.name : creatorEmail;
-    console.log('📄 생성자 이름 조회 결과:', creatorEmail, '->', creatorName);
-    
     // 문서 메타데이터에 생성자 정보 및 태그 추가 (Google Drive API 사용)
+    // 이메일로 저장하고, 조회 시 이름으로 변환
     let metadataStatus = '';
     let metadataError = null;
     let verifiedProperties = null;
@@ -50,7 +46,7 @@ function handleCreateDocument(req) {
     try {
       
       const properties = {
-        'creator': creatorName,  // 이메일 대신 사용자 이름 저장
+        'creator': creatorEmail,  // 이메일로 저장 (조회 시 이름으로 변환됨)
         'creatorEmail': creatorEmail,  // 원본 이메일도 함께 저장
         'createdDate': new Date().toLocaleString('ko-KR')
       };
@@ -92,11 +88,11 @@ function handleCreateDocument(req) {
       metadataError = metadataErr.message;
     }
     
-    // 문서 설명에도 추가 (백업용)
+    // 문서 설명에도 추가 (백업용) - 이메일로 저장
     let descriptionStatus = '';
     let descriptionError = null;
     try {
-      const description = `생성자: ${creatorName} | 생성일: ${new Date().toLocaleString('ko-KR')}${tag ? ` | Tag: ${tag}` : ''}`;
+      const description = `생성자: ${creatorEmail} | 생성일: ${new Date().toLocaleString('ko-KR')}${tag ? ` | Tag: ${tag}` : ''}`;
       
       // Google Drive API로 설명 업데이트
       Drive.Files.update(
@@ -143,7 +139,9 @@ function handleCreateDocument(req) {
     return {
       success: true,
       data: {
+        id: documentId,
         documentId: documentId,
+        webViewLink: documentUrl,
         documentUrl: documentUrl,
         name: title,
         creatorEmail: creatorEmail,
@@ -271,6 +269,146 @@ function createGoogleDocument(title, templateType) {
   }
 }
 
+/**
+ * 공유 문서 업로드 (파일 업로드 + 권한 설정 + 폴더 이동)
+ * @param {Object} req - 요청 데이터
+ * @returns {Object} 응답 결과
+ */
+function uploadSharedDocument(req) {
+  try {
+    console.log('📤 공유 문서 업로드 시작:', req);
+    
+    if (!req || !req.fileName || !req.fileContentBase64) {
+      return { success: false, message: 'fileName과 fileContentBase64가 필요합니다.' };
+    }
+    
+    const { fileName, fileMimeType, fileContentBase64, meta, editors, role } = req;
+    const { title, tag, creatorEmail } = meta || {};
+    
+    if (!title || !creatorEmail) {
+      return { success: false, message: '제목과 생성자 이메일이 필요합니다.' };
+    }
+    
+    // 입력 검증/정규화
+    const sanitize = function(s) {
+      if (!s) return '';
+      s = String(s);
+      s = s.replace(/[<>"'\\]/g, '');
+      return s.substring(0, 200);
+    };
+    
+    const safeTitle = sanitize(title || fileName);
+    const safeTag = sanitize(tag || '기본');
+    const mime = fileMimeType || '';
+    
+    // 지원 파일 형식 확인
+    const allowed = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/msword',
+      'application/vnd.ms-excel',
+      'application/pdf'
+    ];
+    if (mime && allowed.indexOf(mime) === -1) {
+      return { success: false, message: '지원되지 않는 파일 형식입니다.' };
+    }
+    
+    if (fileContentBase64.length > 12 * 1024 * 1024) { // ~12MB base64 길이 보호
+      return { success: false, message: '파일이 너무 큽니다.' };
+    }
+    
+    if (typeof Drive === 'undefined') {
+      return { success: false, message: 'Drive API가 활성화되지 않았습니다.' };
+    }
+    
+    // Base64 디코딩 및 Blob 생성
+    const bytes = Utilities.base64Decode(fileContentBase64);
+    const blob = Utilities.newBlob(bytes, mime || 'application/octet-stream', fileName);
+    
+    // 공유 문서 폴더 찾기
+    const folderPath = getSharedDocumentFolderPath();
+    const folderRes = findOrCreateFolder(folderPath);
+    if (!folderRes || !folderRes.success || !folderRes.data || !folderRes.data.id) {
+      return { success: false, message: '공유 문서 폴더를 찾을 수 없습니다.' };
+    }
+    
+    // Google 문서 타입 결정 (양식 업로드와 동일한 로직)
+    let targetGoogleMime = 'application/vnd.google-apps.document';
+    const lower = (mime || '').toLowerCase();
+    // PDF는 Google 형식으로 변환 불가능하므로 원본 MIME 타입 유지
+    if (lower.indexOf('pdf') !== -1) {
+      targetGoogleMime = mime; // PDF는 원본 MIME 타입 유지
+    } else if (lower.indexOf('sheet') !== -1 || lower.indexOf('excel') !== -1 || lower.indexOf('spreadsheetml') !== -1) {
+      targetGoogleMime = 'application/vnd.google-apps.spreadsheet';
+    }
+    
+    // 파일 업로드
+    const created = Drive.Files.create({
+      name: safeTitle,
+      mimeType: targetGoogleMime,
+      parents: [folderRes.data.id]
+    }, blob);
+    
+    const documentId = created.id;
+    
+    // 메타데이터 설정 (이메일로 저장, 조회 시 이름으로 변환됨)
+    const properties = {
+      'creator': creatorEmail,  // 이메일로 저장
+      'creatorEmail': creatorEmail,
+      'createdDate': new Date().toLocaleString('ko-KR'),
+      'tag': safeTag
+    };
+    
+    Drive.Files.update({
+      properties: properties
+    }, documentId);
+    
+    // 문서 설명 설정 (이메일로 저장)
+    const description = `생성자: ${creatorEmail} | 생성일: ${new Date().toLocaleString('ko-KR')} | Tag: ${safeTag}`;
+    Drive.Files.update({
+      description: description
+    }, documentId);
+    
+    // 권한 설정
+    if (editors && editors.length > 0) {
+      const permissionResult = setDocumentPermissions(documentId, creatorEmail, editors);
+      if (!permissionResult.success) {
+        console.warn('권한 설정 실패:', permissionResult.message);
+      }
+    }
+    
+    // 문서 정보를 스프레드시트에 추가
+    const documentUrl = `https://docs.google.com/document/d/${documentId}/edit`;
+    const spreadsheetResult = addDocumentToSpreadsheet(documentId, safeTitle, creatorEmail, documentUrl, role || 'student');
+    if (!spreadsheetResult.success) {
+      console.warn('스프레드시트 추가 실패:', spreadsheetResult.message);
+    }
+    
+    // 문서 URL 가져오기
+    const fileInfo = Drive.Files.get(documentId, { fields: 'webViewLink' });
+    
+    return {
+      success: true,
+      data: {
+        id: documentId,
+        documentId: documentId,
+        webViewLink: fileInfo.webViewLink || documentUrl,
+        documentUrl: documentUrl,
+        name: safeTitle,
+        creatorEmail: creatorEmail,
+        editors: editors || []
+      },
+      message: '문서가 성공적으로 업로드되었습니다.'
+    };
+  } catch (error) {
+    console.error('공유 문서 업로드 오류:', error);
+    return {
+      success: false,
+      message: '업로드 실패: ' + error.message
+    };
+  }
+}
+
 // ===== 배포 정보 =====
 function getDocumentCreationInfo() {
   return {
@@ -278,7 +416,8 @@ function getDocumentCreationInfo() {
     description: '문서 생성 관련 기능',
     functions: [
       'handleCreateDocument',
-      'createGoogleDocument'
+      'createGoogleDocument',
+      'uploadSharedDocument'
     ],
     dependencies: ['DocumentPermissions.gs', 'DocumentFolder.gs', 'DocumentSpreadsheet.gs', 'CONFIG.gs']
   };

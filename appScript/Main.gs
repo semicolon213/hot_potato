@@ -248,6 +248,15 @@ function doPost(e) {
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    
+    // 공유 문서 업로드(파일 업로드 + 권한 설정 + 폴더 이동)
+    if (req.action === 'uploadSharedDocument') {
+      console.log('📤 공유 문서 업로드 요청:', { name: req.fileName, mimeType: req.fileMimeType });
+      const result = uploadSharedDocument(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
     // 공유 템플릿 메타데이터 수정
     if (req.action === 'updateSharedTemplateMeta') {

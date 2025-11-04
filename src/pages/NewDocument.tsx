@@ -13,6 +13,7 @@ import {
     fetchTags as fetchPersonalTags
 } from "../utils/database/personalTagManager";
 import { BiLoaderAlt } from "react-icons/bi";
+import EmailAutocomplete from "../components/ui/common/EmailAutocomplete";
 import "../components/features/templates/TemplateUI.css";
 import "../styles/pages/NewDocument.css";
 import {
@@ -1992,15 +1993,14 @@ function NewDocument({
                                         <div className="individual-emails">
                                             {individualEmails.map((email, index) => (
                                                 <div key={index} className="email-input-group">
-                                                    <input
-                                                        type="email"
-                                                        placeholder="이메일 주소를 입력하세요"
+                                                    <EmailAutocomplete
                                                         value={email}
-                                                        onChange={(e) => {
+                                                        onChange={(value) => {
                                                             const newEmails = [...individualEmails];
-                                                            newEmails[index] = e.target.value;
+                                                            newEmails[index] = value;
                                                             setIndividualEmails(newEmails);
                                                         }}
+                                                        placeholder="이름이나 이메일을 입력하세요"
                                                         className="email-input"
                                                     />
                                                     <button

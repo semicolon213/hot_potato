@@ -29,16 +29,26 @@ async function convertEmailToName(email: string): Promise<string> {
     }
     
     const response = await apiClient.getUserNameByEmail(email);
-    console.log('👤 API 응답:', response);
+    console.log('👤 API 응답 전체:', JSON.stringify(response, null, 2));
     
-    const userNameResponse = response.data;
-    const resolvedName = userNameResponse?.name;
-    if (response.success && resolvedName) {
-      console.log('👤 사용자 이름 변환 성공:', email, '->', resolvedName);
-      return resolvedName;
+    // Apps Script가 직접 { success, name, message } 형태로 반환하므로
+    // response.data가 아니라 response 자체를 확인
+    if (response.success && response.data) {
+      const userNameResponse = response.data as UserNameResponse;
+      const resolvedName = userNameResponse?.name;
+      if (resolvedName && resolvedName !== email) {
+        console.log('👤 사용자 이름 변환 성공:', email, '->', resolvedName);
+        return resolvedName;
+      }
     }
     
-    console.log('👤 사용자 이름 변환 실패, 원본 이메일 반환:', email);
+    // 응답 구조가 다른 경우를 대비해 직접 name 필드 확인
+    if (response.success && (response as any).name && (response as any).name !== email) {
+      console.log('👤 사용자 이름 변환 성공 (직접 name 필드):', email, '->', (response as any).name);
+      return (response as any).name;
+    }
+    
+    console.log('👤 사용자 이름 변환 실패, 원본 이메일 반환:', email, 'response:', response);
     return email; // 변환 실패 시 원본 이메일 반환
   } catch (error) {
     console.warn('이메일을 사용자 이름으로 변환 실패:', email, error);
@@ -59,25 +69,42 @@ export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
     }
 
     const rows = (result.data || []) as DocumentInfoResponse[];
-    const documents: DocumentInfo[] = rows.map((row: DocumentInfoResponse, index: number) => {
-      const mimeType = row.mimeType || row.type || '';
-      const created = row.createdTime || row.created_at || undefined;
-      const id = row.id || row.documentId || row.fileId || '';
-      const url = row.url || row.webViewLink || (id ? `https://docs.google.com/document/d/${id}/edit` : '');
-      return {
-        id,
-        documentNumber: row.documentNumber || generateDocumentNumber(mimeType, 'shared', id, created),
-        title: row.title || row.name || '',
-        creator: row.creator || row.author || '',
-        creatorEmail: row.authorEmail || row.creatorEmail || '',
-        lastModified: row.lastModified || row.modifiedTime || formatDateTime(new Date().toISOString()),
-        url,
-        documentType: 'shared',
-        mimeType,
-        tag: row.tag || '공용',
-        originalIndex: index,
-      };
-    });
+    const documents: DocumentInfo[] = await Promise.all(
+      rows.map(async (row: DocumentInfoResponse, index: number) => {
+        const mimeType = row.mimeType || row.type || '';
+        const created = row.createdTime || row.created_at || undefined;
+        const id = row.id || row.documentId || row.fileId || '';
+        const url = row.url || row.webViewLink || (id ? `https://docs.google.com/document/d/${id}/edit` : '');
+        
+        // creator나 author가 이메일인 경우 이름으로 변환
+        const rawCreator = row.creator || row.author || '';
+        let creatorName = rawCreator;
+        if (rawCreator && rawCreator.includes('@')) {
+          // 이메일 형식이면 이름으로 변환 시도
+          creatorName = await convertEmailToName(rawCreator);
+        }
+        
+        // 날짜 포맷팅 (ISO 형식이면 포맷팅, 이미 포맷팅된 경우 그대로 사용)
+        const rawModifiedTime = row.lastModified || row.modifiedTime || new Date().toISOString();
+        const formattedModifiedTime = rawModifiedTime.includes('T') || rawModifiedTime.includes('Z') 
+          ? formatDateTime(rawModifiedTime) 
+          : rawModifiedTime;
+        
+        return {
+          id,
+          documentNumber: row.documentNumber || generateDocumentNumber(mimeType, 'shared', id, created),
+          title: row.title || row.name || '',
+          creator: creatorName,
+          creatorEmail: row.authorEmail || row.creatorEmail || (rawCreator.includes('@') ? rawCreator : ''),
+          lastModified: formattedModifiedTime,
+          url,
+          documentType: 'shared',
+          mimeType,
+          tag: row.tag || '공용',
+          originalIndex: index,
+        };
+      })
+    );
 
     return documents;
   } catch (error) {
@@ -178,11 +205,26 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
         fileWithProperties = file;
       }
 
-      const metadataCreator = fileWithProperties.properties?.creatorEmail || fileWithProperties.properties?.creator;
+      // creator (사용자 이름)를 우선적으로 확인, 없으면 creatorEmail 사용
+      const metadataCreator = fileWithProperties.properties?.creator || fileWithProperties.properties?.creatorEmail;
       const metadataTag = fileWithProperties.properties?.tag;
 
-      const rawCreator = metadataCreator || fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
-      const creatorName = await convertEmailToName(rawCreator);
+      // creator가 이미 이름인 경우 그대로 사용, 이메일인 경우에만 변환
+      let creatorName: string;
+      if (metadataCreator) {
+        // creator가 이메일 형식인지 확인
+        if (metadataCreator.includes('@')) {
+          // 이메일 형식이면 이름으로 변환 시도
+          creatorName = await convertEmailToName(metadataCreator);
+        } else {
+          // 이미 이름이면 그대로 사용
+          creatorName = metadataCreator;
+        }
+      } else {
+        // 메타데이터에 creator가 없으면 owners에서 가져와서 변환
+        const rawCreator = fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
+        creatorName = await convertEmailToName(rawCreator);
+      }
 
       documents.push({
         id: fileWithProperties.id || '',
