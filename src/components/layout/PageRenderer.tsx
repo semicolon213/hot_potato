@@ -27,6 +27,7 @@ import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
 import WorkflowManagement from '../../pages/WorkflowManagement';
+import Accounting from '../../pages/Accounting';
 
 interface PageRendererProps {
   currentPage: PageType;
@@ -241,6 +242,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       case 'google_chat':
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
+      case 'accounting':
+        return <Accounting onPageChange={onPageChange} />;
       default:
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
     }

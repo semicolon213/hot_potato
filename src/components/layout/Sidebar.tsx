@@ -15,7 +15,8 @@ import {
   BiUser, 
   BiShield,
   BiChevronDown,
-  BiCheckSquare
+  BiCheckSquare,
+  BiDollar
 } from "react-icons/bi";
 import { SiGoogle } from "react-icons/si";
 
@@ -28,6 +29,7 @@ const ShieldIcon = BiShield as React.ComponentType<React.SVGProps<SVGSVGElement>
 const ChevronIcon = BiChevronDown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const GoogleIcon = SiGoogle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const CheckSquareIcon = BiCheckSquare as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const DollarIcon = BiDollar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /**
  * @brief 사이드바 Props 타입 정의
@@ -176,6 +178,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
                 </div>
               </div>
             )}
+          </div>
+
+          <div
+            className={`menu-item ${currentPage === 'accounting' ? 'active' : ''}`}
+            onClick={() => handleMenuClick("accounting")}
+          >
+            <DollarIcon className="menu-icon" />
+            <div className="menu-text">회계</div>
           </div>
         </div>
       </div>

@@ -321,6 +321,28 @@ export class ApiClient {
     return this.request<SpreadsheetIdsResponse>('getSpreadsheetIds', { spreadsheetNames });
   }
 
+  // 회계 관련 API
+  async createLedger(data: {
+    ledgerName: string;
+    accountName: string;
+    initialBalance: number;
+    creatorEmail: string;
+    accessUsers: string[];
+    accessGroups: string[];
+    mainManagerEmail: string;
+    subManagerEmails: string[];
+  }) {
+    return this.request('createLedger', data);
+  }
+
+  async getLedgerList() {
+    return this.request<{ success: boolean; data: any[] }>('getLedgerList', {});
+  }
+
+  async getAccountingFolderId() {
+    return this.request<{ success: boolean; data: { accountingFolderId: string } }>('getAccountingFolderId', {});
+  }
+
   // 기본 태그 목록 조회
   async getStaticTags() {
     return this.request<StaticTagsResponse>('getStaticTags');

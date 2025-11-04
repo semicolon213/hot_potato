@@ -41,11 +41,17 @@ let calendarProfessorSpreadsheetId: string | null = null;
 let calendarStudentSpreadsheetId: string | null = null;
 let studentSpreadsheetId: string | null = null;
 let staffSpreadsheetId: string | null = null;
+let accountingFolderId: string | null = null;
 
 /**
  * @brief 스프레드시트 ID 전역 변수 초기화
  * @details 로그아웃 또는 계정 전환 시 모든 스프레드시트 ID를 초기화합니다.
  */
+// 회계 폴더 ID 접근 함수
+export const getAccountingFolderId = (): string | null => {
+  return accountingFolderId;
+};
+
 export const clearSpreadsheetIds = (): void => {
     hotPotatoDBSpreadsheetId = null;
     announcementSpreadsheetId = null;
@@ -53,6 +59,7 @@ export const clearSpreadsheetIds = (): void => {
     calendarStudentSpreadsheetId = null;
     studentSpreadsheetId = null;
     staffSpreadsheetId = null;
+    accountingFolderId = null;
     console.log('🧹 스프레드시트 ID 전역 변수 초기화 완료');
 };
 
@@ -136,6 +143,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
     hotPotatoDBSpreadsheetId: string | null;
     studentSpreadsheetId: string | null;
     staffSpreadsheetId: string | null;
+    accountingFolderId: string | null;
 }> => {
     console.log('📊 스프레드시트 ID 초기화 시작 (Apps Script 방식)...');
     
@@ -188,6 +196,12 @@ export const initializeSpreadsheetIds = async (): Promise<{
         const { findPersonalConfigFile } = await import('./personalConfigManager');
         const personalConfigId = await findPersonalConfigFile();
 
+        // 회계 폴더 ID 조회
+        const accountingFolderResponse = await apiClient.request('getAccountingFolderId', {});
+        const accountingId = accountingFolderResponse.success && accountingFolderResponse.data?.accountingFolderId
+            ? accountingFolderResponse.data.accountingFolderId
+            : null;
+        
         // 전역 변수 업데이트
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
@@ -195,6 +209,7 @@ export const initializeSpreadsheetIds = async (): Promise<{
         hotPotatoDBSpreadsheetId = personalConfigId; // 개인 설정 파일 ID로 설정
         studentSpreadsheetId = studentId;
         staffSpreadsheetId = staffId;
+        accountingFolderId = accountingId;
         
         console.log('✅ 스프레드시트 ID 초기화 완료:', {
             announcement: !!announcementId,
@@ -202,7 +217,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudent: !!calendarStudentId,
             hotPotatoDB: !!personalConfigId,
             student: !!studentId,
-            staff: !!staffId
+            staff: !!staffId,
+            accountingFolder: !!accountingId
         });
 
         return {
@@ -211,7 +227,8 @@ export const initializeSpreadsheetIds = async (): Promise<{
             calendarStudentSpreadsheetId: calendarStudentId,
             hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
             studentSpreadsheetId: studentId,
-            staffSpreadsheetId: staffId
+            staffSpreadsheetId: staffId,
+            accountingFolderId: accountingId
         };
     } catch (error) {
         console.error('❌ 스프레드시트 ID 초기화 중 오류:', error);
@@ -220,13 +237,15 @@ export const initializeSpreadsheetIds = async (): Promise<{
         const { findPersonalConfigFile } = await import('./personalConfigManager');
         const personalConfigId = await findPersonalConfigFile().catch(() => null);
         
+        // 회계 폴더 ID는 에러 시에도 null로 반환
         return {
             announcementSpreadsheetId: null,
             calendarProfessorSpreadsheetId: null,
             calendarStudentSpreadsheetId: null,
             hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
             studentSpreadsheetId: null,
-            staffSpreadsheetId: null
+            staffSpreadsheetId: null,
+            accountingFolderId: null
         };
     }
 };
