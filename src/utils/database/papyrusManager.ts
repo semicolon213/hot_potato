@@ -768,6 +768,7 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
     console.log(`Fetching students from spreadsheet: ${targetSpreadsheetId}, sheet: ${ENV_CONFIG.STUDENT_SHEET_NAME}`);
     const data = await getSheetData(targetSpreadsheetId, ENV_CONFIG.STUDENT_SHEET_NAME);
     console.log('Students data received:', data);
+    console.log('Number of raw student data rows found:', data.values ? data.values.length : 0);
     
     if (!data || !data.values || data.values.length <= 1) {
       console.log('No students data or insufficient rows');

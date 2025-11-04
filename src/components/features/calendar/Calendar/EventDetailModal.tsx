@@ -14,7 +14,7 @@ interface EventDetailModalProps {
 }
 
 const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onDelete, onEdit, position: positionFromProp }) => {
-    const { students, staff } = useCalendarContext();
+    const { students, staff, user } = useCalendarContext();
     const [isAttendeesExpanded, setIsAttendeesExpanded] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [position, setPosition] = useState(positionFromProp || { top: window.innerHeight / 2, left: window.innerWidth / 2 });
@@ -110,14 +110,35 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         ? { top: position.top, left: position.left, transform: 'none' }
         : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
+    const canModifyEvent = () => {
+        if (!user) return false;
+
+        if (user.userType === 'admin') {
+            return true;
+        }
+
+        if (!event.attendees || event.attendees.trim() === '') {
+            return false;
+        }
+
+        const firstAttendee = event.attendees.split(',')[0].trim();
+        const userId = String(user.studentId).trim();
+        
+        return userId === firstAttendee;
+    };
+
     const modalContent = (
         <div className="event-detail-modal-overlay" onClick={onClose}>
             <div className={`event-detail-container ${isAttendeesExpanded ? 'expanded' : ''}`} style={modalStyle} onClick={(e) => e.stopPropagation()}>
                 <div className="event-detail-header" onMouseDown={handleMouseDown}>
                     <h2>{event.title}</h2>
                     <div className="header-actions">
-                        <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
-                        <BiTrashAlt onClick={handleDelete} className="header-icon" />
+                        {canModifyEvent() && (
+                            <>
+                                <BiEditAlt onClick={() => onEdit(event)} className="header-icon" />
+                                <BiTrashAlt onClick={handleDelete} className="header-icon" />
+                            </>
+                        )}
                         <BiX onClick={onClose} className="header-icon close-button" />
                     </div>
                 </div>
