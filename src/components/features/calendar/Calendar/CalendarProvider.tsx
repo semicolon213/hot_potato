@@ -64,6 +64,11 @@ interface CalendarProviderProps {
     staff: Staff[];
 }
 
+interface EventColor {
+  background: string;
+  foreground: string;
+}
+
 const CalendarProvider: React.FC<CalendarProviderProps> = ({
                                                                children,
                                                                user,
@@ -95,7 +100,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     } | undefined>(undefined);
     const [refreshKey, setRefreshKey] = useState(0);
     const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
-    const [eventColors, setEventColors] = useState<any>({});
+    const [eventColors, setEventColors] = useState<{ [key: string]: EventColor }>({});
     const [calendarColor, setCalendarColor] = useState<string | undefined>();
     const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
     const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
