@@ -245,12 +245,13 @@ const App: React.FC = () => {
 
   const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[] }) => {
     try {
+      // Go back to the announcements list immediately
+      handlePageChange('announcements');
+
       await updateAnnouncement(announcementId, postData);
       // Refresh the announcements list
       const updatedAnnouncements = await fetchAnnouncements();
       setAnnouncements(updatedAnnouncements);
-      // Go back to the announcements list
-      handlePageChange('announcements');
     } catch (error) {
       console.error('Error updating announcement:', error);
     }

@@ -42,7 +42,7 @@ export const useAppState = () => {
     const [announcements, setAnnouncements] = useState<Post[]>([]);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<Post | null>(null);
     const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
-    const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
+    const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(true);
     const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
     const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
     const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
@@ -291,7 +291,7 @@ export const useAppState = () => {
         setAnnouncements([]);
         setSelectedAnnouncement(null);
         setIsGoogleAuthenticatedForAnnouncements(false);
-        setIsAnnouncementsLoading(false);
+        setIsAnnouncementsLoading(true); // 로딩 상태로 변경
         setAnnouncementSpreadsheetId(null);
         
         // 캘린더 상태 초기화
