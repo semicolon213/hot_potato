@@ -10,6 +10,7 @@
 .post-view-actions {
   display: flex;
   gap: 10px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .post-view-actions .edit-button,
