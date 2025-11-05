@@ -32,9 +32,10 @@ import {
     updateCalendarEvent,
     incrementViewCount,
     updateAnnouncement,
-    deleteAnnouncement
+    deleteAnnouncement,
+    deleteCalendarEvent
   } from './utils/database/papyrusManager';
-import { 
+import {
   addTag as addPersonalTag,
   deleteTag as deletePersonalTag,
   updateTag as updatePersonalTag,
@@ -98,12 +99,18 @@ const App: React.FC = () => {
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
+    calendarProfessorSpreadsheetId,
+    calendarStudentSpreadsheetId,
+    calendarCouncilSpreadsheetId,
+    calendarSuppSpreadsheetId,
+    calendarADProfessorSpreadsheetId,
+    activeCalendarSpreadsheetId,
     staffSpreadsheetId,
 
     // Attendees
     students,
     staff,
-    
+
     // State reset
     resetAllState
   } = useAppState();
@@ -123,18 +130,18 @@ const App: React.FC = () => {
   // 로그아웃 처리
   const handleLogout = () => {
     console.log('🚪 로그아웃 시작...');
-    
+
     // 모든 사용자 데이터 정리 (localStorage, 전역 변수, Google API 토큰)
     clearAllUserData();
-    
+
     // useAppState의 모든 상태 초기화
     resetAllState();
-    
+
     // Google 계정 자동 선택 비활성화
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
     }
-    
+
     // Zustand auth store도 초기화 (동기적으로)
     try {
       const { useAuthStore } = require('./hooks/features/auth/useAuthStore');
@@ -143,7 +150,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.warn('Auth store 로그아웃 실패:', error);
     }
-    
+
     console.log('🚪 로그아웃 완료');
   };
 
@@ -272,10 +279,77 @@ const App: React.FC = () => {
     }
   };
 
+  const getAttendeeUserType = (attendeeId: string): string | null => {
+    const student = students.find(s => s.no_student === attendeeId);
+    if (student) {
+      return student.council ? 'council' : 'student';
+    }
+
+    const staffMember = staff.find(s => s.no === attendeeId);
+    if (staffMember) {
+      if (staffMember.pos === '외부강사' || staffMember.pos === '시간강사') {
+        return 'ADprofessor';
+      }
+      if (staffMember.pos === '조교') {
+        return 'support';
+      }
+      if (staffMember.pos === '교수') {
+        return 'professor';
+      }
+    }
+    return null;
+  };
+
+  const permissionHierarchy = ['student', 'council', 'support', 'ADprofessor', 'professor'];
+
   // 캘린더 이벤트 추가 핸들러
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
     try {
-      await addCalendarEvent(eventData);
+      let eventOwnerType = user.userType;
+      let targetSpreadsheetId = activeCalendarSpreadsheetId; // Initialize here
+
+      if (eventData.attendees) {
+        const attendeeIds = eventData.attendees.split(',');
+        const attendeeUserTypes = attendeeIds.map(getAttendeeUserType).filter(Boolean) as string[];
+
+        if (attendeeUserTypes.length > 0) {
+          const lowestPermissionType = attendeeUserTypes.reduce((lowest, current) => {
+            const lowestIndex = permissionHierarchy.indexOf(lowest);
+            const currentIndex = permissionHierarchy.indexOf(current);
+            return currentIndex < lowestIndex ? current : lowest;
+          }, attendeeUserTypes[0]);
+
+          eventOwnerType = lowestPermissionType;
+
+          switch (lowestPermissionType) {
+            case 'student':
+              targetSpreadsheetId = calendarStudentSpreadsheetId;
+              break;
+            case 'council':
+              targetSpreadsheetId = calendarCouncilSpreadsheetId;
+              break;
+            case 'support':
+              targetSpreadsheetId = calendarSuppSpreadsheetId;
+              break;
+            case 'ADprofessor':
+              targetSpreadsheetId = calendarADProfessorSpreadsheetId;
+              break;
+            case 'professor':
+              targetSpreadsheetId = calendarProfessorSpreadsheetId;
+              break;
+            default:
+              targetSpreadsheetId = activeCalendarSpreadsheetId;
+          }
+        }
+      }
+
+      if (!targetSpreadsheetId) {
+        throw new Error("Target calendar spreadsheet ID not found");
+      }
+      if (!eventOwnerType) {
+        throw new Error("Event owner type not found");
+      }
+      await addCalendarEvent(targetSpreadsheetId, eventData, eventOwnerType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
@@ -287,7 +361,21 @@ const App: React.FC = () => {
   // 캘린더 이벤트 업데이트 핸들러
   const handleUpdateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
     try {
-      await updateCalendarEvent(eventId, eventData);
+      const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+      ].filter(Boolean);
+
+      const spreadsheetId = allCalendarIds.find(id => eventId.startsWith(id!));
+
+      if (!spreadsheetId) {
+        throw new Error("Could not determine spreadsheet ID from event ID");
+      }
+
+      await updateCalendarEvent(spreadsheetId, eventId, eventData);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
@@ -300,6 +388,28 @@ const App: React.FC = () => {
   const handleDeleteCalendarEvent = async (eventId: string) => {
     // console.log("Deleting event", eventId);
     // console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
+    try {
+      const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+      ].filter(Boolean);
+
+      const spreadsheetId = allCalendarIds.find(id => eventId.startsWith(id!));
+
+      if (!spreadsheetId) {
+        throw new Error("Could not determine spreadsheet ID from event ID");
+      }
+
+      await deleteCalendarEvent(spreadsheetId, eventId);
+      // 캘린더 이벤트 목록 새로고침
+      const updatedEvents = await fetchCalendarEvents();
+      setCalendarEvents(updatedEvents);
+    } catch (error) {
+      console.error('Error deleting calendar event:', error);
+    }
   };
 
   // 학사일정 저장 핸들러
@@ -310,17 +420,13 @@ const App: React.FC = () => {
     gradeEntryPeriod: DateRange;
     customPeriods: CustomPeriod[];
   }) => {
-    const spreadsheetIds = [calendarStudentSpreadsheetId, calendarProfessorSpreadsheetId].filter(Boolean);
-
-    if (spreadsheetIds.length === 0) {
+    if (!activeCalendarSpreadsheetId) {
       alert('캘린더가 설정되지 않아 저장할 수 없습니다.');
-      console.error('Error saving academic schedule: No calendar spreadsheet IDs are set.');
+      console.error('Error saving academic schedule: No active calendar spreadsheet ID is set.');
       return;
     }
     try {
-      for (const id of spreadsheetIds) {
-        await saveAcademicScheduleToSheet(scheduleData, id as string);
-      }
+      await saveAcademicScheduleToSheet(scheduleData, activeCalendarSpreadsheetId);
       alert('학사일정이 성공적으로 저장되었습니다.');
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
@@ -376,12 +482,12 @@ const App: React.FC = () => {
     try {
       // 태그 삭제 시 영향받는 개인 양식들 확인
       const impact = await checkTagDeletionImpact(tagToDelete);
-      
+
       if (impact.affectedFiles.length > 0) {
         // 영향받는 파일들이 있는 경우 상세한 확인 메시지 표시
         const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
         const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 개인 양식들도 함께 삭제됩니다:\n\n${affectedFilesList}\n\n정말로 삭제하시겠습니까?`;
-        
+
         if (!window.confirm(confirmMessage)) {
           return;
         }
@@ -420,12 +526,12 @@ const App: React.FC = () => {
       // 태그 수정 시 영향받는 개인 양식들 확인
       const { checkTagUpdateImpact, updatePersonalTemplateMetadata } = await import('./utils/database/personalTagManager');
       const impact = await checkTagUpdateImpact(oldTag, newTag);
-      
+
       if (impact.affectedFiles.length > 0) {
         // 영향받는 파일들이 있는 경우 상세한 확인 메시지 표시
         const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
         const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 개인 양식들의 파일명도 함께 변경됩니다:\n\n${affectedFilesList}\n\n정말로 수정하시겠습니까?`;
-        
+
         if (!window.confirm(confirmMessage)) {
           return;
         }
@@ -449,7 +555,7 @@ const App: React.FC = () => {
         updatePersonalTag(oldTag, newTag),
         updatePersonalTemplateMetadata(oldTag, newTag)
       ]);
-      
+
       if (tagUpdateSuccess && fileUpdateSuccess) {
         // 태그 목록을 다시 로드
         const updatedTags = await fetchPersonalTags();

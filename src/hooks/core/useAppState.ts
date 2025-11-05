@@ -48,7 +48,11 @@ export const useAppState = () => {
     const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
     const [staffSpreadsheetId, setStaffSpreadsheetId] = useState<string | null>(null);
     const [calendarProfessorSpreadsheetId, setCalendarProfessorSpreadsheetId] = useState<string | null>(null);
+    const [calendarCouncilSpreadsheetId, setCalendarCouncilSpreadsheetId] = useState<string | null>(null);
+    const [calendarADProfessorSpreadsheetId, setCalendarADProfessorSpreadsheetId] = useState<string | null>(null);
+    const [calendarSuppSpreadsheetId, setCalendarSuppSpreadsheetId] = useState<string | null>(null);
     const [calendarStudentSpreadsheetId, setCalendarStudentSpreadsheetId] = useState<string | null>(null);
+    const [activeCalendarSpreadsheetId, setActiveCalendarSpreadsheetId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
     // State for Calendar
@@ -111,6 +115,9 @@ export const useAppState = () => {
                         // 스프레드시트 ID들 상태 업데이트
                         setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
                         setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
+                        setCalendarCouncilSpreadsheetId(spreadsheetIds.calendarCouncilSpreadsheetId);
+                        setCalendarADProfessorSpreadsheetId(spreadsheetIds.calendarADProfessorSpreadsheetId);
+                        setCalendarSuppSpreadsheetId(spreadsheetIds.calendarSuppSpreadsheetId);
                         setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
                         setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                         setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
@@ -162,6 +169,9 @@ export const useAppState = () => {
                     // 스프레드시트 ID들 상태 업데이트
                     setAnnouncementSpreadsheetId(spreadsheetIds.announcementSpreadsheetId);
                     setCalendarProfessorSpreadsheetId(spreadsheetIds.calendarProfessorSpreadsheetId);
+                    setCalendarCouncilSpreadsheetId(spreadsheetIds.calendarCouncilSpreadsheetId);
+                    setCalendarADProfessorSpreadsheetId(spreadsheetIds.calendarADProfessorSpreadsheetId);
+                    setCalendarSuppSpreadsheetId(spreadsheetIds.calendarSuppSpreadsheetId);
                     setCalendarStudentSpreadsheetId(spreadsheetIds.calendarStudentSpreadsheetId);
                     setHotPotatoDBSpreadsheetId(spreadsheetIds.hotPotatoDBSpreadsheetId);
                     setStudentSpreadsheetId(spreadsheetIds.studentSpreadsheetId);
@@ -189,6 +199,38 @@ export const useAppState = () => {
         }
     }, [user, isLoading]);
 
+    // 사용자 유형에 따라 활성 캘린더 스프레드시트 ID 설정
+    useEffect(() => {
+        if (user && user.userType) {
+            let targetId: string | null = null;
+            switch (user.userType) {
+                case 'professor':
+                    targetId = calendarProfessorSpreadsheetId;
+                    break;
+                case 'student':
+                    targetId = calendarStudentSpreadsheetId;
+                    break;
+                case 'council':
+                    targetId = calendarCouncilSpreadsheetId;
+                    break;
+                case 'ADprofessor':
+                    targetId = calendarADProfessorSpreadsheetId;
+                    break;
+                case 'support':
+                    targetId = calendarSuppSpreadsheetId;
+                    break;
+                default:
+                    console.warn(`Unknown userType: ${user.userType}. Defaulting to student calendar.`);
+                    targetId = calendarStudentSpreadsheetId;
+                    break;
+            }
+            setActiveCalendarSpreadsheetId(targetId);
+            console.log(`Active calendar spreadsheet set to: ${targetId} for userType: ${user.userType}`);
+        } else {
+            setActiveCalendarSpreadsheetId(null);
+        }
+    }, [user, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId, calendarCouncilSpreadsheetId, calendarADProfessorSpreadsheetId, calendarSuppSpreadsheetId]);
+
     // 데이터 로드 useEffect들
     useEffect(() => {
         if (isGapiReady && announcementSpreadsheetId) {
@@ -210,7 +252,7 @@ export const useAppState = () => {
     }, [isGapiReady, announcementSpreadsheetId]);
 
     useEffect(() => {
-        if (isGapiReady && (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId)) {
+        if (isGapiReady && (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId || calendarCouncilSpreadsheetId || calendarADProfessorSpreadsheetId || calendarSuppSpreadsheetId)) {
             const loadCalendarEvents = async () => {
                 setIsCalendarLoading(true);
                 try {
@@ -226,7 +268,7 @@ export const useAppState = () => {
             };
             loadCalendarEvents();
         }
-    }, [isGapiReady, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId]);
+    }, [isGapiReady, calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId, calendarCouncilSpreadsheetId, calendarADProfessorSpreadsheetId, calendarSuppSpreadsheetId]);
 
     useEffect(() => {
         if (isGapiReady) {
@@ -369,7 +411,11 @@ export const useAppState = () => {
         customPeriods,
         setCustomPeriods,
         calendarProfessorSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId,
         calendarStudentSpreadsheetId,
+        activeCalendarSpreadsheetId,
 
         // Attendees state
         students,

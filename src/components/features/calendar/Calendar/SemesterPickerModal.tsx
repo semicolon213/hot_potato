@@ -168,9 +168,7 @@ const SemesterPickerModal: React.FC<SemesterPickerModalProps> = ({ isOpen, onClo
     };
 
     const handleCloseWithoutSaving = () => {
-        if (window.confirm('저장 되지 않습니다. 그래도 닫겠습니까?')) {
-            onClose();
-        }
+        onClose();
     };
 
     return (

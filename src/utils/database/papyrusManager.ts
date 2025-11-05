@@ -38,6 +38,9 @@ import type {Template} from '../../hooks/features/templates/useTemplateUI';
 let hotPotatoDBSpreadsheetId: string | null = null;
 let announcementSpreadsheetId: string | null = null;
 let calendarProfessorSpreadsheetId: string | null = null;
+let calendarCouncilSpreadsheetId: string | null = null;
+let calendarADProfessorSpreadsheetId: string | null = null;
+let calendarSuppSpreadsheetId: string | null = null;
 let calendarStudentSpreadsheetId: string | null = null;
 let studentSpreadsheetId: string | null = null;
 let staffSpreadsheetId: string | null = null;
@@ -139,6 +142,9 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
 export const initializeSpreadsheetIds = async (): Promise<{
     announcementSpreadsheetId: string | null;
     calendarProfessorSpreadsheetId: string | null;
+    calendarCouncilSpreadsheetId: string | null;
+    calendarADProfessorSpreadsheetId: string | null;
+    calendarSuppSpreadsheetId: string | null;
     calendarStudentSpreadsheetId: string | null;
     hotPotatoDBSpreadsheetId: string | null;
     studentSpreadsheetId: string | null;
@@ -189,6 +195,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
         const announcementId = ids[ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME] || null;
         const calendarProfessorId = ids[ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME] || null;
         const calendarStudentId = ids[ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME] || null;
+        const calendarCouncilId = ids[ENV_CONFIG.CALENDAR_COUNCIL_SPREADSHEET_NAME] || null;
+        const calendarADProfessorId = ids[ENV_CONFIG.CALENDAR_ADPROFESSOR_SPREADSHEET_NAME] || null;
+        const calendarSuppId = ids[ENV_CONFIG.CALENDAR_SUPP_SPREADSHEET_NAME] || null;
         const studentId = ids[ENV_CONFIG.STUDENT_SPREADSHEET_NAME] || null;
         const staffId = ids[ENV_CONFIG.STAFF_SPREADSHEET_NAME] || null;
 
@@ -205,6 +214,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
         // 전역 변수 업데이트
         announcementSpreadsheetId = announcementId;
         calendarProfessorSpreadsheetId = calendarProfessorId;
+        calendarCouncilSpreadsheetId = calendarCouncilId;
+        calendarADProfessorSpreadsheetId = calendarADProfessorId;
+        calendarSuppSpreadsheetId = calendarSuppId;
         calendarStudentSpreadsheetId = calendarStudentId;
         hotPotatoDBSpreadsheetId = personalConfigId; // 개인 설정 파일 ID로 설정
         studentSpreadsheetId = studentId;
@@ -214,6 +226,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
         console.log('✅ 스프레드시트 ID 초기화 완료:', {
             announcement: !!announcementId,
             calendarProfessor: !!calendarProfessorId,
+            calendarCouncil: !!calendarCouncilId,
+            calendarADProfessor: !!calendarADProfessorId,
+            calendarSupp: !!calendarSuppId,
             calendarStudent: !!calendarStudentId,
             hotPotatoDB: !!personalConfigId,
             student: !!studentId,
@@ -224,6 +239,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
         return {
             announcementSpreadsheetId: announcementId,
             calendarProfessorSpreadsheetId: calendarProfessorId,
+            calendarCouncilSpreadsheetId: calendarCouncilId,
+            calendarADProfessorSpreadsheetId: calendarADProfessorId,
+            calendarSuppSpreadsheetId: calendarSuppId,
             calendarStudentSpreadsheetId: calendarStudentId,
             hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
             studentSpreadsheetId: studentId,
@@ -241,6 +259,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
         return {
             announcementSpreadsheetId: null,
             calendarProfessorSpreadsheetId: null,
+            calendarCouncilSpreadsheetId: null,
+            calendarADProfessorSpreadsheetId: null,
+            calendarSuppSpreadsheetId: null,
             calendarStudentSpreadsheetId: null,
             hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
             studentSpreadsheetId: null,
@@ -707,7 +728,14 @@ export const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: s
 
 // 캘린더 관련 함수들
 export const fetchCalendarEvents = async (): Promise<Event[]> => {
-    const spreadsheetIds = [calendarProfessorSpreadsheetId, calendarStudentSpreadsheetId].filter(Boolean) as string[];
+    const spreadsheetIds = [
+        calendarProfessorSpreadsheetId, 
+        calendarStudentSpreadsheetId, 
+        calendarCouncilSpreadsheetId, 
+        calendarADProfessorSpreadsheetId, 
+        calendarSuppSpreadsheetId
+    ].filter(Boolean) as string[];
+
     if (spreadsheetIds.length === 0) {
         console.log('No calendar spreadsheet IDs available');
         return [];
@@ -744,37 +772,26 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
         });
 
         const results = await Promise.all(allEventsPromises);
+        const allEvents = results.flat();
 
-        const eventMap = new Map<string, Event>(); // stableId -> Event
-
-        results.forEach((eventsFromSheet, i) => {
-            const sheetId = spreadsheetIds[i];
-            eventsFromSheet.forEach(event => {
-                const stableId = event.id.replace(`${sheetId}-`, '');
-                eventMap.set(stableId, event);
-            });
-        });
-
-        const uniqueEvents = Array.from(eventMap.values());
-
-        console.log('Loaded calendar events:', uniqueEvents);
-        return uniqueEvents;
+        console.log('Loaded calendar events:', allEvents.length);
+        return allEvents;
     } catch (error) {
         console.error('Error fetching calendar events from Google Sheet:', error);
         return [];
     }
 };
 
-export const addCalendarEvent = async (eventData: Omit<Event, 'id'>): Promise<void> => {
+export const addCalendarEvent = async (spreadsheetId: string, eventData: Omit<Event, 'id'>, userType: string): Promise<void> => {
     try {
-        const targetSpreadsheetId = calendarStudentSpreadsheetId || calendarProfessorSpreadsheetId;
-        if (!targetSpreadsheetId) {
+        if (!spreadsheetId) {
             throw new Error('Calendar spreadsheet ID not found');
         }
 
-        const data = await getSheetData(targetSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
-        const lastRow = data && data.values ? data.values.length : 0;
-        const newEventId = `cal-${lastRow + 1}`;
+        const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+        const existingIds = data && data.values ? data.values.slice(1).map(row => row[0]).filter(id => id && id.includes('-cal-')).map(id => parseInt(id.split('-').pop() || '0', 10)).filter(num => !isNaN(num)) : [];
+        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+        const newEventId = `${userType}-cal-${maxId + 1}`;
 
         const newEventForSheet = [
             newEventId,
@@ -790,7 +807,7 @@ export const addCalendarEvent = async (eventData: Omit<Event, 'id'>): Promise<vo
             eventData.attendees || ''
         ];
 
-        await append(targetSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [newEventForSheet]);
+        await append(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [newEventForSheet]);
         console.log('일정이 성공적으로 추가되었습니다.');
     } catch (error) {
         console.error('Error saving calendar event to Google Sheet:', error);
@@ -798,20 +815,19 @@ export const addCalendarEvent = async (eventData: Omit<Event, 'id'>): Promise<vo
     }
 };
 
-export const updateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>): Promise<void> => {
+export const updateCalendarEvent = async (spreadsheetId: string, eventId: string, eventData: Omit<Event, 'id'>): Promise<void> => {
     try {
-        const targetSpreadsheetId = calendarStudentSpreadsheetId || calendarProfessorSpreadsheetId;
-        if (!targetSpreadsheetId) {
+        if (!spreadsheetId) {
             throw new Error('Calendar spreadsheet ID not found');
         }
 
         // Find the row index for the eventId
-        const data = await getSheetData(targetSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+        const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
         if (!data || !data.values) {
             throw new Error('Could not find calendar data');
         }
 
-        const sheetEventId = eventId.substring(targetSpreadsheetId.length + 1);
+        const sheetEventId = eventId.substring(spreadsheetId.length + 1);
         let rowIndex = data.values.findIndex((row: string[]) => row[0] === sheetEventId);
 
         // Fallback for older ID format that might not be composite
@@ -837,12 +853,43 @@ export const updateCalendarEvent = async (eventId: string, eventData: Omit<Event
             eventData.attendees || ''
         ];
 
-        await update(targetSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex + 1}:K${rowIndex + 1}`, [newRowData]);
+        await update(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex + 1}:K${rowIndex + 1}`, [newRowData]);
         console.log('일정이 성공적으로 업데이트되었습니다.');
     } catch (error) {
         console.error('Error updating calendar event in Google Sheet:', error);
         throw error;
     }
+};
+
+export const deleteCalendarEvent = async (spreadsheetId: string, eventId: string): Promise<void> => {
+  try {
+    if (!spreadsheetId) {
+      throw new Error('Calendar spreadsheet ID not found');
+    }
+
+    const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+    if (!data || !data.values) {
+      throw new Error('Could not find calendar data');
+    }
+
+    const sheetEventId = eventId.substring(spreadsheetId.length + 1);
+    let rowIndex = data.values.findIndex((row: string[]) => row[0] === sheetEventId);
+
+    if (rowIndex === -1) {
+      rowIndex = data.values.findIndex((row: string[]) => row[0] === eventId);
+    }
+
+    if (rowIndex === -1) {
+      throw new Error(`Event with ID ${eventId} not found in sheet.`);
+    }
+
+    const sheetId = 0; // Assuming the first sheet
+    await deleteRow(spreadsheetId, sheetId, rowIndex);
+    console.log('일정이 성공적으로 삭제되었습니다.');
+  } catch (error) {
+    console.error('Error deleting calendar event from Google Sheet:', error);
+    throw error;
+  }
 };
 
 // 학생 관련 함수들

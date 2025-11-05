@@ -118,22 +118,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setStartDate(formatDate(initialDate));
       setEndDate(formatDate(initialDate));
 
-      if (initialDate.getHours() !== 0 || initialDate.getMinutes() !== 0 || initialDate.getSeconds() !== 0) {
-        setShowTime(true);
-        const startHours = initialDate.getHours().toString().padStart(2, '0');
-        const startMinutes = initialDate.getMinutes().toString().padStart(2, '0');
-        setStartTime(`${startHours}:${startMinutes}`);
-
-        const oneHourLater = new Date(initialDate.getTime() + 60 * 60 * 1000);
-        const endHours = oneHourLater.getHours().toString().padStart(2, '0');
-        const endMinutes = oneHourLater.getMinutes().toString().padStart(2, '0');
-        setEndTime(`${endHours}:${endMinutes}`);
-      } else {
-        // Reset time for all-day events from monthly view
-        setShowTime(false);
-        setStartTime('00:00');
-        setEndTime('00:00');
-      }
+      // Always default to all-day event when adding a new event
+      setShowTime(false);
+      setStartTime('00:00');
+      setEndTime('00:00');
 
       setSaveTarget('google');
       setSelectedAttendees([]);
@@ -163,6 +151,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     if (!showTime && startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
+      if (start > end) {
+        setEndDate(startDate);
+      }
       setDateError(start > end);
     } else {
       setDateError(false);
@@ -186,13 +177,25 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   }, [attendeeSearchTerm, students, staff]);
 
   const handleSelectAttendee = (person: Student | Staff) => {
-    if (!selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no))) {
-        setSelectedAttendees([...selectedAttendees, person]);
+    const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
+
+    if (isSelected) {
+      // Before removing, check if it's the logged-in user and not an admin
+      if (user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId)) {
+        return; // Don't allow removal
+      }
+      handleRemoveAttendee(person);
+    } else {
+      setSelectedAttendees([...selectedAttendees, person]);
     }
     setAttendeeSearchTerm('');
   };
 
   const handleRemoveAttendee = (personToRemove: Student | Staff) => {
+    if (user && user.userType !== 'admin' && ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no) === String(user.studentId)) {
+      // Prevent removal of self if not an admin
+      return;
+    }
     setSelectedAttendees(selectedAttendees.filter(a => ('no_student' in a ? a.no_student : a.no) !== ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no)));
   };
 
@@ -327,7 +330,22 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                   {!isAttendeeSearchVisible && (
                     <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
                   )}
-                  <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => setSaveTarget('sheet')}>공유</button>
+                  <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => {
+                    setSaveTarget('sheet');
+                    if (user && user.userType !== 'admin' && (students.length > 0 || staff.length > 0)) {
+                        const allPeople = [...students, ...staff];
+                        const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === String(user.studentId));
+                        if (loggedInUserObject) {
+                            setSelectedAttendees(prev => {
+                                const userExists = prev.some(a => ('no_student' in a ? a.no_student : a.no) === String(user.studentId));
+                                if (!userExists) {
+                                    return [...prev, loggedInUserObject];
+                                }
+                                return prev;
+                            });
+                        }
+                    }
+                  }}>공유</button>
                 </div>
             )}
 
@@ -335,12 +353,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                 <>
                     <div className="tag-selection-group">
                         {eventTypes
-                            .filter(type => {
-                                if (user?.userType === 'student') {
-                                    return type === 'meeting';
-                                }
-                                return true;
-                            })
                             .map(type => (
                             <button
                                 key={type}
@@ -352,9 +364,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                 {tagLabels[type] || type}
                             </button>
                         ))}
-                        {user?.userType !== 'student' && (
                             <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
-                        )}
                     </div>
                     {isCustomTag && (
                         <div className="custom-tag-container">
@@ -431,16 +441,17 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                 <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
                   {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
                 </button>
-                {isAttendeeSearchVisible && (
-                  <div className="selected-attendees-list">
-                    {selectedAttendees.map(person => (
-                      <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
-                        <span>{person.name}</span>
-                        <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="selected-attendees-list">
+                  {selectedAttendees.map(person => (
+                    <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
+                      <span>{person.name}</span>
+                      <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="selected-attendees-count">
+                  선택된 참석자: {selectedAttendees.length}명
+                </div>
               </div>
             )}
           </div>
@@ -459,11 +470,15 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               ) : (
                 filteredAttendees.length > 0 ? (
                   <ul>
-                    {filteredAttendees.map(person => (
-                      <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
-                        {person.name} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
-                      </li>
-                    ))}
+                    {filteredAttendees.map(person => {
+                      const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
+                      return (
+                        <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
+                          {person.name} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
+                          {isSelected && <span className="checkmark-icon">✓</span>}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p>{attendeeSearchTerm.trim() !== '' ? '검색 결과가 없습니다.' : '전체 목록이 표시됩니다.'}</p>

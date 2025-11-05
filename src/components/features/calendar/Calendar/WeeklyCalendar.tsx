@@ -192,7 +192,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ selectedWeek, onAddEven
         }
     }, [weekDays, currentDate, dispatch]);
 
-    const getEventPosition = (event: any) => {
+    const getEventPosition = (event: Event) => {
         if (!event.startDateTime || !event.endDateTime) return {};
 
         const startTime = new Date(event.startDateTime);

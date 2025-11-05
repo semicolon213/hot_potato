@@ -76,7 +76,7 @@ interface CalendarContextType {
     setGradeEntryPeriod: (period: DateRange) => void;
     customPeriods: CustomPeriod[];
     setCustomPeriods: (periods: CustomPeriod[]) => void;
-    eventColors: any;
+    eventColors: { [key: string]: { background: string; foreground: string; } };
     eventTypes: string[];
     eventTypeStyles: { [key: string]: { color: string; icon: string } };
     addSheetEvent: (event: Event) => void;
