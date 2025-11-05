@@ -356,6 +356,8 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
     author: string;
     writer_id: string;
     attachments: File[];
+    isPinned?: boolean;
+    userType?: string;
 }): Promise<void> => {
     setupPapyrusAuth();
 
@@ -468,15 +470,30 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
             finalContent, // 병합된 컨텐츠
             new Date().toISOString().slice(0, 10),
             0, // view_count
-            fileNotice // JSON 문자열
+            fileNotice, // JSON 문자열
+            postData.isPinned ? 'X' : '' // fix_notice
         ];
 
         await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
         console.log('공지사항이 성공적으로 저장되었습니다.');
+
+        if (postData.isPinned) {
+            await requestPinnedAnnouncementApproval({
+                title: postData.title,
+                author: postData.author,
+                writer_id: postData.writer_id,
+                userType: postData.userType || 'student'
+            });
+        }
+
     } catch (error) {
         console.error('Error saving announcement to Google Sheet:', error);
         throw error;
     }
+};
+
+export const requestPinnedAnnouncementApproval = async (postData: { title: string; author: string; writer_id: string; userType: string; }) => {
+    return apiClient.request('requestPinnedAnnouncementApproval', postData);
 };
 
 export const incrementViewCount = async (announcementId: string): Promise<void> => {

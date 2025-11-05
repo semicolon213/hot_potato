@@ -712,6 +712,14 @@ function callUserManagementPost(req) {
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
+
+    if (action === 'requestPinnedAnnouncementApproval') {
+      console.log('📌 고정 공지사항 승인 요청 받음:', req);
+      const result = handlePinnedAnnouncementRequest(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     
     // 워크플로우 관련 액션 처리
     if (action === 'requestWorkflow') {

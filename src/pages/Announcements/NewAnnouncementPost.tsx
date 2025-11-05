@@ -11,8 +11,9 @@ interface NewAnnouncementPostProps {
         content: string;
         author: string;
         writer_id: string;
-        attachment: File | null;
+        attachments: File[];
         isPinned: boolean;
+        userType?: string;
     }) => void;
     user: User | null;
     isAuthenticated: boolean;
@@ -46,8 +47,9 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
             content, // HTML content from TiptapEditor
             author: user?.name || 'Unknown',
             writer_id: user?.studentId || '',
-            attachment,
+            attachments: attachment ? [attachment] : [],
             isPinned,
+            userType: user?.userType || 'student',
         });
     };
 

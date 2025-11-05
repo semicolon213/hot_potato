@@ -199,6 +199,10 @@ export class ApiClient {
     return this.request(API_ACTIONS.REJECT_USER, { studentId });
   }
 
+  async requestPinnedAnnouncementApproval(postData: { title: string; author: string; writer_id: string; userType: string; }) {
+    return this.request(API_ACTIONS.REQUEST_PINNED_ANNOUNCEMENT_APPROVAL, postData);
+  }
+
   async clearUserCache() {
     return this.request(API_ACTIONS.CLEAR_USER_CACHE);
   }

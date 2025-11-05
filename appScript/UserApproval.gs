@@ -534,6 +534,40 @@ function clearUserCache() {
   }
 }
 
+function handlePinnedAnnouncementRequest(req) {
+  try {
+    console.log('📌 고정 공지사항 승인 요청 처리 시작:', req);
+    const { writer_id, userType, author, title } = req;
+
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
+      return { success: false, message: '스프레드시트를 찾을 수 없습니다.' };
+    }
+
+    const sheet = spreadsheet.getSheetByName('user');
+    if (!sheet) {
+      return { success: false, message: 'user 시트를 찾을 수 없습니다.' };
+    }
+
+    const newRow = [
+      writer_id, // no_member
+      userType, // user_type
+      '고정공지사항', // name_member
+      author, // google_member
+      'X', // Approval
+      'X', // is_admin
+      new Date() // approval_date
+    ];
+
+    sheet.appendRow(newRow);
+
+    return { success: true, message: '고정 공지사항 승인 요청이 추가되었습니다.' };
+  } catch (error) {
+    console.error('📌 고정 공지사항 승인 요청 처리 오류:', error);
+    return { success: false, message: '고정 공지사항 승인 요청 처리 중 오류가 발생했습니다: ' + error.message };
+  }
+}
+
 // ===== 배포 정보 =====
 function getUserApprovalInfo() {
   return {

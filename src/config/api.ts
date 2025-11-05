@@ -37,6 +37,7 @@ export const API_ACTIONS = {
   APPROVE_USER: 'approveUser',
   APPROVE_USER_WITH_GROUP: 'approveUserWithGroup',
   REJECT_USER: 'rejectUser',
+  REQUEST_PINNED_ANNOUNCEMENT_APPROVAL: 'requestPinnedAnnouncementApproval',
   
   // 인증
   CHECK_APPROVAL_STATUS: 'checkApprovalStatus',

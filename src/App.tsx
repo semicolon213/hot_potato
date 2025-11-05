@@ -210,7 +210,7 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; isPinned?: boolean; userType?: string; }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
