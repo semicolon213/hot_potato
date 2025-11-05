@@ -3,12 +3,13 @@ import type { Post, User } from '../../types/app';
 import '../../styles/pages/AnnouncementView.css';
 import '../../styles/pages/NewAnnouncementPost.css';
 import { BiPencil, BiSave, BiX, BiPaperclip } from "react-icons/bi";
+import TiptapEditor from '../../components/ui/TiptapEditor';
 
 interface AnnouncementViewProps {
   post: Post;
   user: User | null;
   onBack: () => void;
-  onUpdate: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; }) => Promise<void>;
+  onUpdate: (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[] }) => Promise<void>;
   onDelete: (announcementId: string) => Promise<void>;
 }
 
@@ -16,35 +17,37 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(post.title);
   const [editedContent, setEditedContent] = useState('');
-  const [newAttachment, setNewAttachment] = useState<File | null>(null);
+  const [existingAttachments, setExistingAttachments] = useState<{name: string, url: string}[]>([]);
+  const [newAttachments, setNewAttachments] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [mainContent, setMainContent] = useState('');
   const [attachmentHtml, setAttachmentHtml] = useState<string | null>(null);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
 
   useEffect(() => {
-    const attachmentRegex = /<p>첨부파일:.*?<\/p>/g; // Use global flag
-    const main = post.content.replace(attachmentRegex, '').trim();
-    setMainContent(main);
-    setEditedContent(main);
+    const attachmentRegex = /<p>첨부파일:.*?<\/p>/gs;
+    const contentWithoutAttachments = post.content.replace(attachmentRegex, '').trim();
+    setMainContent(contentWithoutAttachments);
+    setEditedContent(contentWithoutAttachments);
+
+    if (post.file_notice) {
+        try {
+            const files = JSON.parse(post.file_notice);
+            setExistingAttachments(files);
+        } catch (error) {
+            console.error("Error parsing file_notice JSON:", error);
+            setExistingAttachments([]);
+        }
+    } else {
+        setExistingAttachments([]);
+    }
 
     const attachmentMatches = post.content.match(attachmentRegex);
     const html = attachmentMatches ? attachmentMatches.join('') : null;
     setAttachmentHtml(html);
 
-    if (attachmentMatches) {
-      const names = attachmentMatches.map(match => {
-        const nameMatch = match.match(/>(.*?)</);
-        return nameMatch ? nameMatch[1] : '파일';
-      });
-      // For now, just join the names for display in edit mode. This will be improved later.
-      setAttachmentName(names.join(', '));
-    } else {
-      setAttachmentName(null);
-    }
-    setNewAttachment(null);
-  }, [post.content]);
+    setNewAttachments([]);
+  }, [post]);
 
   const isAuthor = String(user?.studentId) === post.writer_id;
 
@@ -53,16 +56,11 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   };
 
   const handleSave = () => {
-    let contentToSave = editedContent;
-    // If there is no new attachment, but there was an old one, re-attach the old html
-    if (!newAttachment && attachmentHtml) {
-      contentToSave = `${editedContent}\n\n${attachmentHtml}`;
-    }
-
     onUpdate(post.id, { 
       title: editedTitle, 
-      content: contentToSave, 
-      attachment: newAttachment 
+      content: editedContent, 
+      attachments: newAttachments,
+      existingAttachments: existingAttachments
     });
     setIsEditing(false);
   };
@@ -70,7 +68,16 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   const handleCancel = () => {
     setEditedTitle(post.title);
     setEditedContent(mainContent);
-    setNewAttachment(null);
+    setNewAttachments([]);
+    if (post.file_notice) {
+        try {
+            setExistingAttachments(JSON.parse(post.file_notice));
+        } catch (e) {
+            setExistingAttachments([]);
+        }
+    } else {
+        setExistingAttachments([]);
+    }
     setIsEditing(false);
   };
 
@@ -81,8 +88,8 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setNewAttachment(e.target.files[0]);
+    if (e.target.files) {
+      setNewAttachments(prev => [...prev, ...Array.from(e.target.files)]);
     }
   };
 
@@ -90,14 +97,13 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     fileInputRef.current?.click();
   };
 
-  const removeAttachment = () => {
-    setNewAttachment(null);
-    setAttachmentName(null);
-    setAttachmentHtml(null);
-    if(fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }
+  const removeExistingAttachment = (index: number) => {
+    setExistingAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewAttachment = (index: number) => {
+    setNewAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   if (isEditing) {
     return (
@@ -130,35 +136,36 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
 
             <div className="form-group">
               <label htmlFor="content-textarea">내용</label>
-              <textarea
-                id="content-textarea"
-                placeholder="내용을 입력하세요"
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="content-textarea"
-              ></textarea>
+              <TiptapEditor content={editedContent} onContentChange={setEditedContent} />
             </div>
 
             <div className="form-group">
               <label><BiPaperclip /> 파일 첨부</label>
-              <div className="attachment-area">
-                <div className="attachment-controls">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                   <button onClick={triggerFileInput} className="attachment-button">
-                    파일 선택
+                      파일 선택
                   </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                  />
-                  {(newAttachment || attachmentName) &&
-                    <div className='attachment-info'>
-                      <span className="attachment-name">{newAttachment?.name || attachmentName}</span>
-                      <button onClick={removeAttachment} className='remove-attachment-button'><BiX/></button>
-                    </div>
-                  }
-                </div>
+              </div>
+              <input
+                  type="file"
+                  multiple
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+              />
+              <div className="attachment-list">
+                  {existingAttachments.map((file, index) => (
+                      <div key={`existing-${index}`} className="attachment-item">
+                          <span className="attachment-name">{file.name}</span>
+                          <button onClick={() => removeExistingAttachment(index)} className="remove-attachment-button"><BiX /></button>
+                      </div>
+                  ))}
+                  {newAttachments.map((file, index) => (
+                      <div key={`new-${index}`} className="attachment-item">
+                          <span className="attachment-name">{file.name}</span>
+                          <button onClick={() => removeNewAttachment(index)} className="remove-attachment-button"><BiX /></button>
+                      </div>
+                  ))}
               </div>
             </div>
           </div>

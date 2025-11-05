@@ -56,7 +56,7 @@ interface PageRendererProps {
   onPageChange: (pageName: string) => void;
   onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; attachments: File[]; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
-  onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; }) => Promise<void>;
+  onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[] }) => Promise<void>;
   onDeleteAnnouncement: (announcementId: string) => Promise<void>;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
