@@ -1,7 +1,35 @@
 .post-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 20px 0;
   border-top: 2px solid var(--text-dark);
   border-bottom: 1px solid var(--border-color);
+}
+
+.post-view-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.post-view-actions .edit-button,
+.post-view-actions .delete-button {
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.post-view-actions .edit-button {
+  background-color: var(--primary);
+  color: white;
+}
+
+.post-view-actions .delete-button {
+  background-color: var(--danger-color, #e53e3e);
+  color: white;
 }
 
 .post-view-header .announcements-title {
@@ -14,8 +42,25 @@
   gap: 20px;
   padding: 10px 0;
   border-bottom: 1px solid #cdcdcd;
-  margin-bottom: 30px;
+  margin-bottom: 15px;
   color: var(--text-medium);
+}
+
+.post-view-attachment {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--lightgrey);
+  margin-bottom: 20px;
+  border-radius: var(--border-radius-md);
+  color: var(--text-light);
+}
+
+.post-view-attachment a {
+  color: var(--text-light);
+}
+
+.post-view-attachment p + p {
+  margin-top: 8px;
 }
 
 .post-view-body {

@@ -100,3 +100,7 @@
   margin: 16px 0 8px 0;
 }
 
+.workflow-editor .ql-snow .ql-picker.ql-size .ql-picker-item {
+    font-size: 12px;
+}
+

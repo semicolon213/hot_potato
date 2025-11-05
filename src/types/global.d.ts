@@ -37,12 +37,19 @@ declare global {
         load: (api: string, version: string) => Promise<void>;
         setApiKey: (apiKey: string) => void;
         getToken: () => any;
+        request: (args: {
+          path: string;
+          method?: string;
+          params?: object;
+          headers?: object;
+          body?: object;
+        }) => Promise<{ result: object }>;
         drive: {
           files: {
-            list: (params: any) => Promise<any>;
+            list: (params: gapi.client.drive.files.list.Params) => Promise<gapi.client.drive.files.list.Response>;
             copy: (params: any) => Promise<any>;
-            create: (params: any) => Promise<any>;
-            update: (params: any) => Promise<any>;
+            create: (params: gapi.client.drive.files.create.Params) => Promise<gapi.client.drive.files.create.Response>;
+            update: (params: gapi.client.drive.files.update.Params) => Promise<gapi.client.drive.files.update.Response>;
             get: (params: any) => Promise<any>;
           };
         };
@@ -57,6 +64,11 @@ declare global {
             batchUpdate: (params: any) => Promise<any>;
           };
         };
+        docs: {
+          documents: {
+            create: (params: { title: string; }) => Promise<{ result: { documentId: string } }>;
+          }
+        }
       };
       auth2: {
         getAuthInstance: () => {
@@ -74,6 +86,55 @@ declare global {
         };
       };
     };
+  }
+
+  namespace gapi.client.drive.files {
+    interface File {
+      id: string;
+      name: string;
+      mimeType: string;
+      parents: string[];
+      webViewLink: string;
+    }
+
+    namespace list {
+      interface Params {
+        q: string;
+        fields: string;
+      }
+      interface Response {
+        result: {
+          files: File[];
+        };
+      }
+    }
+
+    namespace create {
+      interface Params {
+        resource: Partial<File>;
+        media?: {
+          mimeType: string;
+          body: Blob | File;
+        };
+        fields: string;
+      }
+      interface Response {
+        result: File;
+      }
+    }
+    
+    namespace update {
+        interface Params {
+            fileId: string;
+            addParents?: string;
+            removeParents?: string;
+            resource?: Partial<File>;
+            fields: string;
+        }
+        interface Response {
+            result: File;
+        }
+    }
   }
 }
 

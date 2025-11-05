@@ -49,12 +49,17 @@ interface PageRendererProps {
   customPeriods: CustomPeriod[];
   hotPotatoDBSpreadsheetId: string | null;
   studentSpreadsheetId: string | null;
+  staffSpreadsheetId: string | null;
   students: Student[];
   staff: Staff[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
   onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; attachments: File[]; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
+  onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; }) => Promise<void>;
+  onDeleteAnnouncement: (announcementId: string) => Promise<void>;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
   onDeleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -99,12 +104,15 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   customPeriods,
   hotPotatoDBSpreadsheetId,
   studentSpreadsheetId,
+  staffSpreadsheetId,
   students,
   staff,
   searchTerm,
   onPageChange,
   onAddAnnouncement,
   onSelectAnnouncement,
+  onUpdateAnnouncement,
+  onDeleteAnnouncement,
   onAddCalendarEvent,
   onUpdateCalendarEvent,
   onDeleteCalendarEvent,
@@ -130,8 +138,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           onSelectAnnouncement={onSelectAnnouncement}
           posts={announcements}
           isAuthenticated={isGoogleAuthenticatedForAnnouncements}
+          user={user}
           announcementSpreadsheetId={announcementSpreadsheetId}
           isLoading={isAnnouncementsLoading}
+          user={user}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost 
@@ -143,7 +153,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return selectedAnnouncement ? (
           <AnnouncementView
             post={selectedAnnouncement}
+            user={user}
             onBack={() => onPageChange('announcements')}
+            onUpdate={onUpdateAnnouncement}
+            onDelete={onDeleteAnnouncement}
           />
         ) : (
           // A fallback in case the page is accessed directly without a selected announcement

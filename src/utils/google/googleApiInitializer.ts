@@ -79,7 +79,7 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                     const checkGapi = () => {
                         attempts++;
 
-                        if (typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.load) {
+                        if (typeof window !== 'undefined' && window.gapi && window.gapi.load) {
                             console.log("gapi 스크립트 로드 완료");
                             resolve();
                         } else if (attempts >= maxAttempts) {

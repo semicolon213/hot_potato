@@ -38,6 +38,7 @@ export interface Post {
   likes: number;
   content: string;
   writer_id: string;
+  file_notice?: string;
 }
 
 export interface User {
@@ -46,6 +47,7 @@ export interface User {
   studentId: string;
   isAdmin: boolean;
   isApproved: boolean;
+  role: string;
   userType?: string;
   accessToken?: string;
 }
@@ -61,7 +63,7 @@ export type PageType =
   | 'new-board-post' 
   | 'announcements' 
   | 'new-announcement-post'
-  | 'accounting' 
+  | 'accounting'
   | 'document_management' 
   | 'docbox' 
   | 'new_document' 
@@ -72,7 +74,7 @@ export type PageType =
   | 'students' 
   | 'staff' 
   | 'workflow_management'
-  | 'google_appscript' 
+  | 'google_appscript'
   | 'google_sheets' 
   | 'google_docs' 
   | 'google_gemini' 

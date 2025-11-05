@@ -30,7 +30,9 @@ import {
     fetchTemplates,
     fetchCalendarEvents,
     updateCalendarEvent,
-    incrementViewCount
+    incrementViewCount,
+    updateAnnouncement,
+    deleteAnnouncement
   } from './utils/database/papyrusManager';
 import { 
   addTag as addPersonalTag,
@@ -96,8 +98,7 @@ const App: React.FC = () => {
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
-    calendarStudentSpreadsheetId,
-    calendarProfessorSpreadsheetId,
+    staffSpreadsheetId,
 
     // Attendees
     students,
@@ -167,10 +168,33 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageFromUrl = urlParams.get('page');
+    const announcementId = urlParams.get('announcementId');
+
+    if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
+      const announcement = announcements.find(a => a.id === announcementId);
+      if (announcement) {
+        setSelectedAnnouncement(announcement);
+      }
+    }
+  }, [announcements, currentPage]);
+
   // 페이지 전환 처리
-  const handlePageChange = (pageName: string) => {
+  const handlePageChange = (pageName: string, params?: Record<string, string>) => {
     const url = new URL(window.location.toString());
     url.searchParams.set('page', pageName);
+
+    // 기존 announcementId 파라미터를 제거
+    url.searchParams.delete('announcementId');
+
+    if (params) {
+      Object.keys(params).forEach(key => {
+        url.searchParams.set(key, params[key]);
+      });
+    }
+
     window.history.pushState({}, '', url.toString());
     setCurrentPage(pageName as PageType);
   };
@@ -186,7 +210,7 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
@@ -209,13 +233,42 @@ const App: React.FC = () => {
     setAnnouncements(updatedAnnouncements);
     setSelectedAnnouncement({ ...post, views: post.views + 1 });
 
-    handlePageChange('announcement-view');
+    handlePageChange('announcement-view', { announcementId: post.id });
 
     try {
       await incrementViewCount(post.id);
     } catch (error) {
       console.error('Failed to increment view count:', error);
       // Optionally, revert the optimistic update here
+    }
+  };
+
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+    try {
+      await updateAnnouncement(announcementId, postData);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await deleteAnnouncement(announcementSpreadsheetId, announcementId);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
     }
   };
 
@@ -525,12 +578,15 @@ const App: React.FC = () => {
               customPeriods={customPeriods}
               hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
               studentSpreadsheetId={studentSpreadsheetId}
+              staffSpreadsheetId={staffSpreadsheetId}
               students={students}
               staff={staff}
               searchTerm={searchTerm}
               onPageChange={handlePageChange}
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
+              onUpdateAnnouncement={handleUpdateAnnouncement}
+              onDeleteAnnouncement={handleDeleteAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

@@ -378,6 +378,7 @@ export const useAppState = () => {
         // Other spreadsheet IDs
         hotPotatoDBSpreadsheetId,
         studentSpreadsheetId,
+        staffSpreadsheetId,
         
         // Constants
         announcementSheetName,

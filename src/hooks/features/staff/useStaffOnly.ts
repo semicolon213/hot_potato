@@ -326,7 +326,7 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
     deleteStaff: async (staffNo: string) => {
       setIsLoading(true);
       try {
-        await deleteStaffFromPapyrus(hotPotatoDBSpreadsheetId!, staffNo);
+        await deleteStaffFromPapyrus(staffSpreadsheetId!, staffNo);
         await fetchStaff();
       } catch (err) {
         setError(err instanceof Error ? err.message : '교직원 삭제 실패');

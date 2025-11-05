@@ -112,8 +112,6 @@
 
 .title-input:focus, .content-textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
 
 .content-textarea {
@@ -123,9 +121,39 @@
 
 .attachment-area {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 15px;
 }
+
+.attachment-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pin-announcement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pin-announcement label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555 !important;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.pin-announcement input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+
 
 .attachment-button {
     background-color: #f0f0f0;
@@ -164,5 +192,34 @@
     font-size: 14px;
     color: var(--dark-gray);
     border-top: 1px solid var(--medium-gray);
+}
+
+.attachment-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remove-attachment-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger-color);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-attachment-button:hover {
+  color: var(--danger-dark);
 }
 
