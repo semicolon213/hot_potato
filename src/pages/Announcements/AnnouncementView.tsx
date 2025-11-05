@@ -3,6 +3,7 @@ import type { Post, User } from '../../types/app';
 import '../../styles/pages/AnnouncementView.css';
 import '../../styles/pages/NewAnnouncementPost.css';
 import { BiPencil, BiSave, BiX, BiPaperclip } from "react-icons/bi";
+import TiptapEditor from '../../components/ui/TiptapEditor';
 
 interface AnnouncementViewProps {
   post: Post;
@@ -130,13 +131,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
 
             <div className="form-group">
               <label htmlFor="content-textarea">내용</label>
-              <textarea
-                id="content-textarea"
-                placeholder="내용을 입력하세요"
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="content-textarea"
-              ></textarea>
+              <TiptapEditor content={editedContent} onContentChange={setEditedContent} />
             </div>
 
             <div className="form-group">
