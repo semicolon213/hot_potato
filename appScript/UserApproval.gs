@@ -68,6 +68,10 @@ function getAllUsers() {
         email: user.google_member ? applyDecryption(user.google_member, 'Base64', '') : '',
         studentId: user.no_member || '',
         name: user.name_member || '',
+        userType: (() => {
+          console.log('🔍 user_type 값 확인:', user.user_type, '타입:', typeof user.user_type);
+          return user.user_type || 'student';
+        })(),
         isAdmin: user.is_admin === 'O',
         isApproved: user.Approval === 'O',
         requestDate: user.approval_date || new Date().toISOString().split('T')[0],
@@ -223,8 +227,8 @@ function approveUser(studentId) {
     }
     const spreadsheetId = spreadsheet.getId();
     
-    const sheetName = 'users';
-    const data = getSheetData(spreadsheetId, sheetName, 'A:F');
+    const sheetName = 'user'; // 'users'에서 'user'로 변경
+    const data = getSheetData(spreadsheetId, sheetName, 'A:G'); // G열까지 포함
     
     if (!data || data.length <= 1) {
       return {
@@ -245,32 +249,41 @@ function approveUser(studentId) {
       };
     });
     
-    const user = users.find(u => u.student_id === studentId);
+    // no_member 필드로 사용자 찾기
+    const user = users.find(u => String(u.no_member || '').trim() === String(studentId).trim());
     
     if (!user) {
+      console.log('❌ 사용자 찾기 실패:', studentId);
+      console.log('❌ 사용자 목록:', users.map(u => ({ no_member: u.no_member, name: u.name_member })));
       return {
         success: false,
         message: '해당 학생을 찾을 수 없습니다.'
       };
     }
     
-    if (user.status !== 'pending') {
+    // Approval 컬럼 확인
+    if (user.Approval === 'O') {
       return {
         success: false,
-        message: '이미 처리된 사용자입니다.'
+        message: '이미 승인된 사용자입니다.'
       };
     }
     
-    // 사용자 상태를 'approved'로 업데이트
-    const updatedData = [...data];
-    const statusColumnIndex = header.indexOf('status');
+    // Approval 컬럼을 'O'로 업데이트하고 approval_date 설정
+    const approvalColumnIndex = header.indexOf('Approval');
+    const dateColumnIndex = header.indexOf('approval_date');
     
-    if (statusColumnIndex !== -1) {
-      updatedData[user.rowIndex - 1][statusColumnIndex] = 'approved';
+    if (approvalColumnIndex !== -1) {
+      const sheet = spreadsheet.getSheetByName(sheetName);
       
-      // 스프레드시트 업데이트
-      const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
-      sheet.getRange(user.rowIndex, statusColumnIndex + 1).setValue('approved');
+      // Approval 컬럼 업데이트
+      sheet.getRange(user.rowIndex, approvalColumnIndex + 1).setValue('O');
+      
+      // approval_date 컬럼 업데이트 (현재 날짜)
+      if (dateColumnIndex !== -1) {
+        const currentDate = new Date().toISOString().split('T')[0];
+        sheet.getRange(user.rowIndex, dateColumnIndex + 1).setValue(currentDate);
+      }
       
       console.log('✅ 사용자 승인 완료:', studentId);
       
@@ -279,13 +292,14 @@ function approveUser(studentId) {
         message: '사용자가 승인되었습니다.',
         user: {
           ...user,
-          status: 'approved'
+          Approval: 'O',
+          approval_date: new Date().toISOString().split('T')[0]
         }
       };
     } else {
       return {
         success: false,
-        message: '상태 컬럼을 찾을 수 없습니다.'
+        message: 'Approval 컬럼을 찾을 수 없습니다.'
       };
     }
     

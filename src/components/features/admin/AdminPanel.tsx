@@ -15,6 +15,7 @@ const AdminPanel: React.FC = () => {
     isLoading,
     message,
     emailStatus,
+    debugInfo,
     handleApproveUser,
     handleRejectUser,
     handleSendAdminKey
@@ -41,6 +42,12 @@ const AdminPanel: React.FC = () => {
         onApproveUser={handleApproveUser}
         onRejectUser={handleRejectUser}
       />
+
+      {/* 디버깅 정보 (개발용) */}
+      {/* <div style={{margin: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', fontSize: '12px'}}>
+        <h4>🔍 디버깅 정보 (개발용)</h4>
+        <pre style={{whiteSpace: 'pre-wrap', margin: 0}}>{debugInfo}</pre>
+      </div> */}
     </div>
   );
 };

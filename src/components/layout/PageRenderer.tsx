@@ -21,25 +21,21 @@ import DocumentManagement from '../../pages/DocumentManagement';
 import EmptyDocument from '../../pages/EmptyDocument';
 import Mypage from '../../pages/Mypage';
 import NewDocument from '../../pages/NewDocument';
-import Board from '../../pages/Board/Board';
-import NewBoardPost from '../../pages/Board/NewBoardPost';
 import AnnouncementsPage from '../../pages/Announcements/Announcements';
 import AnnouncementView from '../../pages/Announcements/AnnouncementView';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
+import WorkflowManagement from '../../pages/WorkflowManagement';
+import Accounting from '../../pages/Accounting';
 
 interface PageRendererProps {
   currentPage: PageType;
   user: User | null;
-  posts: Post[];
   announcements: Post[];
   selectedAnnouncement: Post | null;
-  isGoogleAuthenticatedForBoard: boolean;
   isGoogleAuthenticatedForAnnouncements: boolean;
-  boardSpreadsheetId: string | null;
   announcementSpreadsheetId: string | null;
-  isBoardLoading: boolean;
   isAnnouncementsLoading: boolean;
   customTemplates: Template[];
   tags: string[];
@@ -53,13 +49,17 @@ interface PageRendererProps {
   customPeriods: CustomPeriod[];
   hotPotatoDBSpreadsheetId: string | null;
   studentSpreadsheetId: string | null;
+  staffSpreadsheetId: string | null;
   students: Student[];
   staff: Staff[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
   onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; attachments: File[]; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
+  onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; }) => Promise<void>;
+  onDeleteAnnouncement: (announcementId: string) => Promise<void>;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
   onDeleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -87,14 +87,10 @@ interface PageRendererProps {
 const PageRenderer: React.FC<PageRendererProps> = ({
   currentPage,
   user,
-  posts,
   announcements,
   selectedAnnouncement,
-  isGoogleAuthenticatedForBoard,
   isGoogleAuthenticatedForAnnouncements,
-  boardSpreadsheetId,
   announcementSpreadsheetId,
-  isBoardLoading,
   isAnnouncementsLoading,
   customTemplates,
   tags,
@@ -108,13 +104,15 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   customPeriods,
   hotPotatoDBSpreadsheetId,
   studentSpreadsheetId,
+  staffSpreadsheetId,
   students,
   staff,
   searchTerm,
   onPageChange,
-  onAddPost,
   onAddAnnouncement,
   onSelectAnnouncement,
+  onUpdateAnnouncement,
+  onDeleteAnnouncement,
   onAddCalendarEvent,
   onUpdateCalendarEvent,
   onDeleteCalendarEvent,
@@ -134,28 +132,16 @@ const PageRenderer: React.FC<PageRendererProps> = ({
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case "board":
-        return <Board
-          onPageChange={onPageChange}
-          posts={posts}
-          isAuthenticated={isGoogleAuthenticatedForBoard}
-          boardSpreadsheetId={boardSpreadsheetId}
-          isLoading={isBoardLoading}
-          data-oid="d01oi2r" />;
-      case "new-board-post":
-        return <NewBoardPost 
-          onPageChange={onPageChange} 
-          onAddPost={onAddPost} 
-          user={user} 
-          isAuthenticated={isGoogleAuthenticatedForBoard} />;
       case "announcements":
         return <AnnouncementsPage
           onPageChange={onPageChange}
           onSelectAnnouncement={onSelectAnnouncement}
           posts={announcements}
           isAuthenticated={isGoogleAuthenticatedForAnnouncements}
+          user={user}
           announcementSpreadsheetId={announcementSpreadsheetId}
           isLoading={isAnnouncementsLoading}
+          user={user}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost 
@@ -167,7 +153,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return selectedAnnouncement ? (
           <AnnouncementView
             post={selectedAnnouncement}
+            user={user}
             onBack={() => onPageChange('announcements')}
+            onUpdate={onUpdateAnnouncement}
+            onDelete={onDeleteAnnouncement}
           />
         ) : (
           // A fallback in case the page is accessed directly without a selected announcement
@@ -244,6 +233,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return <Staff 
           onPageChange={onPageChange} 
           staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+      case 'workflow_management':
+        return <WorkflowManagement onPageChange={onPageChange} />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':
@@ -264,6 +255,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       case 'google_chat':
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
+      case 'accounting':
+        return <Accounting onPageChange={onPageChange} />;
       default:
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
     }

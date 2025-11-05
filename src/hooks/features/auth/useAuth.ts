@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { registerUser, verifyAdminKey, type RegistrationResponse } from '../../../utils/api/authApi';
+import { registerUser, verifyAdminKey } from '../../../utils/api/authApi';
 
 // 타입 정의
 interface User {
@@ -20,6 +20,7 @@ interface LoginFormData {
   studentId: string;
   isAdmin: boolean;
   adminKey: string;
+  userType: string;
 }
 
 interface LoginState {
@@ -38,6 +39,18 @@ interface LoginResponse {
   userType?: string;
   error?: string;
   approvalStatus?: string;
+  debug?: {
+    message?: string;
+    data?: unknown;
+    stack?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface RegistrationResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
   debug?: {
     message?: string;
     data?: unknown;
@@ -85,7 +98,7 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
       isApproved: data.isApproved || false,
       approvalStatus: data.approvalStatus || 'not_requested',
       studentId: data.user?.no_member || '',
-      isAdmin: data.user?.is_admin || false,
+      isAdmin: data.user?.isAdmin || false, // is_admin에서 isAdmin으로 변경
       userType: data.user?.user_type || '',
       error: data.error,
       debug: data.debug
@@ -114,7 +127,8 @@ export const useAuth = (onLogin: (user: User) => void) => {
     name: '',
     studentId: '',
     isAdmin: false,
-    adminKey: ''
+    adminKey: '',
+    userType: ''
   });
 
   // Google 로그인
@@ -178,7 +192,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
         if (result.isApproved) {
           // 이미 승인된 회원 - 바로 메인 화면으로
           console.log('이미 승인된 회원 - 메인 화면으로 이동');
-          alert('이미 가입된 회원입니다. 로그인을 진행합니다.');
           onLogin({
             email: email,
             name: name,
@@ -192,7 +205,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
         } else {
           // 승인 대기 중 - 승인 대기 화면으로
           console.log('승인 대기 중인 사용자');
-          alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
           onLogin({
             email: email,
             name: name,
@@ -273,8 +285,8 @@ export const useAuth = (onLogin: (user: User) => void) => {
       return;
     }
 
-    if (formData.isAdmin && !formData.adminKey.trim()) {
-      setLoginState(prev => ({ ...prev, error: '관리자 키를 입력해주세요.' }));
+    if (!formData.userType) {
+      setLoginState(prev => ({ ...prev, error: '가입유형을 선택해주세요.' }));
       return;
     }
 
@@ -286,7 +298,8 @@ export const useAuth = (onLogin: (user: User) => void) => {
         name: formData.name,
         studentId: formData.studentId,
         isAdmin: formData.isAdmin,
-        adminKey: formData.isAdmin ? formData.adminKey : undefined
+        adminKey: formData.isAdmin ? formData.adminKey : undefined,
+        userType: formData.userType
       };
 
       const result: RegistrationResponse = await registerUser(registrationData);
@@ -297,7 +310,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
       }
 
       if (result.success) {
-        alert(result.message);
         onLogin({
           email: formData.email,
           name: formData.name,

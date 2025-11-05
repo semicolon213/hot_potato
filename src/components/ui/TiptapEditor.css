@@ -1,0 +1,40 @@
+.tiptap-editor {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.toolbar {
+  background-color: #f5f5f5;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+}
+
+.toolbar button, .toolbar input, .toolbar select {
+  margin-right: 8px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.toolbar button.is-active {
+  background-color: #ddd;
+}
+
+.ProseMirror {
+  padding: 12px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+

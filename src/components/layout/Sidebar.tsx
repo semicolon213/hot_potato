@@ -14,7 +14,9 @@ import {
   BiCalendar, 
   BiUser, 
   BiShield,
-  BiChevronDown
+  BiChevronDown,
+  BiCheckSquare,
+  BiDollar
 } from "react-icons/bi";
 import { SiGoogle } from "react-icons/si";
 
@@ -26,6 +28,8 @@ const UserIcon = BiUser as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const ShieldIcon = BiShield as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const ChevronIcon = BiChevronDown as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const GoogleIcon = SiGoogle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const CheckSquareIcon = BiCheckSquare as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const DollarIcon = BiDollar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /**
  * @brief 사이드바 Props 타입 정의
@@ -111,6 +115,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
                   <span className="submenu-bullet">•</span>
                   새 문서
                 </div>
+                <div
+                  className="submenu-item"
+                  onClick={() => onPageChange("workflow_management")}
+                >
+                  <span className="submenu-bullet">•</span>
+                  결재 관리
+                </div>
               </div>
             )}
           </div>
@@ -167,6 +178,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, user, currentPage }) =>
                 </div>
               </div>
             )}
+          </div>
+
+          <div
+            className={`menu-item ${currentPage === 'accounting' ? 'active' : ''}`}
+            onClick={() => handleMenuClick("accounting")}
+          >
+            <DollarIcon className="menu-icon" />
+            <div className="menu-text">회계</div>
           </div>
         </div>
       </div>

@@ -14,7 +14,7 @@ export default defineConfig({
     },
     headers: {
       'Content-Security-Policy':
-          "connect-src 'self' https://accounts.google.com https://www.googleapis.com https://script.google.com https://script.googleusercontent.com https://*.googleusercontent.com https://sheets.googleapis.com https://docs.googleapis.com https://drive.googleapis.com;"
+          "connect-src 'self' https://accounts.google.com https://apis.google.com https://www.googleapis.com https://content.googleapis.com https://oauth2.googleapis.com https://clients6.google.com https://script.google.com https://script.googleusercontent.com https://*.googleusercontent.com https://sheets.googleapis.com https://docs.googleapis.com https://drive.googleapis.com https://*.googleapis.com https://*.gstatic.com https://www.gstatic.com https://ssl.gstatic.com;"
     },
     proxy: {
       '/api': {

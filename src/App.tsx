@@ -19,7 +19,6 @@ import PendingApproval from './components/features/auth/PendingApproval';
 import Chat from './pages/Chat';
 import { useAppState } from './hooks/core/useAppState';
 import {
-  addPost,
   addAnnouncement,
   addCalendarEvent,
   addTemplate,
@@ -27,12 +26,13 @@ import {
   updateTemplate,
   updateTemplateFavorite,
   saveAcademicScheduleToSheet,
-    fetchPosts,
     fetchAnnouncements,
     fetchTemplates,
     fetchCalendarEvents,
     updateCalendarEvent,
-    incrementViewCount
+    incrementViewCount,
+    updateAnnouncement,
+    deleteAnnouncement
   } from './utils/database/papyrusManager';
 import { 
   addTag as addPersonalTag,
@@ -41,6 +41,7 @@ import {
   fetchTags as fetchPersonalTags,
   checkTagDeletionImpact
 } from './utils/database/personalTagManager';
+import { clearAllUserData } from './utils/helpers/clearUserData';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
 
@@ -71,13 +72,6 @@ const App: React.FC = () => {
     tags,
     setTags,
 
-    // Board state
-    posts,
-    setPosts,
-    isGoogleAuthenticatedForBoard,
-    isBoardLoading,
-    boardSpreadsheetId,
-
     // Announcements state
     announcements,
     setAnnouncements,
@@ -104,37 +98,53 @@ const App: React.FC = () => {
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
-    calendarStudentSpreadsheetId,
-    calendarProfessorSpreadsheetId,
+    staffSpreadsheetId,
 
     // Attendees
     students,
-    staff
+    staff,
+    
+    // State reset
+    resetAllState
   } = useAppState();
 
   // 로그인 처리
   const handleLogin = (userData: User) => {
-    console.log('로그인 처리 시작:', userData);
+    // console.log('로그인 처리 시작:', userData);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     if (userData.accessToken) {
       localStorage.setItem('googleAccessToken', userData.accessToken);
       setGoogleAccessToken(userData.accessToken);
     }
-    console.log('✅ 로그인 완료 - 데이터 로딩은 useAppState에서 자동 처리됩니다');
+    // console.log('✅ 로그인 완료 - 데이터 로딩은 useAppState에서 자동 처리됩니다');
   };
 
   // 로그아웃 처리
   const handleLogout = () => {
-    setUser(null);
-    setCurrentPage("dashboard");
-    setSearchTerm("");
-    localStorage.removeItem('user');
-    localStorage.removeItem('googleAccessToken');
-    localStorage.removeItem('searchTerm');
+    console.log('🚪 로그아웃 시작...');
+    
+    // 모든 사용자 데이터 정리 (localStorage, 전역 변수, Google API 토큰)
+    clearAllUserData();
+    
+    // useAppState의 모든 상태 초기화
+    resetAllState();
+    
+    // Google 계정 자동 선택 비활성화
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
     }
+    
+    // Zustand auth store도 초기화 (동기적으로)
+    try {
+      const { useAuthStore } = require('./hooks/features/auth/useAuthStore');
+      const authStoreLogout = useAuthStore.getState().logout;
+      authStoreLogout();
+    } catch (error) {
+      console.warn('Auth store 로그아웃 실패:', error);
+    }
+    
+    console.log('🚪 로그아웃 완료');
   };
 
   // Electron 이벤트 처리 (자동 로그아웃)
@@ -142,7 +152,7 @@ const App: React.FC = () => {
     // Electron 환경에서만 실행
     if (window.electronAPI) {
       const handleAppBeforeQuit = () => {
-        console.log('앱 종료 감지 - 자동 로그아웃 실행');
+        // console.log('앱 종료 감지 - 자동 로그아웃 실행');
         handleLogout();
       };
 
@@ -158,10 +168,33 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageFromUrl = urlParams.get('page');
+    const announcementId = urlParams.get('announcementId');
+
+    if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
+      const announcement = announcements.find(a => a.id === announcementId);
+      if (announcement) {
+        setSelectedAnnouncement(announcement);
+      }
+    }
+  }, [announcements, currentPage]);
+
   // 페이지 전환 처리
-  const handlePageChange = (pageName: string) => {
+  const handlePageChange = (pageName: string, params?: Record<string, string>) => {
     const url = new URL(window.location.toString());
     url.searchParams.set('page', pageName);
+
+    // 기존 announcementId 파라미터를 제거
+    url.searchParams.delete('announcementId');
+
+    if (params) {
+      Object.keys(params).forEach(key => {
+        url.searchParams.set(key, params[key]);
+      });
+    }
+
     window.history.pushState({}, '', url.toString());
     setCurrentPage(pageName as PageType);
   };
@@ -176,24 +209,8 @@ const App: React.FC = () => {
     }
   };
 
-  // 게시글 추가 핸들러
-  const handleAddPost = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
-    try {
-      if (!boardSpreadsheetId) {
-        throw new Error("Board spreadsheet ID not found");
-      }
-      await addPost(boardSpreadsheetId, postData);
-      // 게시글 목록 새로고침
-      const updatedPosts = await fetchPosts();
-      setPosts(updatedPosts);
-      handlePageChange('board');
-    } catch (error) {
-      console.error('Error adding post:', error);
-    }
-  };
-
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
@@ -216,13 +233,42 @@ const App: React.FC = () => {
     setAnnouncements(updatedAnnouncements);
     setSelectedAnnouncement({ ...post, views: post.views + 1 });
 
-    handlePageChange('announcement-view');
+    handlePageChange('announcement-view', { announcementId: post.id });
 
     try {
       await incrementViewCount(post.id);
     } catch (error) {
       console.error('Failed to increment view count:', error);
       // Optionally, revert the optimistic update here
+    }
+  };
+
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+    try {
+      await updateAnnouncement(announcementId, postData);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await deleteAnnouncement(announcementSpreadsheetId, announcementId);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
     }
   };
 
@@ -252,8 +298,8 @@ const App: React.FC = () => {
 
   // 캘린더 이벤트 삭제 핸들러
   const handleDeleteCalendarEvent = async (eventId: string) => {
-    console.log("Deleting event", eventId);
-    console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
+    // console.log("Deleting event", eventId);
+    // console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
   };
 
   // 학사일정 저장 핸들러
@@ -296,7 +342,7 @@ const App: React.FC = () => {
       // 템플릿 목록 새로고침
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
-      console.log('템플릿이 성공적으로 삭제되었습니다.');
+      // console.log('템플릿이 성공적으로 삭제되었습니다.');
     } catch (error) {
       console.error('Error deleting template:', error);
       console.log('템플릿 삭제 중 오류가 발생했습니다.');
@@ -311,7 +357,7 @@ const App: React.FC = () => {
           // 태그 목록을 다시 로드
           const updatedTags = await fetchPersonalTags();
           setTags(updatedTags);
-          console.log('새로운 태그가 추가되었습니다.');
+          // console.log('새로운 태그가 추가되었습니다.');
         } else {
           console.log('태그 추가에 실패했습니다.');
         }
@@ -348,7 +394,7 @@ const App: React.FC = () => {
 
       setTags(tags.filter(tag => tag !== tagToDelete));
       setCustomTemplates(customTemplates.filter(t => t.tag !== tagToDelete));
-      console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
+      // console.log(`'${tagToDelete}' 태그 및 관련 템플릿이 삭제되었습니다.`);
 
       // Background database update
       const success = await deletePersonalTag(tagToDelete);
@@ -396,7 +442,7 @@ const App: React.FC = () => {
 
       setTags(tags.map(t => t === oldTag ? newTag : t));
       setCustomTemplates(customTemplates.map(t => t.tag === oldTag ? { ...t, tag: newTag } : t));
-      console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
+      // console.log(`'${oldTag}' 태그가 '${newTag}'(으)로 수정되었습니다.`);
 
       // Background database update
       const [tagUpdateSuccess, fileUpdateSuccess] = await Promise.all([
@@ -408,7 +454,7 @@ const App: React.FC = () => {
         // 태그 목록을 다시 로드
         const updatedTags = await fetchPersonalTags();
         setTags(updatedTags);
-        console.log('✅ 태그 수정 및 파일명 업데이트 완료');
+        // console.log('✅ 태그 수정 및 파일명 업데이트 완료');
       } else {
         console.log('태그 수정 또는 파일명 업데이트에 실패했습니다.');
         setCustomTemplates(oldTemplates);
@@ -426,7 +472,7 @@ const App: React.FC = () => {
       // 템플릿 목록 새로고침
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
-      console.log('문서가 성공적으로 저장되었습니다.');
+      // console.log('문서가 성공적으로 저장되었습니다.');
     } catch (error) {
       console.error('Error creating document or saving to database:', error);
       console.log('문서 생성 또는 저장 중 오류가 발생했습니다.');
@@ -455,7 +501,7 @@ const App: React.FC = () => {
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
 
-      console.log('문서가 성공적으로 수정되었습니다.');
+      // console.log('문서가 성공적으로 수정되었습니다.');
     } catch (error) {
       console.error('Error updating document in database:', error);
       console.log('문서 수정 중 오류가 발생했습니다.');
@@ -465,7 +511,7 @@ const App: React.FC = () => {
   const handleUpdateTemplateFavorite = async (rowIndex: number, favoriteStatus: string | undefined) => {
     try {
       await updateTemplateFavorite(rowIndex, favoriteStatus);
-      console.log(`Template favorite status updated in database for row ${rowIndex}.`);
+      // console.log(`Template favorite status updated in database for row ${rowIndex}.`);
       // 템플릿 목록 새로고침
       const updatedTemplates = await fetchTemplates();
       setCustomTemplates(updatedTemplates);
@@ -515,14 +561,10 @@ const App: React.FC = () => {
             <PageRenderer
               currentPage={currentPage}
               user={user}
-              posts={posts}
               announcements={announcements}
               selectedAnnouncement={selectedAnnouncement}
-              isGoogleAuthenticatedForBoard={isGoogleAuthenticatedForBoard}
               isGoogleAuthenticatedForAnnouncements={isGoogleAuthenticatedForAnnouncements}
-              boardSpreadsheetId={boardSpreadsheetId}
               announcementSpreadsheetId={announcementSpreadsheetId}
-              isBoardLoading={isBoardLoading}
               isAnnouncementsLoading={isAnnouncementsLoading}
               customTemplates={customTemplates}
               tags={tags}
@@ -536,13 +578,15 @@ const App: React.FC = () => {
               customPeriods={customPeriods}
               hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
               studentSpreadsheetId={studentSpreadsheetId}
+              staffSpreadsheetId={staffSpreadsheetId}
               students={students}
               staff={staff}
               searchTerm={searchTerm}
               onPageChange={handlePageChange}
-              onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
+              onUpdateAnnouncement={handleUpdateAnnouncement}
+              onDeleteAnnouncement={handleDeleteAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

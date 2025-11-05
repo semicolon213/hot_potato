@@ -109,6 +109,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             <div className="input-group">
+              <label htmlFor="userType">가입유형 *</label>
+              <select
+                id="userType"
+                value={formData.userType}
+                onChange={(e) => updateFormData('userType', e.target.value)}
+                className="form-input"
+              >
+                <option value="">가입유형을 선택하세요</option>
+                <option value="student">학생</option>
+                <option value="std_council">집행부</option>
+                <option value="supp">조교</option>
+                <option value="professor">교수</option>
+                <option value="ad_professor">겸임교원</option>
+              </select>
+            </div>
+
+            <div className="input-group">
               <label className="checkbox-label">
                 <input
                   type="checkbox"
@@ -155,7 +172,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <button
               type="button"
               onClick={handleRegistration}
-              disabled={loginState.isLoading || !formData.name.trim() || !formData.studentId.trim() || (formData.isAdmin && !formData.adminKey.trim())}
+              disabled={loginState.isLoading || !formData.name.trim() || !formData.studentId.trim() || !formData.userType || (formData.isAdmin && !formData.adminKey.trim())}
               className="register-btn"
             >
               {loginState.isLoading ? (

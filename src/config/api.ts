@@ -35,6 +35,7 @@ export const API_ACTIONS = {
   GET_ALL_USERS: 'getAllUsers',
   GET_PENDING_USERS: 'getPendingUsers',
   APPROVE_USER: 'approveUser',
+  APPROVE_USER_WITH_GROUP: 'approveUserWithGroup',
   REJECT_USER: 'rejectUser',
   
   // 인증

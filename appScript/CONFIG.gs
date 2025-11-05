@@ -8,10 +8,10 @@
     // hp_member 스프레드시트 ID (실제 값으로 교체 필요)
     const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
 
-    // 시트 이름 상수
+    // 시트 이름 상수 (스크립트 속성에서 가져오기, 기본값 제공)
     const SHEET_NAMES = {
-    USER: 'user',
-    ADMIN_KEYS: 'admin_keys'
+    USER: PropertiesService.getScriptProperties().getProperty('SHEET_NAME_USER') || 'user',
+    ADMIN_KEYS: PropertiesService.getScriptProperties().getProperty('SHEET_NAME_ADMIN_KEYS') || 'admin_keys'
     };
 
     // ===== 암호화 설정 =====
@@ -71,7 +71,7 @@
     // 이메일 암호화 방식 설정
     const EMAIL_ENCRYPTION_CONFIG = {
     // 사용할 암호화 방법 (ENCRYPTION_METHODS에서 선택)
-    METHOD: 'ROT13', // 'ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution' 등
+    METHOD: 'Base64', // 'ROT13', 'Base64', 'Caesar', 'BitShift', 'Substitution' 등
     
     // 암호화 레이어 수 (1 = 단일 암호화, 2+ = 다중 레이어)
     LAYERS: 1,
@@ -424,11 +424,19 @@
     }
 
     // ===== 문서 관리 설정 =====
-    // 문서 저장 폴더 경로
-    const DOCUMENT_FOLDER_PATH = 'hot potato/문서';
+    // 문서 저장 폴더 경로 (환경변수 또는 기본값 사용)
+    const ROOT_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const DOCUMENT_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const TEMPLATE_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('TEMPLATE_FOLDER_NAME') || '양식';
+    const SHARED_DOCUMENT_FOLDER_NAME = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
     
-    // 템플릿 폴더 경로
-    const TEMPLATE_FOLDER_PATH = 'hot potato/문서/양식';
+    const DOCUMENT_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME;
+    const TEMPLATE_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME + '/' + TEMPLATE_FOLDER_NAME;
+    const SHARED_DOCUMENT_FOLDER_PATH = ROOT_FOLDER_NAME + '/' + DOCUMENT_FOLDER_NAME + '/' + SHARED_DOCUMENT_FOLDER_NAME;
+    
+    // 기본 태그 관리 설정 (스크립트 속성 또는 기본값 사용)
+    const STATIC_TAG_SPREADSHEET_NAME = PropertiesService.getScriptProperties().getProperty('STATIC_TAG_SPREADSHEET_NAME') || 'static_tag';
+    const STATIC_TAG_SHEET_NAME = PropertiesService.getScriptProperties().getProperty('STATIC_TAG_SHEET_NAME') || 'tag';
     
     // 역할별 스프레드시트 이름 매핑
     const ROLE_SPREADSHEET_MAP = {
@@ -475,6 +483,14 @@
     }
     
     /**
+     * 공유 문서 폴더 경로 반환
+     * @returns {string} 폴더 경로
+     */
+    function getSharedDocumentFolderPath() {
+        return SHARED_DOCUMENT_FOLDER_PATH;
+    }
+    
+    /**
      * 역할에 따른 스프레드시트 이름 반환
      * @param {string} role - 사용자 역할
      * @returns {string} 스프레드시트 이름
@@ -505,4 +521,76 @@
      */
     function getDocumentSheetColumns() {
         return DOCUMENT_SHEET_COLUMNS;
+    }
+    
+    // ===== 그룹스 역할 매핑 (관리자, 개발자 제외) =====
+    const GROUP_ROLE_MAPPING = {
+        'ad_professor': {
+            name: '겸임교원',
+            email: 'ad_professor_hp@googlegroups.com',
+            description: '뜨거운 감자 겸임 교원'
+        },
+        'professor': {
+            name: '교수',
+            email: 'professor_hp@googlegroups.com', 
+            description: '뜨거운 감자 교수 그룹'
+        },
+        'supp': {
+            name: '조교',
+            email: 'hp_supp@googlegroups.com',
+            description: '뜨거운 감자 조교 그룹'
+        },
+        'std_council': {
+            name: '집행부',
+            email: 'std_council_hp@googlegroups.com',
+            description: '뜨거운 감자 집행부 그룹'
+        },
+        'student': {
+            name: '학생',
+            email: 'student_hp@googlegroups.com',
+            description: '뜨거운 감자 학생 그룹'
+        }
+    };
+    
+    // 그룹스 역할 목록 (사용자 선택용)
+    const AVAILABLE_GROUP_ROLES = [
+        { value: 'student', label: '학생' },
+        { value: 'std_council', label: '집행부' },
+        { value: 'supp', label: '조교' },
+        { value: 'professor', label: '교수' },
+        { value: 'ad_professor', label: '겸임교원' }
+    ];
+    
+    /**
+     * 그룹스 역할 매핑 반환
+     * @returns {Object} 그룹스 역할 매핑 객체
+     */
+    function getGroupRoleMapping() {
+        return GROUP_ROLE_MAPPING;
+    }
+    
+    /**
+     * 사용 가능한 그룹스 역할 목록 반환
+     * @returns {Array} 그룹스 역할 목록
+     */
+    function getAvailableGroupRoles() {
+        return AVAILABLE_GROUP_ROLES;
+    }
+    
+    /**
+     * 그룹스 역할에 따른 이메일 반환
+     * @param {string} role - 그룹스 역할
+     * @returns {string} 그룹스 이메일
+     */
+    function getGroupEmailByRole(role) {
+        return GROUP_ROLE_MAPPING[role]?.email || '';
+    }
+    
+    /**
+     * 그룹스 역할에 따른 이름 반환
+     * @param {string} role - 그룹스 역할
+     * @returns {string} 그룹스 이름
+     */
+    function getGroupNameByRole(role) {
+        return GROUP_ROLE_MAPPING[role]?.name || '알 수 없는 그룹스';
     }

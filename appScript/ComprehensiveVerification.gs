@@ -348,6 +348,7 @@ function getComprehensiveVerificationInfo() {
       'UserAuth.gs',
       'UserApproval.gs',
       'UserRegistration.gs',
+      'GroupManagement.gs',
       'DocumentCreation.gs',
       'DocumentPermissions.gs',
       'DocumentFolder.gs',

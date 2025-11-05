@@ -123,29 +123,35 @@ function doPost(e) {
               currentEditors: []
             };
           } else {
-            // 권한 설정 전 현재 상태 확인
-            const beforePermissions = file.getEditors();
-            console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+            // 권한 설정 전 현재 상태 확인 (Drive API 사용)
+            const beforePermissions = Drive.Permissions.list(documentId);
+            const beforePermissionsList = beforePermissions.items || [];
+            console.log('🔐 권한 설정 전 편집자:', beforePermissionsList.map(p => p.emailAddress));
             
             let successCount = 0;
             let failCount = 0;
             
-            // 각 사용자에게 편집 권한 부여
+            // 각 사용자에게 편집 권한 부여 (Drive API - 메일 알림 없음)
             for (const userEmail of allUsers) {
               try {
                 console.log('🔐 권한 부여 시도:', userEmail);
                 
                 // 이미 권한이 있는지 확인
-                const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+                const hasPermission = beforePermissionsList.some(p => p.emailAddress === userEmail && p.role === 'writer');
                 if (hasPermission) {
                   console.log('✅ 이미 권한이 있는 사용자:', userEmail);
                   successCount++;
                   continue;
                 }
                 
-                // 권한 부여
-                file.addEditor(userEmail);
-                console.log('✅ 편집 권한 부여 완료:', userEmail);
+                // 권한 부여 (메일 알림 없이)
+                Drive.Permissions.insert({
+                  role: 'writer',
+                  type: 'user',
+                  value: userEmail,
+                  sendNotificationEmails: false
+                }, documentId);
+                console.log('✅ 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
                 successCount++;
                 
                 // 잠시 대기 (API 제한 방지)
@@ -158,14 +164,15 @@ function doPost(e) {
             }
             
             // 권한 설정 후 결과 확인
-            const afterPermissions = file.getEditors();
-            console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+            const afterPermissions = Drive.Permissions.list(documentId);
+            const afterPermissionsList = afterPermissions.items || [];
+            console.log('🔐 권한 설정 후 편집자:', afterPermissionsList.map(p => p.emailAddress));
             
             permissionResult = {
               success: successCount > 0,
               message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
               grantedUsers: allUsers,
-              currentEditors: afterPermissions.map(p => p.getEmail()),
+              currentEditors: afterPermissionsList.map(p => p.emailAddress),
               successCount: successCount,
               failCount: failCount
             };
@@ -233,8 +240,98 @@ function doPost(e) {
     // 문서 목록 조회 액션 처리
     if (req.action === 'getDocuments') {
       console.log('📄 문서 목록 조회 요청 받음:', req);
-      const result = DocumentSpreadsheet.handleGetDocuments(req);
+      const result = (typeof handleGetDocuments === 'function') ? handleGetDocuments(req) : (typeof DocumentSpreadsheet !== 'undefined' && DocumentSpreadsheet.handleGetDocuments ? DocumentSpreadsheet.handleGetDocuments(req) : { success: false, message: 'DocumentSpreadsheet is not defined' });
       console.log('📄 문서 목록 조회 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 공유 템플릿 업로드(파일 업로드 + 메타데이터 저장)
+    if (req.action === 'uploadSharedTemplate') {
+      console.log('📄 공유 템플릿 업로드 요청:', { name: req.fileName, mimeType: req.fileMimeType });
+      const result = uploadSharedTemplate(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 공유 문서 업로드(파일 업로드 + 권한 설정 + 폴더 이동)
+    if (req.action === 'uploadSharedDocument') {
+      console.log('📤 공유 문서 업로드 요청:', { name: req.fileName, mimeType: req.fileMimeType });
+      const result = uploadSharedDocument(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공유 템플릿 메타데이터 수정
+    if (req.action === 'updateSharedTemplateMeta') {
+      console.log('🛠️ 공유 템플릿 메타 수정 요청:', { id: req.fileId });
+      const result = updateSharedTemplateMeta(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공유 템플릿 목록(메타데이터 우선) 조회
+    if (req.action === 'getSharedTemplates') {
+      console.log('📄 공유 템플릿 목록 요청');
+      const result = getSharedTemplates();
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공유 템플릿 삭제
+    if (req.action === 'deleteSharedTemplate') {
+      console.log('🗑️ 공유 템플릿 삭제 요청:', { id: req.fileId });
+      const result = deleteSharedTemplate(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 스프레드시트 ID 목록 조회
+    if (req.action === 'getSpreadsheetIds') {
+      console.log('📊 스프레드시트 ID 목록 조회 요청:', req);
+      const result = getSpreadsheetIds(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 목록 조회
+    if (req.action === 'getStaticTags') {
+      console.log('🏷️ 기본 태그 목록 조회 요청:', req);
+      const result = getStaticTags(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 추가
+    if (req.action === 'addStaticTag') {
+      console.log('🏷️ 기본 태그 추가 요청:', req);
+      const result = addStaticTag(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 수정
+    if (req.action === 'updateStaticTag') {
+      console.log('🏷️ 기본 태그 수정 요청:', req);
+      const result = updateStaticTag(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 기본 태그 삭제
+    if (req.action === 'deleteStaticTag') {
+      console.log('🏷️ 기본 태그 삭제 요청:', req);
+      const result = deleteStaticTag(req);
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
@@ -243,7 +340,7 @@ function doPost(e) {
     // 문서 삭제 액션 처리
     if (req.action === 'deleteDocuments') {
       console.log('🗑️ 문서 삭제 요청 받음:', req);
-      const result = DocumentSpreadsheet.handleDeleteDocuments(req);
+      const result = (typeof handleDeleteDocuments === 'function') ? handleDeleteDocuments(req) : (typeof DocumentSpreadsheet !== 'undefined' && DocumentSpreadsheet.handleDeleteDocuments ? DocumentSpreadsheet.handleDeleteDocuments(req) : { success: false, message: 'DocumentSpreadsheet is not defined' });
       console.log('🗑️ 문서 삭제 결과:', result);
       return ContentService
         .createTextOutput(JSON.stringify(result))
@@ -366,6 +463,27 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    // 이메일로 사용자 이름 조회 액션 처리
+    if (req.action === 'getUserNameByEmail') {
+      console.log('👤 사용자 이름 조회 요청:', req.email);
+      try {
+        const result = getUserNameByEmail(req.email);
+        console.log('👤 사용자 이름 조회 결과:', result);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('👤 사용자 이름 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '사용자 이름 조회 중 오류가 발생했습니다: ' + error.message,
+            name: req.email // 오류 시 원본 이메일 반환
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     if (req.action === 'registerUser') {
       console.log('📝 사용자 등록 요청:', req);
       const result = handleSubmitRegistrationRequest(req);
@@ -392,6 +510,88 @@ function doPost(e) {
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 회계 관련 액션
+    if (req.action === 'createLedger') {
+      console.log('📁 장부 생성 요청:', req);
+      try {
+        const result = createLedgerStructure(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 장부 생성 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '장부 생성 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (req.action === 'getLedgerList') {
+      console.log('📋 장부 목록 조회 요청');
+      try {
+        const result = getLedgerList();
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            data: result
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 장부 목록 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '장부 목록 조회 중 오류가 발생했습니다: ' + error.message,
+            data: []
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (req.action === 'updateAccountSubManagers') {
+      console.log('👥 서브 관리자 목록 업데이트 요청:', req);
+      try {
+        const result = updateAccountSubManagers(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 서브 관리자 목록 업데이트 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '서브 관리자 목록 업데이트 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (req.action === 'getAccountingFolderId') {
+      console.log('📁 회계 폴더 ID 조회 요청');
+      try {
+        const folderId = initializeAccountingFolder();
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            data: {
+              accountingFolderId: folderId
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 회계 폴더 ID 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '회계 폴더 ID 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     // UserManagement.gs의 doPostAuthInternal 함수 호출
@@ -448,9 +648,13 @@ function parseRequest(e) {
 function callUserManagementPost(req) {
   try {
     console.log('🔍 요청 액션:', req.action);
+    console.log('🔍 요청 데이터 전체:', JSON.stringify(req));
+    
+    // 액션 비교를 위해 정규화 (trim 및 타입 변환)
+    const action = req.action ? String(req.action).trim() : '';
     
     // 관리자 관련 액션 처리 - 기존 함수들 호출
-    if (req.action === 'getAllUsers') {
+    if (action === 'getAllUsers') {
       console.log('👥 모든 사용자 목록 조회 요청');
       const result = getAllUsers();
       console.log('👥 모든 사용자 목록 조회 결과:', result);
@@ -464,7 +668,7 @@ function callUserManagementPost(req) {
       return response;
     }
     
-    if (req.action === 'getPendingUsers') {
+    if (action === 'getPendingUsers') {
       console.log('👥 대기 중인 사용자 목록 조회 요청');
       const result = getPendingUsers();
       console.log('👥 대기 중인 사용자 목록 조회 결과:', result);
@@ -473,16 +677,16 @@ function callUserManagementPost(req) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    if (req.action === 'approveUser') {
-      console.log('✅ 사용자 승인 요청:', req.studentId);
-      const result = approveUser(req.studentId);
-      console.log('✅ 사용자 승인 결과:', result);
+    if (action === 'approveUserWithGroup') {
+      console.log('✅ 사용자 승인 및 그룹스 권한 설정 요청:', req.studentId, req.groupRole);
+      const result = approveUserWithGroup(req.studentId, req.groupRole);
+      console.log('✅ 사용자 승인 및 그룹스 권한 설정 결과:', result);
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    if (req.action === 'rejectUser') {
+    if (action === 'rejectUser') {
       console.log('❌ 사용자 거부 요청:', req.studentId);
       const result = rejectUser(req.studentId);
       console.log('❌ 사용자 거부 결과:', result);
@@ -491,7 +695,7 @@ function callUserManagementPost(req) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    if (req.action === 'clearUserCache') {
+    if (action === 'clearUserCache') {
       console.log('🗑️ 사용자 캐시 초기화 요청');
       const result = clearUserCache();
       console.log('🗑️ 사용자 캐시 초기화 결과:', result);
@@ -500,7 +704,7 @@ function callUserManagementPost(req) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    if (req.action === 'sendAdminKeyEmail') {
+    if (action === 'sendAdminKeyEmail') {
       console.log('📧 관리자 키 이메일 전송 요청:', req.userEmail);
       const result = sendAdminKeyEmail(req.userEmail);
       console.log('📧 관리자 키 이메일 전송 결과:', result);
@@ -509,12 +713,365 @@ function callUserManagementPost(req) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    // 워크플로우 관련 액션 처리
+    if (action === 'requestWorkflow') {
+      try {
+        // 워크플로우 스프레드시트 초기화
+        initializeWorkflowSheets();
+        const result = requestWorkflow(req);
+        
+        // 성공 응답에 디버그 정보 포함
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            ...result,
+            debug: {
+              actionReceived: req.action,
+              actionType: typeof req.action,
+              actionTrimmed: action,
+              hasRequesterEmail: !!req.requesterEmail,
+              hasReviewLine: !!req.reviewLine,
+              reviewLineLength: req.reviewLine ? req.reviewLine.length : 0,
+              hasPaymentLine: !!req.paymentLine,
+              paymentLineLength: req.paymentLine ? req.paymentLine.length : 0,
+              requestKeys: Object.keys(req)
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        // 에러 응답에 상세 디버그 정보 포함
+        return ContentService
+          .createTextOutput(JSON.stringify({ 
+            success: false, 
+            message: '워크플로우 요청 처리 중 오류가 발생했습니다: ' + error.message,
+            error: error.toString(),
+            stack: error.stack,
+            debug: {
+              actionReceived: req.action,
+              actionType: typeof req.action,
+              actionTrimmed: action,
+              hasRequesterEmail: !!req.requesterEmail,
+              hasReviewLine: !!req.reviewLine,
+              reviewLineLength: req.reviewLine ? req.reviewLine.length : 0,
+              hasPaymentLine: !!req.paymentLine,
+              paymentLineLength: req.paymentLine ? req.paymentLine.length : 0,
+              requestKeys: Object.keys(req),
+              requestData: JSON.stringify(req)
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'grantWorkflowPermissions') {
+      console.log('🔐 워크플로우 권한 부여:', req);
+      try {
+        let documentId = null;
+        if (req.documentId) {
+          documentId = req.documentId;
+        } else if (req.workflowDocumentId) {
+          documentId = req.workflowDocumentId;
+        } else if (req.attachedDocumentId) {
+          documentId = req.attachedDocumentId;
+        }
+        
+        if (!documentId) {
+          return ContentService
+            .createTextOutput(JSON.stringify({
+              success: false,
+              message: '문서 ID가 필요합니다 (documentId, workflowDocumentId, 또는 attachedDocumentId 중 하나)'
+            }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+        
+        const result = grantWorkflowPermissions(
+          documentId,
+          req.userEmails || [],
+          req.permissionType || 'reader'
+        );
+        
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            message: `권한 부여 완료: 성공 ${result.successCount}명, 실패 ${result.failCount}명`,
+            data: result
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 권한 부여 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '권한 부여 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getWorkflowStatus') {
+      console.log('📋 워크플로우 상태 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getWorkflowStatus(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 상태 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '워크플로우 상태 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getMyPendingWorkflows') {
+      console.log('📋 내 담당 워크플로우 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getMyPendingWorkflows(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 내 담당 워크플로우 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '내 담당 워크플로우 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getMyRequestedWorkflows') {
+      console.log('📋 내가 올린 결재 목록 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getMyRequestedWorkflows(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 내가 올린 결재 목록 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '내가 올린 결재 목록 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getCompletedWorkflows') {
+      console.log('📋 결재 완료된 리스트 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getCompletedWorkflows(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 완료된 리스트 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 완료된 리스트 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 검토 단계 액션
+    if (action === 'approveReview') {
+      console.log('✅ 검토 승인:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = approveReview(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 검토 승인 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '검토 승인 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'rejectReview') {
+      console.log('❌ 검토 반려:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = rejectReview(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 검토 반려 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '검토 반려 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'holdReview') {
+      console.log('⏸️ 검토 보류:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = holdReview(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 검토 보류 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '검토 보류 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 결재 단계 액션
+    if (action === 'approvePayment') {
+      console.log('✅ 결재 승인:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = approvePayment(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 승인 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 승인 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'rejectPayment') {
+      console.log('❌ 결재 반려:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = rejectPayment(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 반려 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 반려 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'holdPayment') {
+      console.log('⏸️ 결재 보류:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = holdPayment(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 보류 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 보류 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'resubmitWorkflow') {
+      console.log('🔄 워크플로우 재제출:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = resubmitWorkflow(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 재제출 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '워크플로우 재제출 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getWorkflowHistory') {
+      console.log('📋 워크플로우 히스토리 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getWorkflowHistory(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 히스토리 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '워크플로우 히스토리 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     // 알 수 없는 액션
     console.log('❌ 알 수 없는 액션:', req.action);
     return ContentService
       .createTextOutput(JSON.stringify({ 
         success: false, 
-        message: '알 수 없는 액션입니다: ' + req.action 
+        message: '알 수 없는 액션입니다: ' + req.action,
+        debug: {
+          receivedAction: req.action,
+          actionTrimmed: action,
+          allActions: [
+            'getAllUsers',
+            'getPendingUsers',
+            'approveUserWithGroup',
+            'rejectUser',
+            'clearUserCache',
+            'sendAdminKeyEmail',
+            'requestWorkflow',
+            'grantWorkflowPermissions',
+            'getWorkflowStatus',
+            'getMyPendingWorkflows',
+            'getMyRequestedWorkflows',
+            'getCompletedWorkflows',
+            'approveReview',
+            'rejectReview',
+            'holdReview',
+            'approvePayment',
+            'rejectPayment',
+            'holdPayment',
+            'resubmitWorkflow',
+            'getWorkflowHistory'
+          ],
+          requestKeys: Object.keys(req),
+          requestActionType: typeof req.action,
+          requestActionValue: String(req.action)
+        }
       }))
       .setMimeType(ContentService.MimeType.JSON);
       
@@ -611,8 +1168,11 @@ function moveDocumentToSharedFolder(documentId) {
     // 문서 가져오기
     const file = DriveApp.getFileById(documentId);
     
-    // 폴더 경로: hot potato/문서/공유 문서
-    const targetFolder = findOrCreateFolderPath(['hot potato', '문서', '공유 문서']);
+    // 폴더 경로: 환경변수 또는 기본값 사용
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
+    const targetFolder = findOrCreateFolderPath([rootFolderName, documentFolderName, sharedFolderName]);
     
     if (!targetFolder) {
       console.error('📁 대상 폴더를 찾을 수 없습니다');
@@ -652,8 +1212,11 @@ function moveDocumentToSharedFolderWithModule(documentId) {
     // 문서 가져오기
     const file = DriveApp.getFileById(documentId);
     
-    // 폴더 경로: hot potato/문서/공유 문서
-    const folderPath = 'hot potato/문서/공유 문서';
+    // 폴더 경로: 환경변수 또는 기본값 사용
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
+    const folderPath = rootFolderName + '/' + documentFolderName + '/' + sharedFolderName;
     const targetFolder = DocumentFolder.findOrCreateFolder(folderPath);
     
     if (!targetFolder) {
@@ -845,29 +1408,35 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
       };
     }
     
-    // 권한 설정 전 현재 상태 확인
-    const beforePermissions = file.getEditors();
-    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.getEmail()));
+    // 권한 설정 전 현재 상태 확인 (Drive API 사용)
+    const beforePermissions = Drive.Permissions.list(documentId);
+    const beforePermissionsList = beforePermissions.items || [];
+    console.log('🔐 권한 설정 전 편집자:', beforePermissionsList.map(p => p.emailAddress));
     
     let successCount = 0;
     let failCount = 0;
     
-    // 각 사용자에게 편집 권한 부여
+    // 각 사용자에게 편집 권한 부여 (Drive API - 메일 알림 없음)
     for (const userEmail of allUsers) {
       try {
         console.log('🔐 권한 부여 시도:', userEmail);
         
         // 이미 권한이 있는지 확인
-        const hasPermission = beforePermissions.some(p => p.getEmail() === userEmail);
+        const hasPermission = beforePermissionsList.some(p => p.emailAddress === userEmail && p.role === 'writer');
         if (hasPermission) {
           console.log('✅ 이미 권한이 있는 사용자:', userEmail);
           successCount++;
           continue;
         }
         
-        // 권한 부여
-        file.addEditor(userEmail);
-        console.log('✅ 편집 권한 부여 완료:', userEmail);
+        // 권한 부여 (메일 알림 없이)
+        Drive.Permissions.insert({
+          role: 'writer',
+          type: 'user',
+          value: userEmail,
+          sendNotificationEmails: false
+        }, documentId);
+        console.log('✅ 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
         successCount++;
         
         // 잠시 대기 (API 제한 방지)
@@ -880,14 +1449,15 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
     }
     
     // 권한 설정 후 결과 확인
-    const afterPermissions = file.getEditors();
-    console.log('🔐 권한 설정 후 편집자:', afterPermissions.map(p => p.getEmail()));
+    const afterPermissions = Drive.Permissions.list(documentId);
+    const afterPermissionsList = afterPermissions.items || [];
+    console.log('🔐 권한 설정 후 편집자:', afterPermissionsList.map(p => p.emailAddress));
     
     const result = {
       success: successCount > 0,
       message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
       grantedUsers: allUsers,
-      currentEditors: afterPermissions.map(p => p.getEmail()),
+      currentEditors: afterPermissionsList.map(p => p.emailAddress),
       successCount: successCount,
       failCount: failCount
     };

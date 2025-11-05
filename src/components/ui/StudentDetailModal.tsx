@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchStudentIssues, addStudentIssue } from '../../utils/database/papyrusManager';
+import { fetchStudentIssues, addStudentIssue, type StudentIssue } from '../../utils/database/papyrusManager';
 import { getSheetData } from 'papyrus-db';
 import type { Student, StudentWithCouncil } from '../../types/features/students/student';
 import type { CareerItem } from '../../types/features/staff';
@@ -17,15 +17,6 @@ interface StudentDetailModalProps {
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
   isAdding?: boolean;
-}
-
-interface StudentIssue {
-  id: string;
-  no_member: string;
-  date_issue: string;
-  type_issue: string;
-  level_issue: string;
-  content_issue: string;
 }
 
 const emptyStaff: StudentWithCouncil = {

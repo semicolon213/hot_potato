@@ -15,6 +15,16 @@ let isGoogleAPIInitialized = false;
 let googleAPIInitPromise: Promise<void> | null = null;
 
 /**
+ * @brief Google API 초기화 상태 초기화 (googleApiInitializer)
+ * @details 로그아웃 또는 계정 전환 시 Google API 초기화 상태를 리셋합니다.
+ */
+export const resetGoogleApiInitializer = (): void => {
+    isGoogleAPIInitialized = false;
+    googleAPIInitPromise = null;
+    console.log('🧹 Google API Initializer 리셋 완료');
+};
+
+/**
  * @brief Google API 상태 리셋 함수
  * @details 새로고침 시 Google API 초기화 상태를 리셋합니다.
  */
@@ -69,7 +79,7 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                     const checkGapi = () => {
                         attempts++;
 
-                        if (typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.load) {
+                        if (typeof window !== 'undefined' && window.gapi && window.gapi.load) {
                             console.log("gapi 스크립트 로드 완료");
                             resolve();
                         } else if (attempts >= maxAttempts) {
@@ -86,59 +96,48 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
 
             await waitForGapi();
 
-            // 구형 방식: gapi.load('client:auth2') 사용
+            // 최신 방식: 인증은 GIS로, gapi는 클라이언트만 로드
             await new Promise<void>((resolve) => {
                 console.log("Google API Client Library 초기화 중...");
-                
-                (window as any).gapi.load('client:auth2', async () => {
+
+                (window as any).gapi.load('client', async () => {
                     try {
                         console.log("gapi.load 완료, client.init 시작...");
-                        
-                        // 구형 방식: auth2와 함께 초기화
+
                         await gapi.client.init({
                             clientId: GOOGLE_CLIENT_ID,
                             discoveryDocs: [
                                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
-                                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-                                'https://gmail.googleapis.com/$discovery/rest?version=v1',
-                                'https://docs.googleapis.com/$discovery/rest?version=v1',
-                                'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
-                            ],
-                            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/calendar'
+                                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                            ]
                         });
-                        
-                        console.log('gapi.client.init 호출 완료');
 
-                        // 저장된 토큰이 있으면 복원 시도
+                        // 저장된 토큰이 있으면 복원
                         const savedToken = localStorage.getItem('googleAccessToken');
                         if (savedToken) {
-                            console.log("저장된 토큰 발견:", savedToken);
                             try {
-                                // 토큰을 gapi client에 직접 설정
                                 (window as any).gapi.client.setToken({ access_token: savedToken });
-                                console.log("✅ 토큰이 gapi client에 설정되었습니다.");
+                                console.log("✅ 액세스 토큰이 gapi.client에 설정되었습니다.");
                             } catch (tokenError) {
                                 console.warn("토큰 설정 실패:", tokenError);
                             }
+                        } else {
+                            console.warn('저장된 Google 액세스 토큰이 없습니다. 로그인 후 토큰을 저장하세요.');
                         }
+
+                        // papyrus-db가 사용할 클라이언트 연결
+                        try {
+                            (window as any).papyrusAuth = { client: (window as any).gapi.client };
+                        } catch {}
 
                         console.log("Google API Client Library 초기화 성공!");
                         isGoogleAPIInitialized = true;
                         resolve();
                     } catch (error) {
                         console.error("Google API Client Library 초기화 실패:", error);
-                        console.error("오류 상세 정보:", {
-                            message: (error as any).message,
-                            code: (error as any).code,
-                            status: (error as any).status,
-                            details: (error as any).details,
-                            response: (error as any).response?.data
-                        });
-                        
-                        // 초기화 실패해도 앱이 계속 작동하도록 설정
                         console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
                         isGoogleAPIInitialized = false;
-                        resolve(); // reject 대신 resolve로 변경
+                        resolve();
                     }
                 });
             });

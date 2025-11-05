@@ -46,53 +46,58 @@ export function usePersonalTemplates() {
         try {
             console.log('🔍 개인 템플릿 폴더 찾기 시작');
 
-            // 1단계: 루트에서 "hot potato" 폴더 찾기
+            const { ENV_CONFIG } = await import('../../../config/environment');
+            const rootFolderName = ENV_CONFIG.ROOT_FOLDER_NAME;
+            const documentFolderName = ENV_CONFIG.DOCUMENT_FOLDER_NAME;
+            const personalTemplateFolderName = ENV_CONFIG.PERSONAL_TEMPLATE_FOLDER_NAME;
+
+            // 1단계: 루트에서 루트 폴더 찾기
             const hotPotatoResponse = await gapi.client.drive.files.list({
-                q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+                q: `'root' in parents and name='${rootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
                 fields: 'files(id,name)',
                 spaces: 'drive',
                 orderBy: 'name'
             });
 
             if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
-                console.log('❌ hot potato 폴더를 찾을 수 없습니다');
+                console.log(`❌ ${rootFolderName} 폴더를 찾을 수 없습니다`);
                 return null;
             }
 
             const hotPotatoFolder = hotPotatoResponse.result.files[0];
-            console.log('✅ hot potato 폴더 찾음:', hotPotatoFolder.id);
+            console.log(`✅ ${rootFolderName} 폴더 찾음:`, hotPotatoFolder.id);
 
-            // 2단계: hot potato 폴더에서 "문서" 폴더 찾기
+            // 2단계: 루트 폴더에서 문서 폴더 찾기
             const documentResponse = await gapi.client.drive.files.list({
-                q: `'${hotPotatoFolder.id}' in parents and name='문서' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                q: `'${hotPotatoFolder.id}' in parents and name='${documentFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
                 fields: 'files(id,name)',
                 spaces: 'drive',
                 orderBy: 'name'
             });
 
             if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
-                console.log('❌ 문서 폴더를 찾을 수 없습니다');
+                console.log(`❌ ${documentFolderName} 폴더를 찾을 수 없습니다`);
                 return null;
             }
 
             const documentFolder = documentResponse.result.files[0];
-            console.log('✅ 문서 폴더 찾음:', documentFolder.id);
+            console.log(`✅ ${documentFolderName} 폴더 찾음:`, documentFolder.id);
 
-            // 3단계: 문서 폴더에서 "개인 양식" 폴더 찾기
+            // 3단계: 문서 폴더에서 개인 양식 폴더 찾기
             const personalTemplateResponse = await gapi.client.drive.files.list({
-                q: `'${documentFolder.id}' in parents and name='개인 양식' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                q: `'${documentFolder.id}' in parents and name='${personalTemplateFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
                 fields: 'files(id,name)',
                 spaces: 'drive',
                 orderBy: 'name'
             });
 
             if (!personalTemplateResponse.result.files || personalTemplateResponse.result.files.length === 0) {
-                console.log('❌ 개인 양식 폴더를 찾을 수 없습니다');
+                console.log(`❌ ${personalTemplateFolderName} 폴더를 찾을 수 없습니다`);
                 return null;
             }
 
             const personalTemplateFolder = personalTemplateResponse.result.files[0];
-            console.log('✅ 개인 양식 폴더 찾음:', personalTemplateFolder.id);
+            console.log(`✅ ${personalTemplateFolderName} 폴더 찾음:`, personalTemplateFolder.id);
 
             return personalTemplateFolder.id;
         } catch (error) {

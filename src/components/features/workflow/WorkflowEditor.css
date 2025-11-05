@@ -1,0 +1,106 @@
+.workflow-editor-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.workflow-editor {
+  min-height: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.workflow-editor .ql-container {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  background: #fff;
+}
+
+.workflow-editor .ql-editor {
+  min-height: 300px;
+  padding: 15px;
+}
+
+.workflow-editor .ql-editor.ql-blank::before {
+  color: #999;
+  font-style: normal;
+}
+
+.workflow-editor .ql-toolbar {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  background: #f5f5f5;
+  padding: 8px;
+}
+
+.workflow-editor .ql-container {
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+.workflow-editor .ql-snow .ql-stroke {
+  stroke: #666;
+}
+
+.workflow-editor .ql-snow .ql-fill {
+  fill: #666;
+}
+
+.workflow-editor .ql-snow .ql-picker-label:hover,
+.workflow-editor .ql-snow .ql-picker-item:hover {
+  color: #0066cc;
+}
+
+.workflow-editor .ql-snow .ql-picker-label.ql-active,
+.workflow-editor .ql-snow .ql-picker-item.ql-selected {
+  color: #0066cc;
+}
+
+/* 한글 입력 최적화 */
+.workflow-editor .ql-editor {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.workflow-editor .ql-editor p {
+  margin: 0 0 10px 0;
+}
+
+.workflow-editor .ql-editor ul,
+.workflow-editor .ql-editor ol {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+.workflow-editor .ql-editor a {
+  color: #0066cc;
+  text-decoration: underline;
+}
+
+.workflow-editor .ql-editor h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 20px 0 10px 0;
+}
+
+.workflow-editor .ql-editor h2 {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 18px 0 8px 0;
+}
+
+.workflow-editor .ql-editor h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 16px 0 8px 0;
+}
+
+.workflow-editor .ql-snow .ql-picker.ql-size .ql-picker-item {
+    font-size: 12px;
+}
+

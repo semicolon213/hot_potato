@@ -4,6 +4,17 @@ const path = require('path');
 // Windows 팝업 입력 포커스 이슈 우회: 가림 탐지 비활성화
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
+// 캐시 관련 에러 억제
+app.commandLine.appendSwitch('--disable-gpu-cache');
+app.commandLine.appendSwitch('--disable-software-rasterizer');
+app.commandLine.appendSwitch('--disable-dev-shm-usage');
+app.commandLine.appendSwitch('--disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('--disable-background-networking');
+// 로그 레벨 조정 (캐시 에러 경고 억제)
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('--log-level', '0'); // 에러만 표시
+}
+
 // CSP 및 보안 관련 플래그 추가 (Apps Script 접근 허용)
 app.commandLine.appendSwitch('--disable-web-security');
 app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
@@ -161,6 +172,17 @@ app.whenReady().then(() => {
   // Windows: App User Model ID 설정 (작업표시줄/알림용)
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.hotpotato.erp');
+    
+    // 캐시 디렉토리 명시적 설정 (권한 문제 방지)
+    try {
+      const userDataPath = app.getPath('userData');
+      const cachePath = path.join(userDataPath, 'Cache');
+      // 캐시 경로 설정 시도 (권한이 있으면)
+      app.setPath('cache', cachePath);
+    } catch (error) {
+      // 캐시 경로 설정 실패 시 무시 (기본 경로 사용)
+      console.warn('캐시 경로 설정 실패 (무시됨):', error.message);
+    }
   }
   
   // 세션 설정 (CSP 완전 우회)
