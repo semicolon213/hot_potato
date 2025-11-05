@@ -55,7 +55,7 @@ declare global {
         };
         sheets: {
           spreadsheets: {
-            get: (params: any) => Promise<any>;
+            get: (params: gapi.client.sheets.spreadsheets.get.Params) => Promise<gapi.client.sheets.spreadsheets.get.Response>;
             values: {
               get: (params: any) => Promise<any>;
               update: (params: any) => Promise<any>;
@@ -134,6 +134,39 @@ declare global {
         interface Response {
             result: File;
         }
+    }
+  }
+
+  namespace gapi.client.sheets {
+    interface Spreadsheet {
+      properties: {
+        title: string;
+      };
+      sheets: Sheet[];
+    }
+
+    interface Sheet {
+      properties: {
+        sheetId: number;
+        title: string;
+        index: number;
+        sheetType: string;
+        gridProperties: {
+          rowCount: number;
+          columnCount: number;
+        };
+      };
+    }
+
+    namespace spreadsheets {
+      namespace get {
+        interface Params {
+          spreadsheetId: string;
+        }
+        interface Response {
+          result: Spreadsheet;
+        }
+      }
     }
   }
 }

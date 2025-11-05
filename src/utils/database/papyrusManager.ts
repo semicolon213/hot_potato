@@ -1612,6 +1612,21 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
         }
 
         const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+
+        // Get sheet metadata to find the correct sheetId
+        const spreadsheet = await window.gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: effectiveSpreadsheetId,
+        });
+
+        const sheet = spreadsheet.result.sheets.find(
+            (s) => s.properties.title === sheetName
+        );
+
+        if (!sheet) {
+            throw new Error(`시트 '${sheetName}'을(를) 찾을 수 없습니다.`);
+        }
+        const sheetId = sheet.properties.sheetId;
+
         const data = await getSheetData(effectiveSpreadsheetId, sheetName);
 
         if (!data || !data.values || data.values.length === 0) {
@@ -1624,7 +1639,6 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
             throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
         }
 
-        const sheetId = 1; // Assuming the second sheet
         await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
 
     } catch (error) {
