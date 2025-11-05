@@ -229,6 +229,19 @@ const App: React.FC = () => {
     setCurrentPage(pageName as PageType);
   };
 
+  // 구글 서비스 페이지인지 확인
+  const isGoogleServicePage = useMemo(() => {
+    const googleServicePages: PageType[] = [
+      'google_appscript',
+      'google_sheets',
+      'google_docs',
+      'google_gemini',
+      'google_groups',
+      'google_calendar'
+    ];
+    return googleServicePages.includes(currentPage);
+  }, [currentPage]);
+
   // 현재 페이지에 해당하는 섹션 제목 계산
   const pageSectionLabel = useMemo(() => {
     const PAGE_SECTIONS: Record<string, string> = {
@@ -615,16 +628,18 @@ const App: React.FC = () => {
     <GoogleOAuthProvider clientId={ENV_CONFIG.GOOGLE_CLIENT_ID}>
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} onLogout={handleLogout} onFullLogout={handleFullLogout} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
-        <div className="main-panel" data-oid="n9gxxwr">
-          <Header
-            onPageChange={handlePageChange}
-            userInfo={user}
-            onLogout={handleLogout}
-            searchTerm={searchTerm}
-            onSearchChange={handleSearch}
-            onSearchSubmit={handleSearchSubmit}
-            pageSectionLabel={pageSectionLabel}
-          />
+        <div className={`main-panel ${isGoogleServicePage ? 'no-header' : ''}`} data-oid="n9gxxwr">
+          {!isGoogleServicePage && (
+            <Header
+              onPageChange={handlePageChange}
+              userInfo={user}
+              onLogout={handleLogout}
+              searchTerm={searchTerm}
+              onSearchChange={handleSearch}
+              onSearchSubmit={handleSearchSubmit}
+              pageSectionLabel={pageSectionLabel}
+            />
+          )}
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             <PageRenderer
               currentPage={currentPage}

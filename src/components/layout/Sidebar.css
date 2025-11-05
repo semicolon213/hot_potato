@@ -166,6 +166,7 @@
   margin-left: var(--sb-gap-outer);
   margin-right: var(--sb-gap-outer);
   width: calc(100% - (var(--sb-gap-outer) * 2));
+  border-radius: clamp(10px, 1.25vw, 16px); /* 확장 상태에서 바로 둥근 사각형 */
 }
 
 /* 하위 메뉴가 있는 항목: 일반 항목과 완전히 동일한 레이아웃 */
@@ -280,6 +281,7 @@
   gap: clamp(10px, 1.25vw, 16px);
   justify-content: flex-start;
   align-items: center;
+  border-radius: clamp(10px, 1.25vw, 16px); /* 확장 상태에서 바로 둥근 사각형 */
 }
 
 /* 축소 상태에서만 정사각형으로 변경 */
@@ -483,5 +485,23 @@
 }
 
 .submenu-flyout .submenu-item:hover {
-  background: var(--lightgrey);
+  background: transparent;
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+.submenu-flyout .submenu-item {
+  transition: transform 0.2s ease;
+}
+
+.submenu-flyout .submenu-bullet {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  background-color: #000000;
+  border-radius: 1px;
+  flex-shrink: 0;
+  font-size: 0; /* 텍스트(•) 숨기기 */
+  line-height: 0;
+  color: transparent; /* 텍스트 색상 투명하게 */
 }

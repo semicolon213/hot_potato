@@ -2,65 +2,16 @@
 @import './styles/variables.css';
 
 @font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-1Thin.woff2') format('woff2');
-  font-weight: 100;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-2ExtraLight.woff2') format('woff2');
-  font-weight: 200;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-3Light.woff2') format('woff2');
-  font-weight: 300;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2') format('woff2');
+  font-family: 'Mujeokhaebeong';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2502-1@1.0/MarinesRegular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');
+  font-family: 'Mujeokhaebeong';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2502-1@1.0/MarinesBold.woff2') format('woff2');
   font-weight: 700;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Paperozi';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-9Black.woff2') format('woff2');
-  font-weight: 900;
   font-display: swap;
 }
 
@@ -536,28 +487,36 @@ filter: brightness(1.1);
 }
 
 .main-panel {
-display: grid;
-grid-template-rows: auto 1fr;
-grid-column: 2;
-position: fixed;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-column: 2;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
   left: var(--sb-width, clamp(200px, 12vw, 250px)); /* 사이드바 너비와 정확히 일치하는 위치 */
-background: #ffffff;
+  background: #ffffff;
   border-radius: 0; /* 모서리 둥글기 제거 */
   box-shadow: none; /* 그림자 제거 */
-overflow: hidden;
-z-index: 1; /* 사이드바와 하위 메뉴보다 뒤에 배치하여 가려지지 않도록 */
+  overflow: hidden;
+  z-index: 1; /* 사이드바와 하위 메뉴보다 뒤에 배치하여 가려지지 않도록 */
+}
+
+.main-panel.no-header {
+  grid-template-rows: 1fr;
 }
 
 .content {
-grid-row: 2;
-overflow-y: auto;
-overflow-x: hidden;
+  grid-row: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   margin: 0;
   width: 100%;
   box-sizing: border-box;
   background: #ffffff; /* 내부 페이지 배경 흰색 통일 */
+}
+
+.main-panel.no-header .content {
+  grid-row: 1;
 }
