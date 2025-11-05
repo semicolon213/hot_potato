@@ -106,6 +106,9 @@ const App: React.FC = () => {
     studentSpreadsheetId,
     calendarProfessorSpreadsheetId,
     calendarStudentSpreadsheetId,
+    calendarCouncilSpreadsheetId,
+    calendarSuppSpreadsheetId,
+    calendarADProfessorSpreadsheetId,
     activeCalendarSpreadsheetId,
 
     // Attendees
@@ -309,10 +312,21 @@ const App: React.FC = () => {
   // 캘린더 이벤트 업데이트 핸들러
   const handleUpdateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
     try {
-      if (!activeCalendarSpreadsheetId) {
-        throw new Error("Active calendar spreadsheet ID not found");
+      const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+      ].filter(Boolean);
+
+      const spreadsheetId = allCalendarIds.find(id => eventId.startsWith(id!));
+
+      if (!spreadsheetId) {
+        throw new Error("Could not determine spreadsheet ID from event ID");
       }
-      await updateCalendarEvent(activeCalendarSpreadsheetId, eventId, eventData);
+
+      await updateCalendarEvent(spreadsheetId, eventId, eventData);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
@@ -324,10 +338,21 @@ const App: React.FC = () => {
   // 캘린더 이벤트 삭제 핸들러
   const handleDeleteCalendarEvent = async (eventId: string) => {
     try {
-      if (!activeCalendarSpreadsheetId) {
-        throw new Error("Active calendar spreadsheet ID not found");
+      const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+      ].filter(Boolean);
+
+      const spreadsheetId = allCalendarIds.find(id => eventId.startsWith(id!));
+
+      if (!spreadsheetId) {
+        throw new Error("Could not determine spreadsheet ID from event ID");
       }
-      await deleteCalendarEvent(activeCalendarSpreadsheetId, eventId);
+
+      await deleteCalendarEvent(spreadsheetId, eventId);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);

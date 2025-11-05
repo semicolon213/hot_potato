@@ -163,6 +163,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     if (!showTime && startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
+      if (start > end) {
+        setEndDate(startDate);
+      }
       setDateError(start > end);
     } else {
       setDateError(false);
