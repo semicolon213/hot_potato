@@ -39,6 +39,7 @@ export interface Post {
   content: string;
   writer_id: string;
   file_notice?: string;
+  isPinned?: boolean;
 }
 
 export interface User {

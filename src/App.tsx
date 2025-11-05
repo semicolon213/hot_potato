@@ -243,7 +243,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; isPinned?: boolean; }) => {
     try {
       await updateAnnouncement(announcementId, postData);
       // Refresh the announcements list

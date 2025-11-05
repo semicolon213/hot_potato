@@ -9,7 +9,7 @@ interface AnnouncementViewProps {
   post: Post;
   user: User | null;
   onBack: () => void;
-  onUpdate: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; }) => Promise<void>;
+  onUpdate: (announcementId: string, postData: { title: string; content: string; attachment?: File | null; isPinned?: boolean; }) => Promise<void>;
   onDelete: (announcementId: string) => Promise<void>;
 }
 
@@ -18,6 +18,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   const [editedTitle, setEditedTitle] = useState(post.title);
   const [editedContent, setEditedContent] = useState('');
   const [newAttachment, setNewAttachment] = useState<File | null>(null);
+  const [isPinned, setIsPinned] = useState(post.isPinned || false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [mainContent, setMainContent] = useState('');
@@ -63,7 +64,8 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     onUpdate(post.id, { 
       title: editedTitle, 
       content: contentToSave, 
-      attachment: newAttachment 
+      attachment: newAttachment, 
+      isPinned: isPinned 
     });
     setIsEditing(false);
   };
@@ -153,6 +155,15 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
                       <button onClick={removeAttachment} className='remove-attachment-button'><BiX/></button>
                     </div>
                   }
+                </div>
+                <div className="pin-announcement">
+                    <input
+                        type="checkbox"
+                        id="pin-checkbox"
+                        checked={isPinned}
+                        onChange={(e) => setIsPinned(e.target.checked)}
+                    />
+                    <label htmlFor="pin-checkbox">고정 공지사항</label>
                 </div>
               </div>
             </div>

@@ -516,7 +516,7 @@ export const incrementViewCount = async (announcementId: string): Promise<void> 
     }
 };
 
-export const updateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }): Promise<void> => {
+export const updateAnnouncement = async (announcementId: string, postData: { title: string; content: string; isPinned?: boolean; }): Promise<void> => {
     try {
         if (!announcementSpreadsheetId) {
             throw new Error('Announcement spreadsheet ID not found');
@@ -541,9 +541,10 @@ export const updateAnnouncement = async (announcementId: string, postData: { tit
             data.values[rowIndex][5], // date
             data.values[rowIndex][6], // views
             data.values[rowIndex][7], // file_notice
+            postData.isPinned ? 'TRUE' : 'FALSE', // isPinned
         ];
 
-        await update(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, `A${rowIndex + 1}:H${rowIndex + 1}`, [newRowData]);
+        await update(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, `A${rowIndex + 1}:I${rowIndex + 1}`, [newRowData]);
         console.log('Announcement updated in Google Sheets successfully');
     } catch (error) {
         console.error('Error updating announcement in Google Sheet:', error);
