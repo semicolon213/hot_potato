@@ -24,8 +24,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                                                  }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [attachment, setAttachment] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
+    const [attachments, setAttachments] = useState<File[]>([]);
     const [isPinned, setIsPinned] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,18 +53,8 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setAttachment(file);
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setPreview(reader.result as string);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                setPreview(null);
-            }
+        if (e.target.files) {
+            setAttachments(prev => [...prev, ...Array.from(e.target.files)]);
         }
     };
 
@@ -73,9 +62,8 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
         fileInputRef.current?.click();
     };
 
-    const removeAttachment = () => {
-        setAttachment(null);
-        setPreview(null);
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -85,7 +73,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
         const hasUnsavedChanges =
             title.trim() !== '' ||
             content.trim() !== '' ||
-            attachment !== null;
+            attachments.length > 0;
 
         if (hasUnsavedChanges) {
             if (window.confirm('작성 중인 내용이 있습니다. 정말로 취소하시겠습니까?')) {
@@ -131,23 +119,10 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
 
                     <div className="form-group">
                         <label><BiPaperclip /> 파일 첨부</label>
-                        <div className="attachment-area">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                             <button onClick={triggerFileInput} className="attachment-button">
                                 파일 선택
                             </button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                style={{ display: 'none' }}
-                            />
-                            {attachment && (
-                                <div className="attachment-item">
-                                    <span className="attachment-name">{attachment.name}</span>
-                                    <button onClick={removeAttachment} className="remove-attachment-button"><BiX /></button>
-                                </div>
-                            )}
-                            {preview && <img src={preview} alt="첨부파일 미리보기" className="image-preview" />}
                             <div className="pin-announcement">
                                 <input
                                     type="checkbox"
@@ -157,6 +132,21 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                 />
                                 <label htmlFor="pin-checkbox">고정 공지사항</label>
                             </div>
+                        </div>
+                        <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}
+                        />
+                        <div className="attachment-list">
+                            {attachments.map((file, index) => (
+                                <div key={index} className="attachment-item">
+                                    <span className="attachment-name">{file.name}</span>
+                                    <button onClick={() => removeAttachment(index)} className="remove-attachment-button"><BiX /></button>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

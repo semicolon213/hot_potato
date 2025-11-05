@@ -10,6 +10,7 @@
 .post-view-actions {
   display: flex;
   gap: 10px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .post-view-actions .edit-button,
@@ -70,6 +71,8 @@
   font-size: 1.1em;
   color: var(--text-dark);
   border-radius: var(--border-radius-md);
+  white-space: pre-wrap; /* Preserve whitespace and wrap */
+  word-break: break-all; /* Break long words */
 }
 
 .post-view-footer {

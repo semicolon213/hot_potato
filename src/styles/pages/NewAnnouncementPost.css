@@ -121,21 +121,16 @@
 
 .attachment-area {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Push items to opposite ends */
     align-items: center;
-    gap: 15px;
-}
-
-.attachment-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    width: 100%; /* Ensure it takes full width */
 }
 
 .pin-announcement {
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-left: auto; /* Push to the right */
 }
 
 .pin-announcement label {

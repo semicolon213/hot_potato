@@ -533,12 +533,37 @@ export const incrementViewCount = async (announcementId: string): Promise<void> 
     }
 };
 
-export const updateAnnouncement = async (announcementId: string, postData: { title: string; content: string; isPinned?: boolean; }): Promise<void> => {
+export const updateAnnouncement = async (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[]; isPinned?: boolean; }): Promise<void> => {
     try {
         if (!announcementSpreadsheetId) {
             throw new Error('Announcement spreadsheet ID not found');
         }
 
+        // 1. Upload new files
+        let newFileInfos: { name: string, url: string }[] = [];
+        if (postData.attachments && postData.attachments.length > 0) {
+            for (const file of postData.attachments) {
+                const fileInfo = await uploadFileToDrive(file);
+                newFileInfos.push(fileInfo);
+            }
+        }
+
+        // 2. Combine with existing files
+        const allFileInfos = [...postData.existingAttachments, ...newFileInfos];
+
+        // 3. Create new content and file_notice
+        const attachmentRegex = /<p>첨부파일:.*?<\/p>/gs;
+        const cleanContent = postData.content.replace(attachmentRegex, '').trim();
+
+        let finalContent = cleanContent;
+        if (allFileInfos.length > 0) {
+            const attachmentLinks = allFileInfos.map(info => `<p>첨부파일: <a href="${info.url}" target="_blank">${info.name}</a></p>`).join('\n');
+            finalContent = `${cleanContent}\n\n${attachmentLinks}`;
+        }
+
+        const fileNotice = allFileInfos.length > 0 ? JSON.stringify(allFileInfos) : '';
+
+        // 4. Update the sheet
         const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
         if (!data || !data.values) {
             throw new Error('Could not get sheet data');
@@ -549,18 +574,20 @@ export const updateAnnouncement = async (announcementId: string, postData: { tit
             throw new Error(`Announcement with ID ${announcementId} not found in sheet.`);
         }
 
+        // Corrected newRowData with 9 columns
         const newRowData = [
-            data.values[rowIndex][0], // id
-            data.values[rowIndex][1], // author
-            data.values[rowIndex][2], // writer_id
-            postData.title,
-            postData.content,
-            data.values[rowIndex][5], // date
-            data.values[rowIndex][6], // views
-            data.values[rowIndex][7], // file_notice
-            postData.isPinned ? 'TRUE' : 'FALSE', // isPinned
+            data.values[rowIndex][0], // id (A)
+            data.values[rowIndex][1], // author (B)
+            data.values[rowIndex][2], // writer_id (C)
+            postData.title,           // title (D)
+            finalContent,             // content (E)
+            data.values[rowIndex][5], // date (F)
+            data.values[rowIndex][6], // views (G)
+            fileNotice,               // file_notice (H)
+            postData.isPinned ? 'X' : '' // fix_notice (I)
         ];
 
+        // Corrected range to include column I
         await update(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, `A${rowIndex + 1}:I${rowIndex + 1}`, [newRowData]);
         console.log('Announcement updated in Google Sheets successfully');
     } catch (error) {
@@ -1605,6 +1632,21 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
         }
 
         const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+
+        // Get sheet metadata to find the correct sheetId
+        const spreadsheet = await window.gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: effectiveSpreadsheetId,
+        });
+
+        const sheet = spreadsheet.result.sheets.find(
+            (s) => s.properties.title === sheetName
+        );
+
+        if (!sheet) {
+            throw new Error(`시트 '${sheetName}'을(를) 찾을 수 없습니다.`);
+        }
+        const sheetId = sheet.properties.sheetId;
+
         const data = await getSheetData(effectiveSpreadsheetId, sheetName);
 
         if (!data || !data.values || data.values.length === 0) {
@@ -1617,7 +1659,6 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
             throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
         }
 
-        const sheetId = 1; // Assuming the second sheet
         await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
 
     } catch (error) {

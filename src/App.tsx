@@ -243,32 +243,51 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; isPinned?: boolean; }) => {
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[] }) => {
+    const originalAnnouncements = announcements;
+
+    // Optimistically update the local state
+    const updatedAnnouncements = announcements.map(post => {
+      if (post.id === announcementId) {
+        return {
+          ...post,
+          title: postData.title,
+          content: postData.content, // This is the clean content, without attachment links
+        };
+      }
+      return post;
+    });
+    setAnnouncements(updatedAnnouncements);
+    handlePageChange('announcements');
+
     try {
       await updateAnnouncement(announcementId, postData);
-      // Refresh the announcements list
-      const updatedAnnouncements = await fetchAnnouncements();
-      setAnnouncements(updatedAnnouncements);
-      // Go back to the announcements list
-      handlePageChange('announcements');
+      // Re-fetch to get the final content with attachment links
+      const refreshedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(refreshedAnnouncements);
     } catch (error) {
       console.error('Error updating announcement:', error);
+      setAnnouncements(originalAnnouncements);
+      alert('공지사항 수정에 실패했습니다.');
     }
   };
 
   const handleDeleteAnnouncement = async (announcementId: string) => {
+    const originalAnnouncements = announcements;
+    // Optimistically update the UI
+    setAnnouncements(announcements.filter(a => a.id !== announcementId));
+    handlePageChange('announcements');
+
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
       }
       await deleteAnnouncement(announcementSpreadsheetId, announcementId);
-      // Refresh the announcements list
-      const updatedAnnouncements = await fetchAnnouncements();
-      setAnnouncements(updatedAnnouncements);
-      // Go back to the announcements list
-      handlePageChange('announcements');
     } catch (error) {
       console.error('Error deleting announcement:', error);
+      // Revert the change if the delete fails
+      setAnnouncements(originalAnnouncements);
+      alert('공지사항 삭제에 실패했습니다.');
     }
   };
 
