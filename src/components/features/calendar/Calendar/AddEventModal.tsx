@@ -118,22 +118,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setStartDate(formatDate(initialDate));
       setEndDate(formatDate(initialDate));
 
-      if (initialDate.getHours() !== 0 || initialDate.getMinutes() !== 0 || initialDate.getSeconds() !== 0) {
-        setShowTime(true);
-        const startHours = initialDate.getHours().toString().padStart(2, '0');
-        const startMinutes = initialDate.getMinutes().toString().padStart(2, '0');
-        setStartTime(`${startHours}:${startMinutes}`);
-
-        const oneHourLater = new Date(initialDate.getTime() + 60 * 60 * 1000);
-        const endHours = oneHourLater.getHours().toString().padStart(2, '0');
-        const endMinutes = oneHourLater.getMinutes().toString().padStart(2, '0');
-        setEndTime(`${endHours}:${endMinutes}`);
-      } else {
-        // Reset time for all-day events from monthly view
-        setShowTime(false);
-        setStartTime('00:00');
-        setEndTime('00:00');
-      }
+      // Always default to all-day event when adding a new event
+      setShowTime(false);
+      setStartTime('00:00');
+      setEndTime('00:00');
 
       setSaveTarget('google');
       setSelectedAttendees([]);
