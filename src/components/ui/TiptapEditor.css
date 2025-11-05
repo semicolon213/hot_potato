@@ -26,6 +26,19 @@
   background-color: #ddd;
 }
 
+.toolbar-bold-button,
+.toolbar-underline-button,
+.toolbar-image-button,
+.toolbar-color-input {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+}
+
+.toolbar-fontsize-select {
+    width: 110px !important;
+    padding: 4px 8px !important;
+}
+
 .ProseMirror {
   padding: 12px;
   min-height: 200px;
