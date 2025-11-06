@@ -192,6 +192,7 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               required
+              disabled={entry.isBudgetExecuted && entry.budgetPlanId}
             >
               <option value="">선택하세요</option>
               {categoryNames.map(catName => (
@@ -199,6 +200,20 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
               ))}
             </select>
           </div>
+
+          {entry.isBudgetExecuted && entry.budgetPlanTitle && (
+            <div className="form-group">
+              <label>예산안 이름</label>
+              <input
+                type="text"
+                value={entry.budgetPlanTitle}
+                disabled
+                className="disabled-input"
+                readOnly
+              />
+              <p className="form-hint">예산안으로 생성된 항목은 예산안 이름을 수정할 수 없습니다.</p>
+            </div>
+          )}
 
           <div className="form-group">
             <label>내용 *</label>
@@ -208,7 +223,11 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="거래 내용을 입력하세요"
               required
+              disabled={entry.isBudgetExecuted && entry.budgetPlanId}
             />
+            {entry.isBudgetExecuted && entry.budgetPlanId && (
+              <p className="form-hint">예산안으로 생성된 항목은 내용을 수정할 수 없습니다.</p>
+            )}
           </div>
 
           <div className="form-group">

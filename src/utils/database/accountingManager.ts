@@ -38,6 +38,32 @@ const ensureAuth = () => {
 };
 
 /**
+ * 시트 ID 가져오기
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @returns {Promise<number | null>} 시트 ID 또는 null
+ */
+const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<number | null> => {
+  try {
+    if (!(window as any).gapi || !(window as any).gapi.client) {
+      console.error('❌ Google API가 초기화되지 않았습니다.');
+      return null;
+    }
+
+    const response = await ((window as any).gapi.client as any).sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId,
+      fields: 'sheets.properties'
+    });
+    
+    const sheet = response.result.sheets?.find((s: any) => s.properties?.title === sheetName);
+    return sheet?.properties?.sheetId || null;
+  } catch (error) {
+    console.error('❌ 시트 ID 가져오기 오류:', error);
+    return null;
+  }
+};
+
+/**
  * 증빙 폴더 ID 가져오기 (spreadsheetId로부터)
  */
 export const getEvidenceFolderIdFromSpreadsheet = async (spreadsheetId: string): Promise<string | null> => {
@@ -311,6 +337,8 @@ export const createLedgerEntry = async (
       console.warn('⚠️ 통장 잔액 업데이트 실패했지만 장부 항목 추가는 계속 진행합니다.');
     }
 
+    const isBudgetExecuted = !!(entryData.budgetPlanId && entryData.budgetPlanTitle);
+    
     const newEntry: LedgerEntry = {
       entryId,
       accountId: entryData.accountId,
@@ -325,7 +353,9 @@ export const createLedgerEntry = async (
       evidenceFileName,
       createdBy,
       createdDate,
-      isBudgetExecuted: false
+      isBudgetExecuted,
+      budgetPlanId: entryData.budgetPlanId,
+      budgetPlanTitle: entryData.budgetPlanTitle
     };
 
     // 스프레드시트에 추가
@@ -333,7 +363,7 @@ export const createLedgerEntry = async (
     
     // 시트 헤더 순서: entry_id, account_id, date, category, description, amount, balance_after, 
     // source, transaction_type, evidence_file_id, evidence_file_name, created_by, created_date, 
-    // is_budget_executed, budget_plan_id
+    // is_budget_executed, budget_plan_id, budget_plan_title
     const ledgerRow = [
       newEntry.entryId,                    // entry_id
       newEntry.accountId,                  // account_id
@@ -348,12 +378,16 @@ export const createLedgerEntry = async (
       newEntry.evidenceFileName || '',     // evidence_file_name
       newEntry.createdBy,                  // created_by
       newEntry.createdDate,                // created_date
-      'FALSE',                             // is_budget_executed
-      ''                                   // budget_plan_id
+      isBudgetExecuted ? 'TRUE' : 'FALSE', // is_budget_executed
+      newEntry.budgetPlanId || '',        // budget_plan_id
+      newEntry.budgetPlanTitle || ''       // budget_plan_title
     ];
     
     // 배열 형식으로 append (papyrus-db는 2차원 배열을 기대함)
     await append(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, [ledgerRow]);
+
+    // 카테고리 사용 횟수 증가
+    await updateCategoryUsageCount(spreadsheetId, entryData.category, 1);
 
     console.log('✅ 장부 항목 추가 완료:', entryId);
     return newEntry;
@@ -381,6 +415,11 @@ export const updateLedgerEntry = async (
     
     if (!existingEntry) {
       throw new Error('장부 항목을 찾을 수 없습니다.');
+    }
+
+    // 예산안으로 생성된 항목은 수정 불가
+    if (existingEntry.isBudgetExecuted && existingEntry.budgetPlanId) {
+      throw new Error('예산안으로 생성된 항목은 수정할 수 없습니다.');
     }
 
     // 통장 정보 조회
@@ -534,6 +573,14 @@ export const updateLedgerEntry = async (
       await update(spreadsheetId, ACCOUNTING_SHEETS.ACCOUNT, `D${accountRowIndex + 1}`, [[finalBalance]]);
     }
 
+    // 카테고리 사용 횟수 업데이트 (카테고리가 변경된 경우)
+    if (existingEntry.category !== updatedCategory) {
+      // 기존 카테고리 사용 횟수 감소
+      await updateCategoryUsageCount(spreadsheetId, existingEntry.category, -1);
+      // 새 카테고리 사용 횟수 증가
+      await updateCategoryUsageCount(spreadsheetId, updatedCategory, 1);
+    }
+
     console.log('✅ 장부 항목 수정 완료:', entryId);
     return updatedEntry;
 
@@ -562,6 +609,11 @@ export const deleteLedgerEntry = async (
       throw new Error('장부 항목을 찾을 수 없습니다.');
     }
 
+    // 예산안으로 생성된 항목은 삭제 불가
+    if (entry.isBudgetExecuted && entry.budgetPlanId) {
+      throw new Error('예산안으로 생성된 항목은 삭제할 수 없습니다.');
+    }
+
     // 통장 정보 조회
     const accounts = await getAccounts(spreadsheetId);
     const account = accounts.find(acc => acc.accountId === accountId);
@@ -581,9 +633,18 @@ export const deleteLedgerEntry = async (
       throw new Error('장부 항목을 시트에서 찾을 수 없습니다.');
     }
 
+    // 시트 이름을 시트 ID로 변환
+    const sheetId = await getSheetId(spreadsheetId, ACCOUNTING_SHEETS.LEDGER);
+    if (sheetId === null) {
+      throw new Error('장부 시트 ID를 찾을 수 없습니다.');
+    }
+
+    // 카테고리 사용 횟수 감소 (삭제 전에 수행)
+    await updateCategoryUsageCount(spreadsheetId, entry.category, -1);
+
     // 행 삭제
-    const { deleteRow } = await import('papyrus-db/dist/sheets/delete');
-    await deleteRow(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, rowIndex + 1);
+    const { deleteRow } = await import('papyrus-db');
+    await deleteRow(spreadsheetId, sheetId, rowIndex + 1);
 
     // 삭제 후 남은 항목들의 balanceAfter 재계산
     const remainingEntries = await getLedgerEntries(spreadsheetId, accountId);
@@ -670,7 +731,8 @@ export const getLedgerEntries = async (
         createdBy: row[11] || '',
         createdDate: row[12] || '',
         isBudgetExecuted: row[13] === 'TRUE',
-        budgetPlanId: row[14] || undefined
+        budgetPlanId: row[14] || undefined,
+        budgetPlanTitle: row[15] || undefined
       };
 
       // accountId 필터
@@ -754,6 +816,48 @@ export const getCategories = async (spreadsheetId: string): Promise<Category[]> 
   } catch (error) {
     console.error('❌ 카테고리 목록 조회 오류:', error);
     throw error;
+  }
+};
+
+/**
+ * 카테고리 사용 횟수 업데이트
+ */
+const updateCategoryUsageCount = async (
+  spreadsheetId: string,
+  categoryName: string,
+  increment: number
+): Promise<void> => {
+  try {
+    if (!categoryName || categoryName.trim() === '') {
+      return; // 카테고리가 없으면 업데이트하지 않음
+    }
+
+    const categoryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY);
+    if (!categoryData || !categoryData.values || categoryData.values.length <= 1) {
+      return; // 카테고리 데이터가 없으면 업데이트하지 않음
+    }
+
+    // 카테고리 찾기
+    const categoryRowIndex = categoryData.values.findIndex(
+      (row: any[], index: number) => index > 0 && row[1] === categoryName
+    );
+
+    if (categoryRowIndex === -1) {
+      console.warn(`⚠️ 카테고리를 찾을 수 없습니다: ${categoryName}`);
+      return; // 카테고리를 찾을 수 없으면 업데이트하지 않음
+    }
+
+    const actualRowNumber = categoryRowIndex + 1;
+    const currentUsageCount = parseInt(categoryData.values[categoryRowIndex][6] || '0', 10);
+    const newUsageCount = Math.max(0, currentUsageCount + increment); // 음수 방지
+
+    // 사용 횟수 업데이트 (G열, 7번째 컬럼)
+    await update(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY, `G${actualRowNumber}`, [[newUsageCount]]);
+    
+    console.log(`✅ 카테고리 사용 횟수 업데이트: ${categoryName} (${currentUsageCount} → ${newUsageCount})`);
+  } catch (error) {
+    console.error(`❌ 카테고리 사용 횟수 업데이트 오류 (${categoryName}):`, error);
+    // 오류가 발생해도 계속 진행 (카테고리 업데이트 실패는 치명적이지 않음)
   }
 };
 

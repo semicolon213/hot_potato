@@ -58,6 +58,7 @@ export interface LedgerEntry {
   createdDate: string;             // 작성일
   isBudgetExecuted: boolean;       // 예산 집행 여부
   budgetPlanId?: string;           // 예산 계획 ID (예산 집행인 경우)
+  budgetPlanTitle?: string;        // 예산 계획 제목 (예산 집행인 경우)
 }
 
 /**
@@ -69,7 +70,6 @@ export interface BudgetPlan {
   title: string;                    // 예산 계획 제목
   totalAmount: number;             // 총 예산액
   requestedDate: string;           // 신청일
-  plannedExecutionDate: string;     // 계획된 집행일
   status: 'pending' | 'reviewed' | 'approved' | 'executed' | 'rejected'; // 상태
   subManagerReviewed: boolean;    // 부관리인 검토 여부 (하위 호환성)
   subManagerReviewDate?: string;   // 부관리인 검토일 (하위 호환성)
@@ -91,6 +91,7 @@ export interface BudgetPlanDetail {
   description: string;              // 설명
   amount: number;                   // 금액
   plannedDate?: string;             // 항목별 집행 예정일
+  source?: string;                  // 출처/수입처
 }
 
 /**
@@ -144,6 +145,8 @@ export interface CreateLedgerEntryRequest {
   source: string;                  // 출처/수입처
   transactionType: 'income' | 'expense'; // 거래 유형
   evidenceFile?: File;              // 증빙 문서 (선택사항)
+  budgetPlanId?: string;            // 예산 계획 ID (예산 집행인 경우)
+  budgetPlanTitle?: string;         // 예산 계획 제목 (예산 집행인 경우)
 }
 
 /**
@@ -153,7 +156,7 @@ export interface CreateBudgetPlanRequest {
   accountId: string;                // 통장 ID
   title: string;                     // 제목
   totalAmount: number;              // 총 예산액
-  plannedExecutionDate: string;      // 계획된 집행일
+  executedDate?: string;             // 집행일 (선택사항)
   details?: Omit<BudgetPlanDetail, 'detailId'>[]; // 예산 계획 상세 (선택사항)
 }
 
