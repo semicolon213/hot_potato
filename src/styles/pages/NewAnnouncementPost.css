@@ -1,29 +1,17 @@
-:root {
-    --primary-color: #4a90e2;
-    --primary-dark: #357ABD;
-    --danger-color: #e24a4a;
-    --danger-dark: #c43a3a;
-    --light-gray: #f4f5f7;
-    --medium-gray: #e0e0e0;
-    --dark-gray: #888;
-    --text-color: #333;
-    --card-bg: transparent;
-    --card-shadow: none;
-    --border-radius: 12px;
-}
+/* 색상은 전역 variables.css에서 사이드바 테마로 통일 관리 */
 
 .new-announcement-page {
-    padding: 40px;
-    background-color: var(--light-gray);
+    padding: clamp(32px, 3.7vh, 48px);
+    background-color: var(--lightgrey);
     min-height: 100vh;
 }
 
 .new-announcement-card {
-    max-width: 1100px;
+    max-width: clamp(1000px, 57.29vw, 1200px);
     margin: 0 auto;
     background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--card-shadow);
+    border-radius: var(--sidebar-radius-sm);
+    box-shadow: var(--shadow-base);
     overflow: hidden;
 }
 
@@ -46,24 +34,26 @@
 
 .header-actions .action-button {
     border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: clamp(8px, 0.93vh, 14px) clamp(16px, 2.08vw, 24px);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: clamp(14px, 1.62vh, 18px);
+    font-weight: var(--font-weight-medium);
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease-in-out;
+    gap: clamp(6px, 0.83vw, 12px);
+    transition: var(--transition-base);
 }
 
 .header-actions .save-button {
-    background-color: #475569;
+    background-color: var(--sidebar-primary);
     color: white;
 }
 
 .header-actions .save-button:hover {
-    background-color: #3a4656;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    filter: brightness(1.05);
 }
 
 .header-actions .save-button:disabled {
@@ -103,15 +93,17 @@
 
 .title-input, .content-textarea {
     width: 100%;
-    padding: 12px 15px;
-    border: 1px solid var(--medium-gray);
-    border-radius: 8px;
-    font-size: 16px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    padding: clamp(10px, 1.16vh, 16px) clamp(12px, 1.5vw, 20px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--sidebar-radius-sm);
+    font-size: clamp(15px, 1.74vh, 20px);
+    transition: var(--transition-base);
 }
 
 .title-input:focus, .content-textarea:focus {
     outline: none;
+    border-color: var(--sidebar-primary);
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .content-textarea {
@@ -121,67 +113,37 @@
 
 .attachment-area {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 15px;
 }
-
-.attachment-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.pin-announcement {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.pin-announcement label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #555 !important;
-    cursor: pointer;
-    margin-bottom: 0;
-}
-
-.pin-announcement input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: var(--primary-color);
-}
-
-
 
 .attachment-button {
     background-color: #f0f0f0;
     color: #555;
     border: 1px dashed var(--medium-gray);
     padding: 8px 16px;
-    border-radius: 8px;
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
     font-size: 13px;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .attachment-button:hover {
-    background-color: #e0e0e0;
-    border-color: var(--primary-color);
+    background-color: var(--lightgrey);
+    border-color: var(--sidebar-primary);
 }
 
 .attachment-name {
-    font-size: 14px;
-    color: var(--primary-color);
-    font-weight: 500;
+    font-size: clamp(13px, 1.5vh, 17px);
+    color: var(--sidebar-primary);
+    font-weight: var(--font-weight-medium);
 }
 
 .image-preview {
     margin-top: 20px;
     max-width: 100%;
     max-height: 300px;
-    border-radius: 8px;
+    border-radius: var(--sidebar-radius-sm);
     border: 1px solid var(--medium-gray);
 }
 
@@ -192,34 +154,5 @@
     font-size: 14px;
     color: var(--dark-gray);
     border-top: 1px solid var(--medium-gray);
-}
-
-.attachment-list {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.attachment-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.remove-attachment-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--danger-color);
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.remove-attachment-button:hover {
-  color: var(--danger-dark);
 }
 

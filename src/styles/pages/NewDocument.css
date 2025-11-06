@@ -24,11 +24,11 @@
 /* 모달 컨텐츠 */
 .document-modal-content {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--sidebar-radius);
   width: 90%;
-  max-width: 600px;
+  max-width: clamp(540px, 31.25vw, 720px);
   max-height: 90vh;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-base);
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
   border: 1px solid #e2e8f0;
@@ -49,7 +49,7 @@
 
 /* 모달 헤더 */
 .document-modal-header {
-  padding: 24px 32px 20px;
+  padding: clamp(20px, 2.31vh, 28px) clamp(24px, 3.125vw, 40px) clamp(16px, 1.85vh, 24px);
   border-bottom: 1px solid #e2e8f0;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   display: flex;
@@ -77,16 +77,16 @@
 .document-modal-close {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: clamp(20px, 2.31vh, 28px);
   cursor: pointer;
   color: #64748b;
-  transition: all 0.2s ease;
-  width: 40px;
-  height: 40px;
+  transition: var(--transition-base);
+  width: clamp(36px, 4.17vw, 48px);
+  height: clamp(36px, 4.17vw, 48px);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .document-modal-close:hover {
@@ -96,7 +96,7 @@
 
 /* 모달 바디 */
 .document-modal-body {
-  padding: 32px;
+  padding: clamp(24px, 2.78vh, 40px);
   overflow-y: auto;
   max-height: calc(90vh - 140px);
   flex: 1;
@@ -134,12 +134,12 @@
 .form-textarea-large,
 .form-select-large {
   width: 100%;
-  padding: 16px;
+  padding: clamp(12px, 1.39vh, 20px);
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(15px, 1.74vh, 20px);
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   background-color: #ffffff;
   box-sizing: border-box;
 }
@@ -148,8 +148,8 @@
 .form-textarea-large:focus,
 .form-select-large:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .form-textarea-large {
@@ -177,28 +177,28 @@
 
 /* 모달 액션 버튼 */
 .document-modal-actions {
-  padding: 24px 32px 32px;
+  padding: clamp(20px, 2.31vh, 28px) clamp(24px, 3.125vw, 40px) clamp(24px, 2.78vh, 40px);
   border-top: 1px solid #e2e8f0;
   background-color: #f8fafc;
   display: flex;
-  gap: 12px;
+  gap: clamp(10px, 1.25vw, 16px);
   justify-content: flex-end;
   flex-shrink: 0;
   margin-top: auto;
 }
 
 .action-btn {
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: clamp(10px, 1.16vh, 16px) clamp(20px, 2.6vw, 28px);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(15px, 1.74vh, 20px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   border: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 120px;
+  gap: clamp(6px, 0.83vw, 12px);
+  min-width: clamp(100px, 13.02vw, 140px);
   justify-content: center;
 }
 
@@ -211,18 +211,20 @@
 .cancel-btn:hover {
   background-color: #e2e8f0;
   color: #475569;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--sidebar-primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: var(--shadow-base);
 }
 
 .save-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
 }
 
 .save-btn:disabled {
@@ -278,11 +280,11 @@
 /* 파일명 모달 컨텐츠 */
 .filename-modal-content {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--sidebar-radius);
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-base);
   overflow: hidden;
   animation: slideUp 0.3s ease-out;
   border: 1px solid #e2e8f0;
@@ -316,13 +318,13 @@
   font-size: 24px;
   cursor: pointer;
   color: #64748b;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .filename-modal-close:hover {
@@ -398,11 +400,11 @@
 /* 문서 생성 후 모달 컨텐츠 */
 .after-create-modal-content {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--sidebar-radius);
   width: 90%;
   max-width: 600px;
   max-height: 80vh;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-base);
   overflow: hidden;
   animation: slideUp 0.3s ease-out;
   border: 1px solid #e2e8f0;
@@ -436,13 +438,13 @@
   font-size: 24px;
   cursor: pointer;
   color: #64748b;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .after-create-modal-close:hover {
@@ -464,7 +466,7 @@
   gap: 16px;
   padding: 20px;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   margin-bottom: 24px;
   border: 1px solid #bbf7d0;
 }
@@ -477,7 +479,7 @@
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -518,29 +520,29 @@
   gap: 16px;
   padding: 20px;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   background: #ffffff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   text-align: left;
   width: 100%;
 }
 
 .option-btn:hover {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background: #f8fafc;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .option-btn.primary-btn {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background: #eff6ff;
 }
 
 .option-btn.primary-btn:hover {
   background: #dbeafe;
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 6px 16px rgba(26, 26, 26, 0.2);
 }
 
 .option-btn.secondary-btn {
@@ -561,7 +563,7 @@
   align-items: center;
   justify-content: center;
   background: #f1f5f9;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   flex-shrink: 0;
 }
 
@@ -653,11 +655,11 @@
 /* 권한 모달 컨텐츠 */
 .permission-modal-content {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--sidebar-radius);
   width: 95%;
   max-width: 1000px;
   max-height: 90vh;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-base);
   overflow: hidden;
   animation: slideUp 0.3s ease-out;
   border: 1px solid #e2e8f0;
@@ -691,13 +693,13 @@
   font-size: 24px;
   cursor: pointer;
   color: #64748b;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .permission-modal-close:hover {
@@ -731,12 +733,12 @@
 
 .permission-modal-body > *::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 3px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .permission-modal-body > *::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .permission-modal-body > *::-webkit-scrollbar-thumb:hover {
@@ -750,7 +752,7 @@
   gap: 16px;
   padding: 20px;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   margin-bottom: 24px;
   border: 1px solid #bae6fd;
   grid-column: 1 / -1;
@@ -766,7 +768,7 @@
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -815,22 +817,22 @@
   gap: 12px;
   padding: 16px;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   background: #ffffff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   text-align: left;
 }
 
 .permission-option:hover {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background: #f8fafc;
 }
 
 .permission-option.active {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background: #eff6ff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
 }
 
 .option-icon {
@@ -841,7 +843,7 @@
   align-items: center;
   justify-content: center;
   background: #f1f5f9;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .permission-option.active .option-icon {
@@ -868,7 +870,7 @@
 .sharing-options {
   background: #f8fafc;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   border: 1px solid #e2e8f0;
   grid-column: 2;
   height: fit-content;
@@ -892,14 +894,14 @@
   padding: 10px 12px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   font-size: 13px;
 }
 
 .group-permission-item:hover {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background: #f8fafc;
 }
 
@@ -911,18 +913,18 @@
   width: 16px;
   height: 16px;
   border: 2px solid #d1d5db;
-  border-radius: 4px;
+  border-radius: var(--sidebar-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   background: #ffffff;
   flex-shrink: 0;
 }
 
 .group-permission-item input[type="checkbox"]:checked + .checkbox-custom {
   background: #3b82f6;
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
 }
 
 .group-permission-item input[type="checkbox"]:checked + .checkbox-custom::after {
@@ -959,12 +961,12 @@
 
 .individual-emails::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 2px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .individual-emails::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 2px;
+  border-radius: var(--sidebar-radius-sm);
 }
 
 .individual-emails::-webkit-scrollbar-thumb:hover {
@@ -981,15 +983,15 @@
   flex: 1;
   padding: 12px 16px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   font-size: 14px;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .email-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
 }
 
 .remove-email-btn {
@@ -1004,7 +1006,7 @@
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .remove-email-btn:hover {
@@ -1018,18 +1020,18 @@
   gap: 8px;
   padding: 12px 16px;
   border: 2px dashed #d1d5db;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   background: #ffffff;
   color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   font-size: 14px;
   font-weight: 500;
 }
 
 .add-email-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--sidebar-primary);
+  color: var(--sidebar-primary);
   background: #f8fafc;
 }
 
@@ -1237,12 +1239,13 @@
 }
 
 .modal-button.confirm {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--sidebar-primary); /* 검은색 */
+  color: #ffffff; /* 흰색 텍스트 */
 }
 
 .modal-button.confirm:hover {
-  background-color: #2563eb;
+  background-color: var(--sidebar-hover-bg); /* 호버 시 흰색 */
+  color: var(--sidebar-hover-text); /* 호버 시 검은색 텍스트 */
 }
 
 /* 템플릿 생성 방식 선택 */
@@ -1256,7 +1259,7 @@
   flex: 1;
   padding: 12px 16px;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   background-color: #f8fafc;
   color: #64748b;
   font-size: 14px;
@@ -1270,19 +1273,20 @@
 }
 
 .mode-button:hover {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background-color: #eff6ff;
   color: #1d4ed8;
 }
 
 .mode-button.active {
-  border-color: #3b82f6;
-  background-color: #3b82f6;
-  color: white;
+  border-color: var(--sidebar-primary); /* 검은색 테두리 */
+  background-color: var(--sidebar-primary); /* 검은색 */
+  color: #ffffff; /* 흰색 텍스트 */
 }
 
 .mode-button.active:hover {
-  background-color: #2563eb;
+  background-color: var(--sidebar-hover-bg); /* 호버 시 흰색 */
+  color: var(--sidebar-hover-text); /* 호버 시 검은색 텍스트 */
 }
 
 /* 문서 타입 선택 */
@@ -1296,7 +1300,7 @@
   flex: 1;
   padding: 16px 20px;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   background-color: #f8fafc;
   color: #64748b;
   font-size: 14px;
@@ -1311,19 +1315,20 @@
 }
 
 .type-button:hover {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background-color: #eff6ff;
   color: #1d4ed8;
 }
 
 .type-button.active {
-  border-color: #3b82f6;
-  background-color: #3b82f6;
-  color: white;
+  border-color: var(--sidebar-primary); /* 검은색 테두리 */
+  background-color: var(--sidebar-primary); /* 검은색 */
+  color: #ffffff; /* 흰색 텍스트 */
 }
 
 .type-button.active:hover {
-  background-color: #2563eb;
+  background-color: var(--sidebar-hover-bg); /* 호버 시 흰색 */
+  color: var(--sidebar-hover-text); /* 호버 시 검은색 텍스트 */
 }
 
 /* 파일 업로드 영역 */
@@ -1337,7 +1342,7 @@
 
 .file-upload-display {
   border: 2px dashed #cbd5e1;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius-sm);
   padding: 24px;
   text-align: center;
   background-color: #f8fafc;
@@ -1346,7 +1351,7 @@
 }
 
 .file-upload-display:hover {
-  border-color: #3b82f6;
+  border-color: var(--sidebar-primary);
   background-color: #eff6ff;
 }
 

@@ -18,10 +18,10 @@
 
 .modal-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: var(--sidebar-radius);
+  box-shadow: var(--shadow-base);
   width: 100%;
-  max-width: 800px;
+  max-width: clamp(720px, 41.67vw, 960px);
   max-height: 90vh;
   overflow: hidden;
   display: flex;
@@ -55,65 +55,72 @@
 }
 
 .edit-btn, .save-btn, .cancel-btn, .close-btn, .delete-btn {
-  padding: 8px 16px;
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .edit-btn {
-  background: #007bff;
-  color: white;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
 }
 
 .edit-btn:hover {
-  background: #0056b3;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .delete-btn {
-  background: #dc3545;
-  color: white;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
 }
 
 .delete-btn:hover {
-  background: #c82333;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .save-btn {
-  background: #28a745;
-  color: white;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
 }
 
 .save-btn:hover {
-  background: #1e7e34;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .cancel-btn {
-  background: #dc3545;
-  color: white;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
 }
 
 .cancel-btn:hover {
-  background: #c82333;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .close-btn {
-  background: #6c757d;
-  color: white;
-  padding: 8px 12px;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
+  padding: clamp(8px, 0.93vh, 10px);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, 3.7vh, 36px);
+  height: clamp(32px, 3.7vh, 36px);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn:hover {
-  background: #545b62;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .edit-actions {
@@ -142,13 +149,13 @@
 }
 
 .tab-btn:hover {
-  color: #007bff;
-  background: #e9ecef;
+  color: var(--sidebar-primary);
+  background: #f8f9fa;
 }
 
 .tab-btn.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
+  color: var(--sidebar-primary);
+  border-bottom-color: var(--sidebar-primary);
   background: white;
 }
 
@@ -196,12 +203,12 @@
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 12px 16px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-base);
   background: white;
   color: #495057;
   pointer-events: auto;
@@ -209,20 +216,24 @@
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover {
   border-color: #adb5bd;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
+  border-color: var(--sidebar-primary);
+  border-width: 1px;
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+  background-color: #ffffff;
+  transition: var(--transition-base);
   pointer-events: auto;
   user-select: text;
   -webkit-user-select: text;
@@ -269,19 +280,21 @@
 }
 
 .add-btn {
-  background: #007bff;
-  color: white;
+  background: var(--sidebar-primary);
+  color: #f8f8f7;
   border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .add-btn:hover {
-  background: #0056b3;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 /* Issues List */
@@ -318,8 +331,7 @@
 }
 
 .issue-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #f8f9fa;
 }
 
 .issue-header {
@@ -364,9 +376,9 @@
 }
 
 .issue-type {
-  font-size: 14px;
-  color: #007bff;
-  font-weight: 500;
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: var(--sidebar-primary);
+  font-weight: var(--font-weight-medium);
   margin-bottom: 12px;
 }
 

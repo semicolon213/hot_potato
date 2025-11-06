@@ -10,102 +10,100 @@
 body {
     display: flex;
     height: 100vh;
-    background-color: var(--lightgrey);
+    background-color: transparent;
 }
 
 /* 미니멀리즘 메인 컨텐츠 */
 .main-content {
-    flex: 1;
-    padding: 32px;
+    width: 100%;
+    padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 40px);
+    margin: 0;
+    min-height: 100%;
+    box-sizing: border-box;
+    background: transparent;
     overflow-y: auto;
     position: relative;
     z-index: 1;
-    background-color: #f8f8f7;
-    height: 100%;
 }
 
 .dashboard-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    margin-bottom: 40px;
+    margin-bottom: clamp(24px, 2.78vh, 32px);
+    padding: 0;
+    margin: 0 0 clamp(24px, 2.78vh, 32px) 0;
 }
 
-.dashboard-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
 
-.dashboard-header h1 {
-    color: var(--text-dark);
-    font-size: 28px;
-    font-weight: 600;
+.add-widget-btn {
+    background: var(--sidebar-primary);
+    color: #f8f8f7;
+    border: none;
+    padding: clamp(8px, 0.93vh, 12px) clamp(24px, 3.125vw, 36px);
+    border-radius: var(--sidebar-radius-sm);
+    cursor: pointer;
+    transition: var(--transition-base);
+    font-weight: var(--font-weight-semibold);
+    font-size: clamp(14px, 1.62vh, 16px);
+    white-space: nowrap;
+    height: clamp(44px, 5.09vh, 48px);
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin: 0;
 }
 
-.add-widget-btn {
-    background: #000000;
-    color: #f8f8f7;
-    border: none;
-    padding: 10px 16px;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    transition: all 0.2s;
-    font-weight: 500;
-    font-size: 14px;
-    white-space: nowrap;
-}
-
 .add-widget-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.add-widget-btn i {
-    font-size: 16px;
-    color: #f8f8f7;
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-hover-text);
+    border: 1px solid #1a1a1a;
 }
 
 .sync-btn {
-    background: var(--success);
+    background: var(--sidebar-primary);
     color: #f8f8f7;
     border: none;
-    padding: 10px 16px;
-    border-radius: var(--border-radius-sm);
+    padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    transition: all 0.2s;
-    font-size: 14px;
-    font-weight: 500;
+    justify-content: center;
+    gap: clamp(6px, 0.74vw, 8px);
+    transition: var(--transition-base);
+    font-size: clamp(14px, 1.62vh, 16px);
+    font-weight: var(--font-weight-semibold);
     white-space: nowrap;
+    height: clamp(44px, 5.09vh, 48px);
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .sync-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-hover-text);
+    border: 1px solid #1a1a1a;
 }
 
 .sync-btn i {
-    font-size: 16px;
-    color: #f8f8f7;
+    font-size: clamp(14px, 1.62vh, 16px);
+    color: inherit;
 }
 
 .sync-btn:disabled {
-    background: var(--text-light);
+    background: #ccc;
+    color: #666;
     cursor: not-allowed;
+    opacity: 0.6;
     transform: none;
-    box-shadow: 0 3px 10px var(--disabled-shadow);
+    box-shadow: none;
 }
 
 .sync-btn:disabled:hover {
+    background: #ccc;
+    color: #666;
     transform: none;
-    box-shadow: 0 3px 10px var(--disabled-shadow);
+    box-shadow: none;
 }
 
 /* 빈 대시보드 스타일 */
@@ -119,12 +117,16 @@ body {
 
 .empty-message {
     text-align: center;
-    background: #f8f8f7;
-    padding: 40px;
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
+    background: #ffffff;
+    padding: clamp(32px, 3.7vh, 48px);
+    border-radius: var(--sidebar-radius-sm);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    max-width: clamp(350px, 36.46vw, 480px);
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 모든 자식 요소 중앙 정렬 */
 }
 
 .empty-message i {
@@ -148,19 +150,27 @@ body {
 }
 
 .add-first-widget-btn {
-    background: #000000;
+    background: var(--sidebar-primary);
     color: #f8f8f7;
     border: none;
-    padding: 12px 24px;
-    border-radius: var(--border-radius-md);
+    padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+    border-radius: var(--sidebar-radius-sm);
     cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: all 0.3s;
-    box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+    font-size: clamp(14px, 1.62vh, 16px);
+    font-weight: var(--font-weight-semibold);
+    transition: var(--transition-base);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    height: clamp(44px, 5.09vh, 48px);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 0.74vw, 8px);
+    margin: 0 auto; /* 가운데 정렬 보장 */
 }
 
 .add-first-widget-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-hover-text);
+    border: 1px solid #1a1a1a;
 }

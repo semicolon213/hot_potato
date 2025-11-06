@@ -1,6 +1,7 @@
 // 학생 검색 및 필터 컴포넌트
 
 import React from 'react';
+import { FaSearch, FaFilter, FaTrash, FaTimes } from 'react-icons/fa';
 
 interface FilterOptions {
   grades: string[];
@@ -43,7 +44,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
     <div className="search-filter-section">
       <div className="search-controls">
         <div className="search-input-group">
-          <span className="search-icon">🔍</span>
+          <FaSearch className="search-icon" />
           <input
             type="text"
             placeholder={isStaffMode ? "이름, 교번, 구분으로 검색..." : "이름, 학번, 주소, 직책으로 검색..."}
@@ -55,8 +56,9 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
             <button 
               className="clear-search-btn"
               onClick={() => onSearchChange('')}
+              title="검색어 지우기"
             >
-              ✕
+              <FaTimes />
             </button>
           )}
         </div>
@@ -66,7 +68,8 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
             className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}
             onClick={onToggleFilters}
           >
-            🎛️ 필터 {showFilters ? '숨기기' : '보기'}
+            <FaFilter className="btn-icon" />
+            <span>필터 {showFilters ? '숨기기' : '보기'}</span>
           </button>
           
           {hasActiveFilters && (
@@ -74,7 +77,8 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
               className="clear-filters-btn"
               onClick={() => onFiltersChange({ grade: '', state: '', council: '' })}
             >
-              🗑️ 초기화
+              <FaTrash className="btn-icon" />
+              <span>초기화</span>
             </button>
           )}
         </div>
@@ -85,7 +89,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
           <div className="filter-row">
           {(!isStaffMode || activeTab !== 'committee') && (
             <div className="filter-group">
-              <label>{isStaffMode ? '👔 구분' : '🎓 학년'}</label>
+              <label>{isStaffMode ? '구분' : '학년'}</label>
               <select
                 value={filters.grade}
                 onChange={(e) => onFiltersChange({ ...filters, grade: e.target.value })}
@@ -101,7 +105,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
 
             {!isStaffMode && (
               <div className="filter-group">
-                <label>📊 상태</label>
+                <label>상태</label>
                 <select
                   value={filters.state}
                   onChange={(e) => onFiltersChange({ ...filters, state: e.target.value })}
@@ -117,7 +121,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
 
             {!isStaffMode && (
               <div className="filter-group">
-                <label>👑 학생회 직책</label>
+                <label>학생회 직책</label>
                 <select
                   value={filters.council}
                   onChange={(e) => onFiltersChange({ ...filters, council: e.target.value })}
@@ -133,7 +137,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
 
             {isStaffMode && activeTab === 'committee' && (
               <div className="filter-group">
-                <label>📊 위원회 종류</label>
+                <label>위원회 종류</label>
                 <select
                   value={filters.state}
                   onChange={(e) => onFiltersChange({ ...filters, state: e.target.value })}
@@ -149,7 +153,7 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
 
             {isStaffMode && activeTab === 'committee' && (
               <div className="filter-group">
-                <label>👥 직책</label>
+                <label>직책</label>
                 <select
                   value={filters.council}
                   onChange={(e) => onFiltersChange({ ...filters, council: e.target.value })}

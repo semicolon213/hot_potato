@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaEnvelope } from 'react-icons/fa';
 import './GroupRoleModal.css';
 
 interface GroupRoleModalProps {
@@ -122,7 +123,10 @@ const GroupRoleModal: React.FC<GroupRoleModalProps> = ({
 
             {/* 선택한 권한에 따른 그룹스 배정 확인 메시지 */}
             <div className="assignment-confirmation">
-              <h5>📧 그룹스 배정 확인</h5>
+              <h5>
+                <FaEnvelope className="confirmation-icon" />
+                그룹스 배정 확인
+              </h5>
               <div className="confirmation-info">
                 <p><strong>선택된 권한:</strong> {GROUP_ROLES.find(role => role.value === selectedRole)?.label}</p>
                 <p><strong>배정될 그룹스:</strong> {GROUP_ROLES.find(role => role.value === selectedRole)?.description}</p>

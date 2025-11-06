@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAdminPanel } from '../../../hooks/features/admin/useAdminPanel';
-import AdminHeader from './AdminHeader';
 import AdminKeySection from './AdminKeySection';
 import UserList from './UserList';
 import './AdminPanel.css';
@@ -23,8 +22,6 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className="admin-panel">
-      <AdminHeader />
-      
       <AdminKeySection
         emailToSend={emailToSend}
         setEmailToSend={setEmailToSend}

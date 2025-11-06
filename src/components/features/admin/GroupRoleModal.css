@@ -15,10 +15,10 @@
 
 .group-role-modal {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-radius: var(--sidebar-radius);
+  box-shadow: var(--shadow-base);
   width: 90%;
-  max-width: 600px;
+  max-width: clamp(540px, 31.25vw, 720px);
   max-height: 90vh;
   overflow: hidden;
   animation: modalSlideIn 0.3s ease-out;
@@ -39,9 +39,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 24px 16px;
+  padding: clamp(20px, 2.31vh, 28px) clamp(20px, 2.31vh, 28px) clamp(12px, 1.39vh, 20px);
   border-bottom: 1px solid #e9ecef;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--sidebar-primary); /* 검은색 배경 */
   color: white;
 }
 
@@ -153,14 +153,15 @@
 }
 
 .role-option:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  border-color: var(--sidebar-primary);
+  background: var(--accent);
   transform: translateY(-1px);
+  transition: var(--transition-base);
 }
 
 .role-option.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: var(--sidebar-primary);
+  background: var(--sidebar-primary); /* 검은색 배경 */
   color: white;
 }
 
@@ -178,7 +179,7 @@
 .role-header input[type="radio"] {
   width: 18px;
   height: 18px;
-  accent-color: #667eea;
+  accent-color: var(--sidebar-primary);
 }
 
 .role-label {
@@ -226,21 +227,22 @@
 }
 
 .approve-btn {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: var(--sidebar-primary);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: var(--sidebar-radius-sm);
+  padding: clamp(10px, 1.16vh, 16px) clamp(20px, 2.6vw, 28px);
+  font-size: clamp(13px, 1.5vh, 17px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-base);
 }
 
 .approve-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+  box-shadow: var(--shadow-hover);
+  filter: brightness(1.05);
 }
 
 .approve-btn:disabled {
@@ -276,8 +278,8 @@
 
 .role-dropdown:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .role-dropdown:disabled {
@@ -288,18 +290,26 @@
 
 /* 그룹스 배정 확인 메시지 */
 .assignment-confirmation {
-  margin-top: 20px;
-  padding: 16px;
+  margin-top: clamp(16px, 1.85vh, 20px);
+  padding: clamp(12px, 1.39vh, 16px);
   background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #007bff;
+  border-radius: var(--sidebar-radius-sm);
+  border-left: 4px solid var(--sidebar-primary);
 }
 
 .assignment-confirmation h5 {
   margin: 0 0 12px 0;
-  color: #007bff;
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--text-dark, #333);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.74vw, 8px);
+}
+
+.confirmation-icon {
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: var(--sidebar-primary);
 }
 
 .confirmation-info p {

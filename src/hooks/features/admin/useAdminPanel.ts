@@ -17,6 +17,7 @@ type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
 import { fetchAllUsers, sendAdminKeyEmail, approveUserWithGroup, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
 import type { ApiResponse } from '../../../config/api';
+import { tokenManager } from '../../../utils/auth/tokenManager';
 
 export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -249,11 +250,11 @@ export const useAdminPanel = () => {
           console.log('useAuthStore에서 토큰 발견:', user.googleAccessToken.substring(0, 20) + '...');
           adminAccessToken = user.googleAccessToken;
         } 
-        // 2순위: localStorage에서 토큰 확인
+        // 2순위: tokenManager를 통해 토큰 확인 (만료 체크 포함)
         else {
-          const storedToken = localStorage.getItem('googleAccessToken');
+          const storedToken = tokenManager.get();
           if (storedToken) {
-            console.log('localStorage에서 토큰 발견:', storedToken.substring(0, 20) + '...');
+            console.log('tokenManager에서 토큰 발견:', storedToken.substring(0, 20) + '...');
             adminAccessToken = storedToken;
           } else {
             // 3순위: gapi client에서 직접 가져오기 (Auth2 대신)

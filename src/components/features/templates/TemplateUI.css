@@ -33,7 +33,7 @@ justify-content: center;
 width: 36px;
 height: 36px;
 border-radius: 50%;
-background-color: var(--primary);
+background-color: var(--sidebar-primary);
 color: #f8f8f7;
 margin-right: 12px;
 }
@@ -122,19 +122,19 @@ transition: background-color 0.2s;
 }
 
 .tag-management-toggle:hover {
-    border-color: #3b82f6;
-    background-color: #eff6ff;
-    color: #1d4ed8;
+    border-color: var(--sidebar-primary);
+    background-color: var(--accent);
+    color: var(--sidebar-primary);
 }
 
 .tag-management-toggle.active {
-    border-color: #3b82f6;
-    background-color: #3b82f6;
+    border-color: var(--sidebar-primary);
+    background-color: var(--sidebar-primary);
     color: white;
 }
 
 .tag-management-toggle.active:hover {
-    background-color: #2563eb;
+    background-color: var(--primary-dark);
 }
 
 /* 무선 탭 스타일 */
@@ -425,29 +425,6 @@ margin-left: 0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Footer 삭제 버튼 (왼쪽 하단) */
-.delete-template-button-footer {
-    width: 32px;
-    height: 32px;
-    background-color: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-    border: 1px solid rgba(220, 53, 69, 0.3);
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    transition: all 0.2s;
-    margin-right: auto;
-}
-
-.delete-template-button-footer:hover {
-    background-color: rgba(220, 53, 69, 0.2);
-    border-color: #dc3545;
-    transform: scale(1.1);
-}
-
 /* Dropdown Menu for template options */
 .options-menu-container {
     position: relative;
@@ -479,52 +456,6 @@ margin-left: 0;
     background-color: #f1f3f5;
 }
 
-/* 태그 배지 스타일 */
-.tag-badge {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    margin-left: 4px;
-    vertical-align: middle;
-}
-
-.tag-badge.static {
-    background-color: #dbeafe;
-    color: #1e40af;
-    border: 1px solid #93c5fd;
-}
-
-.tag-badge.personal {
-    background-color: #f3e8ff;
-    color: #7c3aed;
-    border: 1px solid #c4b5fd;
-}
-
-/* 기본 태그와 개인 태그 추가 버튼 구분 */
-.add-tag-button.static {
-    background-color: #eff6ff;
-    color: #1e40af;
-    border: 1px solid #bfdbfe;
-}
-
-.add-tag-button.static:hover {
-    background-color: #dbeafe;
-    border-color: #93c5fd;
-}
-
-.add-tag-button.personal {
-    background-color: #faf5ff;
-    color: #7c3aed;
-    border: 1px solid #e9d5ff;
-}
-
-.add-tag-button.personal:hover {
-    background-color: #f3e8ff;
-    border-color: #c4b5fd;
-}
-
 .add-tag-button {
     color: #007bff;
     cursor: pointer;
@@ -540,17 +471,6 @@ margin-left: 0;
     display: flex;
     align-items: center;
     margin-left: 20px;
-}
-
-/* 기본 태그와 개인 태그 입력 필드 구분 */
-.new-tag-input.static {
-    border-color: #93c5fd;
-    background-color: #eff6ff;
-}
-
-.new-tag-input.personal {
-    border-color: #c4b5fd;
-    background-color: #faf5ff;
 }
 
 .new-tag-input {
@@ -715,7 +635,7 @@ margin-left: 0;
 .add-template-button {
     padding: 10px 20px;
     border-radius: var(--border-radius-md);
-    background-color: var(--primary);
+    background-color: var(--sidebar-primary);
     color: #f8f8f7;
     font-weight: 500;
     cursor: pointer;
@@ -797,7 +717,7 @@ margin-left: 0;
 }
 
 .modal-content .modal-actions .save-btn {
-    background-color: var(--primary);
+    background-color: var(--sidebar-primary);
     color: #f8f8f7;
 }
 
@@ -859,13 +779,13 @@ margin-left: 0;
 }
 
 .permission-button:hover {
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
     background-color: #f0f8ff;
 }
 
 .permission-button.active {
-    border-color: var(--primary);
-    background-color: var(--primary);
+    border-color: var(--sidebar-primary);
+    background-color: var(--sidebar-primary);
     color: white;
 }
 
@@ -885,7 +805,7 @@ margin-left: 0;
 
 .email-input-group input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
 }
 
 .group-checkboxes {
@@ -918,7 +838,7 @@ margin-left: 0;
 
 .checkbox-label:has(input:checked) {
     background-color: #e3f2fd;
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
     box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
 }
 
@@ -926,7 +846,7 @@ margin-left: 0;
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: var(--primary);
+    accent-color: var(--sidebar-primary);
 }
 
 .checkbox-text {
@@ -959,7 +879,7 @@ margin-left: 0;
 
 .email-input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
 }
 
 .remove-email-btn {
@@ -1002,9 +922,9 @@ margin-left: 0;
 }
 
 .add-email-btn:hover {
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
     background-color: #f0f8ff;
-    color: var(--primary);
+    color: var(--sidebar-primary);
 }
 
 .add-email-btn::before {
@@ -1030,14 +950,14 @@ margin-left: 0;
 }
 
 .role-option:hover {
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
 }
 
 .role-option input[type="radio"] {
     margin-right: 15px;
     width: 18px;
     height: 18px;
-    accent-color: var(--primary);
+    accent-color: var(--sidebar-primary);
 }
 
 .role-option .role-name {
@@ -1046,5 +966,5 @@ margin-left: 0;
 }
 
 .role-option input[type="radio"]:checked + .role-name {
-    color: var(--primary);
+    color: var(--sidebar-primary);
 }

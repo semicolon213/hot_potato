@@ -3,15 +3,15 @@
 .card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--card-shadow);
+  border-radius: var(--sidebar-radius-sm);
+  box-shadow: var(--shadow-base);
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .card-hoverable:hover {
-  border-color: var(--primary);
-  box-shadow: var(--card-shadow-hover);
+  border-color: var(--sidebar-primary);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-2px);
 }
 
@@ -20,31 +20,32 @@
 }
 
 .card-clickable:hover {
-  border-color: var(--primary);
-  box-shadow: var(--card-shadow-hover);
+  border-color: var(--sidebar-primary);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
 }
 
 .card-header {
-  padding: 16px 20px 12px;
+  padding: clamp(12px, 1.39vh, 20px) clamp(16px, 2.08vw, 24px) clamp(10px, 1.16vh, 16px);
   border-bottom: 1px solid var(--border-light);
   background-color: var(--table-header-bg);
 }
 
 .card-title {
-  margin: 0 0 4px 0;
-  font-size: 18px;
-  font-weight: 600;
+  margin: 0 0 clamp(3px, 0.35vh, 5px) 0;
+  font-size: clamp(16px, 1.85vh, 22px);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-dark);
 }
 
 .card-subtitle {
   margin: 0;
-  font-size: 14px;
+  font-size: clamp(13px, 1.5vh, 17px);
   color: var(--text-medium);
 }
 
 .card-content {
-  padding: 20px;
+  padding: clamp(16px, 1.85vh, 24px);
 }
 
 /* 카드 크기 변형 */

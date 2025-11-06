@@ -15,11 +15,11 @@
 
 .modal-content {
     background-color: #f8f8f7;
-    padding: 30px;
-    border-radius: var(--border-radius-lg);
+    padding: clamp(24px, 2.78vh, 36px);
+    border-radius: var(--sidebar-radius);
     width: 85%;
-    max-width: 800px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: clamp(720px, 41.67vw, 960px);
+    box-shadow: var(--shadow-base);
     transform: scale(0.95);
     animation: modalOpen 0.3s forwards;
     max-height: 80vh;
@@ -71,11 +71,11 @@
 
 .widget-option {
     border: 1px solid var(--border-color);
-    padding: 20px 15px;
-    border-radius: var(--border-radius-md);
+    padding: clamp(16px, 1.85vh, 24px) clamp(12px, 1.5vw, 20px);
+    border-radius: var(--sidebar-radius-sm);
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: var(--transition-base);
     background-color: #f8f8f7;
 }
 
@@ -92,16 +92,16 @@
 }
 
 .widget-option:hover {
-    border-color: var(--primary);
+    border-color: var(--sidebar-primary);
     background-color: var(--lightgrey);
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
 }
 
 .widget-option i {
     font-size: 36px;
     margin-bottom: 15px;
-    color: var(--primary);
+    color: var(--sidebar-primary);
     display: inline-block;
     transition: all 0.3s;
 }

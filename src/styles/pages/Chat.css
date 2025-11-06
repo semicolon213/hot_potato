@@ -1,29 +1,29 @@
 /* 채팅 버튼 */
 .chat-floating-button {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  background: #f8f8f7;
-  color: #000000;
+  bottom: clamp(15px, 1.85vh, 25px);
+  right: clamp(15px, 1.56vw, 25px);
+  width: clamp(52px, 6.02vh, 68px);
+  height: clamp(52px, 6.02vh, 68px);
+  background: var(--sidebar-primary); /* 검은색 */
+  color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 24px;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(20px, 2.31vh, 28px);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-base);
+  transition: var(--transition-base);
   z-index: 1000;
 }
 
 .chat-floating-button:hover {
-  background: #f8f8f7;
-  color: #000000;
+  background: var(--sidebar-hover-bg); /* 호버 시 흰색 */
+  color: var(--sidebar-hover-text); /* 호버 시 검은색 */
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-hover);
 }
 
 /* 채팅 오버레이 */
@@ -49,17 +49,17 @@
 
 /* 채팅 창 */
 .chat-window {
-  width: 400px;
-  height: 500px;
+  width: clamp(360px, 37.5vw, 480px);
+  height: clamp(450px, 52.08vh, 600px);
   background: #f8f8f7;
-  border-radius: 16px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: var(--sidebar-radius);
+  box-shadow: var(--shadow-base);
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
   pointer-events: auto;
-  margin-right: 20px;
-  margin-bottom: 20px;
+  margin-right: clamp(15px, 1.56vw, 25px);
+  margin-bottom: clamp(15px, 1.85vh, 25px);
 }
 
 @keyframes slideUp {
@@ -81,14 +81,16 @@
   padding: 20px;
   border-bottom: none;
   background: transparent;
-  border-radius: 16px 16px 0 0;
+  border-top-left-radius: var(--sidebar-radius);
+  border-top-right-radius: var(--sidebar-radius);
 }
 
 /* 채팅 바디: webview 컨테이너 */
 .chat-body {
   flex: 1;
   overflow: hidden;
-  border-radius: 0 0 16px 16px;
+  border-bottom-left-radius: var(--sidebar-radius);
+  border-bottom-right-radius: var(--sidebar-radius);
 }
 
 .chat-webview {
@@ -103,8 +105,8 @@
   color: var(--text-light);
   cursor: pointer;
   padding: 8px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  border-radius: var(--sidebar-radius-sm);
+  transition: var(--transition-base);
 }
 
 .chat-close-btn:hover {
@@ -117,7 +119,7 @@
   .chat-window {
     width: 350px;
     height: 450px;
-    border-radius: 12px;
+    border-radius: var(--sidebar-radius);
     margin-right: 15px;
     margin-bottom: 15px;
   }

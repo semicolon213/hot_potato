@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaCheck, FaTimes } from 'react-icons/fa';
 import GroupRoleModal from './GroupRoleModal';
 import './UserList.css';
 // 타입 정의
@@ -120,14 +121,16 @@ const UserList: React.FC<UserListProps> = ({
                         disabled={isLoading}
                         className="approve-btn"
                       >
-                        ✅ 승인
+                        <FaCheck className="btn-icon" />
+                        <span>승인</span>
                       </button>
                       <button
                         onClick={() => onRejectUser(user.id)}
                         disabled={isLoading}
                         className="reject-btn"
                       >
-                        ❌ 거부
+                        <FaTimes className="btn-icon" />
+                        <span>거부</span>
                       </button>
                     </div>
                   </div>

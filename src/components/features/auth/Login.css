@@ -5,30 +5,104 @@
 }
 
 .login-card {
-  background: #f8f8f7;
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
+  background: transparent;
+  border-radius: var(--sidebar-radius);
+  box-shadow: var(--shadow-base);
+  width: 960px; /* 가로 1.5배 (640px * 1.5) */
+  height: 480px; /* 세로 1.5배 (320px * 1.5) */
   margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* 회원가입 화면일 때 높이 증가 */
+.login-card:has(.signup-section) {
+  height: clamp(780px, 60vh, 1080px);
+  min-height: 780px;
+}
+
+.login-card-left {
+  width: 50%;
+  background: #1a1a1a; /* 사이드바 배경색 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(32px, 3.7vh, 48px);
+  box-sizing: border-box;
+}
+
+.login-card-right {
+  width: 50%;
+  background: #f8f8f7; /* 현재 배경색 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(32px, 3.7vh, 48px);
+  box-sizing: border-box;
+}
+
+/* 회원가입 화면일 때 오른쪽 섹션 스타일 조정 */
+.login-card:has(.signup-section) .login-card-right {
+  justify-content: flex-start;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.login-card:has(.signup-section) .login-card-right::-webkit-scrollbar {
+  width: 6px;
+}
+
+.login-card:has(.signup-section) .login-card-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.login-card:has(.signup-section) .login-card-right::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.login-card:has(.signup-section) .login-card-right::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .login-header {
-  margin-bottom: 30px;
+  margin-bottom: clamp(32px, 3.7vh, 48px);
+  flex-shrink: 0;
+}
+
+.login-header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 2.31vh, 32px);
+}
+
+.hp-erp-title {
+  color: #ffffff;
+  font-size: clamp(28px, 3.24vh, 36px);
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
 }
 
 .logo,
 .login-logo {
-  width: 160px;
+  width: 80px;
   height: 80px;
+  padding: 8px;
   margin-bottom: 20px;
-  border-radius: 8px;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
   object-fit: contain;
-  background-color: transparent;
+  background-color: #ffffff; /* 흰색 사각형 배경 */
+  border: 1px solid #e2e8f0; /* 테마에 맞춘 테두리 */
+  aspect-ratio: 1 / 1; /* 정사각형 유지 */
+  object-position: center; /* 중앙 정렬 */
 }
 
 .login-logo:hover {
@@ -53,45 +127,62 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: clamp(10px, 1.25vw, 16px);
   width: 100%;
-  padding: 16px 24px;
-  background: #f8f8f7;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
+  min-height: clamp(48px, 5.56vh, 64px); /* 사이즈 고정 */
+  padding: clamp(12px, 1.39vh, 20px) clamp(20px, 2.6vw, 28px);
+  background: #1a1a1a; /* 사이드바 검은색 테마 */
+  border: 2px solid #1a1a1a;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(15px, 1.74vh, 20px);
+  font-weight: var(--font-weight-semibold);
+  color: #ffffff; /* 흰색 텍스트 */
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-base);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box; /* padding 포함 크기 계산 */
 }
 
-.google-login-btn:hover {
-  border-color: #4285F4;
-  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.2);
-  transform: translateY(-2px);
+.google-login-btn:hover:not(:disabled) {
+  background: #ffffff; /* 호버 시 흰색 배경 */
+  border-color: #1a1a1a; /* 검은색 테두리 */
+  color: #000000; /* 검은색 텍스트 */
+  box-shadow: var(--shadow-hover);
 }
 
 .google-login-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+  background: #1a1a1a; /* disabled 상태에서도 배경 유지 */
+  color: #ffffff;
 }
 
 .google-icon {
   width: 20px;
   height: 20px;
+  flex-shrink: 0; /* 아이콘 크기 고정 */
+}
+
+.google-login-btn:hover:not(:disabled) .google-icon {
+  /* 호버 시 아이콘도 함께 표시 */
+  opacity: 1;
 }
 
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #4285F4;
+  border: 2px solid rgba(255, 255, 255, 0.3); /* 흰색 반투명 */
+  border-top: 2px solid #ffffff; /* 흰색 */
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  flex-shrink: 0; /* 스피너 크기 고정 */
+}
+
+.google-login-btn:hover:not(:disabled) .spinner {
+  border: 2px solid rgba(0, 0, 0, 0.2); /* 호버 시 검은색 반투명 */
+  border-top: 2px solid #000000; /* 호버 시 검은색 */
 }
 
 @keyframes spin {
@@ -109,18 +200,32 @@
   padding: 20px;
 }
 
+.login-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  margin-top: clamp(8px, 0.93vh, 12px);
+}
+
 .signup-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: clamp(16px, 1.85vh, 24px);
+  width: 100%;
+  overflow-y: visible;
+  justify-content: flex-start;
+  padding-right: clamp(4px, 0.46vh, 8px);
 }
 
 .registration-card {
   background: #f8f8f7;
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  max-width: 500px;
+  border-radius: var(--sidebar-radius);
+  padding: clamp(32px, 3.7vh, 48px);
+  box-shadow: var(--shadow-base);
+  max-width: clamp(450px, 46.88vw, 600px);
   width: 100%;
 }
 
@@ -150,16 +255,17 @@
 }
 
 .form-input {
-  padding: 12px 16px;
+  padding: clamp(10px, 1.16vh, 16px) clamp(14px, 1.82vw, 20px);
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s ease;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(15px, 1.74vh, 20px);
+  transition: var(--transition-base);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #4285F4;
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .form-input.disabled {
@@ -179,7 +285,7 @@
 .checkbox-input {
   width: 18px;
   height: 18px;
-  accent-color: #4285F4;
+  accent-color: var(--sidebar-primary);
 }
 
 .checkbox-text {
@@ -188,8 +294,8 @@
 
 .admin-key-section {
   background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
+  padding: clamp(16px, 1.85vh, 24px);
+  border-radius: var(--sidebar-radius-sm);
   border: 2px solid #e2e8f0;
 }
 
@@ -203,18 +309,19 @@
 }
 
 .verify-btn {
-  padding: 12px 20px;
-  background: #4285F4;
+  padding: clamp(10px, 1.16vh, 16px) clamp(16px, 2.08vw, 24px);
+  background: var(--sidebar-primary);
   color: #f8f8f7;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: var(--sidebar-radius-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: var(--transition-base);
 }
 
 .verify-btn:hover:not(:disabled) {
-  background: #3367d6;
+  box-shadow: var(--shadow-hover);
+  filter: brightness(1.05);
 }
 
 .verify-btn:disabled {
@@ -236,21 +343,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: clamp(10px, 1.25vw, 16px);
   width: 100%;
-  padding: 16px 24px;
-  background: #4285F4;
+  padding: clamp(12px, 1.39vh, 20px) clamp(20px, 2.6vw, 28px);
+  background: var(--sidebar-primary);
   color: #f8f8f7;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(15px, 1.74vh, 20px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: var(--transition-base);
 }
 
 .register-btn:hover:not(:disabled) {
-  background: #3367d6;
+  box-shadow: var(--shadow-hover);
+  filter: brightness(1.05);
 }
 
 .register-btn:disabled {
@@ -270,11 +378,11 @@
 
 .pending-card {
   background: #f8f8f7;
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border-radius: var(--sidebar-radius);
+  padding: clamp(32px, 3.7vh, 48px);
+  box-shadow: var(--shadow-base);
   text-align: center;
-  max-width: 500px;
+  max-width: clamp(450px, 46.88vw, 600px);
   width: 100%;
 }
 
@@ -295,12 +403,19 @@
   margin: 0;
 }
 
-.user-info {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  text-align: left;
+.signup-section-title {
+  font-size: clamp(24px, 2.78vh, 32px);
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 clamp(8px, 0.93vh, 12px) 0;
+  text-align: center;
+}
+
+.signup-section-email {
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: #666;
+  margin: 0 0 clamp(16px, 1.85vh, 24px) 0;
+  text-align: center;
 }
 
 .info-item {
@@ -340,16 +455,208 @@
 }
 
 .logout-btn {
-  padding: 12px 24px;
+  padding: clamp(10px, 1.16vh, 16px) clamp(20px, 2.6vw, 28px);
   background: #dc3545;
   color: #f8f8f7;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: var(--sidebar-radius-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: var(--transition-base);
 }
 
 .logout-btn:hover {
-  background: #c82333;
+  box-shadow: var(--shadow-hover);
+  filter: brightness(1.05);
+}
+
+/* 로그인된 계정 섹션 */
+.last-users-section {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.last-users-title {
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: #666;
+  margin-bottom: clamp(8px, 0.93vh, 12px);
+  font-weight: 500;
+}
+
+.last-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 0.93vh, 12px);
+  max-height: clamp(200px, 23.15vh, 300px);
+  overflow-y: auto;
+  margin-bottom: clamp(8px, 0.93vh, 12px);
+}
+
+/* 계정 아이템 컨테이너 */
+.last-user-item {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.93vw, 12px);
+  position: relative;
+}
+
+/* 마지막 로그인 사용자 섹션 (하위 호환성) */
+.last-user-section {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.last-user-label {
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: #666;
+  margin-bottom: clamp(8px, 0.93vh, 12px);
+  font-weight: 500;
+}
+
+.last-user-btn {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.39vh, 16px);
+  width: 100%;
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.39vw, 16px);
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+  text-align: left;
+  position: relative;
+}
+
+.last-user-btn:hover:not(:disabled) {
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 2px 8px rgba(26, 26, 26, 0.1);
+}
+
+.last-user-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.last-user-avatar {
+  width: clamp(40px, 4.63vh, 48px);
+  height: clamp(40px, 4.63vh, 48px);
+  min-width: clamp(40px, 4.63vh, 48px);
+  min-height: clamp(40px, 4.63vh, 48px);
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--sidebar-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.last-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  image-orientation: from-image;
+}
+
+.last-user-initial {
+  color: #ffffff;
+  font-size: clamp(16px, 1.85vh, 20px);
+  font-weight: 600;
+}
+
+.last-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.last-user-name {
+  font-size: clamp(15px, 1.74vh, 18px);
+  font-weight: 600;
+  color: #333;
+  margin-bottom: clamp(2px, 0.23vh, 4px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.last-user-email {
+  font-size: clamp(13px, 1.51vh, 14px);
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 계정 제거 버튼 */
+.last-user-remove-btn {
+  flex-shrink: 0;
+  width: clamp(28px, 3.24vh, 32px);
+  height: clamp(28px, 3.24vh, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  color: #666;
+  cursor: pointer;
+  transition: var(--transition-base);
+  padding: 0;
+  margin-left: auto;
+  opacity: 0; /* 기본적으로 숨김 */
+  visibility: hidden; /* 기본적으로 숨김 */
+}
+
+/* 계정 항목에 마우스를 가져가면 제거 버튼 표시 */
+.last-user-item:hover .last-user-remove-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+.last-user-remove-btn:hover {
+  background: #ffebee;
+  border-color: #f44336;
+  color: #f44336;
+  transform: scale(1.1);
+}
+
+.last-user-remove-btn:active {
+  transform: scale(0.95);
+}
+
+/* 로그인 구분선 */
+.login-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: clamp(16px, 1.85vh, 24px) 0 clamp(16px, 1.85vh, 24px) 0;
+  text-align: center;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.login-divider span {
+  padding: 0 clamp(12px, 1.39vh, 16px);
+  font-size: clamp(13px, 1.51vh, 14px);
+  color: #999;
+}
+
+/* 마지막 로그인 사용자 없음 메시지 */
+.no-last-user-message {
+  width: 100%;
+  padding: clamp(16px, 1.85vh, 24px);
+  text-align: center;
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: #666666;
+  margin-bottom: clamp(16px, 1.85vh, 24px);
 }

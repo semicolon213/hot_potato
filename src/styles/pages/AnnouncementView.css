@@ -1,35 +1,7 @@
 .post-view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 20px 0;
   border-top: 2px solid var(--text-dark);
   border-bottom: 1px solid var(--border-color);
-}
-
-.post-view-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.post-view-actions .edit-button,
-.post-view-actions .delete-button {
-  border: none;
-  padding: 8px 16px;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 0.9em;
-  font-weight: 500;
-}
-
-.post-view-actions .edit-button {
-  background-color: var(--primary);
-  color: white;
-}
-
-.post-view-actions .delete-button {
-  background-color: var(--danger-color, #e53e3e);
-  color: white;
 }
 
 .post-view-header .announcements-title {
@@ -42,25 +14,8 @@
   gap: 20px;
   padding: 10px 0;
   border-bottom: 1px solid #cdcdcd;
-  margin-bottom: 15px;
+  margin-bottom: 30px;
   color: var(--text-medium);
-}
-
-.post-view-attachment {
-  padding: 15px 20px;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--lightgrey);
-  margin-bottom: 20px;
-  border-radius: var(--border-radius-md);
-  color: var(--text-light);
-}
-
-.post-view-attachment a {
-  color: var(--text-light);
-}
-
-.post-view-attachment p + p {
-  margin-top: 8px;
 }
 
 .post-view-body {
@@ -80,18 +35,22 @@
 
 .back-to-list-button {
   background-color: transparent;
-  color: #475569;
-  padding: 8px 16px;
-  border: 1px solid #475569;
-  border-radius: var(--border-radius-sm);
-  font-size: 1em;
+  color: var(--sidebar-primary);
+  padding: clamp(6px, 0.74vh, 10px) clamp(12px, 1.5vw, 20px);
+  border: 1px solid var(--sidebar-primary);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 18px);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-weight: 600;
+  gap: clamp(3px, 0.39vw, 5px);
+  font-weight: var(--font-weight-semibold);
+  transition: var(--transition-base);
 }
 
 .back-to-list-button:hover {
-  opacity: 0.8;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  background-color: var(--sidebar-primary);
+  color: white;
 }

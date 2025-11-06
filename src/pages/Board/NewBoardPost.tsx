@@ -37,7 +37,6 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, us
   return (
     <div className="new-post-container">
       <div className="new-post-header">
-        <h1>새 글 작성</h1>
         <div className="header-buttons">
             <button onClick={() => onPageChange('board')} className="cancel-button">취소</button>
             <button onClick={handleSavePost} className="save-button" disabled={!isAuthenticated}>

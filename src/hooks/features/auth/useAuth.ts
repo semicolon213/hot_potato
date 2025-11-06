@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { registerUser, verifyAdminKey } from '../../../utils/api/authApi';
+import { tokenManager } from '../../../utils/auth/tokenManager';
+import { lastUserManager } from '../../../utils/auth/lastUserManager';
 
 // 타입 정의
 interface User {
@@ -131,23 +133,20 @@ export const useAuth = (onLogin: (user: User) => void) => {
     userType: ''
   });
 
-  // Google 로그인
-  const googleLogin = useGoogleLogin({
-    scope: [
-      'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/calendar.readonly',
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/gmail.compose',
-      'https://www.googleapis.com/auth/drive',
-      'https://www.googleapis.com/auth/documents',
-      'profile',
-      'email'
-    ].join(' '),
-    onSuccess: async (tokenResponse) => {
+  // Google 로그인 공통 핸들러
+  const handleGoogleLoginSuccess = async (tokenResponse: any) => {
       try {
         setLoginState(prev => ({ ...prev, isLoading: true, error: '' }));
 
-        const response = await fetch(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenResponse.access_token}`);
+        // 토큰 만료 시간 확인 및 저장
+        // expires_in은 초 단위 (기본값: 3600초 = 1시간)
+        const expiresIn = tokenResponse.expires_in || 3600;
+        const accessToken = tokenResponse.access_token;
+
+        // 토큰 저장 (만료 시간 포함)
+        tokenManager.save(accessToken, expiresIn);
+
+        const response = await fetch(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${accessToken}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -155,10 +154,12 @@ export const useAuth = (onLogin: (user: User) => void) => {
 
         const userInfo = await response.json();
 
-        const { email, name } = userInfo;
-        const accessToken = tokenResponse.access_token;
+        const { email, name, picture } = userInfo;
 
-        console.log('Google 로그인 성공:', { email, name });
+        console.log('Google 로그인 성공:', { email, name, expiresIn });
+
+        // 마지막 로그인 사용자 정보 저장
+        lastUserManager.save({ email, name, picture });
 
         // 사용자 등록 상태 확인
         await checkUserRegistrationStatus(email, name, accessToken);
@@ -170,16 +171,41 @@ export const useAuth = (onLogin: (user: User) => void) => {
           error: 'Google 로그인 중 오류가 발생했습니다.'
         }));
       }
-    },
-    onError: (error) => {
-      console.error('Google 로그인 오류:', error);
-      setLoginState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Google 로그인에 실패했습니다.'
-      }));
-    }
+    };
+
+  // Google 로그인 공통 에러 핸들러
+  const handleGoogleLoginError = (error: any) => {
+    console.error('Google 로그인 오류:', error);
+    setLoginState(prev => ({
+      ...prev,
+      isLoading: false,
+      error: 'Google 로그인에 실패했습니다.'
+    }));
+  };
+
+  // Google 로그인 (overrideConfig로 hint와 prompt 전달 가능)
+  const googleLoginBase = useGoogleLogin({
+    flow: 'implicit',
+    scope: [
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/gmail.compose',
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/documents',
+      'profile',
+      'email'
+    ].join(' '),
+    onSuccess: handleGoogleLoginSuccess,
+    onError: handleGoogleLoginError,
+    // include_granted_scopes를 true로 설정하여 이미 승인된 권한 재사용
+    include_granted_scopes: true
   });
+
+  // 일반 Google 로그인 (새 계정 로그인용)
+  const googleLogin = () => {
+    googleLoginBase();
+  };
 
   // 사용자 등록 상태 확인
   const checkUserRegistrationStatus = async (email: string, name: string, accessToken: string) => {
@@ -190,7 +216,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
       if (result.success && result.isRegistered) {
         // 등록된 사용자 - 승인 상태 확인
         if (result.isApproved) {
-          // 이미 승인된 회원 - 바로 메인 화면으로
+          // 이미 승인된 회원 - 바로 메인 화면으로 (알림 없이)
           console.log('이미 승인된 회원 - 메인 화면으로 이동');
           onLogin({
             email: email,
@@ -354,6 +380,81 @@ export const useAuth = (onLogin: (user: User) => void) => {
     setLoginState(prev => ({ ...prev, error: '' }));
   };
 
+  // 특정 사용자로 빠른 로그인
+  const loginWithLastUser = async (email?: string) => {
+    const targetEmail = email || (lastUserManager.get()?.email);
+    if (!targetEmail) {
+      setLoginState(prev => ({ ...prev, error: '저장된 사용자 정보가 없습니다.' }));
+      return;
+    }
+
+    const lastUser = lastUserManager.getAll().find(u => u.email === targetEmail);
+    if (!lastUser) {
+      setLoginState(prev => ({ ...prev, error: '저장된 사용자 정보가 없습니다.' }));
+      return;
+    }
+
+    // 로딩 상태 시작
+    setLoginState(prev => ({ ...prev, isLoading: true, error: '' }));
+
+    // 토큰이 유효한지 확인
+    const validToken = tokenManager.get();
+    if (validToken) {
+      // 토큰이 유효하면 사용자 상태 확인 후 바로 로그인
+      try {
+        const result = await checkUserStatus(lastUser.email);
+
+        if (result.success && result.isRegistered && result.isApproved) {
+          // 바로 로그인 처리
+          onLogin({
+            email: lastUser.email,
+            name: lastUser.name,
+            studentId: result.studentId || '',
+            isAdmin: result.isAdmin || false,
+            isApproved: true,
+            userType: result.userType || '',
+            accessToken: validToken,
+            googleAccessToken: validToken
+          });
+          setLoginState(prev => ({ ...prev, isLoading: false }));
+          return;
+        } else {
+          // 승인되지 않았거나 등록되지 않은 경우
+          setLoginState(prev => ({ ...prev, isLoading: false }));
+          // 마지막 사용자용 Google 로그인으로 진행 (hint 사용)
+          googleLoginBase({
+            hint: lastUser.email
+            // prompt를 설정하지 않음: 이미 승인된 경우 팝업 없이 진행
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('마지막 사용자 로그인 실패:', error);
+        setLoginState(prev => ({ ...prev, isLoading: false }));
+        // 에러 발생 시 마지막 사용자용 Google 로그인으로 진행
+        googleLoginBase({
+          hint: lastUser.email
+        });
+        return;
+      }
+    }
+
+    // 토큰이 없거나 만료되었으면 마지막 사용자용 Google 로그인 시작
+    // hint로 계정 지정하여 계정 선택 팝업 방지
+    // prompt를 설정하지 않으면 Google이 자동으로 적절한 프롬프트 선택
+    // include_granted_scopes: true로 이미 승인된 권한은 재사용되어 팝업 없이 진행
+    googleLoginBase({
+      hint: lastUser.email
+      // prompt를 설정하지 않음: 이미 승인된 경우 팝업 없이 진행, 권한 필요한 경우에만 표시
+    });
+  };
+
+  // 모든 로그인 사용자 목록 가져오기
+  const lastUsers = lastUserManager.getAll();
+
+  // 마지막 로그인 사용자 정보 가져오기 (하위 호환성)
+  const lastUser = lastUsers.length > 0 ? lastUsers[0] : null;
+
   return {
     loginState,
     formData,
@@ -361,6 +462,9 @@ export const useAuth = (onLogin: (user: User) => void) => {
     handleVerifyAdminKey,
     handleRegistration,
     updateFormData,
-    clearError
+    clearError,
+    loginWithLastUser,
+    lastUser,
+    lastUsers
   };
 };

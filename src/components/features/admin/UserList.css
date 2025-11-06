@@ -23,8 +23,8 @@
 /* 사용자 목록 컨테이너 */
 .user-list-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: var(--sidebar-radius-sm);
+  box-shadow: var(--shadow-base);
   overflow: hidden;
   border: 1px solid #e9ecef;
 }
@@ -32,12 +32,13 @@
 .user-list-header {
   display: grid;
   grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 1.5fr;
-  gap: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-weight: 600;
-  font-size: 14px;
+  gap: clamp(12px, 1.5vw, 20px);
+  padding: clamp(12px, 1.39vh, 20px) clamp(16px, 2.08vw, 24px);
+  background: #f8f9fa;
+  border-bottom: 2px solid #e2e8f0;
+  color: var(--text-dark, #333);
+  font-weight: var(--font-weight-semibold);
+  font-size: clamp(13px, 1.5vh, 17px);
 }
 
 .user-list-body {
@@ -48,10 +49,10 @@
 .user-list-row {
   display: grid;
   grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 1.5fr;
-  gap: 16px;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f1f3f4;
-  transition: background-color 0.2s ease;
+  gap: clamp(12px, 1.5vw, 16px);
+  padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
+  border-bottom: 1px solid #e2e8f0;
+  transition: var(--transition-base);
 }
 
 .user-list-row:hover {
@@ -59,8 +60,8 @@
 }
 
 .user-list-cell {
-  font-size: 14px;
-  color: #495057;
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: var(--text-medium, #495057);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -72,14 +73,14 @@
 }
 
 .user-type {
-  font-size: 12px;
+  font-size: clamp(12px, 1.39vh, 14px);
   color: #495057;
-  margin-bottom: 5px;
-  padding: 4px 8px;
+  margin-bottom: 0;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
   background: #e9ecef;
-  border-radius: 12px;
+  border-radius: var(--sidebar-radius-sm);
   display: inline-block;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .user-type.admin {
@@ -100,55 +101,81 @@
 }
 
 .approve-btn {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: var(--sidebar-primary);
   color: #f8f8f7;
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: var(--sidebar-radius-sm);
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 20px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+  transition: var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   flex: 1;
-  max-width: 100px;
+  max-width: clamp(90px, 11.72vw, 120px);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.46vw, 6px);
+}
+
+.approve-btn .btn-icon {
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: inherit;
 }
 
 .approve-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .approve-btn:disabled {
   background: #ccc;
+  color: #666;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 .reject-btn {
-  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+  background: var(--sidebar-primary);
   color: #f8f8f7;
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: var(--sidebar-radius-sm);
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 20px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+  transition: var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   flex: 1;
-  max-width: 100px;
+  max-width: clamp(90px, 11.72vw, 120px);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.46vw, 6px);
+}
+
+.reject-btn .btn-icon {
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: inherit;
 }
 
 .reject-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
 }
 
 .reject-btn:disabled {
   background: #ccc;
+  color: #666;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 /* 반응형 디자인 */
