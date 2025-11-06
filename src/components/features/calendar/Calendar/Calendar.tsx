@@ -563,7 +563,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
 
             <div className="calendar-header-container">
-                <div className='calendar-header-top' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className='calendar-header-top' style={{ display: 'flex', alignItems: 'center' }}>
                     {isSearchVisible ? (
                         <div className="calendar-search-bar-wrapper" ref={searchContainerRef}>
                             <BiSearchAlt2 color="black" />
@@ -642,7 +642,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                         </>
                                     )}
                                 </h2>
-                                <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 15 ? selectedWeek + 1 : 15)}>&#8250;</button>
+                                <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 16 ? selectedWeek + 1 : 16)}>&#8250;</button>
                             </div>
 
                             <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>

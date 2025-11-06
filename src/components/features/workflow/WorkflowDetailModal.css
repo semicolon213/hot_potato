@@ -1,0 +1,450 @@
+/* WorkflowDetailModal.css */
+
+.workflow-detail-modal {
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.workflow-detail-info {
+  margin-bottom: 24px;
+}
+
+.info-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: var(--border-radius-md);
+}
+
+.info-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 500;
+  color: var(--text-medium);
+  min-width: 100px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: var(--text-dark);
+  flex: 1;
+}
+
+.attached-docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.document-link:hover {
+  text-decoration: underline;
+}
+
+.progress-info {
+  display: flex;
+  gap: 24px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-label {
+  font-weight: 500;
+  color: var(--text-medium);
+}
+
+.progress-value {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.workflow-line {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s;
+}
+
+.line-step-item.approved {
+  border-left: 3px solid var(--success);
+}
+
+.line-step-item.rejected {
+  border-left: 3px solid var(--error);
+}
+
+.line-step-item.held {
+  border-left: 3px solid #ff9800;
+}
+
+.line-step-item.pending {
+  border-left: 3px solid var(--border-color);
+}
+
+.line-step-item.changed {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+}
+
+.resubmit-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #e7f3ff;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.resubmit-badge {
+  background-color: #2196F3;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.resubmit-date {
+  color: #666;
+  font-size: 12px;
+}
+
+.change-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.previous-line-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px dashed #ddd;
+}
+
+.previous-line-section h5 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.previous-line {
+  opacity: 0.7;
+}
+
+.line-step-item.removed {
+  opacity: 0.5;
+  background-color: #f5f5f5;
+  text-decoration: line-through;
+}
+
+.remove-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background-color: #f44336;
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.line-step-item.approved .step-number {
+  background-color: var(--success);
+}
+
+.line-step-item.rejected .step-number {
+  background-color: var(--error);
+}
+
+.line-step-item.held .step-number {
+  background-color: #ff9800;
+}
+
+.step-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.step-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.status-badge.approved {
+  background-color: #e8f5e9;
+  color: var(--success);
+}
+
+.status-badge.rejected {
+  background-color: #ffebee;
+  color: var(--error);
+}
+
+.status-badge.held {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.status-badge.pending {
+  background-color: var(--bg-light);
+  color: var(--text-medium);
+}
+
+.step-date {
+  font-size: 12px;
+  color: var(--text-medium);
+}
+
+.step-opinion,
+.step-reason {
+  margin-top: 4px;
+  padding: 8px;
+  background-color: var(--bg-light);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+}
+
+.opinion-label,
+.reason-label {
+  font-weight: 500;
+  color: var(--text-medium);
+  margin-right: 8px;
+}
+
+.opinion-text,
+.reason-text {
+  color: var(--text-dark);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.modal-actions .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-actions .btn-secondary {
+  background-color: #f5f5f5;
+  color: var(--text-dark);
+}
+
+.modal-actions .btn-secondary:hover {
+  background-color: #e0e0e0;
+}
+
+/* 히스토리 스타일 */
+.workflow-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.history-item {
+  padding: 12px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--primary);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.history-date {
+  font-size: 12px;
+  color: var(--text-medium);
+}
+
+.history-action {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.history-action-요청 {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.history-action-승인 {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.history-action-반려 {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.history-action-보류 {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
+
+.history-action-재제출 {
+  background-color: #e1f5fe;
+  color: #0277bd;
+}
+
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-actor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actor-name {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.line-type-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background-color: #f5f5f5;
+  color: #666;
+  border-radius: 4px;
+}
+
+.history-opinion,
+.history-reason {
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.history-opinion .opinion-label,
+.history-reason .reason-label {
+  font-weight: 500;
+  color: var(--text-medium);
+  margin-right: 6px;
+}
+
+.history-opinion .opinion-text,
+.history-reason .reason-text {
+  color: var(--text-dark);
+}
+
+.history-status-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-medium);
+}
+
+.status-label {
+  font-weight: 500;
+}
+
+.status-from,
+.status-to {
+  padding: 2px 6px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.status-arrow {
+  color: var(--text-medium);
+}
+
+.loading-message,
+.empty-message {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-medium);
+  font-size: 14px;
+}
+

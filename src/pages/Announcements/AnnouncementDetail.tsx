@@ -8,6 +8,7 @@ const AnnouncementDetail = () => {
 
   return (
     <div className="announcement-detail-container">
+      <h1>공지사항 상세 정보</h1>
       <p>공지사항 ID: {id}</p>
     </div>
   );

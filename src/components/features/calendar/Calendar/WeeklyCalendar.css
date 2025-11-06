@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     border: 1px solid #e0e0e0;
-    border-radius: var(--sidebar-radius-sm);
+    border-radius: var(--border-radius-md);
     overflow: hidden;
     background-color: #fff;
 }
@@ -42,7 +42,7 @@
 
 .day-header.saturday .day-name,
 .day-header.saturday .day-number {
-    color: var(--sidebar-primary);
+    color: var(--primary);
 }
 
 .day-column.sunday,
@@ -78,7 +78,7 @@
     position: absolute;
     color: white;
     padding: 0 5px;
-    border-radius: var(--sidebar-radius-sm);
+    border-radius: var(--border-radius-sm);
     font-size: 12px;
     margin: 2px 0;
     cursor: pointer;
@@ -161,8 +161,7 @@
     left: 4px;
     right: 4px;
     color: white;
-    border: 1px solid #1967d2;
-    border-radius: var(--sidebar-radius-sm);
+    border-radius: var(--border-radius-sm);
     padding: 4px;
     font-size: 12px;
     cursor: pointer;

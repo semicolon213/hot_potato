@@ -86,10 +86,26 @@
 }
 
 .attendee-results-list li {
+  display: flex;
+  align-items: center;
+  height: 40px; /* Set a fixed height */
   padding: 10px 12px;
   font-size: 14px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.checkmark-icon {
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.selected-attendees-count {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-medium);
+  text-align: right;
 }
 
 .attendee-results-list li:last-child {
@@ -367,4 +383,17 @@
     align-items: center;
     gap: 8px;
     font-size: 14px;
+}
+
+.checkmark-icon {
+  margin-left: auto;
+  color: var(--color-accent);
+  font-weight: bold;
+}
+
+.selected-attendees-count {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-medium);
+  text-align: right;
 }

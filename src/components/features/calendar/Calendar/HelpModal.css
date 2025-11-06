@@ -14,7 +14,7 @@
 .help-modal-content {
     background: white;
     padding: 40px;
-    border-radius: var(--sidebar-radius-sm);
+    border-radius: 8px;
     width: 570px;
     max-width: 90%;
     position: relative;

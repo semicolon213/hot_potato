@@ -64,6 +64,11 @@ interface CalendarProviderProps {
     staff: Staff[];
 }
 
+interface EventColor {
+  background: string;
+  foreground: string;
+}
+
 const CalendarProvider: React.FC<CalendarProviderProps> = ({
                                                                children,
                                                                user,
@@ -95,7 +100,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     } | undefined>(undefined);
     const [refreshKey, setRefreshKey] = useState(0);
     const triggerRefresh = () => setRefreshKey(prevKey => prevKey + 1);
-    const [eventColors, setEventColors] = useState<any>({});
+    const [eventColors, setEventColors] = useState<{ [key: string]: EventColor }>({});
     const [calendarColor, setCalendarColor] = useState<string | undefined>();
     const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
     const [isFetchingGoogleEvents, setIsFetchingGoogleEvents] = useState(false);
@@ -277,7 +282,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
             // Private event, visible only to attendees
             const attendeeIds = attendees.split(',').map((id: string) => id.trim());
             // Assuming user.studentId holds the unique ID for both students and staff
-            return user ? attendeeIds.includes(user.studentId) : false;
+            return user ? attendeeIds.includes(String(user.studentId)) : false;
         });
 
         const combinedEvents = [...visibleSheetEvents, ...googleEvents];
@@ -537,7 +542,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     const updateEvent = (eventId: string, event: Omit<Event, 'id'>) => {
         // Heuristic: Google Calendar event IDs are alphanumeric and do not contain hyphens.
         // Our sheet events have composite IDs that always contain a hyphen (spreadsheetId-eventIdInSheet).
-        if (eventId.includes('-')) {
+        if (eventId.includes('-cal-')) {
             updateSheetEvent(eventId, event);
         }
         else {
@@ -577,7 +582,7 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
     };
 
     const deleteEvent = (id: string) => {
-        if (id.startsWith('cal-')) {
+        if (id.includes('-cal-')) {
             deleteSheetEvent(id);
         } else {
             deleteGoogleEvent(id);

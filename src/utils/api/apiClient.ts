@@ -1,11 +1,42 @@
 import { API_CONFIG, API_ACTIONS } from '../../config/api';
+import type {
+  SpreadsheetIdsResponse,
+  StaticTagsResponse,
+  AffectedTemplatesResponse,
+  DeleteTagResponse,
+  TagImpactCheckResponse,
+  SharedTemplatesResponse,
+  CreateDocumentResponse,
+  RegistrationData,
+  DocumentsListResponse,
+  UserNameResponse,
+  WorkflowRequestResponse,
+  WorkflowInfoResponse,
+  WorkflowListResponse,
+  WorkflowTemplateResponse,
+  WorkflowTemplatesListResponse
+} from '../../types/api/apiResponses';
+import type {
+  WorkflowRequestData,
+  SetWorkflowLineData,
+  GrantWorkflowPermissionsData,
+  ReviewActionData,
+  PaymentActionData,
+  MyPendingWorkflowsParams,
+  WorkflowHistoryParams
+} from '../../types/documents';
 
 // API 응답 타입 정의
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: string;
+  debug?: Record<string, unknown>;
+  permissionResult?: {
+    successCount: number;
+    failCount: number;
+  };
 }
 
 // API 요청 옵션 타입 정의
@@ -20,7 +51,7 @@ export class ApiClient {
   private baseUrl: string;
   private defaultTimeout: number;
   private defaultRetries: number;
-  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
 
   constructor() {
     // CSP 문제 해결을 위해 Vite 프록시 사용
@@ -38,24 +69,24 @@ export class ApiClient {
   }
 
   // 캐시에서 데이터 가져오기
-  private getCachedData(key: string, maxAge: number = 300000): any | null {
+  private getCachedData<T>(key: string, maxAge: number = 300000): T | null {
     const cached = this.cache.get(key);
     if (cached && (Date.now() - cached.timestamp) < maxAge) {
       console.log('프론트엔드 캐시에서 데이터 로드:', key);
-      return cached.data;
+      return cached.data as T;
     }
     return null;
   }
 
   // 캐시에 데이터 저장
-  private setCachedData(key: string, data: any): void {
+  private setCachedData(key: string, data: unknown): void {
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 
   // 공통 API 호출 메서드
-  async request<T = any>(
+  async request<T = unknown>(
     action: string,
-    data: any = {},
+    data: Record<string, unknown> = {},
     options: ApiRequestOptions = {}
   ): Promise<ApiResponse<T>> {
     const {
@@ -69,7 +100,7 @@ export class ApiClient {
     const cacheKey = `${action}_${JSON.stringify(data)}`;
     
     if (cacheableActions.includes(action)) {
-      const cachedData = this.getCachedData(cacheKey);
+      const cachedData = this.getCachedData<ApiResponse<T>>(cacheKey);
       if (cachedData) {
         return cachedData;
       }
@@ -124,7 +155,7 @@ export class ApiClient {
         
         // 성공한 응답을 캐시에 저장
         if (cacheableActions.includes(action) && result.success) {
-          this.setCachedData(cacheKey, result);
+          this.setCachedData(cacheKey, result as ApiResponse<T>);
         }
         
         console.log(`API 응답 성공:`, {
@@ -133,7 +164,7 @@ export class ApiClient {
           message: result.message
         });
 
-        return result;
+        return result as ApiResponse<T>;
       } catch (error) {
         lastError = error as Error;
         console.warn(`API 요청 실패 (시도 ${attempt + 1}/${retries + 1}):`, error);
@@ -177,7 +208,7 @@ export class ApiClient {
     return this.request('checkUserStatus', { email });
   }
 
-  async submitRegistrationRequest(registrationData: any) {
+  async submitRegistrationRequest(registrationData: RegistrationData) {
     return this.request('registerUser', registrationData);
   }
 
@@ -207,16 +238,55 @@ export class ApiClient {
     role?: string;
     tag?: string;
   }) {
-    return this.request('createDocument', documentData);
+    return this.request<CreateDocumentResponse>('createDocument', documentData);
   }
 
   // 이메일로 사용자 이름 조회
   async getUserNameByEmail(email: string) {
-    return this.request('getUserNameByEmail', { email });
+    return this.request<UserNameResponse>('getUserNameByEmail', { email });
   }
 
   async getTemplates() {
     return this.request('getTemplates');
+  }
+
+  // 공유 템플릿 업로드(파일 업로드)
+  async uploadSharedTemplate(params: {
+    fileName: string;
+    fileMimeType: string;
+    fileContentBase64: string;
+    meta: { title: string; description: string; tag: string; creatorEmail?: string };
+  }) {
+    return this.request('uploadSharedTemplate', params);
+  }
+
+  // 공유 템플릿 메타데이터 수정
+  async updateSharedTemplateMeta(params: {
+    fileId: string;
+    meta: Partial<{ title: string; description: string; tag: string; creatorEmail: string }>;
+  }) {
+    // 사용자 이메일을 요청에 포함 (관리자 검증용)
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('updateSharedTemplateMeta', {
+      ...params,
+      meta: {
+        ...params.meta,
+        creatorEmail: params.meta?.creatorEmail || userInfo.email
+      },
+      editorEmail: userInfo.email
+    });
+  }
+
+  // 공유 템플릿 목록(메타데이터 우선)
+  async getSharedTemplates() {
+    return this.request<SharedTemplatesResponse>('getSharedTemplates');
+  }
+
+  // 공유 템플릿 삭제 (관리자 전용)
+  async deleteSharedTemplate(fileId: string) {
+    // 사용자 이메일을 요청에 포함 (관리자 검증용)
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('deleteSharedTemplate', { fileId, userEmail: userInfo.email });
   }
 
   async testDriveApi() {
@@ -239,11 +309,80 @@ export class ApiClient {
     page?: number;
     limit?: number;
   }) {
-    return this.request('getDocuments', params);
+    return this.request<DocumentsListResponse>('getDocuments', params);
   }
 
   async deleteDocuments(documentIds: string[], role: string) {
     return this.request('deleteDocuments', { documentIds, role });
+  }
+
+  // 스프레드시트 ID 목록 조회
+  async getSpreadsheetIds(spreadsheetNames: string[]) {
+    return this.request<SpreadsheetIdsResponse>('getSpreadsheetIds', { spreadsheetNames });
+  }
+
+  // 회계 관련 API
+  async createLedger(data: {
+    ledgerName: string;
+    accountName: string;
+    initialBalance: number;
+    creatorEmail: string;
+    accessUsers: string[];
+    accessGroups: string[];
+    mainManagerEmail: string;
+    subManagerEmails: string[];
+  }) {
+    return this.request('createLedger', data);
+  }
+
+  async getLedgerList() {
+    return this.request<{ success: boolean; data: any[] }>('getLedgerList', {});
+  }
+
+  async updateAccountSubManagers(data: {
+    spreadsheetId: string;
+    accountId: string;
+    subManagerEmails: string[];
+  }) {
+    return this.request('updateAccountSubManagers', data);
+  }
+
+  async getAccountingFolderId() {
+    return this.request<{ success: boolean; data: { accountingFolderId: string } }>('getAccountingFolderId', {});
+  }
+
+  // 기본 태그 목록 조회
+  async getStaticTags() {
+    return this.request<StaticTagsResponse>('getStaticTags');
+  }
+
+  // 기본 태그 추가 (관리자 전용)
+  async addStaticTag(tag: string) {
+    // 사용자 이메일을 요청에 포함
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('addStaticTag', { tag, userEmail: userInfo.email });
+  }
+
+  // 기본 태그 수정 (관리자 전용)
+  async updateStaticTag(oldTag: string, newTag: string, confirm: boolean = false) {
+    // 사용자 이메일을 요청에 포함
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    if (confirm) {
+      return this.request<AffectedTemplatesResponse>('updateStaticTag', { oldTag, newTag, userEmail: userInfo.email, confirm });
+    } else {
+      return this.request<TagImpactCheckResponse>('updateStaticTag', { oldTag, newTag, userEmail: userInfo.email, confirm });
+    }
+  }
+
+  // 기본 태그 삭제 (관리자 전용)
+  async deleteStaticTag(tag: string, confirm: boolean = false, deleteTemplates: boolean = false) {
+    // 사용자 이메일을 요청에 포함
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    if (confirm) {
+      return this.request<DeleteTagResponse>('deleteStaticTag', { tag, userEmail: userInfo.email, confirm, deleteTemplates });
+    } else {
+      return this.request<TagImpactCheckResponse>('deleteStaticTag', { tag, userEmail: userInfo.email, confirm, deleteTemplates });
+    }
   }
 
   // 테스트 API
@@ -273,6 +412,147 @@ export class ApiClient {
       return { success: false, error: (error as Error).message };
     }
   }
+
+  // ===== 워크플로우 관련 API =====
+
+  // 워크플로우 요청
+  async requestWorkflow(data: WorkflowRequestData) {
+    return this.request<WorkflowRequestResponse>('requestWorkflow', data);
+  }
+
+  // 워크플로우 라인 설정
+  async setWorkflowLine(data: SetWorkflowLineData) {
+    return this.request('setWorkflowLine', data);
+  }
+
+  // 문서 권한 부여
+  async grantWorkflowPermissions(data: GrantWorkflowPermissionsData) {
+    return this.request('grantWorkflowPermissions', data);
+  }
+
+  // 검토 단계 승인
+  async approveReview(data: ReviewActionData) {
+    return this.request<WorkflowInfoResponse>('approveReview', data);
+  }
+
+  // 검토 단계 반려
+  async rejectReview(data: ReviewActionData) {
+    return this.request<WorkflowInfoResponse>('rejectReview', data);
+  }
+
+  // 검토 단계 보류
+  async holdReview(data: ReviewActionData) {
+    return this.request<WorkflowInfoResponse>('holdReview', data);
+  }
+
+  // 결재 단계 승인
+  async approvePayment(data: PaymentActionData) {
+    return this.request<WorkflowInfoResponse>('approvePayment', data);
+  }
+
+  // 결재 단계 반려
+  async rejectPayment(data: PaymentActionData) {
+    return this.request<WorkflowInfoResponse>('rejectPayment', data);
+  }
+
+  // 결재 단계 보류
+  async holdPayment(data: PaymentActionData) {
+    return this.request<WorkflowInfoResponse>('holdPayment', data);
+  }
+
+  // 워크플로우 상태 조회
+  async getWorkflowStatus(params: {
+    workflowId?: string;
+    documentId?: string;
+    workflowDocumentId?: string;
+  }) {
+    return this.request<WorkflowInfoResponse>('getWorkflowStatus', params);
+  }
+
+  // 내 담당 워크플로우 조회
+  async getMyPendingWorkflows(params: MyPendingWorkflowsParams) {
+    return this.request<WorkflowListResponse>('getMyPendingWorkflows', params);
+  }
+
+  // 내가 올린 결재 목록 조회
+  async getMyRequestedWorkflows(userEmail: string) {
+    return this.request<WorkflowListResponse>('getMyRequestedWorkflows', { userEmail });
+  }
+
+  // 결재 완료된 리스트 조회
+  async getCompletedWorkflows(params: {
+    userEmail: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    return this.request<WorkflowListResponse>('getCompletedWorkflows', params);
+  }
+
+  // 워크플로우 재제출
+  async resubmitWorkflow(data: {
+    workflowId: string;
+    userEmail: string;
+    userName?: string;
+    workflowTitle?: string;
+    workflowContent?: string;
+    reviewLine?: Array<{ step: number; email: string; name?: string }>;  // 재제출 시 새로운 검토 라인
+    paymentLine?: Array<{ step: number; email: string; name?: string }>;  // 재제출 시 새로운 결재 라인
+  }) {
+    return this.request<WorkflowInfoResponse>('resubmitWorkflow', data);
+  }
+
+  // 워크플로우 이력 조회
+  async getWorkflowHistory(params: WorkflowHistoryParams) {
+    return this.request('getWorkflowHistory', params);
+  }
+
+  // 워크플로우 템플릿 목록 조회
+  async getWorkflowTemplates() {
+    return this.request<WorkflowTemplatesListResponse>('getWorkflowTemplates');
+  }
+
+  // 워크플로우 템플릿 생성 (관리자 전용)
+  async createWorkflowTemplate(data: {
+    templateName: string;
+    documentTag: string;
+    reviewLine: Array<{ step: number; email: string; name: string }>;
+    paymentLine: Array<{ step: number; email: string; name: string }>;
+    isDefault?: boolean;
+    description?: string;
+  }) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request<WorkflowTemplateResponse>('createWorkflowTemplate', {
+      ...data,
+      createdBy: userInfo.email,
+      userEmail: userInfo.email
+    });
+  }
+
+  // 워크플로우 템플릿 수정 (관리자 전용)
+  async updateWorkflowTemplate(data: {
+    templateId: string;
+    templateName?: string;
+    documentTag?: string;
+    reviewLine?: Array<{ step: number; email: string; name: string }>;
+    paymentLine?: Array<{ step: number; email: string; name: string }>;
+    isDefault?: boolean;
+    description?: string;
+  }) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request<WorkflowTemplateResponse>('updateWorkflowTemplate', {
+      ...data,
+      userEmail: userInfo.email
+    });
+  }
+
+  // 워크플로우 템플릿 삭제 (관리자 전용)
+  async deleteWorkflowTemplate(templateId: string) {
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return this.request('deleteWorkflowTemplate', {
+      templateId,
+      userEmail: userInfo.email
+    });
+  }
 }
 
 // 싱글톤 인스턴스
@@ -300,7 +580,7 @@ export const clearUserCache = () =>
 export const checkUserRegistrationStatus = (email: string) =>
   apiClient.checkApprovalStatus(email);
 
-export const registerUser = (registrationData: any) =>
+export const registerUser = (registrationData: RegistrationData) =>
   apiClient.submitRegistrationRequest(registrationData);
 
 export const verifyAdminKey = (adminKey: string) =>

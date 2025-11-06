@@ -168,6 +168,160 @@ function removeDocumentPermission(documentId, email) {
   }
 }
 
+// ===== 워크플로우 관련 권한 관리 =====
+
+/**
+ * 워크플로우 문서 권한 부여 (Drive API 사용 - 메일 알림 없음)
+ * @param {string} documentId - 문서 ID
+ * @param {Array<string>} userEmails - 사용자 이메일 배열
+ * @param {string} permissionType - 권한 타입 ('reader' | 'writer', 기본: 'reader')
+ * @returns {Object} 권한 부여 결과
+ */
+function grantWorkflowPermissions(documentId, userEmails, permissionType) {
+  try {
+    console.log('🔐 워크플로우 문서 권한 부여 시작:', { documentId, userEmails, permissionType });
+    
+    if (!documentId) {
+      throw new Error('문서 ID가 필요합니다');
+    }
+    
+    if (!userEmails || !Array.isArray(userEmails) || userEmails.length === 0) {
+      return {
+        successCount: 0,
+        failCount: 0,
+        grantedUsers: [],
+        failedUsers: [],
+        details: []
+      };
+    }
+    
+    const role = permissionType === 'writer' ? 'writer' : 'reader';
+    const permissions = Drive.Permissions.list(documentId);
+    const beforePermissions = permissions.items || [];
+    
+    let successCount = 0;
+    let failCount = 0;
+    const grantedUsers = [];
+    const failedUsers = [];
+    const details = [];
+    
+    // 중복 제거
+    const uniqueEmails = [...new Set(userEmails.filter(email => email && email.trim() !== ''))];
+    
+    for (const email of uniqueEmails) {
+      try {
+        // 이미 권한이 있는지 확인
+        const existingPermission = beforePermissions.find(p => p.emailAddress === email && p.role === role);
+        if (existingPermission) {
+          console.log('✅ 이미 권한이 있는 사용자:', email);
+          successCount++;
+          grantedUsers.push(email);
+          details.push({
+            email: email,
+            success: true,
+            message: '이미 권한이 있습니다'
+          });
+          continue;
+        }
+        
+        // 권한 부여 (메일 알림 없이)
+        Drive.Permissions.insert({
+          role: role,
+          type: 'user',
+          value: email,
+          sendNotificationEmails: false
+        }, documentId);
+        
+        console.log('✅ 권한 부여 완료:', email, role);
+        successCount++;
+        grantedUsers.push(email);
+        details.push({
+          email: email,
+          success: true
+        });
+        
+        // API 제한 방지
+        Utilities.sleep(100);
+        
+      } catch (error) {
+        console.error('❌ 권한 부여 실패:', email, error.message);
+        failCount++;
+        failedUsers.push(email);
+        details.push({
+          email: email,
+          success: false,
+          message: error.message
+        });
+      }
+    }
+    
+    return {
+      successCount: successCount,
+      failCount: failCount,
+      grantedUsers: grantedUsers,
+      failedUsers: failedUsers,
+      details: details
+    };
+    
+  } catch (error) {
+    console.error('❌ 워크플로우 문서 권한 부여 오류:', error);
+    return {
+      successCount: 0,
+      failCount: userEmails ? userEmails.length : 0,
+      grantedUsers: [],
+      failedUsers: userEmails || [],
+      details: []
+    };
+  }
+}
+
+/**
+ * 여러 문서에 일괄 권한 부여
+ * @param {Array<string>} documentIds - 문서 ID 배열
+ * @param {Array<string>} userEmails - 사용자 이메일 배열
+ * @param {string} permissionType - 권한 타입 ('reader' | 'writer', 기본: 'reader')
+ * @returns {Object} 권한 부여 결과
+ */
+function grantPermissionsToMultipleDocuments(documentIds, userEmails, permissionType) {
+  try {
+    console.log('🔐 여러 문서에 권한 부여 시작:', { documentIds, userEmails, permissionType });
+    
+    const results = {
+      totalDocuments: documentIds.length,
+      totalUsers: userEmails.length,
+      successCount: 0,
+      failCount: 0,
+      documentResults: []
+    };
+    
+    for (const documentId of documentIds) {
+      const result = grantWorkflowPermissions(documentId, userEmails, permissionType);
+      results.documentResults.push({
+        documentId: documentId,
+        ...result
+      });
+      
+      if (result.successCount > 0) {
+        results.successCount++;
+      } else {
+        results.failCount++;
+      }
+    }
+    
+    return results;
+    
+  } catch (error) {
+    console.error('❌ 여러 문서 권한 부여 오류:', error);
+    return {
+      totalDocuments: documentIds.length,
+      totalUsers: userEmails.length,
+      successCount: 0,
+      failCount: documentIds.length,
+      documentResults: []
+    };
+  }
+}
+
 // ===== 배포 정보 =====
 function getDocumentPermissionsInfo() {
   return {

@@ -48,7 +48,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--sidebar-primary);
+  background-color: var(--primary);
 }
 
 .card-title {
@@ -122,8 +122,8 @@
 /* 메타 정보 스타일 - 제거됨 (오른쪽 뱃지로 이동) */
 
 .item-tag {
-  background-color: var(--accent);
-  color: var(--sidebar-primary);
+  background-color: #e3f2fd;
+  color: #1976d2;
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 11px;

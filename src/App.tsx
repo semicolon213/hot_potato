@@ -16,9 +16,9 @@ import "./components/features/auth/Login.css"; // 인증 관련 스타일
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './components/features/auth/Login';
 import PendingApproval from './components/features/auth/PendingApproval';
+import Chat from './pages/Chat';
 import { useAppState } from './hooks/core/useAppState';
 import {
-  addPost,
   addAnnouncement,
   addCalendarEvent,
   addTemplate,
@@ -26,20 +26,23 @@ import {
   updateTemplate,
   updateTemplateFavorite,
   saveAcademicScheduleToSheet,
-    fetchPosts,
     fetchAnnouncements,
     fetchTemplates,
     fetchCalendarEvents,
     updateCalendarEvent,
-    incrementViewCount
+    incrementViewCount,
+    updateAnnouncement,
+    deleteAnnouncement,
+    deleteCalendarEvent
   } from './utils/database/papyrusManager';
-import { 
+import {
   addTag as addPersonalTag,
   deleteTag as deletePersonalTag,
   updateTag as updatePersonalTag,
   fetchTags as fetchPersonalTags,
   checkTagDeletionImpact
 } from './utils/database/personalTagManager';
+import { clearAllUserData } from './utils/helpers/clearUserData';
 import type { Post, Event, DateRange, CustomPeriod, User, PageType } from './types/app';
 import { ENV_CONFIG } from './config/environment';
 import { tokenManager } from './utils/auth/tokenManager';
@@ -73,19 +76,13 @@ const App: React.FC = () => {
     tags,
     setTags,
 
-    // Board state
-    posts,
-    setPosts,
-    isGoogleAuthenticatedForBoard,
-    isBoardLoading,
-    boardSpreadsheetId,
-
     // Announcements state
     announcements,
     setAnnouncements,
     selectedAnnouncement,
     setSelectedAnnouncement,
     isGoogleAuthenticatedForAnnouncements,
+    isGoogleAuthenticatedForBoard,
     isAnnouncementsLoading,
     announcementSpreadsheetId,
 
@@ -106,12 +103,20 @@ const App: React.FC = () => {
     // Other spreadsheet IDs
     hotPotatoDBSpreadsheetId,
     studentSpreadsheetId,
-    calendarStudentSpreadsheetId,
     calendarProfessorSpreadsheetId,
+    calendarStudentSpreadsheetId,
+    calendarCouncilSpreadsheetId,
+    calendarSuppSpreadsheetId,
+    calendarADProfessorSpreadsheetId,
+    activeCalendarSpreadsheetId,
+    staffSpreadsheetId,
 
     // Attendees
     students,
-    staff
+    staff,
+
+    // State reset
+    resetAllState
   } = useAppState();
 
   // 로그인 처리
@@ -146,13 +151,24 @@ const App: React.FC = () => {
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
     }
+
+    // Zustand auth store도 초기화 (동기적으로)
+    try {
+      const { useAuthStore } = require('./hooks/features/auth/useAuthStore');
+      const authStoreLogout = useAuthStore.getState().logout;
+      authStoreLogout();
+    } catch (error) {
+      console.warn('Auth store 로그아웃 실패:', error);
+    }
+
+    console.log('🚪 로그아웃 완료');
   };
 
   // 완전 로그아웃 처리 (현재 로그인한 계정만 제거)
   const handleFullLogout = () => {
     // 현재 로그인한 사용자의 이메일 가져오기
     const currentUserEmail = user?.email;
-    
+
     setUser(null);
     setCurrentPage("dashboard");
     setSearchTerm("");
@@ -203,28 +219,33 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 브라우저 종료 시 자동 로그아웃 (선택적)
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // 브라우저 종료 시 로그아웃
-      // 주의: beforeunload는 신뢰할 수 없으므로 보조 수단으로만 사용
-      // Electron 환경에서는 Electron 이벤트가 우선 처리됨
-      if (!window.electronAPI) {
-        handleLogout();
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageFromUrl = urlParams.get('page');
+    const announcementId = urlParams.get('announcementId');
+
+    if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
+      const announcement = announcements.find(a => a.id === announcementId);
+      if (announcement) {
+        setSelectedAnnouncement(announcement);
       }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
+    }
+  }, [announcements, currentPage]);
 
   // 페이지 전환 처리
-  const handlePageChange = (pageName: string) => {
+  const handlePageChange = (pageName: string, params?: Record<string, string>) => {
     const url = new URL(window.location.toString());
     url.searchParams.set('page', pageName);
+
+    // 기존 announcementId 파라미터를 제거
+    url.searchParams.delete('announcementId');
+
+    if (params) {
+      Object.keys(params).forEach(key => {
+        url.searchParams.set(key, params[key]);
+      });
+    }
+
     window.history.pushState({}, '', url.toString());
     setCurrentPage(pageName as PageType);
   };
@@ -283,16 +304,14 @@ const App: React.FC = () => {
     }
   };
 
-  // 게시글 추가 핸들러
+  // 게시판 추가 핸들러
   const handleAddPost = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
     try {
-      if (!boardSpreadsheetId) {
+      if (!announcementSpreadsheetId) {
         throw new Error("Board spreadsheet ID not found");
       }
-      await addPost(boardSpreadsheetId, postData);
-      // 게시글 목록 새로고침
-      const updatedPosts = await fetchPosts();
-      setPosts(updatedPosts);
+      // TODO: 게시판 추가 로직 구현 필요
+      console.warn('게시판 추가 기능은 아직 구현되지 않았습니다.');
       handlePageChange('board');
     } catch (error) {
       console.error('Error adding post:', error);
@@ -300,7 +319,7 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; }) => {
+  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
@@ -323,7 +342,7 @@ const App: React.FC = () => {
     setAnnouncements(updatedAnnouncements);
     setSelectedAnnouncement({ ...post, views: post.views + 1 });
 
-    handlePageChange('announcement-view');
+    handlePageChange('announcement-view', { announcementId: post.id });
 
     try {
       await incrementViewCount(post.id);
@@ -333,10 +352,106 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+    try {
+      await updateAnnouncement(announcementId, postData);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    try {
+      if (!announcementSpreadsheetId) {
+        throw new Error("Announcement spreadsheet ID not found");
+      }
+      await deleteAnnouncement(announcementSpreadsheetId, announcementId);
+      // Refresh the announcements list
+      const updatedAnnouncements = await fetchAnnouncements();
+      setAnnouncements(updatedAnnouncements);
+      // Go back to the announcements list
+      handlePageChange('announcements');
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+    }
+  };
+
+  const getAttendeeUserType = (attendeeId: string): string | null => {
+    const student = students.find(s => s.no_student === attendeeId);
+    if (student) {
+      return student.council ? 'council' : 'student';
+    }
+
+    const staffMember = staff.find(s => s.no === attendeeId);
+    if (staffMember) {
+      if (staffMember.pos === '외부강사' || staffMember.pos === '시간강사') {
+        return 'ADprofessor';
+      }
+      if (staffMember.pos === '조교') {
+        return 'support';
+      }
+      if (staffMember.pos === '교수') {
+        return 'professor';
+      }
+    }
+    return null;
+  };
+
+  const permissionHierarchy = ['student', 'council', 'support', 'ADprofessor', 'professor'];
+
   // 캘린더 이벤트 추가 핸들러
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
     try {
-      await addCalendarEvent(eventData);
+      let eventOwnerType = user.userType;
+      let targetSpreadsheetId = activeCalendarSpreadsheetId; // Initialize here
+
+      if (eventData.attendees) {
+        const attendeeIds = eventData.attendees.split(',');
+        const attendeeUserTypes = attendeeIds.map(getAttendeeUserType).filter(Boolean) as string[];
+
+        if (attendeeUserTypes.length > 0) {
+          const lowestPermissionType = attendeeUserTypes.reduce((lowest, current) => {
+            const lowestIndex = permissionHierarchy.indexOf(lowest);
+            const currentIndex = permissionHierarchy.indexOf(current);
+            return currentIndex < lowestIndex ? current : lowest;
+          }, attendeeUserTypes[0]);
+
+          eventOwnerType = lowestPermissionType;
+
+          switch (lowestPermissionType) {
+            case 'student':
+              targetSpreadsheetId = calendarStudentSpreadsheetId;
+              break;
+            case 'council':
+              targetSpreadsheetId = calendarCouncilSpreadsheetId;
+              break;
+            case 'support':
+              targetSpreadsheetId = calendarSuppSpreadsheetId;
+              break;
+            case 'ADprofessor':
+              targetSpreadsheetId = calendarADProfessorSpreadsheetId;
+              break;
+            case 'professor':
+              targetSpreadsheetId = calendarProfessorSpreadsheetId;
+              break;
+            default:
+              targetSpreadsheetId = activeCalendarSpreadsheetId;
+          }
+        }
+      }
+
+      if (!targetSpreadsheetId) {
+        throw new Error("Target calendar spreadsheet ID not found");
+      }
+      if (!eventOwnerType) {
+        throw new Error("Event owner type not found");
+      }
+      await addCalendarEvent(targetSpreadsheetId, eventData, eventOwnerType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
@@ -348,7 +463,21 @@ const App: React.FC = () => {
   // 캘린더 이벤트 업데이트 핸들러
   const handleUpdateCalendarEvent = async (eventId: string, eventData: Omit<Event, 'id'>) => {
     try {
-      await updateCalendarEvent(eventId, eventData);
+      const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+      ].filter(Boolean);
+
+      const spreadsheetId = allCalendarIds.find(id => eventId.startsWith(id!));
+
+      if (!spreadsheetId) {
+        throw new Error("Could not determine spreadsheet ID from event ID");
+      }
+
+      await updateCalendarEvent(spreadsheetId, eventId, eventData);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
@@ -361,6 +490,28 @@ const App: React.FC = () => {
   const handleDeleteCalendarEvent = async (eventId: string) => {
     // console.log("Deleting event", eventId);
     // console.log("일정 삭제 기능은 아직 구현되지 않았습니다.");
+    try {
+      const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+      ].filter(Boolean);
+
+      const spreadsheetId = allCalendarIds.find(id => eventId.startsWith(id!));
+
+      if (!spreadsheetId) {
+        throw new Error("Could not determine spreadsheet ID from event ID");
+      }
+
+      await deleteCalendarEvent(spreadsheetId, eventId);
+      // 캘린더 이벤트 목록 새로고침
+      const updatedEvents = await fetchCalendarEvents();
+      setCalendarEvents(updatedEvents);
+    } catch (error) {
+      console.error('Error deleting calendar event:', error);
+    }
   };
 
   // 학사일정 저장 핸들러
@@ -371,17 +522,13 @@ const App: React.FC = () => {
     gradeEntryPeriod: DateRange;
     customPeriods: CustomPeriod[];
   }) => {
-    const spreadsheetIds = [calendarStudentSpreadsheetId, calendarProfessorSpreadsheetId].filter(Boolean);
-
-    if (spreadsheetIds.length === 0) {
+    if (!activeCalendarSpreadsheetId) {
       alert('캘린더가 설정되지 않아 저장할 수 없습니다.');
-      console.error('Error saving academic schedule: No calendar spreadsheet IDs are set.');
+      console.error('Error saving academic schedule: No active calendar spreadsheet ID is set.');
       return;
     }
     try {
-      for (const id of spreadsheetIds) {
-        await saveAcademicScheduleToSheet(scheduleData, id as string);
-      }
+      await saveAcademicScheduleToSheet(scheduleData, activeCalendarSpreadsheetId);
       alert('학사일정이 성공적으로 저장되었습니다.');
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
@@ -437,12 +584,12 @@ const App: React.FC = () => {
     try {
       // 태그 삭제 시 영향받는 개인 양식들 확인
       const impact = await checkTagDeletionImpact(tagToDelete);
-      
+
       if (impact.affectedFiles.length > 0) {
         // 영향받는 파일들이 있는 경우 상세한 확인 메시지 표시
         const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
         const confirmMessage = `'${tagToDelete}' 태그를 삭제하면 다음 개인 양식들도 함께 삭제됩니다:\n\n${affectedFilesList}\n\n정말로 삭제하시겠습니까?`;
-        
+
         if (!window.confirm(confirmMessage)) {
           return;
         }
@@ -481,12 +628,12 @@ const App: React.FC = () => {
       // 태그 수정 시 영향받는 개인 양식들 확인
       const { checkTagUpdateImpact, updatePersonalTemplateMetadata } = await import('./utils/database/personalTagManager');
       const impact = await checkTagUpdateImpact(oldTag, newTag);
-      
+
       if (impact.affectedFiles.length > 0) {
         // 영향받는 파일들이 있는 경우 상세한 확인 메시지 표시
         const affectedFilesList = impact.affectedFiles.map(file => `• ${file}`).join('\n');
         const confirmMessage = `'${oldTag}' 태그를 '${newTag}'로 수정하면 다음 개인 양식들의 파일명도 함께 변경됩니다:\n\n${affectedFilesList}\n\n정말로 수정하시겠습니까?`;
-        
+
         if (!window.confirm(confirmMessage)) {
           return;
         }
@@ -510,7 +657,7 @@ const App: React.FC = () => {
         updatePersonalTag(oldTag, newTag),
         updatePersonalTemplateMetadata(oldTag, newTag)
       ]);
-      
+
       if (tagUpdateSuccess && fileUpdateSuccess) {
         // 태그 목록을 다시 로드
         const updatedTags = await fetchPersonalTags();
@@ -644,14 +791,14 @@ const App: React.FC = () => {
             <PageRenderer
               currentPage={currentPage}
               user={user}
-              posts={posts}
+              posts={[]}
               announcements={announcements}
               selectedAnnouncement={selectedAnnouncement}
               isGoogleAuthenticatedForBoard={isGoogleAuthenticatedForBoard}
               isGoogleAuthenticatedForAnnouncements={isGoogleAuthenticatedForAnnouncements}
-              boardSpreadsheetId={boardSpreadsheetId}
+              boardSpreadsheetId={announcementSpreadsheetId}
               announcementSpreadsheetId={announcementSpreadsheetId}
-              isBoardLoading={isBoardLoading}
+              isBoardLoading={false}
               isAnnouncementsLoading={isAnnouncementsLoading}
               customTemplates={customTemplates}
               tags={tags}
@@ -665,6 +812,7 @@ const App: React.FC = () => {
               customPeriods={customPeriods}
               hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
               studentSpreadsheetId={studentSpreadsheetId}
+              staffSpreadsheetId={staffSpreadsheetId}
               students={students}
               staff={staff}
               searchTerm={searchTerm}
@@ -672,6 +820,8 @@ const App: React.FC = () => {
               onAddPost={handleAddPost}
               onAddAnnouncement={handleAddAnnouncement}
               onSelectAnnouncement={handleSelectAnnouncement}
+              onUpdateAnnouncement={handleUpdateAnnouncement}
+              onDeleteAnnouncement={handleDeleteAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}
@@ -690,6 +840,7 @@ const App: React.FC = () => {
               onUpdateTemplateFavorite={handleUpdateTemplateFavorite}
             />
           </div>
+          <Chat />
         </div>
       </div>
     </GoogleOAuthProvider>

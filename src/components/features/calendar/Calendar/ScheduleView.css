@@ -30,7 +30,7 @@
 .schedule-column-header button {
     padding: 6px 12px;
     border: 1px solid #ccc;
-    border-radius: var(--sidebar-radius-sm);
+    border-radius: 4px;
     background-color: #f0f0f0;
     cursor: pointer;
 }
@@ -52,7 +52,7 @@
     display: flex;
     align-items: stretch; /* Stretch items to fill height */
     border: 1px solid #e0e0e0;
-    border-radius: var(--sidebar-radius-sm);
+    border-radius: 8px;
     overflow: hidden;
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -95,7 +95,7 @@
     align-items: center;
     justify-content: center;
     font-weight: 500;
-    color: var(--sidebar-primary);
+    color: var(--primary);
     min-width: 80px;
     border-left: 1px solid #e0e0e0;
 }

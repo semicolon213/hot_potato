@@ -36,8 +36,13 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
       <div className="table-container">
         <div
           className="section-header"
-          style={{ backgroundColor: "var(--primary)", display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: '20px' }}
+          style={{ backgroundColor: "var(--primary)", display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px' }}
         >
+          <div className="section-title-container">
+            <div className="section-title no-line" style={{ color: "white", margin: "10px 0 10px 20px" }}>
+              {title}
+            </div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {headerContent}
             {showViewAll && (

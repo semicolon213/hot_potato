@@ -231,7 +231,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
         } else {
           // 승인 대기 중 - 승인 대기 화면으로
           console.log('승인 대기 중인 사용자');
-          alert('가입 요청이 승인 대기 중입니다. 관리자의 승인을 기다려주세요.');
           onLogin({
             email: email,
             name: name,
@@ -337,7 +336,6 @@ export const useAuth = (onLogin: (user: User) => void) => {
       }
 
       if (result.success) {
-        alert(result.message);
         onLogin({
           email: formData.email,
           name: formData.name,
@@ -405,7 +403,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
       // 토큰이 유효하면 사용자 상태 확인 후 바로 로그인
       try {
         const result = await checkUserStatus(lastUser.email);
-        
+
         if (result.success && result.isRegistered && result.isApproved) {
           // 바로 로그인 처리
           onLogin({
@@ -453,7 +451,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
 
   // 모든 로그인 사용자 목록 가져오기
   const lastUsers = lastUserManager.getAll();
-  
+
   // 마지막 로그인 사용자 정보 가져오기 (하위 호환성)
   const lastUser = lastUsers.length > 0 ? lastUsers[0] : null;
 

@@ -10,7 +10,7 @@ interface StudentHeaderProps {
   onTabChange: (tab: 'list' | 'council') => void;
   isStaffMode?: boolean; // 교직원 모드 추가
 }
-
+// a
 const StudentHeader: React.FC<StudentHeaderProps> = ({
   totalStudents,
   filteredStudents,
