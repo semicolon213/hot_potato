@@ -1711,6 +1711,77 @@
   line-height: 1.5;
 }
 
+.category-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.category-card-header .category-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accounting-gray-900);
+  margin: 0;
+  flex: 1;
+}
+
+.category-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: 12px;
+}
+
+.category-edit-btn,
+.category-delete-btn {
+  background: transparent;
+  border: 1px solid var(--accounting-gray-300);
+  border-radius: var(--accounting-border-radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--accounting-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+}
+
+.category-edit-btn:hover {
+  background: var(--accounting-info-light);
+  border-color: var(--accounting-info);
+  color: var(--accounting-info);
+}
+
+.category-delete-btn:hover:not(:disabled) {
+  background: var(--accounting-danger-light);
+  border-color: var(--accounting-danger);
+  color: var(--accounting-danger);
+}
+
+.category-delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.category-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-usage-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--accounting-gray-100);
+  color: var(--accounting-gray-700);
+  border-radius: var(--accounting-border-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
 .category-card-footer {
   display: flex;
   justify-content: space-between;

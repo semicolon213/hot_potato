@@ -925,3 +925,169 @@ export const createCategory = async (
     throw error;
   }
 };
+
+/**
+ * 카테고리 수정 (장부 항목과 예산안의 카테고리도 함께 업데이트)
+ */
+export const updateCategory = async (
+  spreadsheetId: string,
+  categoryId: string,
+  newCategoryName: string,
+  newDescription: string
+): Promise<void> => {
+  try {
+    ensureAuth();
+
+    // 기존 카테고리 정보 가져오기
+    const categories = await getCategories(spreadsheetId);
+    const category = categories.find(cat => cat.categoryId === categoryId);
+    
+    if (!category) {
+      throw new Error('카테고리를 찾을 수 없습니다.');
+    }
+
+    const oldCategoryName = category.categoryName;
+
+    // 중복 체크 (자기 자신 제외)
+    if (categories.some(cat => 
+      cat.categoryId !== categoryId && 
+      cat.categoryName.toLowerCase() === newCategoryName.trim().toLowerCase()
+    )) {
+      throw new Error('이미 존재하는 카테고리 이름입니다.');
+    }
+
+    // 카테고리 이름이 변경된 경우에만 장부 항목과 예산안 업데이트
+    if (oldCategoryName !== newCategoryName.trim()) {
+      // 모든 통장의 장부 항목에서 해당 카테고리 찾아서 업데이트
+      const accounts = await getAccounts(spreadsheetId);
+      
+      for (const account of accounts) {
+        const entries = await getLedgerEntries(spreadsheetId, account.accountId);
+        const entriesToUpdate = entries.filter(entry => entry.category === oldCategoryName);
+        
+        if (entriesToUpdate.length > 0) {
+          console.log(`📝 장부 항목 카테고리 업데이트: ${oldCategoryName} → ${newCategoryName} (${entriesToUpdate.length}개)`);
+          
+          // 장부 시트 데이터 가져오기
+          const ledgerData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.LEDGER);
+          if (!ledgerData || !ledgerData.values || ledgerData.values.length <= 1) {
+            continue;
+          }
+
+          // 각 항목 업데이트
+          for (const entry of entriesToUpdate) {
+            const rowIndex = ledgerData.values.findIndex((row: string[]) => row[0] === entry.entryId);
+            if (rowIndex !== -1) {
+              const actualRowNumber = rowIndex + 1;
+              // 카테고리는 D열 (4번째 컬럼, 인덱스 3)
+              await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `D${actualRowNumber}`, [[newCategoryName.trim()]]);
+            }
+          }
+        }
+      }
+
+      // 예산안의 상세 항목에서 해당 카테고리 찾아서 업데이트
+      const { getBudgetPlans } = await import('./accountingBudgetManager');
+      const budgetPlans = await getBudgetPlans(spreadsheetId);
+      
+      const plansToUpdate = budgetPlans.filter(plan => 
+        plan.details.some(detail => detail.category === oldCategoryName)
+      );
+
+      if (plansToUpdate.length > 0) {
+        console.log(`📝 예산안 카테고리 업데이트: ${oldCategoryName} → ${newCategoryName} (${plansToUpdate.length}개)`);
+        
+        // 예산안 시트 데이터 가져오기
+        const budgetData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN);
+        if (!budgetData || !budgetData.values || budgetData.values.length <= 1) {
+          throw new Error('예산안 데이터를 찾을 수 없습니다.');
+        }
+
+        // 각 예산안 업데이트
+        for (const plan of plansToUpdate) {
+          const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === plan.budgetId);
+          if (rowIndex !== -1) {
+            const actualRowNumber = rowIndex + 1;
+            
+            // 상세 항목 업데이트 (카테고리 변경)
+            const updatedDetails = plan.details.map(detail => ({
+              ...detail,
+              category: detail.category === oldCategoryName ? newCategoryName.trim() : detail.category
+            }));
+            
+            // details는 O열 (15번째 컬럼, 인덱스 14)
+            await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `O${actualRowNumber}`, [[JSON.stringify(updatedDetails)]]);
+          }
+        }
+      }
+    }
+
+    // 카테고리 정보 업데이트
+    const categoryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY);
+    if (!categoryData || !categoryData.values || categoryData.values.length <= 1) {
+      throw new Error('카테고리 데이터를 찾을 수 없습니다.');
+    }
+
+    const categoryRowIndex = categoryData.values.findIndex((row: string[]) => row[0] === categoryId);
+    if (categoryRowIndex === -1) {
+      throw new Error('카테고리를 시트에서 찾을 수 없습니다.');
+    }
+
+    const actualRowNumber = categoryRowIndex + 1;
+    
+    // 카테고리 이름 (B열), 설명 (C열) 업데이트
+    await update(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY, `B${actualRowNumber}`, [[newCategoryName.trim()]]);
+    await update(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY, `C${actualRowNumber}`, [[newDescription.trim()]]);
+
+    console.log('✅ 카테고리 수정 완료:', categoryId);
+  } catch (error: unknown) {
+    console.error('❌ 카테고리 수정 오류:', error);
+    throw error;
+  }
+};
+
+/**
+ * 카테고리 삭제 (사용 중인 경우 삭제 불가)
+ */
+export const deleteCategory = async (
+  spreadsheetId: string,
+  categoryId: string
+): Promise<void> => {
+  try {
+    ensureAuth();
+
+    // 기존 카테고리 정보 가져오기
+    const categories = await getCategories(spreadsheetId);
+    const category = categories.find(cat => cat.categoryId === categoryId);
+    
+    if (!category) {
+      throw new Error('카테고리를 찾을 수 없습니다.');
+    }
+
+    // 사용 중인지 확인
+    if (category.usageCount > 0) {
+      throw new Error(`카테고리 "${category.categoryName}"는 ${category.usageCount}개의 항목에서 사용 중이므로 삭제할 수 없습니다.`);
+    }
+
+    // 카테고리 비활성화 (실제 삭제 대신 is_active를 FALSE로 설정)
+    const categoryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY);
+    if (!categoryData || !categoryData.values || categoryData.values.length <= 1) {
+      throw new Error('카테고리 데이터를 찾을 수 없습니다.');
+    }
+
+    const categoryRowIndex = categoryData.values.findIndex((row: string[]) => row[0] === categoryId);
+    if (categoryRowIndex === -1) {
+      throw new Error('카테고리를 시트에서 찾을 수 없습니다.');
+    }
+
+    const actualRowNumber = categoryRowIndex + 1;
+    
+    // is_active를 FALSE로 설정 (F열, 6번째 컬럼, 인덱스 5)
+    await update(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY, `F${actualRowNumber}`, [['FALSE']]);
+
+    console.log('✅ 카테고리 삭제 완료:', categoryId);
+  } catch (error: unknown) {
+    console.error('❌ 카테고리 삭제 오류:', error);
+    throw error;
+  }
+};
