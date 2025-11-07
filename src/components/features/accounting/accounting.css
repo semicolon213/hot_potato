@@ -2770,3 +2770,417 @@
 .budget-plan-detail::-webkit-scrollbar-thumb:hover {
   background: var(--accounting-gray-500);
 }
+
+/* 장부 내보내기 모달 스타일 */
+/* 내보내기 모달 설정 섹션 */
+.export-settings-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--accounting-gray-200);
+}
+
+.export-settings-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.export-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accounting-gray-800);
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--accounting-primary);
+}
+
+.section-description {
+  font-size: 13px;
+  color: var(--accounting-gray-600);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.option-group {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--accounting-gray-50);
+  border-radius: var(--accounting-border-radius);
+  border: 1px solid var(--accounting-gray-200);
+}
+
+.option-group:last-child {
+  margin-bottom: 0;
+}
+
+.option-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--accounting-gray-700);
+  margin-bottom: 12px;
+}
+
+.option-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.option-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--accounting-gray-200);
+}
+
+.cell-selector-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cell-selector {
+  flex: 1;
+}
+
+.cell-selector label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accounting-gray-700);
+  margin-bottom: 6px;
+}
+
+.cell-selector-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cell-range-display {
+  font-size: 12px;
+  color: var(--accounting-primary);
+  font-weight: 500;
+  padding: 4px 8px;
+  background: var(--accounting-primary-light);
+  border-radius: 4px;
+}
+
+.selection-hint {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--accounting-primary-light);
+  border-radius: var(--accounting-border-radius-sm);
+  font-size: 12px;
+  color: var(--accounting-gray-700);
+  line-height: 1.4;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--accounting-gray-700);
+  padding: 8px;
+  border-radius: var(--accounting-border-radius-sm);
+  transition: var(--accounting-transition);
+}
+
+.radio-option:hover {
+  background: var(--accounting-gray-100);
+}
+
+.radio-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.selected-cell-info {
+  font-size: 12px;
+  color: var(--accounting-primary);
+  font-weight: 500;
+  padding: 2px 8px;
+  background: var(--accounting-primary-light);
+  border-radius: 4px;
+}
+
+.field-mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.field-mapping-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--accounting-gray-300);
+  border-radius: var(--accounting-border-radius-sm);
+  background: var(--accounting-gray-50);
+  transition: var(--accounting-transition);
+}
+
+.field-mapping-item-compact:hover {
+  border-color: var(--accounting-primary);
+  background: var(--accounting-gray-100);
+}
+
+.field-mapping-checkbox-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+}
+
+.field-mapping-checkbox-compact input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.field-label {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--accounting-gray-700);
+}
+
+.field-mapping-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.selection-status {
+  font-size: 11px;
+  color: var(--accounting-primary);
+  font-weight: 500;
+  padding: 2px 6px;
+  background: var(--accounting-primary-light);
+  border-radius: 4px;
+}
+
+.cell-range-badge {
+  font-size: 11px;
+  color: var(--accounting-primary);
+  font-weight: 500;
+  padding: 2px 6px;
+  background: var(--accounting-primary-light);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.btn-tiny {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.field-mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.field-mapping-item {
+  padding: 12px;
+  border: 1px solid var(--accounting-gray-300);
+  border-radius: var(--accounting-border-radius-sm);
+  background: var(--accounting-gray-50);
+}
+
+.field-mapping-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-mapping-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--accounting-gray-700);
+}
+
+.field-mapping-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.evidence-info-list {
+  background: white;
+}
+
+.evidence-info-list > div {
+  transition: var(--accounting-transition);
+}
+
+.evidence-info-list > div:hover {
+  background: var(--accounting-gray-50);
+}
+
+/* 엑셀 미리보기 스타일 */
+.excel-preview-container {
+  position: relative;
+}
+
+.excel-preview-wrapper {
+  position: relative;
+  background: #ffffff;
+  font-family: 'Segoe UI', 'Calibri', 'Arial', sans-serif;
+}
+
+.excel-preview-wrapper table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 11px;
+  background: #ffffff;
+  table-layout: fixed;
+}
+
+.excel-preview-wrapper thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.excel-preview-wrapper tbody {
+  background: #ffffff;
+}
+
+.excel-preview-wrapper td,
+.excel-preview-wrapper th {
+  border: 1px solid #d0d7e5;
+  padding: 2px 4px;
+  text-align: left;
+  vertical-align: middle;
+  min-width: 64px;
+  width: 64px;
+  height: 20px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.excel-preview-wrapper th {
+  background: #f2f2f2;
+  border-color: #d0d7e5;
+  font-weight: 600;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.excel-preview-wrapper tbody tr:nth-child(even) td {
+  background: #ffffff;
+}
+
+.excel-preview-wrapper tbody tr:nth-child(odd) td {
+  background: #fafafa;
+}
+
+.excel-preview-wrapper td.selectable,
+.excel-preview-wrapper th.selectable {
+  cursor: crosshair;
+  position: relative;
+}
+
+.excel-preview-wrapper td.selectable:hover,
+.excel-preview-wrapper th.selectable:hover {
+  background: #e7f3ff !important;
+  border-color: #0078d4 !important;
+  z-index: 10;
+  outline: 1px solid #0078d4;
+  outline-offset: -1px;
+}
+
+.excel-preview-wrapper td.selected,
+.excel-preview-wrapper th.selected {
+  background: #cce5ff !important;
+  border: 1px solid #0078d4 !important;
+  z-index: 10;
+  outline: 1px solid #0078d4;
+  outline-offset: -1px;
+  box-shadow: inset 0 0 0 1px #0078d4;
+}
+
+/* 행/열 헤더 스타일 */
+.excel-row-header {
+  background: #f2f2f2 !important;
+  border: 1px solid #d0d7e5 !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  color: #606060 !important;
+  min-width: 40px !important;
+  width: 40px !important;
+  position: sticky;
+  left: 0;
+  z-index: 8;
+}
+
+.excel-col-header {
+  background: #f2f2f2 !important;
+  border: 1px solid #d0d7e5 !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  color: #606060 !important;
+  position: sticky;
+  top: 0;
+  z-index: 7;
+}
+
+.excel-preview-table {
+  font-family: 'Courier New', monospace;
+}
+
+.excel-preview-table .excel-cell.selectable:hover {
+  background: var(--accounting-primary-light) !important;
+  border-color: var(--accounting-primary) !important;
+}
+
+.excel-preview-table .excel-cell.selected {
+  background: var(--accounting-primary) !important;
+  color: white !important;
+  border-color: var(--accounting-primary) !important;
+}
+
+.excel-preview-table .row-header {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.selected-cell-info {
+  font-weight: 500;
+}

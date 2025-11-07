@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getLedgerEntries, getAccounts, getCategories, deleteLedgerEntry, createLedgerEntry, updateLedgerEntry } from '../../../utils/database/accountingManager';
 import { FilterPanel } from './FilterPanel';
+import { LedgerExportModal } from './LedgerExportModal';
 import type { LedgerEntry, LedgerEntryFilter, Account, Category, CreateLedgerEntryRequest, UpdateLedgerEntryRequest } from '../../../types/features/accounting';
 import './accounting.css';
 
@@ -46,6 +47,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   const [showAddMonthModal, setShowAddMonthModal] = useState(false);
   const [newMonthInput, setNewMonthInput] = useState({ year: '', month: '' });
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   
   // loadEntries를 useCallback으로 먼저 정의
   const loadEntries = useCallback(async (accountId?: string) => {
@@ -404,13 +406,23 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
               <span className="account-balance">잔액: {accounts[0].currentBalance.toLocaleString()}원</span>
             </div>
           )}
-          <button
-            onClick={handleStartAdd}
-            className="add-entry-btn"
-            disabled={isAddingNew || editingEntryId !== null}
-          >
-            + 항목 추가
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="btn-primary"
+              disabled={entries.length === 0}
+              style={{ padding: '8px 16px', fontSize: '14px' }}
+            >
+              📥 내보내기
+            </button>
+            <button
+              onClick={handleStartAdd}
+              className="add-entry-btn"
+              disabled={isAddingNew || editingEntryId !== null}
+            >
+              + 항목 추가
+            </button>
+          </div>
         </div>
       </div>
 
@@ -797,7 +809,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                                       onClick={() => handleStartEdit(entry)}
                                       className="btn-edit action-btn"
                                       title="수정"
-                                      disabled={entry.isBudgetExecuted && entry.budgetPlanId || isAddingNew || editingEntryId !== null}
+                                      disabled={!!(entry.isBudgetExecuted && entry.budgetPlanId) || isAddingNew || editingEntryId !== null}
                                     >
                                       수정
                                     </button>
@@ -805,7 +817,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                                       onClick={() => handleDelete(entry)}
                                       className="btn-delete action-btn"
                                       title="삭제"
-                                      disabled={entry.isBudgetExecuted && entry.budgetPlanId || isAddingNew || editingEntryId !== null}
+                                      disabled={!!(entry.isBudgetExecuted && entry.budgetPlanId) || isAddingNew || editingEntryId !== null}
                                     >
                                       삭제
                                     </button>
@@ -892,6 +904,14 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
           </div>
         </div>
       )}
+
+      {/* 장부 내보내기 모달 */}
+      <LedgerExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        entries={entries}
+        spreadsheetId={spreadsheetId}
+      />
     </div>
   );
 };

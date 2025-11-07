@@ -150,6 +150,20 @@ export interface CreateLedgerEntryRequest {
 }
 
 /**
+ * @brief 장부 항목 수정 요청 타입
+ */
+export interface UpdateLedgerEntryRequest {
+  accountId: string;                // 통장 ID
+  date: string;                     // 거래일
+  category: string;                 // 카테고리
+  description: string;              // 내용
+  amount: number;                   // 금액 (양수)
+  source: string;                  // 출처/수입처
+  transactionType: 'income' | 'expense'; // 거래 유형
+  evidenceFile?: File;              // 증빙 문서 (선택사항)
+}
+
+/**
  * @brief 예산 계획 생성 요청 타입
  */
 export interface CreateBudgetPlanRequest {
