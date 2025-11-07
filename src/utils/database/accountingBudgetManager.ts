@@ -145,7 +145,7 @@ export const getBudgetPlans = async (
             accountId: planAccountId,
             title: row[2] || '',
             totalAmount: parseFloat(row[3] || '0'),
-            requestedDate: row[4] || '',
+            modificationDate: row[4] || '',
             status: 'reviewed', // 수정된 상태
             subManagerReviewed: true,
             subManagerReviewDate: row[7] || subManagerReviews[subManagerReviews.length - 1]?.date || undefined,
@@ -167,7 +167,7 @@ export const getBudgetPlans = async (
         accountId: planAccountId,
         title: row[2] || '',
         totalAmount: parseFloat(row[3] || '0'),
-        requestedDate: row[4] || '',
+        modificationDate: row[4] || '',
         status: currentStatus,
         subManagerReviewed: row[6] === 'TRUE' || row[6] === true || subManagerReviews.length > 0,
         subManagerReviewDate: row[7] || undefined,
@@ -229,14 +229,15 @@ export const createBudgetPlan = async (
     }
 
     const budgetId = `budget_${Date.now()}`;
-    const requestedDate = new Date().toISOString();
+    // 수정일을 분까지 표기 (ISO 8601 형식: YYYY-MM-DDTHH:mm:ss.sssZ)
+    const modificationDate = new Date().toISOString();
 
     const newBudgetPlan: BudgetPlan = {
       budgetId,
       accountId: request.accountId,
       title: request.title,
       totalAmount,
-      requestedDate,
+      modificationDate,
       status: 'pending',
       subManagerReviewed: false,
       mainManagerApproved: false,
@@ -254,7 +255,7 @@ export const createBudgetPlan = async (
 
     ensureAuth();
     
-    // 시트 헤더 순서: budget_id, account_id, title, total_amount, requested_date,
+    // 시트 헤더 순서: budget_id, account_id, title, total_amount, modification_date,
     // status, sub_manager_reviewed, sub_manager_review_date,
     // main_manager_approved, main_manager_approval_date, executed_date, created_by,
     // rejection_reason, details, sub_manager_reviews
@@ -263,7 +264,7 @@ export const createBudgetPlan = async (
       newBudgetPlan.accountId,                      // account_id
       newBudgetPlan.title,                          // title
       newBudgetPlan.totalAmount,                    // total_amount
-      newBudgetPlan.requestedDate,                 // requested_date
+      newBudgetPlan.modificationDate,              // modification_date
       newBudgetPlan.status,                         // status
       'FALSE',                                      // sub_manager_reviewed (하위 호환성)
       '',                                           // sub_manager_review_date (하위 호환성)
@@ -558,6 +559,7 @@ export const executeBudgetPlan = async (
     }
 
     const { createLedgerEntry } = await import('./accountingManager');
+    // 집행일을 분까지 표기 (ISO 8601 형식: YYYY-MM-DDTHH:mm:ss.sssZ)
     const executedDate = new Date().toISOString();
 
     // 예산 계획의 각 상세 항목을 장부 항목으로 추가
@@ -677,6 +679,9 @@ export const updateBudgetPlanDetails = async (
       source: detail.source
     }));
 
+    // 수정일 업데이트 (분까지 표기)
+    const modificationDate = new Date().toISOString();
+
     // 이미 집행된 장부 항목이 있는지 확인하고 삭제 (상태와 관계없이 해당 예산안으로 생성된 항목은 모두 삭제)
     const { getLedgerEntries } = await import('./accountingManager');
     const { deleteRow } = await import('papyrus-db');
@@ -694,7 +699,18 @@ export const updateBudgetPlanDetails = async (
     }
     
     // 시트에서 직접 읽어서 budgetPlanId와 accountId가 모두 일치하는 항목 찾기
-    const budgetEntriesToDelete: Array<{ entryId: string; rowIndex: number; description: string }> = [];
+    // rowIndex는 배열 인덱스 (0-based, 헤더 포함이므로 실제 시트 행 번호는 rowIndex + 1)
+    const budgetEntriesToDelete: Array<{ 
+      entryId: string; 
+      arrayIndex: number;  // 배열 인덱스 (0-based, 헤더 포함)
+      sheetRowNumber: number;  // 실제 시트 행 번호 (1-based)
+      accountId: string;
+      budgetPlanId: string;
+      description: string;
+    }> = [];
+    
+    const expectedAccountId = plan.accountId.toString().trim();
+    const expectedBudgetPlanId = budgetId.toString().trim();
     
     for (let i = 1; i < ledgerData.values.length; i++) {
       const row = ledgerData.values[i];
@@ -705,16 +721,17 @@ export const updateBudgetPlanDetails = async (
       const rowBudgetPlanId = (row[14] || '').toString().trim();
       const rowDescription = (row[4] || '').toString().trim();
       
-      const expectedAccountId = plan.accountId.toString().trim();
-      const expectedBudgetPlanId = budgetId.toString().trim();
-      
       // accountId와 budgetPlanId가 모두 정확히 일치하는지 확인
+      // budgetPlanId가 비어있지 않아야 함 (예산안으로 생성된 항목만)
       if (rowAccountId === expectedAccountId && 
           rowBudgetPlanId === expectedBudgetPlanId && 
           rowBudgetPlanId !== '') {
         budgetEntriesToDelete.push({
           entryId: rowEntryId,
-          rowIndex: i,
+          arrayIndex: i,  // 배열 인덱스 (0-based, 헤더 포함)
+          sheetRowNumber: i + 1,  // 실제 시트 행 번호 (1-based, 헤더 포함)
+          accountId: rowAccountId,
+          budgetPlanId: rowBudgetPlanId,
           description: rowDescription
         });
       }
@@ -728,7 +745,10 @@ export const updateBudgetPlanDetails = async (
       entriesToDelete: budgetEntriesToDelete.map(e => ({
         entryId: e.entryId,
         description: e.description,
-        rowIndex: e.rowIndex
+        arrayIndex: e.arrayIndex,
+        sheetRowNumber: e.sheetRowNumber,
+        accountId: e.accountId,
+        budgetPlanId: e.budgetPlanId
       }))
     });
     
@@ -739,18 +759,19 @@ export const updateBudgetPlanDetails = async (
       const ledgerSheetId = await getSheetId(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER);
       if (ledgerSheetId !== null) {
         // 역순으로 삭제하여 잔액 계산 오류 방지
-        // 역순으로 정렬하여 나중에 삭제할 행부터 먼저 삭제 (행 번호 변경 방지)
-        const sortedEntries = [...budgetEntriesToDelete].sort((a, b) => b.rowIndex - a.rowIndex);
+        // 시트 행 번호 기준으로 역순 정렬 (큰 행 번호부터 삭제하여 행 번호 변경 방지)
+        const sortedEntries = [...budgetEntriesToDelete].sort((a, b) => b.sheetRowNumber - a.sheetRowNumber);
         
         for (const entryToDelete of sortedEntries) {
-          // 삭제 전 매번 시트를 다시 읽어서 정확한 행 번호 확인
+          // 삭제 전 매번 시트를 다시 읽어서 entryId로 정확한 행 찾기
+          // 이렇게 하면 이전 삭제로 인한 행 번호 변경에도 안전함
           const currentLedgerData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER);
           if (!currentLedgerData || !currentLedgerData.values || currentLedgerData.values.length <= 1) {
             console.warn('⚠️ 시트 데이터를 읽을 수 없음:', { entryId: entryToDelete.entryId });
             continue;
           }
           
-          // entryId로 정확한 행 찾기
+          // entryId로 정확한 행 찾기 (accountingManager.ts의 deleteLedgerEntry와 동일한 방식)
           const currentRowIndex = currentLedgerData.values.findIndex((row: string[]) => 
             row && row.length > 0 && (row[0] || '').toString().trim() === entryToDelete.entryId
           );
@@ -762,30 +783,48 @@ export const updateBudgetPlanDetails = async (
             continue;
           }
           
-          // 현재 시트에서 해당 행의 데이터 확인
+          // 해당 행의 데이터 확인
           const row = currentLedgerData.values[currentRowIndex];
           if (!row || row.length === 0) {
-            console.warn('⚠️ 행 데이터가 없음:', { rowIndex: currentRowIndex, entryId: entryToDelete.entryId });
+            console.warn('⚠️ 행 데이터가 없음:', { 
+              arrayIndex: currentRowIndex, 
+              entryId: entryToDelete.entryId 
+            });
             continue;
           }
           
+          // 행 데이터 검증
           const rowEntryId = (row[0] || '').toString().trim();
           const rowAccountId = (row[1] || '').toString().trim();
           const rowBudgetPlanId = (row[14] || '').toString().trim();
           const rowDescription = (row[4] || '').toString().trim();
           
-          const expectedAccountId = plan.accountId.toString().trim();
-          const expectedBudgetPlanId = budgetId.toString().trim();
-          
           // 최종 검증: entryId, accountId, budgetPlanId가 모두 정확히 일치하는지 확인
+          // 이 검증을 통해 엉뚱한 항목이 삭제되는 것을 방지
           if (rowEntryId === entryToDelete.entryId &&
-              rowAccountId === expectedAccountId && 
-              rowBudgetPlanId === expectedBudgetPlanId && 
+              rowAccountId === entryToDelete.accountId && 
+              rowBudgetPlanId === entryToDelete.budgetPlanId && 
+              rowAccountId === expectedAccountId &&
+              rowBudgetPlanId === expectedBudgetPlanId &&
               rowBudgetPlanId !== '') {
+            
             // 실제 시트 행 번호 계산 (1-based, 헤더 포함)
             // currentLedgerData.values[0] = 헤더 (시트 1행)
             // currentLedgerData.values[currentRowIndex] = 찾은 행 (시트 currentRowIndex + 1행)
             const actualSheetRowNumber = currentRowIndex + 1;
+            
+            // 삭제 전 시트 상태 로깅 (디버깅용)
+            console.log('🔍 삭제 전 시트 상태 확인:', {
+              totalRows: currentLedgerData.values.length,
+              targetRowNumber: actualSheetRowNumber,
+              targetRowData: row,
+              allRows: currentLedgerData.values.map((r, idx) => ({
+                rowNumber: idx + 1,
+                entryId: r[0] || '',
+                description: r[4] || '',
+                budgetPlanId: r[14] || ''
+              }))
+            });
             
             console.log('✅ 삭제 확인 완료, 삭제 실행:', {
               entryId: rowEntryId,
@@ -793,30 +832,97 @@ export const updateBudgetPlanDetails = async (
               accountId: rowAccountId,
               description: rowDescription,
               arrayIndex: currentRowIndex,
-              sheetRowNumber: actualSheetRowNumber
+              sheetRowNumber: actualSheetRowNumber,
+              expected: {
+                entryId: entryToDelete.entryId,
+                accountId: expectedAccountId,
+                budgetPlanId: expectedBudgetPlanId
+              }
             });
             
-            // deleteRow 사용 (papyrus-db)
-            await deleteRow(spreadsheetId, ledgerSheetId, actualSheetRowNumber);
-            
-            console.log('🗑️ 집행된 장부 항목 삭제 완료:', rowEntryId);
+            // deleteRow 사용
+            // papyrus-db의 deleteRow는 0-based 인덱스를 기대합니다
+            // 시트 행 1 (헤더) = API 인덱스 0
+            // 시트 행 2 (첫 데이터) = API 인덱스 1
+            // 따라서 actualSheetRowNumber - 1을 전달해야 합니다
+            try {
+              // 0-based 인덱스로 변환 (시트 행 번호 - 1)
+              const apiRowIndex = actualSheetRowNumber - 1;
+              
+              console.log('🔧 deleteRow 호출 파라미터:', {
+                spreadsheetId,
+                ledgerSheetId,
+                actualSheetRowNumber,  // 1-based 시트 행 번호
+                apiRowIndex,  // 0-based API 인덱스
+                entryId: rowEntryId
+              });
+              
+              const { deleteRow } = await import('papyrus-db');
+              await deleteRow(spreadsheetId, ledgerSheetId, apiRowIndex);
+              
+              // 삭제 후 시트 상태 확인 (디버깅용)
+              const afterDeleteData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER);
+              const deletedRowStillExists = afterDeleteData?.values?.some((r: string[]) => 
+                (r[0] || '').toString().trim() === rowEntryId
+              );
+              
+              console.log('🗑️ 집행된 장부 항목 삭제 완료:', {
+                entryId: rowEntryId,
+                sheetRowNumber: actualSheetRowNumber,
+                deletedRowStillExists: deletedRowStillExists,
+                afterDeleteTotalRows: afterDeleteData?.values?.length || 0,
+                afterDeleteRows: afterDeleteData?.values?.map((r, idx) => ({
+                  rowNumber: idx + 1,
+                  entryId: r[0] || '',
+                  description: r[4] || '',
+                  budgetPlanId: r[14] || ''
+                }))
+              });
+              
+              if (deletedRowStillExists) {
+                console.error('❌ 삭제 실패: 항목이 여전히 시트에 존재합니다!', {
+                  entryId: rowEntryId,
+                  sheetRowNumber: actualSheetRowNumber
+                });
+              }
+            } catch (deleteError: unknown) {
+              const err = deleteError as { message?: string; code?: number; status?: number };
+              console.error('❌ deleteRow 실행 오류:', {
+                entryId: rowEntryId,
+                sheetRowNumber: actualSheetRowNumber,
+                error: err.message || deleteError,
+                code: err.code,
+                status: err.status
+              });
+              throw deleteError;
+            }
           } else {
             console.error('❌ 삭제 직전 검증 실패 - 삭제하지 않음:', {
               entryId: rowEntryId,
               expectedEntryId: entryToDelete.entryId,
               description: rowDescription,
+              arrayIndex: currentRowIndex,
               expected: {
+                entryId: entryToDelete.entryId,
                 accountId: expectedAccountId,
                 budgetPlanId: expectedBudgetPlanId
               },
               actual: {
+                entryId: rowEntryId,
                 accountId: rowAccountId,
                 budgetPlanId: rowBudgetPlanId
               },
+              stored: {
+                entryId: entryToDelete.entryId,
+                accountId: entryToDelete.accountId,
+                budgetPlanId: entryToDelete.budgetPlanId
+              },
               matches: {
                 entryId: rowEntryId === entryToDelete.entryId,
-                accountId: rowAccountId === expectedAccountId,
-                budgetPlanId: rowBudgetPlanId === expectedBudgetPlanId
+                accountId: rowAccountId === entryToDelete.accountId,
+                budgetPlanId: rowBudgetPlanId === entryToDelete.budgetPlanId,
+                accountIdExpected: rowAccountId === expectedAccountId,
+                budgetPlanIdExpected: rowBudgetPlanId === expectedBudgetPlanId
               }
             });
           }
@@ -860,10 +966,13 @@ export const updateBudgetPlanDetails = async (
     }
 
     // 상세 항목 수정 시 상태를 'pending'으로 되돌리고 모든 승인/검토 정보 초기화
-    // total_amount (D열), details (O열), status (G열), sub_manager_reviewed (H열), 
+    // total_amount (D열), modification_date (E열), details (O열), status (G열), sub_manager_reviewed (H열), 
     // sub_manager_review_date (I열), main_manager_approved (J열), 
     // main_manager_approval_date (K열), executed_date (L열), rejection_reason (N열), 
     // sub_manager_reviews (P열) 업데이트
+    
+    // 수정일 업데이트 (E열)
+    await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `E${actualRowNumber}`, [[modificationDate]]);
     await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `D${actualRowNumber}`, [[totalAmount]]);
     await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `G${actualRowNumber}`, [['pending']]);
     await update(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN, `H${actualRowNumber}`, [['FALSE']]);

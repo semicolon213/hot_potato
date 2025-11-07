@@ -69,14 +69,14 @@ export interface BudgetPlan {
   accountId: string;               // 통장 ID
   title: string;                    // 예산 계획 제목
   totalAmount: number;             // 총 예산액
-  requestedDate: string;           // 신청일
+  modificationDate: string;         // 수정일 (분까지 표기)
   status: 'pending' | 'reviewed' | 'approved' | 'executed' | 'rejected'; // 상태
   subManagerReviewed: boolean;    // 부관리인 검토 여부 (하위 호환성)
   subManagerReviewDate?: string;   // 부관리인 검토일 (하위 호환성)
   subManagerReviews: Array<{ email: string; date: string }>; // 서브 관리자별 검토 목록
   mainManagerApproved: boolean;    // 주관리인 승인 여부
   mainManagerApprovalDate?: string; // 주관리인 승인일
-  executedDate?: string;           // 집행일
+  executedDate?: string;           // 집행일 (분까지 표기)
   createdBy: string;               // 작성자 ID
   rejectionReason?: string;        // 거부 사유
   details: BudgetPlanDetail[];     // 예산 계획 상세

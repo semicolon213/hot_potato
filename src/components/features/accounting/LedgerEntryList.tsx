@@ -36,10 +36,16 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
     amount: 0,
     source: ''
   });
+  const [newEntryEvidenceFile, setNewEntryEvidenceFile] = useState<File | null>(null);
+  const [editingEntryEvidenceFile, setEditingEntryEvidenceFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(accountId || '');
   const [currentPage, setCurrentPage] = useState<{ [monthKey: string]: number }>({});
+  const [selectedMonthTab, setSelectedMonthTab] = useState<string | null>(null);
+  const [showAddMonthModal, setShowAddMonthModal] = useState(false);
+  const [newMonthInput, setNewMonthInput] = useState({ year: '', month: '' });
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   
   // loadEntries를 useCallback으로 먼저 정의
   const loadEntries = useCallback(async (accountId?: string) => {
@@ -194,7 +200,8 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
         description: newEntry.description!,
         amount: newEntry.amount!,
         source: newEntry.source!,
-        transactionType: newEntry.transactionType || 'expense'
+        transactionType: newEntry.transactionType || 'expense',
+        evidenceFile: newEntryEvidenceFile || undefined
       };
 
       await createLedgerEntry(
@@ -212,6 +219,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
         amount: 0,
         source: ''
       });
+      setNewEntryEvidenceFile(null);
       await loadEntries();
       await loadData();
     } catch (err: any) {
@@ -238,6 +246,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   const handleCancelEdit = () => {
     setEditingEntryId(null);
     setEditingEntry(null);
+    setEditingEntryEvidenceFile(null);
   };
 
   const handleSaveEdit = async () => {
@@ -266,7 +275,8 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
         description: editingEntry.description,
         amount: editingEntry.amount,
         source: editingEntry.source,
-        transactionType: editingEntry.transactionType || 'expense'
+        transactionType: editingEntry.transactionType || 'expense',
+        evidenceFile: editingEntryEvidenceFile || undefined
       };
 
       await updateLedgerEntry(spreadsheetId, editingEntryId, updateData);
@@ -319,7 +329,8 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
 
   const formatAmountForInput = (value: number): string => {
     if (!value) return '';
-    return value.toLocaleString('ko-KR');
+    // 입력 필드에는 절댓값만 표시 (수입/지출은 transactionType으로 구분)
+    return Math.abs(value).toLocaleString('ko-KR');
   };
 
   const formatDate = (dateString: string) => {
@@ -350,9 +361,37 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   // 월별로 정렬 (최신순)
   const sortedMonths = Object.keys(groupedByMonth).sort((a, b) => b.localeCompare(a));
 
-  const categoryNames = categories.map(cat => cat.categoryName);
+  // 선택된 탭이 없으면 첫 번째 월을 자동 선택
+  useEffect(() => {
+    if (sortedMonths.length > 0 && !selectedMonthTab) {
+      setSelectedMonthTab(sortedMonths[0]);
+    }
+  }, [sortedMonths, selectedMonthTab]);
 
-  const ITEMS_PER_PAGE = 10;
+  // 새 월 탭 추가 핸들러
+  const handleAddMonthTab = () => {
+    setShowAddMonthModal(true);
+  };
+
+  const handleConfirmAddMonth = () => {
+    if (newMonthInput.year && newMonthInput.month) {
+      const monthKey = `${newMonthInput.year}-${String(newMonthInput.month).padStart(2, '0')}`;
+      if (!sortedMonths.includes(monthKey)) {
+        setSelectedMonthTab(monthKey);
+      } else {
+        setSelectedMonthTab(monthKey);
+      }
+      setNewMonthInput({ year: '', month: '' });
+      setShowAddMonthModal(false);
+    }
+  };
+
+  const handleCancelAddMonth = () => {
+    setNewMonthInput({ year: '', month: '' });
+    setShowAddMonthModal(false);
+  };
+
+  const categoryNames = categories.map(cat => cat.categoryName);
 
   return (
     <div className="ledger-entry-list">
@@ -397,24 +436,67 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
         </div>
       ) : (
         <div className="ledger-entry-list-content">
-          {(sortedMonths.length > 0 ? sortedMonths : ['new']).map(monthKey => {
-            const monthEntries = groupedByMonth[monthKey] || [];
-            const totalPages = Math.ceil(monthEntries.length / ITEMS_PER_PAGE) || 1;
-            const page = currentPage[monthKey] || 1;
-            const startIndex = (page - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
+          {/* 월별 탭 */}
+          <div className="month-tabs">
+            {sortedMonths.map(monthKey => {
+              const monthEntries = groupedByMonth[monthKey] || [];
+              const isActive = selectedMonthTab === monthKey;
+              return (
+                <button
+                  key={monthKey}
+                  className={`month-tab ${isActive ? 'active' : ''}`}
+                  onClick={() => setSelectedMonthTab(monthKey)}
+                >
+                  {formatMonthLabel(monthKey)} ({monthEntries.length})
+                </button>
+              );
+            })}
+            <button
+              className="month-tab add-tab"
+              onClick={handleAddMonthTab}
+              title="새 월 탭 추가"
+            >
+              +
+            </button>
+          </div>
+
+          {/* 페이지당 항목 수 선택 */}
+          <div className="items-per-page-selector">
+            <label htmlFor="items-per-page">페이지당 항목 수: </label>
+            <select
+              id="items-per-page"
+              value={itemsPerPage}
+              onChange={(e) => {
+                const newValue = parseInt(e.target.value, 10);
+                setItemsPerPage(newValue);
+                // 페이지당 항목 수 변경 시 첫 페이지로 리셋
+                setCurrentPage({});
+              }}
+              className="items-per-page-select"
+            >
+              <option value="5">5개</option>
+              <option value="10">10개</option>
+              <option value="20">20개</option>
+              <option value="30">30개</option>
+              <option value="50">50개</option>
+              <option value="100">100개</option>
+            </select>
+          </div>
+
+          {/* 선택된 월의 데이터 표시 */}
+          {selectedMonthTab && (() => {
+            const monthEntries = groupedByMonth[selectedMonthTab] || [];
+            const totalPages = Math.ceil(monthEntries.length / itemsPerPage) || 1;
+            const page = currentPage[selectedMonthTab] || 1;
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
             const paginatedEntries = monthEntries.slice(startIndex, endIndex);
 
-            // 새 항목 추가 행이 첫 번째 섹션에만 표시되어야 함
-            const shouldShowAddRow = isAddingNew && monthKey === (sortedMonths[0] || 'new') && page === 1;
+            // 새 항목 추가 행 표시
+            const shouldShowAddRow = isAddingNew && page === 1;
 
             return (
-              <div key={monthKey} className="month-section">
-                {monthKey !== 'new' && (
-                  <div className="month-header">
-                    <h3>{formatMonthLabel(monthKey)} ({monthEntries.length}건)</h3>
-                  </div>
-                )}
+              <div key={selectedMonthTab} className="month-section">
                 <div className="ledger-entry-table-wrapper">
                   <table className="ledger-entry-table">
                     <thead>
@@ -426,6 +508,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                         <th className="col-description">내용</th>
                         <th className="col-amount">금액</th>
                         <th className="col-source">출처</th>
+                        <th className="col-evidence">증빙</th>
                         <th className="col-balance">잔액</th>
                         <th className="col-action">작업</th>
                       </tr>
@@ -504,6 +587,21 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                               required
                             />
                           </td>
+                          <td className="cell-evidence">
+                            <input
+                              type="file"
+                              onChange={(e) => setNewEntryEvidenceFile(e.target.files?.[0] || null)}
+                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                              className="table-input-file"
+                            />
+                            {newEntryEvidenceFile && (
+                              <span className="file-name" title={newEntryEvidenceFile.name}>
+                                {newEntryEvidenceFile.name.length > 15 
+                                  ? newEntryEvidenceFile.name.substring(0, 15) + '...' 
+                                  : newEntryEvidenceFile.name}
+                              </span>
+                            )}
+                          </td>
                           <td className="cell-balance">-</td>
                           <td className="cell-action">
                             <div className="entry-actions">
@@ -526,7 +624,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                         </tr>
                       )}
                       {/* 기존 항목 행들 */}
-                      {monthKey !== 'new' && paginatedEntries.map(entry => {
+                      {paginatedEntries.map(entry => {
                         const isEditing = editingEntryId === entry.entryId;
                         const entryData = isEditing ? editingEntry : entry;
                         
@@ -629,6 +727,48 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                                 entry.source
                               )}
                             </td>
+                            <td className="cell-evidence">
+                              {isEditing ? (
+                                <>
+                                  <input
+                                    type="file"
+                                    onChange={(e) => setEditingEntryEvidenceFile(e.target.files?.[0] || null)}
+                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                    className="table-input-file"
+                                  />
+                                  {editingEntryEvidenceFile && (
+                                    <span className="file-name" title={editingEntryEvidenceFile.name}>
+                                      {editingEntryEvidenceFile.name.length > 15 
+                                        ? editingEntryEvidenceFile.name.substring(0, 15) + '...' 
+                                        : editingEntryEvidenceFile.name}
+                                    </span>
+                                  )}
+                                  {!editingEntryEvidenceFile && entry.evidenceFileName && (
+                                    <span className="existing-file" title={entry.evidenceFileName}>
+                                      기존: {entry.evidenceFileName.length > 10 
+                                        ? entry.evidenceFileName.substring(0, 10) + '...' 
+                                        : entry.evidenceFileName}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                entry.evidenceFileName ? (
+                                  <a
+                                    href={`https://drive.google.com/file/d/${entry.evidenceFileId}/view`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="evidence-link"
+                                    title={entry.evidenceFileName}
+                                  >
+                                    📎 {entry.evidenceFileName.length > 15 
+                                      ? entry.evidenceFileName.substring(0, 15) + '...' 
+                                      : entry.evidenceFileName}
+                                  </a>
+                                ) : (
+                                  <span className="no-evidence">-</span>
+                                )
+                              )}
+                            </td>
                             <td className="cell-balance">
                               {isEditing ? '-' : `${entry.balanceAfter.toLocaleString()}원`}
                             </td>
@@ -679,17 +819,24 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                     </tbody>
                   </table>
                 </div>
+                {monthEntries.length > 0 && (
+                  <div className="pagination-info">
+                    <span className="pagination-text">
+                      전체 {monthEntries.length}개 중 {startIndex + 1} - {Math.min(endIndex, monthEntries.length)}개 표시
+                    </span>
+                  </div>
+                )}
                 {totalPages > 1 && (
                   <div className="pagination">
                     <button
-                      onClick={() => setCurrentPage(prev => ({ ...prev, [monthKey]: Math.max(1, page - 1) }))}
+                      onClick={() => setCurrentPage(prev => ({ ...prev, [selectedMonthTab]: Math.max(1, page - 1) }))}
                       disabled={page === 1}
                     >
                       이전
                     </button>
                     <span>{page} / {totalPages}</span>
                     <button
-                      onClick={() => setCurrentPage(prev => ({ ...prev, [monthKey]: Math.min(totalPages, page + 1) }))}
+                      onClick={() => setCurrentPage(prev => ({ ...prev, [selectedMonthTab]: Math.min(totalPages, page + 1) }))}
                       disabled={page === totalPages}
                     >
                       다음
@@ -698,10 +845,53 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                 )}
               </div>
             );
-          })}
+          })()}
+          {!selectedMonthTab && sortedMonths.length === 0 && (
+            <div className="empty-message">
+              장부 항목이 없습니다. + 버튼을 눌러 월 탭을 추가하세요.
+            </div>
+          )}
         </div>
       )}
 
+      {/* 새 월 탭 추가 모달 */}
+      {showAddMonthModal && (
+        <div className="modal-overlay" onClick={handleCancelAddMonth}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>새 월 탭 추가</h3>
+            <div className="form-group">
+              <label>년도</label>
+              <input
+                type="number"
+                value={newMonthInput.year}
+                onChange={(e) => setNewMonthInput({ ...newMonthInput, year: e.target.value })}
+                placeholder="예: 2025"
+                min="2000"
+                max="2100"
+              />
+            </div>
+            <div className="form-group">
+              <label>월</label>
+              <input
+                type="number"
+                value={newMonthInput.month}
+                onChange={(e) => setNewMonthInput({ ...newMonthInput, month: e.target.value })}
+                placeholder="예: 11"
+                min="1"
+                max="12"
+              />
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleConfirmAddMonth} className="btn-primary">
+                추가
+              </button>
+              <button onClick={handleCancelAddMonth} className="btn-secondary">
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

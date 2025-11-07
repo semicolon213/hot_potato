@@ -203,7 +203,13 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
           <div>
             <h2>{budgetPlan.title}</h2>
             <p className="budget-plan-meta">
-              집행일: {budgetPlan.executedDate ? new Date(budgetPlan.executedDate).toLocaleDateString('ko-KR') : '미정'}
+              집행일: {budgetPlan.executedDate ? new Date(budgetPlan.executedDate).toLocaleString('ko-KR', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              }) : '미정'}
             </p>
           </div>
           <button onClick={onClose} className="close-btn">×</button>

@@ -107,7 +107,7 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       const isSubManagerForSort = currentAccountForSort ? currentAccountForSort.subManagerIds.includes(userIdentifier) : false;
       const isMainManagerForSort = currentAccountForSort ? currentAccountForSort.mainManagerId === userIdentifier : false;
 
-      // 정렬: 내가 처리해야 할 것 > 내가 집행해야 할 것 > 반려 > 요청일 오름차순 > 집행일 오름차순
+      // 정렬: 내가 처리해야 할 것 > 내가 집행해야 할 것 > 반려 > 수정일 오름차순 > 집행일 오름차순
       filteredPlans.sort((a, b) => {
         // 1순위: 검토/결재 필요한 항목 (내가 처리해야 할 경우)
         // - pending 상태이고 서브 관리자이면서 아직 검토하지 않은 것
@@ -124,24 +124,24 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
         if (aNeedsMyAction && !bNeedsMyAction) return -1;
         if (!aNeedsMyAction && bNeedsMyAction) return 1;
         if (aNeedsMyAction && bNeedsMyAction) {
-          // 둘 다 처리 필요하면 요청일 오름차순
-          return new Date(a.requestedDate).getTime() - new Date(b.requestedDate).getTime();
+          // 둘 다 처리 필요하면 수정일 오름차순
+          return new Date(a.modificationDate).getTime() - new Date(b.modificationDate).getTime();
         }
         
         // 2순위: 내가 집행해야 할 항목 (approved 상태)
         if (a.status === 'approved' && b.status !== 'approved') return -1;
         if (a.status !== 'approved' && b.status === 'approved') return 1;
         if (a.status === 'approved' && b.status === 'approved') {
-          // 둘 다 승인 상태면 요청일 오름차순
-          return new Date(a.requestedDate).getTime() - new Date(b.requestedDate).getTime();
+          // 둘 다 승인 상태면 수정일 오름차순
+          return new Date(a.modificationDate).getTime() - new Date(b.modificationDate).getTime();
         }
         
         // 3순위: 반려된 항목
         if (a.status === 'rejected' && b.status !== 'rejected') return -1;
         if (a.status !== 'rejected' && b.status === 'rejected') return 1;
         if (a.status === 'rejected' && b.status === 'rejected') {
-          // 반려된 항목은 요청일 오름차순
-          return new Date(a.requestedDate).getTime() - new Date(b.requestedDate).getTime();
+          // 반려된 항목은 수정일 오름차순
+          return new Date(a.modificationDate).getTime() - new Date(b.modificationDate).getTime();
         }
         
         // 4순위: 아직 진행중인 예산안 (검토중이거나 승인대기, 집행대기)
@@ -161,13 +161,13 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
         if (aActuallyInProgress && !bActuallyInProgress) return -1;
         if (!aActuallyInProgress && bActuallyInProgress) return 1;
         if (aActuallyInProgress && bActuallyInProgress) {
-          // 둘 다 진행중이면 요청일 오름차순
-          return new Date(a.requestedDate).getTime() - new Date(b.requestedDate).getTime();
+          // 둘 다 진행중이면 수정일 오름차순
+          return new Date(a.modificationDate).getTime() - new Date(b.modificationDate).getTime();
         }
         
-        // 5순위: 요청일 오름차순 (과거부터)
-        const dateA = new Date(a.requestedDate).getTime();
-        const dateB = new Date(b.requestedDate).getTime();
+        // 5순위: 수정일 오름차순 (과거부터)
+        const dateA = new Date(a.modificationDate).getTime();
+        const dateB = new Date(b.modificationDate).getTime();
         if (dateA !== dateB) return dateA - dateB;
         
         // 6순위: 집행일 오름차순 (과거부터, 집행일이 있는 경우)
@@ -490,7 +490,7 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                 <th>제목</th>
                 <th>금액</th>
                 <th>상태</th>
-                <th>신청일</th>
+                <th>수정일</th>
                 <th>집행일</th>
                 <th>작업</th>
               </tr>
@@ -525,8 +525,20 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                       {getStatusLabel(plan.status)}
                     </span>
                   </td>
-                  <td>{new Date(plan.requestedDate).toLocaleDateString('ko-KR')}</td>
-                  <td>{plan.executedDate ? new Date(plan.executedDate).toLocaleDateString('ko-KR') : '-'}</td>
+                  <td>{new Date(plan.modificationDate).toLocaleString('ko-KR', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}</td>
+                  <td>{plan.executedDate ? new Date(plan.executedDate).toLocaleString('ko-KR', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  }) : '-'}</td>
                   <td>
                     <div className="budget-plan-actions">
                       <button
