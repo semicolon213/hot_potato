@@ -10,7 +10,7 @@ import React, { useState, useRef } from 'react';
 import type { LedgerEntry } from '../../../types/features/accounting';
 import { useTemplateUI } from '../../../hooks/features/templates/useTemplateUI';
 import type { Template } from '../../../hooks/features/templates/useTemplateUI';
-import { initializeGoogleAPIOnce } from '../../../utils/google/googleSheetUtils';
+import { initializeGoogleAPIOnce, findPersonalDocumentFolder } from '../../../utils/google/googleSheetUtils';
 import './accounting.css';
 
 interface LedgerExportModalProps {
@@ -91,6 +91,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     dateFormat: 'YYYY-MM-DD'
   });
   const [exportMode, setExportMode] = useState<'all' | 'monthly'>('all');
+  const [includePreviousMonthBalance, setIncludePreviousMonthBalance] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [evidenceInfo, setEvidenceInfo] = useState<Array<{ entryId: string; description: string; fileName: string; fileId: string }>>([]);
@@ -522,7 +523,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     dateOptions: DateOptions,
     amountOptions: AmountOptions,
     periodOptions?: PeriodOptions,
-    exportMode?: 'all' | 'monthly'
+    exportMode?: 'all' | 'monthly',
+    includePreviousMonthBalance?: boolean
   ) => {
     await initializeGoogleAPIOnce();
     const gapi = (window as any).gapi;
@@ -634,41 +636,113 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       }
     }
 
+    // 전월 이월금 항목 추가 (첫 번째 항목으로)
+    let actualEntries = entriesToWrite;
+    
+    if (includePreviousMonthBalance && entriesToWrite.length > 0) {
+      const firstEntry = entriesToWrite[0];
+      const previousMonthBalance = firstEntry.balanceAfter - firstEntry.amount;
+      
+      // 해당 월의 첫날 계산 (로컬 시간대 기준)
+      const firstEntryDate = new Date(firstEntry.date);
+      const firstDayOfMonth = new Date(firstEntryDate.getFullYear(), firstEntryDate.getMonth(), 1);
+      // 로컬 시간대 기준으로 날짜 문자열 생성 (toISOString()은 UTC로 변환되므로 사용하지 않음)
+      const year = firstDayOfMonth.getFullYear();
+      const month = String(firstDayOfMonth.getMonth() + 1).padStart(2, '0');
+      const day = String(firstDayOfMonth.getDate()).padStart(2, '0');
+      const firstDayOfMonthStr = `${year}-${month}-${day}`;
+      
+      // 전월 이월금 항목 생성
+      const previousMonthEntry: LedgerEntry = {
+        entryId: 'previous_month_balance',
+        accountId: firstEntry.accountId,
+        date: firstDayOfMonthStr, // 해당 월의 첫날 사용
+        category: '',
+        description: '전월 이월금',
+        amount: previousMonthBalance, // 수입으로 처리
+        balanceAfter: firstEntry.balanceAfter,
+        source: '',
+        transactionType: 'income',
+        evidenceFileId: undefined,
+        evidenceFileName: undefined,
+        createdBy: '',
+        createdDate: '',
+        isBudgetExecuted: false
+      };
+      
+      actualEntries = [previousMonthEntry, ...entriesToWrite];
+    }
+
+    // 고급 옵션: 날짜 월/일 분리 - 월은 선택한 범위 전체에 작성
+    if (dateOptions.separateMonthDay && dateOptions.monthCell && actualEntries.length > 0) {
+      const firstEntryDate = new Date(actualEntries[0].date);
+      const month = firstEntryDate.getMonth() + 1;
+      const monthRange = parseCellRange(dateOptions.monthCell);
+      
+      // 선택한 범위의 모든 셀에 월 값 작성
+      for (let row = monthRange.startRow; row <= monthRange.endRow; row++) {
+        for (let col = monthRange.startCol; col <= monthRange.endCol; col++) {
+          const cellAddr = getCellAddress(row, col);
+          data.push({
+            range: `${sheetName}!${cellAddr}`,
+            values: [[month]]
+          });
+        }
+      }
+    }
+
     // 각 항목을 Google Sheets에 작성
-    entriesToWrite.forEach((entry, index) => {
+    actualEntries.forEach((entry, index) => {
+      // 고급 옵션: 날짜 일 분리 (일은 각 항목마다 작성)
+      if (dateOptions.separateMonthDay && dateOptions.dayCell) {
+        const date = new Date(entry.date);
+        const day = date.getDate();
+        
+        const dayRange = parseCellRange(dateOptions.dayCell);
+        const dayRow = dayRange.startRow + index;
+        const dayCellAddr = getCellAddress(dayRow, dayRange.startCol);
+        data.push({
+          range: `${sheetName}!${dayCellAddr}`,
+          values: [[day]]
+        });
+      }
+
+      // 고급 옵션: 금액 수입/지출 분리 (필드 매핑 체크 여부와 무관하게 처리)
+      if (amountOptions.separateIncomeExpense && (amountOptions.incomeCell || amountOptions.expenseCell)) {
+        if (amountOptions.incomeCell) {
+          const incomeRange = parseCellRange(amountOptions.incomeCell);
+          const incomeRow = incomeRange.startRow + index;
+          const incomeCellAddr = getCellAddress(incomeRow, incomeRange.startCol);
+          const incomeValue = entry.transactionType === 'income' ? Math.abs(entry.amount) : '';
+          data.push({
+            range: `${sheetName}!${incomeCellAddr}`,
+            values: [[incomeValue]]
+          });
+        }
+        if (amountOptions.expenseCell) {
+          const expenseRange = parseCellRange(amountOptions.expenseCell);
+          const expenseRow = expenseRange.startRow + index;
+          const expenseCellAddr = getCellAddress(expenseRow, expenseRange.startCol);
+          const expenseValue = entry.transactionType === 'expense' ? Math.abs(entry.amount) : '';
+          data.push({
+            range: `${sheetName}!${expenseCellAddr}`,
+            values: [[expenseValue]]
+          });
+        }
+      }
+
+      // 일반 필드 매핑 처리
       enabledMappings.forEach(mapping => {
         const range = parseCellRange(mapping.cellRange);
         const targetRow = range.startRow + index;
         const targetCol = range.startCol;
 
-        let value: string | number = '';
+        let value: string | number | null = null;
 
         switch (mapping.field) {
           case 'date':
-            if (dateOptions.separateMonthDay) {
-              const date = new Date(entry.date);
-              const month = date.getMonth() + 1;
-              const day = date.getDate();
-              
-              if (dateOptions.monthCell) {
-                const monthRange = parseCellRange(dateOptions.monthCell);
-                const monthRow = monthRange.startRow + index;
-                const monthCellAddr = getCellAddress(monthRow, monthRange.startCol);
-                data.push({
-                  range: `${sheetName}!${monthCellAddr}`,
-                  values: [[month]]
-                });
-              }
-              
-              if (dateOptions.dayCell) {
-                const dayRange = parseCellRange(dateOptions.dayCell);
-                const dayRow = dayRange.startRow + index;
-                const dayCellAddr = getCellAddress(dayRow, dayRange.startCol);
-                data.push({
-                  range: `${sheetName}!${dayCellAddr}`,
-                  values: [[day]]
-                });
-              }
+            // 고급 옵션이 활성화되어 있으면 이미 처리했으므로 건너뜀
+            if (dateOptions.separateMonthDay && (dateOptions.monthCell || dateOptions.dayCell)) {
               return;
             } else {
               const date = new Date(entry.date);
@@ -685,27 +759,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             break;
 
           case 'amount':
-            if (amountOptions.separateIncomeExpense) {
-              if (amountOptions.incomeCell) {
-                const incomeRange = parseCellRange(amountOptions.incomeCell);
-                const incomeRow = incomeRange.startRow + index;
-                const incomeCellAddr = getCellAddress(incomeRow, incomeRange.startCol);
-                const incomeValue = entry.transactionType === 'income' ? Math.abs(entry.amount) : '';
-                data.push({
-                  range: `${sheetName}!${incomeCellAddr}`,
-                  values: [[incomeValue]]
-                });
-              }
-              if (amountOptions.expenseCell) {
-                const expenseRange = parseCellRange(amountOptions.expenseCell);
-                const expenseRow = expenseRange.startRow + index;
-                const expenseCellAddr = getCellAddress(expenseRow, expenseRange.startCol);
-                const expenseValue = entry.transactionType === 'expense' ? Math.abs(entry.amount) : '';
-                data.push({
-                  range: `${sheetName}!${expenseCellAddr}`,
-                  values: [[expenseValue]]
-                });
-              }
+            // 고급 옵션이 활성화되어 있으면 이미 처리했으므로 건너뜀
+            if (amountOptions.separateIncomeExpense && (amountOptions.incomeCell || amountOptions.expenseCell)) {
               return;
             } else {
               value = entry.amount;
@@ -730,7 +785,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             break;
         }
 
-        if (value !== '') {
+        // value가 설정된 경우에만 셀에 작성
+        // null이 아닌 경우에만 작성 (빈 문자열도 작성)
+        if (value !== null && value !== undefined) {
           const cellAddr = getCellAddress(targetRow, targetCol);
           data.push({
             range: `${sheetName}!${cellAddr}`,
@@ -740,8 +797,89 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       });
     });
 
+    // 범위 내 남는 셀을 빈칸으로 채우기
+    const totalEntries = actualEntries.length;
+
+    // 고급 옵션: 날짜 일 분리 - 남는 범위 빈칸 처리
+    if (dateOptions.separateMonthDay && dateOptions.dayCell) {
+      const dayRange = parseCellRange(dateOptions.dayCell);
+      const rangeEndRow = dayRange.endRow;
+      const lastDataRow = dayRange.startRow + totalEntries - 1;
+      
+      if (rangeEndRow > lastDataRow) {
+        // 남는 행들을 빈칸으로 채움
+        for (let row = lastDataRow + 1; row <= rangeEndRow; row++) {
+          const cellAddr = getCellAddress(row, dayRange.startCol);
+          data.push({
+            range: `${sheetName}!${cellAddr}`,
+            values: [['']]
+          });
+        }
+      }
+    }
+
+    // 고급 옵션: 금액 수입/지출 분리 - 남는 범위 빈칸 처리
+    if (amountOptions.separateIncomeExpense) {
+      if (amountOptions.incomeCell) {
+        const incomeRange = parseCellRange(amountOptions.incomeCell);
+        const rangeEndRow = incomeRange.endRow;
+        const lastDataRow = incomeRange.startRow + totalEntries - 1;
+        
+        if (rangeEndRow > lastDataRow) {
+          for (let row = lastDataRow + 1; row <= rangeEndRow; row++) {
+            const cellAddr = getCellAddress(row, incomeRange.startCol);
+            data.push({
+              range: `${sheetName}!${cellAddr}`,
+              values: [['']]
+            });
+          }
+        }
+      }
+      
+      if (amountOptions.expenseCell) {
+        const expenseRange = parseCellRange(amountOptions.expenseCell);
+        const rangeEndRow = expenseRange.endRow;
+        const lastDataRow = expenseRange.startRow + totalEntries - 1;
+        
+        if (rangeEndRow > lastDataRow) {
+          for (let row = lastDataRow + 1; row <= rangeEndRow; row++) {
+            const cellAddr = getCellAddress(row, expenseRange.startCol);
+            data.push({
+              range: `${sheetName}!${cellAddr}`,
+              values: [['']]
+            });
+          }
+        }
+      }
+    }
+
+    // 일반 필드 매핑 - 남는 범위 빈칸 처리
+    enabledMappings.forEach(mapping => {
+      const range = parseCellRange(mapping.cellRange);
+      const rangeEndRow = range.endRow;
+      const lastDataRow = range.startRow + totalEntries - 1;
+      
+      if (rangeEndRow > lastDataRow) {
+        // 남는 행들을 빈칸으로 채움
+        for (let row = lastDataRow + 1; row <= rangeEndRow; row++) {
+          const cellAddr = getCellAddress(row, range.startCol);
+          data.push({
+            range: `${sheetName}!${cellAddr}`,
+            values: [['']]
+          });
+        }
+      }
+    });
+
     // 배치 업데이트 실행
     if (data.length > 0) {
+      console.log('📊 장부 내보내기 데이터:', {
+        총항목수: entriesToWrite.length,
+        활성화된매핑: enabledMappings.map(m => m.field),
+        작성할데이터수: data.length,
+        데이터범위: data.map(d => d.range)
+      });
+      
       await (gapi.client as any).sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: spreadsheetId,
         resource: {
@@ -749,6 +887,10 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
           data: data
         }
       });
+      
+      console.log('✅ 장부 내보내기 완료');
+    } else {
+      console.warn('⚠️ 작성할 데이터가 없습니다.');
     }
   };
 
@@ -787,7 +929,15 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         throw new Error('Google 인증 토큰이 없습니다. 다시 로그인해주세요.');
       }
 
-      // 템플릿 복사
+      // 개인 문서 폴더 찾기
+      const personalDocumentFolderId = await findPersonalDocumentFolder();
+      if (!personalDocumentFolderId) {
+        throw new Error('개인 문서 폴더를 찾을 수 없습니다. 폴더가 생성되어 있는지 확인해주세요.');
+      }
+
+      console.log('📁 개인 문서 폴더 찾음:', personalDocumentFolderId);
+
+      // 템플릿 복사 (개인 문서 폴더에 생성)
       const copyResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files/${templateSpreadsheetId}/copy`,
         {
@@ -797,7 +947,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            name: `장부_내보내기_${new Date().toISOString().split('T')[0]}`
+            name: `장부_내보내기_${new Date().toISOString().split('T')[0]}`,
+            parents: [personalDocumentFolderId] // 개인 문서 폴더에 저장
           })
         }
       );
@@ -808,6 +959,11 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
       const copiedSpreadsheet = await copyResponse.json();
       const newSpreadsheetId = copiedSpreadsheet.id;
+      
+      console.log('✅ 템플릿 복사 완료 (개인 문서 폴더):', newSpreadsheetId);
+
+      // 템플릿 복사 시 컬럼 너비가 자동으로 복사되므로
+      // 추가 작업은 불필요합니다
 
       try {
         if (exportMode === 'all') {
@@ -820,7 +976,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             dateOptions,
             amountOptions,
             undefined,
-            'all'
+            'all',
+            includePreviousMonthBalance
           );
         } else {
           // 월별로 시트 분리
@@ -866,10 +1023,17 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
               dateOptions,
               amountOptions,
               periodOptions,
-              'monthly'
+              'monthly',
+              includePreviousMonthBalance
             );
           }
         }
+
+        // Excel 내보내기 전에 컬럼 너비를 보존하기 위해
+        // 템플릿 복사 시 자동으로 복사된 컬럼 너비를 그대로 사용합니다
+        // Google Sheets API v4는 컬럼 너비를 직접 읽을 수 없지만,
+        // 템플릿 복사 시 컬럼 너비가 자동으로 복사되므로
+        // Excel 내보내기 시 컬럼 너비가 제대로 보존됩니다
 
         // 엑셀 형식으로 내보내기
         const exportResponse = await fetch(
@@ -895,11 +1059,10 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         link.download = fileName;
         link.click();
 
-        // 임시 복사본 삭제 (선택사항)
-        // await fetch(`https://www.googleapis.com/drive/v3/files/${newSpreadsheetId}`, {
-        //   method: 'DELETE',
-        //   headers: { 'Authorization': `Bearer ${token.access_token}` }
-        // });
+        // 복사본은 개인 문서 폴더에 저장되어 있으므로 삭제하지 않음
+        // 사용자가 나중에 Google Sheets에서 직접 확인하거나 수정할 수 있도록 보존
+        console.log('✅ Excel 파일 다운로드 완료. 복사본은 개인 문서 폴더에 저장되어 있습니다:', newSpreadsheetId);
+        console.log('📁 Google Sheets에서 확인:', `https://docs.google.com/spreadsheets/d/${newSpreadsheetId}/edit`);
 
         onClose();
       } catch (err) {
@@ -1438,6 +1601,25 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                     </p>
                   </div>
                 )}
+
+                {/* 전월 이월금 옵션 */}
+                <div className="option-group">
+                  <label className="option-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={includePreviousMonthBalance}
+                      onChange={(e) => {
+                        setIncludePreviousMonthBalance(e.target.checked);
+                      }}
+                    />
+                    <span>전월 이월금 항목 추가</span>
+                  </label>
+                  {includePreviousMonthBalance && (
+                    <div className="option-details" style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
+                      장부 첫 번째 항목에 전월 이월금이 수입으로 추가됩니다.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
