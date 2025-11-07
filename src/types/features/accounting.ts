@@ -227,3 +227,14 @@ export type RoleCode =
   | 'professor'
   | 'ad_professor';
 
+/**
+ * @brief 장부 응답 타입 (API 응답)
+ */
+export interface LedgerResponse {
+  folderId?: string;
+  folderName?: string;
+  spreadsheetId?: string;
+  evidenceFolderId?: string;
+  createdDate?: string;
+}
+

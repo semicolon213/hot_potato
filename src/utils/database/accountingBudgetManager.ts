@@ -8,6 +8,7 @@
 
 import { getSheetData, append, update } from 'papyrus-db';
 import type { BudgetPlan, BudgetPlanDetail, CreateBudgetPlanRequest, UpdateBudgetPlanDetailsRequest, Account } from '../../types/features/accounting';
+import type { SheetInfo } from '../../types/google';
 import { getAccounts } from './accountingManager';
 
 // papyrus-db 설정
@@ -45,7 +46,7 @@ const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<num
       fields: 'sheets.properties'
     });
     
-    const sheet = response.result.sheets?.find((s: any) => s.properties?.title === sheetName);
+    const sheet = response.result.sheets?.find((s: SheetInfo) => s.properties?.title === sheetName);
     return sheet?.properties?.sheetId || null;
   } catch (error) {
     console.error('❌ 시트 ID 가져오기 오류:', error);
@@ -188,11 +189,12 @@ export const getBudgetPlans = async (
       return plan.budgetId;
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ 예산 계획 목록 조회 오류:', error);
     
+    const err = error as { status?: number; code?: number; message?: string };
     // 401 인증 오류인 경우
-    if (error.status === 401 || error.code === 401 || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+    if (err.status === 401 || err.code === 401 || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
       console.error('❌ 인증 오류: Google API 인증이 필요합니다.');
       throw new Error('인증이 만료되었습니다. 페이지를 새로고침해주세요.');
     }
@@ -305,7 +307,7 @@ export const reviewBudgetPlan = async (
     }
     
     // budget_id가 일치하는 행 찾기 (첫 번째 컬럼)
-    const rowIndex = budgetData.values.findIndex((row: any[]) => row[0] === budgetId);
+    const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === budgetId);
     if (rowIndex === -1) {
       throw new Error('예산 계획을 시트에서 찾을 수 없습니다.');
     }
@@ -448,7 +450,7 @@ export const approveBudgetPlan = async (
       throw new Error('예산 계획 데이터를 찾을 수 없습니다.');
     }
     
-    const rowIndex = budgetData.values.findIndex((row: any[]) => row[0] === budgetId);
+    const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === budgetId);
     if (rowIndex === -1) {
       throw new Error('예산 계획을 시트에서 찾을 수 없습니다.');
     }
@@ -513,7 +515,7 @@ export const rejectBudgetPlan = async (
       throw new Error('예산 계획 데이터를 찾을 수 없습니다.');
     }
     
-    const rowIndex = budgetData.values.findIndex((row: any[]) => row[0] === budgetId);
+    const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === budgetId);
     if (rowIndex === -1) {
       throw new Error('예산 계획을 시트에서 찾을 수 없습니다.');
     }
@@ -583,7 +585,7 @@ export const executeBudgetPlan = async (
       throw new Error('예산 계획 데이터를 찾을 수 없습니다.');
     }
     
-    const rowIndex = budgetData.values.findIndex((row: any[]) => row[0] === budgetId);
+    const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === budgetId);
     if (rowIndex === -1) {
       throw new Error('예산 계획을 시트에서 찾을 수 없습니다.');
     }
@@ -658,7 +660,7 @@ export const updateBudgetPlanDetails = async (
       throw new Error('예산 계획 데이터를 찾을 수 없습니다.');
     }
     
-    const rowIndex = budgetData.values.findIndex((row: any[]) => row[0] === budgetId);
+    const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === budgetId);
     if (rowIndex === -1) {
       throw new Error('예산 계획을 시트에서 찾을 수 없습니다.');
     }
@@ -749,7 +751,7 @@ export const updateBudgetPlanDetails = async (
           }
           
           // entryId로 정확한 행 찾기
-          const currentRowIndex = currentLedgerData.values.findIndex((row: any[]) => 
+          const currentRowIndex = currentLedgerData.values.findIndex((row: string[]) => 
             row && row.length > 0 && (row[0] || '').toString().trim() === entryToDelete.entryId
           );
           
@@ -841,7 +843,7 @@ export const updateBudgetPlanDetails = async (
         for (const entry of sortedEntries) {
           currentBalance += entry.amount;
           const entryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER);
-          const entryRowIndex = entryData.values.findIndex((row: any[]) => row[0] === entry.entryId);
+          const entryRowIndex = entryData.values.findIndex((row: string[]) => row[0] === entry.entryId);
           if (entryRowIndex !== -1) {
             await update(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER, `G${entryRowIndex + 1}`, [[currentBalance]]);
           }
@@ -849,7 +851,7 @@ export const updateBudgetPlanDetails = async (
 
         // 통장 잔액 업데이트
         const accountData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.ACCOUNT);
-        const accountRowIndex = accountData.values.findIndex((row: any[]) => row[0] === updatedAccount.accountId);
+        const accountRowIndex = accountData.values.findIndex((row: string[]) => row[0] === updatedAccount.accountId);
         if (accountRowIndex !== -1) {
           await update(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.ACCOUNT, `D${accountRowIndex + 1}`, [[currentBalance]]);
           console.log('✅ 통장 잔액 재계산 완료:', currentBalance);
@@ -937,7 +939,7 @@ export const deleteBudgetPlan = async (
           if (ledgerSheetId !== null) {
             // 집행된 장부 항목 삭제 (역순으로 삭제하여 잔액 계산 오류 방지)
             for (const entry of budgetEntries.reverse()) {
-              const rowIndex = ledgerData.values.findIndex((row: any[]) => row[0] === entry.entryId);
+              const rowIndex = ledgerData.values.findIndex((row: string[]) => row[0] === entry.entryId);
               if (rowIndex !== -1) {
                 await deleteRow(spreadsheetId, ledgerSheetId, rowIndex + 1);
                 console.log('🗑️ 집행된 장부 항목 삭제:', entry.entryId);
@@ -963,7 +965,7 @@ export const deleteBudgetPlan = async (
             for (const entry of sortedEntries) {
               currentBalance += entry.amount;
               const entryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER);
-              const entryRowIndex = entryData.values.findIndex((row: any[]) => row[0] === entry.entryId);
+              const entryRowIndex = entryData.values.findIndex((row: string[]) => row[0] === entry.entryId);
               if (entryRowIndex !== -1) {
                 await update(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.LEDGER, `G${entryRowIndex + 1}`, [[currentBalance]]);
               }
@@ -971,7 +973,7 @@ export const deleteBudgetPlan = async (
 
             // 통장 잔액 업데이트
             const accountData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.ACCOUNT);
-            const accountRowIndex = accountData.values.findIndex((row: any[]) => row[0] === accountForDelete.accountId);
+            const accountRowIndex = accountData.values.findIndex((row: string[]) => row[0] === accountForDelete.accountId);
             if (accountRowIndex !== -1) {
               await update(spreadsheetId, ACCOUNTING_SHEETS_IMPORT.ACCOUNT, `D${accountRowIndex + 1}`, [[currentBalance]]);
             }
@@ -986,7 +988,7 @@ export const deleteBudgetPlan = async (
       throw new Error('예산 계획 데이터를 찾을 수 없습니다.');
     }
     
-    const rowIndex = budgetData.values.findIndex((row: any[]) => row[0] === budgetId);
+    const rowIndex = budgetData.values.findIndex((row: string[]) => row[0] === budgetId);
     if (rowIndex === -1) {
       throw new Error('예산 계획을 시트에서 찾을 수 없습니다.');
     }
@@ -1055,7 +1057,7 @@ export const deleteBudgetPlan = async (
     while (stillExists && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 300 * (attempts + 1))); // 점진적으로 대기 시간 증가
       const verifyData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN);
-      stillExists = verifyData?.values?.some((row: any[]) => row && row[0] === budgetId) || false;
+      stillExists = verifyData?.values?.some((row: string[]) => row && row[0] === budgetId) || false;
       
       if (!stillExists) {
         console.log(`✅ 삭제 확인 성공 (시도 ${attempts + 1}/${maxAttempts}):`, {
@@ -1072,7 +1074,7 @@ export const deleteBudgetPlan = async (
     if (stillExists) {
       // 최종 확인: 삭제 후 데이터 다시 조회
       const finalCheck = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN);
-      const finalRowData = finalCheck?.values?.find((row: any[]) => row && row[0] === budgetId);
+      const finalRowData = finalCheck?.values?.find((row: string[]) => row && row[0] === budgetId);
       console.error('❌ 삭제 실패 - 최종 확인:', {
         budgetId,
         stillExists,

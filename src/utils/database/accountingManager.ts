@@ -14,6 +14,7 @@ import type {
   CreateLedgerEntryRequest,
   UpdateLedgerEntryRequest
 } from '../../types/features/accounting';
+import type { SheetInfo } from '../../types/google';
 import { ENV_CONFIG } from '../../config/environment';
 
 // 시트 이름 상수
@@ -55,7 +56,7 @@ const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<num
       fields: 'sheets.properties'
     });
     
-    const sheet = response.result.sheets?.find((s: any) => s.properties?.title === sheetName);
+    const sheet = response.result.sheets?.find((s: SheetInfo) => s.properties?.title === sheetName);
     return sheet?.properties?.sheetId || null;
   } catch (error) {
     console.error('❌ 시트 ID 가져오기 오류:', error);
@@ -196,7 +197,7 @@ export const uploadEvidenceFile = async (
       fileId: result.id,
       fileName: result.name
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ 증빙 문서 업로드 오류:', error);
     throw error;
   }
@@ -288,7 +289,7 @@ export const createLedgerEntry = async (
           evidenceFileName = uploadResult.fileName;
           console.log('✅ 증빙 문서 업로드 완료:', uploadResult);
         }
-      } catch (uploadError: any) {
+      } catch (uploadError: unknown) {
         console.error('❌ 증빙 문서 업로드 실패:', uploadError);
         // 파일 업로드 실패해도 장부 항목은 추가하도록 계속 진행
         console.warn('⚠️ 증빙 문서 업로드 실패했지만 장부 항목 추가는 계속 진행합니다.');
@@ -311,7 +312,7 @@ export const createLedgerEntry = async (
       }
       
       // account_id가 일치하는 행 찾기
-      const rowIndex = accountData.values.findIndex((row: any[]) => row[0] === account.accountId);
+      const rowIndex = accountData.values.findIndex((row: string[]) => row[0] === account.accountId);
       if (rowIndex === -1) {
         throw new Error('통장을 시트에서 찾을 수 없습니다.');
       }
@@ -323,14 +324,15 @@ export const createLedgerEntry = async (
       await update(spreadsheetId, ACCOUNTING_SHEETS.ACCOUNT, `D${actualRowNumber}`, [[balanceAfter]]);
       
       console.log('✅ 통장 잔액 업데이트 완료');
-    } catch (updateError: any) {
+    } catch (updateError: unknown) {
+      const error = updateError as { message?: string; code?: number; status?: number; result?: unknown; error?: unknown };
       console.error('❌ 통장 잔액 업데이트 오류:', updateError);
       console.error('❌ 업데이트 오류 상세:', {
-        message: updateError?.message,
-        code: updateError?.code,
-        status: updateError?.status,
-        result: updateError?.result,
-        error: updateError?.error
+        message: error?.message,
+        code: error?.code,
+        status: error?.status,
+        result: error?.result,
+        error: error?.error
       });
       // 잔액 업데이트 실패해도 장부 항목은 추가되도록 계속 진행
       // (나중에 수동으로 잔액을 수정할 수 있음)
@@ -464,7 +466,7 @@ export const updateLedgerEntry = async (
           evidenceFileName = uploadResult.fileName;
           console.log('✅ 증빙 문서 업로드 완료:', uploadResult);
         }
-      } catch (uploadError: any) {
+      } catch (uploadError: unknown) {
         console.error('❌ 증빙 문서 업로드 실패:', uploadError);
         console.warn('⚠️ 증빙 문서 업로드 실패했지만 장부 항목 수정은 계속 진행합니다.');
       }
@@ -476,7 +478,7 @@ export const updateLedgerEntry = async (
       throw new Error('장부 데이터를 찾을 수 없습니다.');
     }
 
-    const rowIndex = data.values.findIndex((row: any[]) => row[0] === entryId);
+    const rowIndex = data.values.findIndex((row: string[]) => row[0] === entryId);
     if (rowIndex === -1) {
       throw new Error('장부 항목을 시트에서 찾을 수 없습니다.');
     }
@@ -521,7 +523,7 @@ export const updateLedgerEntry = async (
       throw new Error('통장 데이터를 찾을 수 없습니다.');
     }
 
-    const accountRowIndex = accountData.values.findIndex((row: any[]) => row[0] === account.accountId);
+    const accountRowIndex = accountData.values.findIndex((row: string[]) => row[0] === account.accountId);
     if (accountRowIndex === -1) {
       throw new Error('통장을 시트에서 찾을 수 없습니다.');
     }
@@ -562,7 +564,7 @@ export const updateLedgerEntry = async (
 
         // balanceAfter 업데이트
         const entryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.LEDGER);
-        const entryRowIndex = entryData.values.findIndex((row: any[]) => row[0] === entry.entryId);
+        const entryRowIndex = entryData.values.findIndex((row: string[]) => row[0] === entry.entryId);
         if (entryRowIndex !== -1) {
           await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `G${entryRowIndex + 1}`, [[runningBalance]]);
         }
@@ -628,7 +630,7 @@ export const deleteLedgerEntry = async (
       throw new Error('장부 데이터를 찾을 수 없습니다.');
     }
 
-    const rowIndex = data.values.findIndex((row: any[]) => row[0] === entryId);
+    const rowIndex = data.values.findIndex((row: string[]) => row[0] === entryId);
     if (rowIndex === -1) {
       throw new Error('장부 항목을 시트에서 찾을 수 없습니다.');
     }
@@ -663,7 +665,7 @@ export const deleteLedgerEntry = async (
       
       // balanceAfter 업데이트
       const entryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.LEDGER);
-      const entryRowIndex = entryData.values.findIndex((row: any[]) => row[0] === entry.entryId);
+      const entryRowIndex = entryData.values.findIndex((row: string[]) => row[0] === entry.entryId);
       if (entryRowIndex !== -1) {
         await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `G${entryRowIndex + 1}`, [[currentBalance]]);
       }
@@ -675,7 +677,7 @@ export const deleteLedgerEntry = async (
       throw new Error('통장 데이터를 찾을 수 없습니다.');
     }
     
-    const accountRowIndex = accountData.values.findIndex((row: any[]) => row[0] === account.accountId);
+    const accountRowIndex = accountData.values.findIndex((row: string[]) => row[0] === account.accountId);
     if (accountRowIndex !== -1) {
       await update(spreadsheetId, ACCOUNTING_SHEETS.ACCOUNT, `D${accountRowIndex + 1}`, [[currentBalance]]);
     }
@@ -839,7 +841,7 @@ const updateCategoryUsageCount = async (
 
     // 카테고리 찾기
     const categoryRowIndex = categoryData.values.findIndex(
-      (row: any[], index: number) => index > 0 && row[1] === categoryName
+      (row: string[], index: number) => index > 0 && row[1] === categoryName
     );
 
     if (categoryRowIndex === -1) {
@@ -903,19 +905,20 @@ export const createCategory = async (
     console.log('✅ 카테고리 생성 완료:', categoryId);
     return newCategory;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ 카테고리 생성 오류:', error);
     
     // 더 자세한 오류 정보 로깅
-    if (error.result && error.result.error) {
-      console.error('❌ 오류 상세:', error.result.error);
+    const err = error as { result?: { error?: unknown }; body?: string };
+    if (err.result && err.result.error) {
+      console.error('❌ 오류 상세:', err.result.error);
     }
-    if (error.body) {
+    if (err.body) {
       try {
-        const errorBody = JSON.parse(error.body);
+        const errorBody = JSON.parse(err.body);
         console.error('❌ 오류 본문:', errorBody);
       } catch (e) {
-        console.error('❌ 오류 본문 (파싱 실패):', error.body);
+        console.error('❌ 오류 본문 (파싱 실패):', err.body);
       }
     }
 
