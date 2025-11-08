@@ -967,8 +967,68 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
           values: [[formattedPeriod]]
         });
       } else {
-        const startDateStr = formatDate(startDate, periodOptions.dateFormat);
-        const endDateStr = formatDate(endDate, periodOptions.dateFormat);
+        // 다른 셀일 때: 커스텀 포맷이 있으면 사용, 없으면 기본 dateFormat 사용
+        let startDateStr: string;
+        let endDateStr: string;
+        
+        if (periodOptions.sameCellFormat && periodOptions.sameCellFormat.trim() !== '') {
+          // 커스텀 포맷 사용
+          const formatTemplate = periodOptions.sameCellFormat;
+          
+          // START와 END를 사용하는 경우
+          if (formatTemplate.includes('START') || formatTemplate.includes('END')) {
+            // 시작일 셀: START를 시작일로, END도 시작일로 대체
+            const startDateFormatted = formatDate(startDate, periodOptions.dateFormat);
+            startDateStr = formatTemplate.replace(/START/g, startDateFormatted).replace(/END/g, startDateFormatted);
+            
+            // 종료일 셀: START를 종료일로, END도 종료일로 대체
+            const endDateFormatted = formatDate(endDate, periodOptions.dateFormat);
+            endDateStr = formatTemplate.replace(/START/g, endDateFormatted).replace(/END/g, endDateFormatted);
+          } else {
+            // 포맷 템플릿 자체에 날짜 패턴이 포함된 경우
+            const separatorRegex = /(\s*[~\-~]\s*)/;
+            const separatorMatch = formatTemplate.match(separatorRegex);
+            
+            if (separatorMatch) {
+              const separator = separatorMatch[1];
+              const parts = formatTemplate.split(separator);
+              if (parts.length === 2) {
+                const startPart = parts[0].trim();
+                const endPart = parts[1].trim();
+                startDateStr = formatDate(startDate, startPart);
+                endDateStr = formatDate(endDate, endPart);
+              } else {
+                // 구분자가 여러 개인 경우, 첫 번째 구분자만 사용
+                const firstSeparatorIndex = formatTemplate.search(separatorRegex);
+                if (firstSeparatorIndex !== -1) {
+                  const separator = formatTemplate.substring(firstSeparatorIndex, firstSeparatorIndex + separatorMatch[1].length);
+                  const parts = formatTemplate.split(separator);
+                  if (parts.length >= 2) {
+                    const startPart = parts[0].trim();
+                    const endPart = parts.slice(1).join(separator).trim();
+                    startDateStr = formatDate(startDate, startPart);
+                    endDateStr = formatDate(endDate, endPart);
+                  } else {
+                    startDateStr = formatDate(startDate, periodOptions.dateFormat);
+                    endDateStr = formatDate(endDate, periodOptions.dateFormat);
+                  }
+                } else {
+                  startDateStr = formatDate(startDate, periodOptions.dateFormat);
+                  endDateStr = formatDate(endDate, periodOptions.dateFormat);
+                }
+              }
+            } else {
+              // 구분자가 없는 경우, 각각 포맷 적용
+              startDateStr = formatDate(startDate, formatTemplate);
+              endDateStr = formatDate(endDate, formatTemplate);
+            }
+          }
+        } else {
+          // 기본 dateFormat 사용
+          startDateStr = formatDate(startDate, periodOptions.dateFormat);
+          endDateStr = formatDate(endDate, periodOptions.dateFormat);
+        }
+        
         if (periodOptions.startDateCell) {
           const range = parseCellRange(periodOptions.startDateCell);
           const cellAddr = getCellAddress(range.startRow, range.startCol);
@@ -2057,23 +2117,48 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                               </div>
                             </>
                           ) : (
-                            <select
-                              value={periodOptions.dateFormat}
-                              onChange={(e) => {
-                                setPeriodOptions({
-                                  ...periodOptions,
-                                  dateFormat: e.target.value
-                                });
-                              }}
-                              className="form-input"
-                            >
-                              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                              <option value="YYYY/MM/DD">YYYY/MM/DD</option>
-                              <option value="YYYY.MM.DD">YYYY.MM.DD</option>
-                              <option value="YYYY년 MM월 DD일">YYYY년 MM월 DD일</option>
-                              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                            </select>
+                            <>
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    setPeriodOptions({
+                                      ...periodOptions,
+                                      sameCellFormat: e.target.value
+                                    });
+                                  }
+                                }}
+                                className="form-input"
+                                style={{ marginBottom: '8px' }}
+                              >
+                                <option value="">포맷 선택 (또는 아래에서 직접 입력)</option>
+                                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                <option value="YYYY/MM/DD">YYYY/MM/DD</option>
+                                <option value="YYYY.MM.DD">YYYY.MM.DD</option>
+                                <option value="YYYY년 MM월 DD일">YYYY년 MM월 DD일</option>
+                                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                <option value="YYYY-MM-DD ~ YYYY-MM-DD">YYYY-MM-DD ~ YYYY-MM-DD</option>
+                                <option value="YYYY.MM.DD ~ YYYY.MM.DD">YYYY.MM.DD ~ YYYY.MM.DD</option>
+                                <option value="YYYY/MM/DD ~ YYYY/MM/DD">YYYY/MM/DD ~ YYYY/MM/DD</option>
+                              </select>
+                              <input
+                                type="text"
+                                value={periodOptions.sameCellFormat ?? ''}
+                                onChange={(e) => {
+                                  setPeriodOptions({
+                                    ...periodOptions,
+                                    sameCellFormat: e.target.value
+                                  });
+                                }}
+                                placeholder="예: YYYY-MM-DD 또는 START ~ END (시작일과 종료일 각각 적용)"
+                                className="form-input"
+                                style={{ marginTop: '8px' }}
+                              />
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                커스텀 포맷을 입력하면 시작일과 종료일 셀에 각각 적용됩니다. 날짜 패턴: YYYY, MM, DD, M, D
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>
