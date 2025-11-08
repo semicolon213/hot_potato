@@ -45,6 +45,19 @@ interface PeriodOptions {
   startDateCell?: string; // 다른 셀일 때 시작일
   endDateCell?: string; // 다른 셀일 때 종료일
   dateFormat: string; // 날짜 형식 (예: 'YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD')
+  sameCellFormat?: string; // 같은 셀일 때 사용할 포맷 템플릿
+}
+
+interface DepartmentOptions {
+  enabled: boolean;
+  value: string;
+  cell?: string;
+}
+
+interface TitleOptions {
+  enabled: boolean;
+  value: string;
+  cell?: string;
 }
 
 export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
@@ -88,7 +101,16 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
   const [periodOptions, setPeriodOptions] = useState<PeriodOptions>({
     enabled: false,
     sameCell: false,
-    dateFormat: 'YYYY-MM-DD'
+    dateFormat: 'YYYY-MM-DD',
+    sameCellFormat: undefined
+  });
+  const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptions>({
+    enabled: false,
+    value: ''
+  });
+  const [titleOptions, setTitleOptions] = useState<TitleOptions>({
+    enabled: false,
+    value: ''
   });
   const [exportMode, setExportMode] = useState<'all' | 'monthly'>('all');
   const [includePreviousMonthBalance, setIncludePreviousMonthBalance] = useState(false);
@@ -96,12 +118,16 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [evidenceInfo, setEvidenceInfo] = useState<Array<{ entryId: string; description: string; fileName: string; fileId: string }>>([]);
   const [sheetData, setSheetData] = useState<Array<Array<{ value: any; formattedValue?: string; backgroundColor?: string; textColor?: string; border?: any }>>>([]);
+  const [sheetHtml, setSheetHtml] = useState<string>('');
+  const [mergeMap, setMergeMap] = useState<Map<string, { startRow: number; startCol: number; rowspan: number; colspan: number }>>(new Map());
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [selectionStartCell, setSelectionStartCell] = useState<string | null>(null);
   const [currentMappingField, setCurrentMappingField] = useState<string | null>(null);
   const [currentDateOption, setCurrentDateOption] = useState<'month' | 'day' | null>(null);
   const [currentAmountOption, setCurrentAmountOption] = useState<'income' | 'expense' | null>(null);
   const [currentPeriodOption, setCurrentPeriodOption] = useState<'start' | 'end' | null>(null);
+  const [currentDepartmentOption, setCurrentDepartmentOption] = useState<boolean>(false);
+  const [currentTitleOption, setCurrentTitleOption] = useState<boolean>(false);
   
   const tableRef = useRef<HTMLTableElement>(null);
   const excelPreviewRef = useRef<HTMLDivElement>(null);
@@ -166,8 +192,6 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     }
   };
 
-  const [sheetHtml, setSheetHtml] = useState<string>('');
-
   const loadSheetData = async (spreadsheetId: string, sheetName: string) => {
     try {
       await initializeGoogleAPIOnce();
@@ -189,22 +213,57 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
       const sheetId = sheet.properties.sheetId;
 
-      // 시트 데이터 가져오기 (값 + 스타일)
+      // 병합 정보 가져오기
+      const mergeResponse = await (gapi.client as any).sheets.spreadsheets.get({
+        spreadsheetId: spreadsheetId,
+        ranges: [`${sheetName}!A1:ZZ1000`],
+        fields: 'sheets.merges'
+      });
+
+      const merges = mergeResponse.result.sheets?.[0]?.merges || [];
+      const mergeInfoMap = new Map<string, { startRow: number; startCol: number; rowspan: number; colspan: number }>();
+      
+      merges.forEach((merge: any) => {
+        const startRow = merge.startRowIndex || 0;
+        const endRow = merge.endRowIndex || 0;
+        const startCol = merge.startColumnIndex || 0;
+        const endCol = merge.endColumnIndex || 0;
+        
+        const rowspan = endRow - startRow;
+        const colspan = endCol - startCol;
+        
+        // 병합된 모든 셀에 대해 정보 저장
+        for (let r = startRow; r < endRow; r++) {
+          for (let c = startCol; c < endCol; c++) {
+            const key = `${r}-${c}`;
+            mergeInfoMap.set(key, {
+              startRow,
+              startCol,
+              rowspan,
+              colspan
+            });
+          }
+        }
+      });
+      
+      setMergeMap(mergeInfoMap);
+
+      // 시트 데이터 가져오기 (값만, 스타일 제거하여 성능 최적화)
       const dataResponse = await (gapi.client as any).sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         ranges: [`${sheetName}!A1:ZZ1000`], // 충분히 큰 범위
         includeGridData: true,
-        fields: 'sheets.data.rowData.values(effectiveValue,formattedValue,userEnteredFormat(backgroundColor,textFormat,numberFormat))'
+        fields: 'sheets.data.rowData.values(effectiveValue,formattedValue)'
       });
 
       const rowData = dataResponse.result.sheets?.[0]?.data?.[0]?.rowData || [];
       
-      // 데이터 배열로 변환
-      const data: Array<Array<{ value: any; formattedValue?: string; backgroundColor?: string; textColor?: string }>> = [];
+      // 데이터 배열로 변환 (스타일 제거하여 성능 최적화)
+      const data: Array<Array<{ value: any; formattedValue?: string }>> = [];
       let maxCols = 0;
 
       rowData.forEach((row: any) => {
-        const rowArray: Array<{ value: any; formattedValue?: string; backgroundColor?: string; textColor?: string }> = [];
+        const rowArray: Array<{ value: any; formattedValue?: string }> = [];
         if (row.values) {
           row.values.forEach((cell: any) => {
             const value = cell.effectiveValue;
@@ -219,14 +278,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
               }
             }
             
-            const bgColor = cell.userEnteredFormat?.backgroundColor;
-            const textColor = cell.userEnteredFormat?.textFormat?.foregroundColor;
-            
             rowArray.push({
               value: cellValue,
-              formattedValue: cell.formattedValue || String(cellValue),
-              backgroundColor: bgColor ? `rgb(${bgColor.red || 0}, ${bgColor.green || 0}, ${bgColor.blue || 0})` : undefined,
-              textColor: textColor ? `rgb(${textColor.red || 0}, ${textColor.green || 0}, ${textColor.blue || 0})` : undefined
+              formattedValue: cell.formattedValue || String(cellValue)
             });
           });
           maxCols = Math.max(maxCols, rowArray.length);
@@ -262,8 +316,11 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       headerRow.appendChild(headerTr);
       table.appendChild(headerRow);
 
-      // 데이터 행 추가
+      // 데이터 행 추가 (병합 셀 처리)
       const tbody = doc.createElement('tbody');
+      // 각 행에서 활성화된 rowspan 셀을 추적 (key: colIndex, value: remainingRows)
+      const activeRowspans = new Map<number, number>();
+      
       data.forEach((row, rowIndex) => {
         const tr = doc.createElement('tr');
         
@@ -275,25 +332,87 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         tr.appendChild(rowHeader);
         
         // 데이터 셀
-        for (let colIndex = 0; colIndex < Math.max(row.length, maxCols); colIndex++) {
+        let colIndex = 0;
+        while (colIndex < Math.max(row.length, maxCols)) {
+          const cellKey = `${rowIndex}-${colIndex}`;
+          
+          // 이전 행에서 시작된 rowspan 셀이 이 열에 있는지 확인
+          if (activeRowspans.has(colIndex)) {
+            const remainingRows = activeRowspans.get(colIndex)!;
+            if (remainingRows > 0) {
+              // rowspan이 아직 유효함 - 이 열을 건너뛰고 rowspan 카운트 감소
+              activeRowspans.set(colIndex, remainingRows - 1);
+              colIndex++;
+              continue;
+            } else {
+              // rowspan이 끝남
+              activeRowspans.delete(colIndex);
+            }
+          }
+          
+          const mergeInfo = mergeInfoMap.get(cellKey);
+          
+          // 병합된 셀의 시작 셀인지 확인
+          const isMergeStart = mergeInfo && mergeInfo.startRow === rowIndex && mergeInfo.startCol === colIndex;
+          
+          // 병합된 셀의 일부인 경우 (시작 셀이 아닌 경우) 건너뛰기
+          if (mergeInfo && !isMergeStart) {
+            colIndex++;
+            continue;
+          }
+          
+          // 현재 셀의 데이터 가져오기 (병합된 셀의 시작 셀 데이터 사용)
+          const cell = row[colIndex];
+          
           const td = doc.createElement('td');
           td.className = 'selectable';
           td.dataset.row = String(rowIndex);
           td.dataset.col = String(colIndex);
           
-          const cell = row[colIndex];
-          if (cell) {
-            td.textContent = cell.formattedValue || String(cell.value || '');
-            if (cell.backgroundColor) {
-              td.style.backgroundColor = cell.backgroundColor;
+          if (isMergeStart && mergeInfo) {
+            // 병합된 셀의 시작 셀
+            if (mergeInfo.rowspan > 1) {
+              td.setAttribute('rowspan', String(mergeInfo.rowspan));
+              // 다음 행들에서 이 열을 건너뛰도록 표시
+              activeRowspans.set(colIndex, mergeInfo.rowspan - 1);
             }
-            if (cell.textColor) {
-              td.style.color = cell.textColor;
+            if (mergeInfo.colspan > 1) {
+              td.setAttribute('colspan', String(mergeInfo.colspan));
             }
           }
           
-          td.style.cssText = 'border: 1px solid #d0d7e5; padding: 2px 4px; text-align: left; vertical-align: middle; min-width: 64px; width: 64px; height: 20px; background: ' + (rowIndex % 2 === 0 ? '#ffffff' : '#fafafa') + '; color: #000000; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box;';
+          // 기본 스타일 설정
+          const baseBackground = rowIndex % 2 === 0 ? '#ffffff' : '#fafafa';
+          const isMerged = isMergeStart && mergeInfo && (mergeInfo.rowspan > 1 || mergeInfo.colspan > 1);
+          
+          // 인라인 스타일 직접 설정
+          td.style.border = '1px solid #d0d7e5';
+          td.style.padding = '2px 4px';
+          td.style.verticalAlign = 'middle';
+          td.style.minWidth = '64px';
+          td.style.width = '64px';
+          td.style.height = '20px';
+          td.style.fontWeight = 'normal';
+          td.style.whiteSpace = 'nowrap';
+          td.style.overflow = 'hidden';
+          td.style.textOverflow = 'ellipsis';
+          td.style.boxSizing = 'border-box';
+          td.style.textAlign = isMerged ? 'center' : 'left';
+          td.style.backgroundColor = baseBackground;
+          td.style.color = '#000000';
+          
+          if (cell) {
+            td.textContent = cell.formattedValue || String(cell.value || '');
+          }
+          
           tr.appendChild(td);
+          
+          // colspan이 있는 경우 다음 열들을 건너뛰기
+          if (isMergeStart && mergeInfo && mergeInfo.colspan > 1) {
+            colIndex += mergeInfo.colspan;
+          } else {
+            colIndex++;
+          }
         }
         
         tbody.appendChild(tr);
@@ -358,7 +477,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
           const row = (cell.parentElement as HTMLTableRowElement)?.rowIndex;
           const col = cell.cellIndex;
         
-        if (row !== undefined && col !== undefined && (currentMappingField || currentDateOption || currentAmountOption || currentPeriodOption)) {
+        if (row !== undefined && col !== undefined && (currentMappingField || currentDateOption || currentAmountOption || currentPeriodOption || currentDepartmentOption || currentTitleOption)) {
           // 헤더 행/열 제외
           const actualRow = row - 1;
           const actualCol = col - 1;
@@ -447,6 +566,12 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                   }
                 }
                 setCurrentPeriodOption(null);
+              } else if (currentDepartmentOption) {
+                setDepartmentOptions({ ...departmentOptions, cell: cellRange });
+                setCurrentDepartmentOption(false);
+              } else if (currentTitleOption) {
+                setTitleOptions({ ...titleOptions, cell: cellRange });
+                setCurrentTitleOption(false);
               }
               
               // 선택 완료 후 초기화
@@ -458,37 +583,175 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     };
 
 
-    const updateCellStyles = () => {
-      const cells = table.querySelectorAll('td, th');
-      cells.forEach((cell) => {
-        const cellElement = cell as HTMLTableCellElement;
-        const row = (cellElement.parentElement as HTMLTableRowElement)?.rowIndex;
-        const col = cellElement.cellIndex;
-        if (row !== undefined && col !== undefined) {
-          const cellAddr = getCellAddress(row - 1, col - 1);
-          const isSelected = selectedCells.has(cellAddr);
-          const isActive = !!(currentMappingField && fieldMappings.find(m => m.field === currentMappingField)?.enabled) 
-            || !!currentDateOption 
-            || !!currentAmountOption
-            || !!currentPeriodOption;
-          
-          cellElement.classList.toggle('selected', isSelected);
-          cellElement.classList.toggle('selectable', isActive);
+    // 이벤트 위임 사용 (성능 최적화)
+    const container = excelPreviewRef.current;
+    if (!container) return;
+    
+    // 병합 정보를 사용하여 정확한 셀 주소 계산
+    const handleClickOptimized = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName !== 'TD' && target.tagName !== 'TH') return;
+      
+      const cell = target as HTMLTableCellElement;
+      const rowStr = cell.dataset.row;
+      const colStr = cell.dataset.col;
+      
+      if (!rowStr || !colStr) return;
+      
+      let actualRow = parseInt(rowStr, 10);
+      let actualCol = parseInt(colStr, 10);
+      
+      // 병합 정보 확인: 병합된 셀의 일부인 경우 시작 셀 좌표로 변환
+      const cellKey = `${actualRow}-${actualCol}`;
+      const mergeInfo = mergeMap.get(cellKey);
+      if (mergeInfo) {
+        actualRow = mergeInfo.startRow;
+        actualCol = mergeInfo.startCol;
+      }
+      
+      if (actualRow < 0 || actualCol < 0) return;
+      
+      const cellAddr = getCellAddress(actualRow, actualCol);
+      
+      if (!selectionStartCell) {
+        setSelectionStartCell(cellAddr);
+        setSelectedCells(new Set([cellAddr]));
+      } else {
+        const startAddr = selectionStartCell;
+        const endAddr = cellAddr;
+        
+        const parseCellAddr = (addr: string): { row: number; col: number } => {
+          const match = addr.match(/^([A-Z]+)(\d+)$/);
+          if (!match) return { row: 0, col: 0 };
+          const colStr = match[1];
+          const rowNum = parseInt(match[2], 10) - 1;
+          let colNum = 0;
+          for (let i = 0; i < colStr.length; i++) {
+            colNum = colNum * 26 + (colStr.charCodeAt(i) - 64);
+          }
+          colNum -= 1;
+          return { row: rowNum, col: colNum };
+        };
+        
+        const start = parseCellAddr(startAddr);
+        const end = parseCellAddr(endAddr);
+        
+        const startRow = Math.min(start.row, end.row);
+        const endRow = Math.max(start.row, end.row);
+        const startCol = Math.min(start.col, end.col);
+        const endCol = Math.max(start.col, end.col);
+        
+        const cells = new Set<string>();
+        for (let r = startRow; r <= endRow; r++) {
+          for (let c = startCol; c <= endCol; c++) {
+            cells.add(getCellAddress(r, c));
+          }
         }
+        setSelectedCells(cells);
+        
+        const startCell = getCellAddress(startRow, startCol);
+        const endCell = getCellAddress(endRow, endCol);
+        const cellRange = startRow === endRow && startCol === endCol 
+          ? startCell 
+          : `${startCell}:${endCell}`;
+        
+        if (currentMappingField) {
+          const index = fieldMappings.findIndex(m => m.field === currentMappingField);
+          if (index !== -1) {
+            const newMappings = [...fieldMappings];
+            newMappings[index].cellRange = cellRange;
+            setFieldMappings(newMappings);
+            setCurrentMappingField(null);
+          }
+        } else if (currentDateOption) {
+          if (currentDateOption === 'month') {
+            setDateOptions({ ...dateOptions, monthCell: cellRange });
+          } else if (currentDateOption === 'day') {
+            setDateOptions({ ...dateOptions, dayCell: cellRange });
+          }
+          setCurrentDateOption(null);
+        } else if (currentAmountOption) {
+          if (currentAmountOption === 'income') {
+            setAmountOptions({ ...amountOptions, incomeCell: cellRange });
+          } else if (currentAmountOption === 'expense') {
+            setAmountOptions({ ...amountOptions, expenseCell: cellRange });
+          }
+          setCurrentAmountOption(null);
+        } else if (currentPeriodOption) {
+          if (periodOptions.sameCell) {
+            setPeriodOptions({ ...periodOptions, dateCell: cellRange });
+          } else {
+            if (currentPeriodOption === 'start') {
+              setPeriodOptions({ ...periodOptions, startDateCell: cellRange });
+            } else if (currentPeriodOption === 'end') {
+              setPeriodOptions({ ...periodOptions, endDateCell: cellRange });
+            }
+          }
+          setCurrentPeriodOption(null);
+        } else if (currentDepartmentOption) {
+          setDepartmentOptions({ ...departmentOptions, cell: cellRange });
+          setCurrentDepartmentOption(false);
+        } else if (currentTitleOption) {
+          setTitleOptions({ ...titleOptions, cell: cellRange });
+          setCurrentTitleOption(false);
+        }
+        
+        setSelectionStartCell(null);
+      }
+    };
+    
+    container.addEventListener('click', handleClickOptimized);
+    
+    // 선택된 셀 스타일 업데이트 (requestAnimationFrame 사용)
+    const updateSelectedCells = () => {
+      requestAnimationFrame(() => {
+        const cells = container.querySelectorAll('td[data-row][data-col]');
+        cells.forEach((cell) => {
+          const cellElement = cell as HTMLTableCellElement;
+          const rowStr = cellElement.dataset.row;
+          const colStr = cellElement.dataset.col;
+          if (rowStr && colStr) {
+            let actualRow = parseInt(rowStr, 10);
+            let actualCol = parseInt(colStr, 10);
+            
+            // 병합 정보 확인
+            const cellKey = `${actualRow}-${actualCol}`;
+            const mergeInfo = mergeMap.get(cellKey);
+            if (mergeInfo) {
+              actualRow = mergeInfo.startRow;
+              actualCol = mergeInfo.startCol;
+            }
+            
+            if (actualRow >= 0 && actualCol >= 0) {
+              const cellAddr = getCellAddress(actualRow, actualCol);
+              const isSelected = selectedCells.has(cellAddr);
+              cellElement.setAttribute('data-is-selected', isSelected ? 'true' : 'false');
+            }
+          }
+        });
       });
     };
-
-    table.addEventListener('click', handleClick);
     
-    // 초기 스타일 적용 및 주기적 업데이트
-    updateCellStyles();
-    const intervalId = setInterval(updateCellStyles, 100);
+    updateSelectedCells();
+    const selectedCellsArray = Array.from(selectedCells);
+    const isSelectionActive = !!(currentMappingField && fieldMappings.find(m => m.field === currentMappingField)?.enabled) 
+      || !!currentDateOption 
+      || !!currentAmountOption
+      || !!currentPeriodOption
+      || !!currentDepartmentOption
+      || !!currentTitleOption;
+    
+    if (isSelectionActive) {
+      const cells = container.querySelectorAll('td[data-row][data-col]');
+      cells.forEach((cell) => {
+        (cell as HTMLElement).setAttribute('data-is-selectable', 'true');
+      });
+    }
 
     return () => {
-      table.removeEventListener('click', handleClick);
-      clearInterval(intervalId);
+      container.removeEventListener('click', handleClickOptimized);
     };
-  }, [sheetHtml, selectedCells, selectionStartCell, currentMappingField, currentDateOption, currentAmountOption, currentPeriodOption, fieldMappings, dateOptions, amountOptions, periodOptions]);
+  }, [sheetHtml, selectedCells, selectionStartCell, currentMappingField, currentDateOption, currentAmountOption, currentPeriodOption, currentDepartmentOption, currentTitleOption, fieldMappings, dateOptions, amountOptions, periodOptions, departmentOptions, titleOptions, mergeMap]);
 
   // 월별 그룹화 함수
   const formatMonthKey = (dateString: string): string => {
@@ -524,7 +787,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     amountOptions: AmountOptions,
     periodOptions?: PeriodOptions,
     exportMode?: 'all' | 'monthly',
-    includePreviousMonthBalance?: boolean
+    includePreviousMonthBalance?: boolean,
+    departmentOptions?: DepartmentOptions,
+    titleOptions?: TitleOptions
   ) => {
     await initializeGoogleAPIOnce();
     const gapi = (window as any).gapi;
@@ -589,34 +854,121 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
     // 배치 업데이트를 위한 데이터 수집
     const data: Array<{ range: string; values: any[][] }> = [];
-    const monthKey = exportMode === 'monthly' ? formatMonthKey(entriesToWrite[0]?.date || '') : undefined;
+    
+    // 전월 이월금 항목 추가 처리 (나중에 처리됨)
+    let actualEntries = entriesToWrite;
+    
+    const monthKey = exportMode === 'monthly' ? formatMonthKey(actualEntries[0]?.date || '') : undefined;
 
-    // 사용기간 날짜 작성 (월별 모드일 때만)
-    if (periodOptions && periodOptions.enabled && monthKey) {
-      const [year, month] = monthKey.split('-');
-      const yearNum = parseInt(year, 10);
-      const monthNum = parseInt(month, 10);
-      const startDate = new Date(yearNum, monthNum - 1, 1);
-      const endDate = new Date(yearNum, monthNum, 0);
+    // 사용기간 날짜 작성
+    if (periodOptions && periodOptions.enabled && actualEntries.length > 0) {
+      let startDate: Date;
+      let endDate: Date;
+      
+      if (exportMode === 'monthly' && monthKey) {
+        // 월별 모드: 해당 월의 첫날과 마지막날
+        const [year, month] = monthKey.split('-');
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10);
+        startDate = new Date(yearNum, monthNum - 1, 1);
+        endDate = new Date(yearNum, monthNum, 0);
+      } else {
+        // 전체 내보내기 모드: 첫 번째 항목의 날짜를 기준으로 해당 월의 첫날과 마지막날
+        const firstEntryDate = new Date(actualEntries[0].date);
+        const year = firstEntryDate.getFullYear();
+        const month = firstEntryDate.getMonth() + 1;
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0);
+      }
       
       const formatDate = (date: Date, format: string): string => {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
-        return format.replace('YYYY', String(y)).replace('MM', m).replace('DD', d);
+        const month = date.getMonth() + 1; // 0-padding 없는 월
+        const day = date.getDate(); // 0-padding 없는 일
+        
+        let formatted = format;
+        formatted = formatted.replace(/YYYY/g, String(y));
+        formatted = formatted.replace(/YY/g, String(y).slice(-2));
+        formatted = formatted.replace(/MM/g, m);
+        formatted = formatted.replace(/M/g, String(month));
+        formatted = formatted.replace(/DD/g, d);
+        formatted = formatted.replace(/D/g, String(day));
+        return formatted;
       };
       
-      const startDateStr = formatDate(startDate, periodOptions.dateFormat);
-      const endDateStr = formatDate(endDate, periodOptions.dateFormat);
-      
       if (periodOptions.sameCell && periodOptions.dateCell) {
+        // 같은 셀일 때 포맷 템플릿 사용
+        const formatTemplate = periodOptions.sameCellFormat !== undefined && periodOptions.sameCellFormat !== '' 
+          ? periodOptions.sameCellFormat 
+          : 'YYYY-MM-DD ~ YYYY-MM-DD';
+        
+        // 포맷 템플릿 처리
+        let formattedPeriod = formatTemplate;
+        
+        // START와 END를 사용하는 경우
+        if (formatTemplate.includes('START') || formatTemplate.includes('END')) {
+          const startDateStr = formatDate(startDate, periodOptions.dateFormat);
+          const endDateStr = formatDate(endDate, periodOptions.dateFormat);
+          formattedPeriod = formattedPeriod.replace(/START/g, startDateStr).replace(/END/g, endDateStr);
+        } else {
+          // 포맷 템플릿 자체에 날짜 패턴이 포함된 경우
+          // 구분자(~, -, ~ 등)를 찾아서 두 부분으로 나누어 각각 포맷팅
+          const separatorRegex = /(\s*[~\-~]\s*)/;
+          const separatorMatch = formatTemplate.match(separatorRegex);
+          
+          if (separatorMatch) {
+            const separator = separatorMatch[1];
+            const parts = formatTemplate.split(separator);
+            if (parts.length === 2) {
+              const startPart = parts[0].trim();
+              const endPart = parts[1].trim();
+              const startDateStr = formatDate(startDate, startPart);
+              const endDateStr = formatDate(endDate, endPart);
+              formattedPeriod = `${startDateStr}${separator}${endDateStr}`;
+            } else {
+              // 구분자가 여러 개인 경우, 첫 번째 구분자만 사용
+              const firstSeparatorIndex = formatTemplate.search(separatorRegex);
+              if (firstSeparatorIndex !== -1) {
+                const separator = formatTemplate.substring(firstSeparatorIndex, firstSeparatorIndex + separatorMatch[1].length);
+                const parts = formatTemplate.split(separator);
+                if (parts.length >= 2) {
+                  const startPart = parts[0].trim();
+                  const endPart = parts.slice(1).join(separator).trim();
+                  const startDateStr = formatDate(startDate, startPart);
+                  const endDateStr = formatDate(endDate, endPart);
+                  formattedPeriod = `${startDateStr}${separator}${endDateStr}`;
+                } else {
+                  // 파싱 실패 시 기본 포맷 사용
+                  const startDateStr = formatDate(startDate, periodOptions.dateFormat);
+                  const endDateStr = formatDate(endDate, periodOptions.dateFormat);
+                  formattedPeriod = `${startDateStr} ~ ${endDateStr}`;
+                }
+              } else {
+                // 구분자를 찾을 수 없는 경우, 전체 템플릿을 두 번 적용
+                const startDateStr = formatDate(startDate, formatTemplate);
+                const endDateStr = formatDate(endDate, formatTemplate);
+                formattedPeriod = `${startDateStr} ~ ${endDateStr}`;
+              }
+            }
+          } else {
+            // 구분자가 없는 경우, 전체 템플릿을 두 번 적용
+            const startDateStr = formatDate(startDate, formatTemplate);
+            const endDateStr = formatDate(endDate, formatTemplate);
+            formattedPeriod = `${startDateStr} ~ ${endDateStr}`;
+          }
+        }
+        
         const range = parseCellRange(periodOptions.dateCell);
         const cellAddr = getCellAddress(range.startRow, range.startCol);
         data.push({
           range: `${sheetName}!${cellAddr}`,
-          values: [[`${startDateStr} ~ ${endDateStr}`]]
+          values: [[formattedPeriod]]
         });
       } else {
+        const startDateStr = formatDate(startDate, periodOptions.dateFormat);
+        const endDateStr = formatDate(endDate, periodOptions.dateFormat);
         if (periodOptions.startDateCell) {
           const range = parseCellRange(periodOptions.startDateCell);
           const cellAddr = getCellAddress(range.startRow, range.startCol);
@@ -637,8 +989,6 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     }
 
     // 전월 이월금 항목 추가 (첫 번째 항목으로)
-    let actualEntries = entriesToWrite;
-    
     if (includePreviousMonthBalance && entriesToWrite.length > 0) {
       const firstEntry = entriesToWrite[0];
       const previousMonthBalance = firstEntry.balanceAfter - firstEntry.amount;
@@ -871,6 +1221,70 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       }
     });
 
+    // 부서명 작성
+    if (departmentOptions && departmentOptions.enabled && departmentOptions.cell && departmentOptions.value) {
+      const deptRange = parseCellRange(departmentOptions.cell);
+      const deptCellAddr = getCellAddress(deptRange.startRow, deptRange.startCol);
+      data.push({
+        range: `${sheetName}!${deptCellAddr}`,
+        values: [[departmentOptions.value]]
+      });
+    }
+
+    // 타이틀 작성 (날짜 포맷팅 포함)
+    if (titleOptions && titleOptions.enabled && titleOptions.cell && titleOptions.value && actualEntries.length > 0) {
+      // 타이틀 문자열에서 날짜 패턴을 실제 날짜로 변환하는 함수
+      const formatTitleWithDate = (titleTemplate: string, entries: LedgerEntry[]): string => {
+        const firstEntryDate = new Date(entries[0].date);
+        const year = firstEntryDate.getFullYear();
+        const month = firstEntryDate.getMonth() + 1;
+        const monthStr = String(month).padStart(2, '0');
+        
+        let formattedTitle = titleTemplate;
+        
+        // 괄호 안의 패턴을 플레이스홀더로 임시 변환 (일반 패턴과 충돌 방지)
+        const placeholders: { [key: string]: string } = {};
+        let placeholderIndex = 0;
+        
+        // (MM월) 패턴을 플레이스홀더로 변환
+        formattedTitle = formattedTitle.replace(/\(MM월\)/g, (match) => {
+          const key = `__PLACEHOLDER_${placeholderIndex++}__`;
+          placeholders[key] = `(${monthStr}월)`;
+          return key;
+        });
+        
+        // (M월) 패턴을 플레이스홀더로 변환
+        formattedTitle = formattedTitle.replace(/\(M월\)/g, (match) => {
+          const key = `__PLACEHOLDER_${placeholderIndex++}__`;
+          placeholders[key] = `(${month}월)`;
+          return key;
+        });
+        
+        // 다양한 날짜 패턴 처리
+        formattedTitle = formattedTitle.replace(/YYYY년/g, `${year}년`);
+        formattedTitle = formattedTitle.replace(/YY년/g, String(year).slice(-2) + '년');
+        formattedTitle = formattedTitle.replace(/MM월/g, `${monthStr}월`);
+        formattedTitle = formattedTitle.replace(/M월/g, `${month}월`);
+        formattedTitle = formattedTitle.replace(/YYYY-MM/g, `${year}-${monthStr}`);
+        formattedTitle = formattedTitle.replace(/YYYY\/MM/g, `${year}/${monthStr}`);
+        
+        // 플레이스홀더를 실제 값으로 복원
+        Object.keys(placeholders).forEach(key => {
+          formattedTitle = formattedTitle.replace(key, placeholders[key]);
+        });
+        
+        return formattedTitle;
+      };
+      
+      const formattedTitle = formatTitleWithDate(titleOptions.value, actualEntries);
+      const titleRange = parseCellRange(titleOptions.cell);
+      const titleCellAddr = getCellAddress(titleRange.startRow, titleRange.startCol);
+      data.push({
+        range: `${sheetName}!${titleCellAddr}`,
+        values: [[formattedTitle]]
+      });
+    }
+
     // 배치 업데이트 실행
     if (data.length > 0) {
       console.log('📊 장부 내보내기 데이터:', {
@@ -916,11 +1330,20 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
       }
 
-      // 날짜 순으로 정렬 (오름차순)
+      // 날짜 순으로 정렬 (오름차순), 날짜가 같으면 생성일 기준으로 정렬
       const sortedEntries = [...entries].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
-        return dateA - dateB;
+        
+        // 날짜가 다르면 날짜순으로 정렬
+        if (dateA !== dateB) {
+          return dateA - dateB;
+        }
+        
+        // 날짜가 같으면 생성일 기준으로 정렬
+        const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+        const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+        return createdA - createdB;
       });
 
       // 템플릿을 복사하여 새 스프레드시트 생성 (원본 보존)
@@ -977,7 +1400,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             amountOptions,
             undefined,
             'all',
-            includePreviousMonthBalance
+            includePreviousMonthBalance,
+            departmentOptions,
+            titleOptions
           );
         } else {
           // 월별로 시트 분리
@@ -994,7 +1419,16 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             const monthEntries = groupedEntries[monthKey].sort((a, b) => {
               const dateA = new Date(a.date).getTime();
               const dateB = new Date(b.date).getTime();
-              return dateA - dateB;
+              
+              // 날짜가 다르면 날짜순으로 정렬
+              if (dateA !== dateB) {
+                return dateA - dateB;
+              }
+              
+              // 날짜가 같으면 생성일 기준으로 정렬
+              const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+              const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+              return createdA - createdB;
             });
             const monthLabel = formatMonthLabel(monthKey);
             
@@ -1024,7 +1458,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
               amountOptions,
               periodOptions,
               'monthly',
-              includePreviousMonthBalance
+              includePreviousMonthBalance,
+              departmentOptions,
+              titleOptions
             );
           }
         }
@@ -1239,10 +1675,6 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                 
                 <div className="field-mapping-grid">
                   {fieldMappings.map((mapping, index) => {
-                    // 사용기간은 월별 모드일 때만 표시
-                    if (mapping.field === 'usagePeriod' && exportMode !== 'monthly') {
-                      return null;
-                    }
                     return (
                       <div key={mapping.field} className="field-mapping-item-compact">
                         <label className="field-mapping-checkbox-compact">
@@ -1439,9 +1871,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                   )}
                 </div>
 
-                {/* 사용기간 옵션 (월별 모드일 때만) */}
-                {exportMode === 'monthly' && (
-                  <div className="option-group">
+                {/* 사용기간 옵션 */}
+                <div className="option-group">
                     <label className="option-checkbox">
                       <input
                         type="checkbox"
@@ -1500,27 +1931,29 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                         </div>
 
                         {periodOptions.sameCell ? (
-                          <div className="cell-selector">
-                            <label>날짜 셀</label>
-                            <div className="cell-selector-controls">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCurrentPeriodOption('start');
-                                  setCurrentMappingField(null);
-                                  setCurrentDateOption(null);
-                                  setCurrentAmountOption(null);
-                                  setSelectedCells(new Set());
-                                }}
-                                className={currentPeriodOption === 'start' ? 'btn-primary btn-small' : 'btn-secondary btn-small'}
-                              >
-                                {selectionStartCell && currentPeriodOption === 'start' ? '끝 셀 선택' : currentPeriodOption === 'start' ? '시작 셀 선택' : '셀 선택'}
-                              </button>
-                              {periodOptions.dateCell && (
-                                <span className="cell-range-display">{periodOptions.dateCell}</span>
-                              )}
+                          <>
+                            <div className="cell-selector">
+                              <label>날짜 셀</label>
+                              <div className="cell-selector-controls">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentPeriodOption('start');
+                                    setCurrentMappingField(null);
+                                    setCurrentDateOption(null);
+                                    setCurrentAmountOption(null);
+                                    setSelectedCells(new Set());
+                                  }}
+                                  className={currentPeriodOption === 'start' ? 'btn-primary btn-small' : 'btn-secondary btn-small'}
+                                >
+                                  {selectionStartCell && currentPeriodOption === 'start' ? '끝 셀 선택' : currentPeriodOption === 'start' ? '시작 셀 선택' : '셀 선택'}
+                                </button>
+                                {periodOptions.dateCell && (
+                                  <span className="cell-range-display">{periodOptions.dateCell}</span>
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          </>
                         ) : (
                           <div className="cell-selector-row">
                             <div className="cell-selector">
@@ -1575,32 +2008,82 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                         )}
 
                         <div className="form-group" style={{ marginTop: '12px' }}>
-                          <label>날짜 형식</label>
-                          <select
-                            value={periodOptions.dateFormat}
-                            onChange={(e) => {
-                              setPeriodOptions({
-                                ...periodOptions,
-                                dateFormat: e.target.value
-                              });
-                            }}
-                            className="form-input"
-                          >
-                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                            <option value="YYYY/MM/DD">YYYY/MM/DD</option>
-                            <option value="YYYY.MM.DD">YYYY.MM.DD</option>
-                            <option value="YYYY년 MM월 DD일">YYYY년 MM월 DD일</option>
-                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                          </select>
+                          <label>날짜 포맷</label>
+                          {periodOptions.sameCell ? (
+                            <>
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    setPeriodOptions({
+                                      ...periodOptions,
+                                      sameCellFormat: e.target.value
+                                    });
+                                  }
+                                }}
+                                className="form-input"
+                                style={{ marginBottom: '8px' }}
+                              >
+                                <option value="">포맷 선택 (또는 아래에서 직접 입력)</option>
+                                <option value="YYYY-MM-DD ~ YYYY-MM-DD">YYYY-MM-DD ~ YYYY-MM-DD</option>
+                                <option value="YYYY.MM.DD ~ YYYY.MM.DD">YYYY.MM.DD ~ YYYY.MM.DD</option>
+                                <option value="YYYY/MM/DD ~ YYYY/MM/DD">YYYY/MM/DD ~ YYYY/MM/DD</option>
+                                <option value="YYYY-MM-DD - YYYY-MM-DD">YYYY-MM-DD - YYYY-MM-DD</option>
+                                <option value="YYYY.MM.DD-YYYY.MM.DD">YYYY.MM.DD-YYYY.MM.DD</option>
+                                <option value="YYYY/MM/DD - YYYY/MM/DD">YYYY/MM/DD - YYYY/MM/DD</option>
+                                <option value="YYYY년 MM월 DD일 ~ YYYY년 MM월 DD일">YYYY년 MM월 DD일 ~ YYYY년 MM월 DD일</option>
+                                <option value="YYYY년 M월 D일 ~ YYYY년 M월 D일">YYYY년 M월 D일 ~ YYYY년 M월 D일</option>
+                                <option value="MM/DD ~ MM/DD">MM/DD ~ MM/DD</option>
+                                <option value="MM월 DD일 ~ MM월 DD일">MM월 DD일 ~ MM월 DD일</option>
+                                <option value="M월 D일 ~ M월 D일">M월 D일 ~ M월 D일</option>
+                                <option value="YYYY.MM.DD(YYYY.MM.DD)">YYYY.MM.DD(YYYY.MM.DD)</option>
+                                <option value="YYYY/MM/DD(YYYY/MM/DD)">YYYY/MM/DD(YYYY/MM/DD)</option>
+                              </select>
+                              <input
+                                type="text"
+                                value={periodOptions.sameCellFormat ?? ''}
+                                onChange={(e) => {
+                                  setPeriodOptions({
+                                    ...periodOptions,
+                                    sameCellFormat: e.target.value
+                                  });
+                                }}
+                                placeholder="예: START ~ END 또는 YYYY-MM-DD ~ YYYY-MM-DD"
+                                className="form-input"
+                                style={{ marginTop: '8px' }}
+                              />
+                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                START와 END를 사용하여 커스텀 포맷도 입력 가능합니다. 날짜 패턴: YYYY, MM, DD, M, D
+                              </div>
+                            </>
+                          ) : (
+                            <select
+                              value={periodOptions.dateFormat}
+                              onChange={(e) => {
+                                setPeriodOptions({
+                                  ...periodOptions,
+                                  dateFormat: e.target.value
+                                });
+                              }}
+                              className="form-input"
+                            >
+                              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                              <option value="YYYY/MM/DD">YYYY/MM/DD</option>
+                              <option value="YYYY.MM.DD">YYYY.MM.DD</option>
+                              <option value="YYYY년 MM월 DD일">YYYY년 MM월 DD일</option>
+                              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            </select>
+                          )}
                         </div>
                       </div>
                     )}
                     <p className="form-hint">
-                      월별 내보내기 시 각 월의 초일부터 말일까지 자동으로 입력됩니다.
+                      {exportMode === 'monthly' 
+                        ? '월별 내보내기 시 각 월의 초일부터 말일까지 자동으로 입력됩니다.'
+                        : '첫 번째 항목의 날짜를 기준으로 해당 월의 초일부터 말일까지 자동으로 입력됩니다.'}
                     </p>
                   </div>
-                )}
 
                 {/* 전월 이월금 옵션 */}
                 <div className="option-group">
@@ -1617,6 +2100,109 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                   {includePreviousMonthBalance && (
                     <div className="option-details" style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
                       장부 첫 번째 항목에 전월 이월금이 수입으로 추가됩니다.
+                    </div>
+                  )}
+                </div>
+
+                {/* 부서명 옵션 */}
+                <div className="option-group">
+                  <label className="option-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={departmentOptions.enabled}
+                      onChange={(e) => {
+                        setDepartmentOptions({ ...departmentOptions, enabled: e.target.checked });
+                      }}
+                    />
+                    <span>부서명 입력</span>
+                  </label>
+                  {departmentOptions.enabled && (
+                    <div className="option-details">
+                      <input
+                        type="text"
+                        value={departmentOptions.value}
+                        onChange={(e) => {
+                          setDepartmentOptions({ ...departmentOptions, value: e.target.value });
+                        }}
+                        placeholder="부서명을 입력하세요"
+                        className="form-input"
+                        style={{ marginTop: '8px', marginBottom: '8px' }}
+                      />
+                      <div className="cell-selector">
+                        <div className="cell-selector-controls">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentDepartmentOption(true);
+                              setCurrentMappingField(null);
+                              setCurrentDateOption(null);
+                              setCurrentAmountOption(null);
+                              setCurrentPeriodOption(null);
+                              setCurrentTitleOption(false);
+                              setSelectedCells(new Set());
+                            }}
+                            className={currentDepartmentOption ? 'btn-primary btn-small' : 'btn-secondary btn-small'}
+                          >
+                            {selectionStartCell && currentDepartmentOption ? '끝 셀 선택' : currentDepartmentOption ? '시작 셀 선택' : '셀 선택'}
+                          </button>
+                          {departmentOptions.cell && (
+                            <span className="cell-range-display">{departmentOptions.cell}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 타이틀 옵션 */}
+                <div className="option-group">
+                  <label className="option-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={titleOptions.enabled}
+                      onChange={(e) => {
+                        setTitleOptions({ ...titleOptions, enabled: e.target.checked });
+                      }}
+                    />
+                    <span>타이틀 입력</span>
+                  </label>
+                  {titleOptions.enabled && (
+                    <div className="option-details">
+                      <input
+                        type="text"
+                        value={titleOptions.value}
+                        onChange={(e) => {
+                          setTitleOptions({ ...titleOptions, value: e.target.value });
+                        }}
+                        placeholder="예: 2024년 학회비 장부(MM월)"
+                        className="form-input"
+                        style={{ marginTop: '8px', marginBottom: '8px' }}
+                      />
+                      <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                        날짜 포맷: YYYY년, MM월, M월 사용 가능
+                      </div>
+                      <div className="cell-selector">
+                        <div className="cell-selector-controls">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentTitleOption(true);
+                              setCurrentMappingField(null);
+                              setCurrentDateOption(null);
+                              setCurrentAmountOption(null);
+                              setCurrentPeriodOption(null);
+                              setCurrentDepartmentOption(false);
+                              setSelectedCells(new Set());
+                            }}
+                            className={currentTitleOption ? 'btn-primary btn-small' : 'btn-secondary btn-small'}
+                          >
+                            {selectionStartCell && currentTitleOption ? '끝 셀 선택' : currentTitleOption ? '시작 셀 선택' : '셀 선택'}
+                          </button>
+                          {titleOptions.cell && (
+                            <span className="cell-range-display">{titleOptions.cell}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

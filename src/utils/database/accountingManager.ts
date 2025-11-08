@@ -391,6 +391,53 @@ export const createLedgerEntry = async (
     // 카테고리 사용 횟수 증가
     await updateCategoryUsageCount(spreadsheetId, entryData.category, 1);
 
+    // 저장 후 정렬 및 잔액 재계산
+    try {
+      const allEntries = await getLedgerEntries(spreadsheetId, entryData.accountId);
+      // 날짜순으로 정렬, 날짜가 같으면 생성일 기준으로 정렬
+      const sortedEntries = [...allEntries].sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        
+        // 날짜가 다르면 날짜순으로 정렬
+        if (dateA !== dateB) {
+          return dateA - dateB;
+        }
+        
+        // 날짜가 같으면 생성일 기준으로 정렬
+        const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+        const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+        return createdA - createdB;
+      });
+
+      // 정렬된 순서대로 잔액 재계산
+      let runningBalance = account.initialBalance;
+      
+      for (const entry of sortedEntries) {
+        runningBalance += entry.amount;
+        
+        // balanceAfter 업데이트
+        const entryData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.LEDGER);
+        const entryRowIndex = entryData.values.findIndex((row: string[]) => row[0] === entry.entryId);
+        if (entryRowIndex !== -1) {
+          await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `G${entryRowIndex + 1}`, [[runningBalance]]);
+        }
+      }
+
+      // 통장 잔액 업데이트 (마지막 항목의 balanceAfter)
+      const accountData = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.ACCOUNT);
+      if (accountData && accountData.values && accountData.values.length > 1) {
+        const accountRowIndex = accountData.values.findIndex((row: string[]) => row[0] === account.accountId);
+        if (accountRowIndex !== -1) {
+          const finalBalance = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].balanceAfter : account.initialBalance;
+          await update(spreadsheetId, ACCOUNTING_SHEETS.ACCOUNT, `D${accountRowIndex + 1}`, [[finalBalance]]);
+        }
+      }
+    } catch (sortError) {
+      console.error('❌ 정렬 및 잔액 재계산 오류:', sortError);
+      console.warn('⚠️ 정렬 실패했지만 장부 항목은 추가되었습니다.');
+    }
+
     console.log('✅ 장부 항목 추가 완료:', entryId);
     return newEntry;
 
@@ -530,11 +577,20 @@ export const updateLedgerEntry = async (
 
     // 수정된 항목 이후의 모든 항목들의 balanceAfter 재계산
     const allEntries = await getLedgerEntries(spreadsheetId, entryData.accountId);
+    // 날짜순으로 정렬, 날짜가 같으면 생성일 기준으로 정렬
     const sortedEntries = [...allEntries].sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      return a.entryId.localeCompare(b.entryId);
+      
+      // 날짜가 다르면 날짜순으로 정렬
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+      
+      // 날짜가 같으면 생성일 기준으로 정렬
+      const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+      const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+      return createdA - createdB;
     });
 
     const entryIndex = sortedEntries.findIndex(e => e.entryId === entryId);
@@ -650,11 +706,20 @@ export const deleteLedgerEntry = async (
 
     // 삭제 후 남은 항목들의 balanceAfter 재계산
     const remainingEntries = await getLedgerEntries(spreadsheetId, accountId);
+    // 날짜순으로 정렬, 날짜가 같으면 생성일 기준으로 정렬
     const sortedEntries = [...remainingEntries].sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      return a.entryId.localeCompare(b.entryId);
+      
+      // 날짜가 다르면 날짜순으로 정렬
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+      
+      // 날짜가 같으면 생성일 기준으로 정렬
+      const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+      const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+      return createdA - createdB;
     });
 
     let currentBalance = account.initialBalance;

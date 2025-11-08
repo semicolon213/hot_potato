@@ -3111,13 +3111,17 @@
 }
 
 .excel-preview-wrapper td.selectable,
-.excel-preview-wrapper th.selectable {
+.excel-preview-wrapper th.selectable,
+.excel-preview-wrapper td[data-is-selectable="true"],
+.excel-preview-wrapper th[data-is-selectable="true"] {
   cursor: crosshair;
   position: relative;
 }
 
 .excel-preview-wrapper td.selectable:hover,
-.excel-preview-wrapper th.selectable:hover {
+.excel-preview-wrapper th.selectable:hover,
+.excel-preview-wrapper td[data-is-selectable="true"]:hover,
+.excel-preview-wrapper th[data-is-selectable="true"]:hover {
   background: #e7f3ff !important;
   border-color: #0078d4 !important;
   z-index: 10;
@@ -3126,7 +3130,9 @@
 }
 
 .excel-preview-wrapper td.selected,
-.excel-preview-wrapper th.selected {
+.excel-preview-wrapper th.selected,
+.excel-preview-wrapper td[data-is-selected="true"],
+.excel-preview-wrapper th[data-is-selected="true"] {
   background: #cce5ff !important;
   border: 1px solid #0078d4 !important;
   z-index: 10;
