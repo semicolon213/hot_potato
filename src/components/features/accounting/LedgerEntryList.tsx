@@ -360,8 +360,23 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
     return acc;
   }, {} as Record<string, LedgerEntry[]>);
 
-  // 월별로 정렬 (최신순)
-  const sortedMonths = Object.keys(groupedByMonth).sort((a, b) => b.localeCompare(a));
+  // 각 월별 항목들을 날짜순으로 정렬 (빠른 날짜가 앞으로)
+  Object.keys(groupedByMonth).forEach(monthKey => {
+    groupedByMonth[monthKey].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) {
+        return dateA - dateB; // 날짜가 빠른 순서대로
+      }
+      // 날짜가 같으면 생성일 기준으로 정렬
+      const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+      const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+      return createdA - createdB;
+    });
+  });
+
+  // 월별로 정렬 (날짜 빠른 순서대로)
+  const sortedMonths = Object.keys(groupedByMonth).sort((a, b) => a.localeCompare(b));
 
   // 선택된 탭이 없으면 첫 번째 월을 자동 선택
   useEffect(() => {
