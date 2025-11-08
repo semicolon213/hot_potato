@@ -40,6 +40,7 @@ const Accounting: React.FC<AccountingProps> = ({ onPageChange }) => {
         <LedgerDetail
           ledger={selectedLedger}
           onBack={() => setSelectedLedger(null)}
+          onSelectLedger={handleSelectLedger}
         />
         <CreateLedgerModal
           isOpen={isCreateModalOpen}
