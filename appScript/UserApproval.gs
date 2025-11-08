@@ -30,7 +30,8 @@ function getAllUsers() {
     spreadsheetId = spreadsheet.getId();
     console.log('📊 스프레드시트 ID:', spreadsheetId);
     
-    sheetName = 'user';
+    // 스크립트 속성에서 시트 이름 가져오기
+    sheetName = PropertiesService.getScriptProperties().getProperty('SHEET_NAME_USER') || 'user';
     console.log('📊 시트 이름:', sheetName);
     const data = getSheetData(spreadsheetId, sheetName, 'A:G');
     console.log('📊 가져온 데이터:', data);

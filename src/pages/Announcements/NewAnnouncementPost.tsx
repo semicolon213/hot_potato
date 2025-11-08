@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/pages/NewAnnouncementPost.css';
-import type { User } from '../../types/app';
+import type { User, AnnouncementAccessRights, AnnouncementUser } from '../../types/app';
 import { BiPencil, BiPaperclip, BiSave, BiX } from "react-icons/bi";
 import TiptapEditor from '../../components/ui/TiptapEditor';
+import { apiClient } from '../../utils/api/apiClient';
+import { API_ACTIONS } from '../../config/api';
 
 interface NewAnnouncementPostProps {
     onPageChange: (pageName: string) => void;
@@ -12,12 +14,21 @@ interface NewAnnouncementPostProps {
         author: string;
         writer_id: string;
         attachments: File[];
+        accessRights?: AnnouncementAccessRights;
         isPinned: boolean;
         userType?: string;
     }) => void;
     user: User | null;
     isAuthenticated: boolean;
 }
+
+const GROUP_TYPES = [
+    { value: 'student', label: '학생' },
+    { value: 'professor', label: '교수' },
+    { value: 'ad_professor', label: '겸임교원' },
+    { value: 'supp', label: '조교' },
+    { value: 'std_council', label: '집행부' }
+];
 
 const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                                                      onPageChange, onAddPost, user, isAuthenticated
@@ -26,6 +37,10 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
     const [content, setContent] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isPinned, setIsPinned] = useState(false);
+    const [users, setUsers] = useState<AnnouncementUser[]>([]);
+    const [selectedIndividualUsers, setSelectedIndividualUsers] = useState<string[]>([]);
+    const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+    const [showPermissionSettings, setShowPermissionSettings] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -35,21 +50,66 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
         }
     }, [isAuthenticated, onPageChange]);
 
-    const handleSavePost = () => {
+    // 사용자 목록 로드
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                const response = await apiClient.request(API_ACTIONS.GET_ANNOUNCEMENT_USER_LIST, {});
+                if (response.success && response.data && Array.isArray(response.data.users)) {
+                    setUsers(response.data.users);
+                } else {
+                    // fallback: getAllUsers 사용
+                    const fallbackResponse = await apiClient.getAllUsers();
+                    if (fallbackResponse.success && fallbackResponse.users && Array.isArray(fallbackResponse.users)) {
+                        const userList = fallbackResponse.users
+                            .filter((u: any) => u.isApproved || u.Approval === 'O')
+                            .map((u: any) => ({
+                                id: u.studentId || u.no_member || '',
+                                name: u.name || u.name_member || '',
+                                user_type: u.userType || u.user_type || 'student',
+                                email: u.email || ''
+                            }));
+                        setUsers(userList);
+                    }
+                }
+            } catch (error) {
+                console.error('사용자 목록 로드 오류:', error);
+            }
+        };
+        loadUsers();
+    }, []);
+
+    const handleSavePost = async () => {
         if (!title.trim() || !content.trim()) {
             alert('제목과 내용을 모두 입력해주세요.');
             return;
         }
 
-        onAddPost({
-            title,
-            content, // HTML content from TiptapEditor
-            author: user?.name || 'Unknown',
-            writer_id: user?.studentId || '',
-            attachments: attachment ? [attachment] : [],
-            isPinned,
-            userType: user?.userType || 'student',
-        });
+        // 권한 설정 구성
+        const accessRights: AnnouncementAccessRights = {};
+        if (selectedIndividualUsers.length > 0) {
+            accessRights.individual = selectedIndividualUsers;
+        }
+        if (selectedGroups.length > 0) {
+            accessRights.groups = selectedGroups;
+        }
+
+        try {
+            await onAddPost({
+                title,
+                content, // HTML content from TiptapEditor
+                author: user?.name || 'Unknown',
+                writer_id: user?.studentId || '',
+                attachments: attachments,
+                accessRights: Object.keys(accessRights).length > 0 ? accessRights : undefined,
+                isPinned,
+                userType: user?.userType || 'student',
+            });
+            // onAddPost가 완료되면 자동으로 목록으로 이동됨 (App.tsx의 handleAddAnnouncement에서 처리)
+        } catch (error) {
+            console.error('공지사항 저장 오류:', error);
+            // 에러는 App.tsx에서 처리되므로 여기서는 추가 처리 불필요
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,6 +208,117 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <label>권한 설정</label>
+                            <button 
+                                type="button"
+                                onClick={() => setShowPermissionSettings(!showPermissionSettings)}
+                                style={{ 
+                                    padding: '5px 10px', 
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    background: showPermissionSettings ? '#f0f0f0' : 'white'
+                                }}
+                            >
+                                {showPermissionSettings ? '접기' : '권한 설정'}
+                            </button>
+                        </div>
+                        
+                        {showPermissionSettings && (
+                            <div style={{ 
+                                border: '1px solid #ddd', 
+                                borderRadius: '8px', 
+                                padding: '15px', 
+                                marginTop: '10px',
+                                background: '#f9f9f9'
+                            }}>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                                        그룹 권한
+                                    </label>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                        {GROUP_TYPES.map(group => (
+                                            <label key={group.value} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedGroups.includes(group.value)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedGroups([...selectedGroups, group.value]);
+                                                        } else {
+                                                            setSelectedGroups(selectedGroups.filter(g => g !== group.value));
+                                                        }
+                                                    }}
+                                                    style={{ marginRight: '5px' }}
+                                                />
+                                                {group.label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                                        개별 사용자 권한
+                                    </label>
+                                    <div style={{ 
+                                        maxHeight: '200px', 
+                                        overflowY: 'auto', 
+                                        border: '1px solid #ddd', 
+                                        borderRadius: '4px', 
+                                        padding: '10px',
+                                        background: 'white'
+                                    }}>
+                                        {users.length === 0 ? (
+                                            <div style={{ padding: '10px', textAlign: 'center', color: '#666' }}>
+                                                사용자 목록을 불러오는 중...
+                                            </div>
+                                        ) : (
+                                            users.map(userItem => (
+                                                <label 
+                                                    key={userItem.id} 
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        padding: '5px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIndividualUsers.includes(userItem.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedIndividualUsers([...selectedIndividualUsers, userItem.id]);
+                                                            } else {
+                                                                setSelectedIndividualUsers(selectedIndividualUsers.filter(id => id !== userItem.id));
+                                                            }
+                                                        }}
+                                                        style={{ marginRight: '8px' }}
+                                                    />
+                                                    <span>{userItem.name} ({userItem.user_type})</span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+                                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                                        {selectedIndividualUsers.length > 0 && (
+                                            <div>선택된 사용자: {selectedIndividualUsers.length}명</div>
+                                        )}
+                                        {selectedGroups.length === 0 && selectedIndividualUsers.length === 0 && (
+                                            <div style={{ color: '#999', fontStyle: 'italic' }}>
+                                                권한을 설정하지 않으면 모든 승인된 사용자에게 공개됩니다.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

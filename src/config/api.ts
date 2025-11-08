@@ -39,6 +39,17 @@ export const API_ACTIONS = {
   REJECT_USER: 'rejectUser',
   REQUEST_PINNED_ANNOUNCEMENT_APPROVAL: 'requestPinnedAnnouncementApproval',
   
+  // 공지사항 관리
+  GET_ANNOUNCEMENTS: 'getAnnouncements',
+  CREATE_ANNOUNCEMENT: 'createAnnouncement',
+  UPDATE_ANNOUNCEMENT: 'updateAnnouncement',
+  DELETE_ANNOUNCEMENT: 'deleteAnnouncement',
+  INCREMENT_ANNOUNCEMENT_VIEW: 'incrementAnnouncementView',
+  REQUEST_PINNED_ANNOUNCEMENT: 'requestPinnedAnnouncement',
+  APPROVE_PINNED_ANNOUNCEMENT: 'approvePinnedAnnouncement',
+  GET_PINNED_ANNOUNCEMENT_REQUESTS: 'getPinnedAnnouncementRequests',
+  GET_ANNOUNCEMENT_USER_LIST: 'getAnnouncementUserList',
+  
   // 인증
   CHECK_APPROVAL_STATUS: 'checkApprovalStatus',
   SUBMIT_REGISTRATION_REQUEST: 'submitRegistrationRequest',

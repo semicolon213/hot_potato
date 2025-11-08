@@ -58,6 +58,7 @@ interface PageRendererProps {
   onSelectAnnouncement: (post: Post) => void;
   onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[] }) => Promise<void>;
   onDeleteAnnouncement: (announcementId: string) => Promise<void>;
+  onUnpinAnnouncement?: (announcementId: string) => Promise<void>;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
   onDeleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -111,6 +112,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onSelectAnnouncement,
   onUpdateAnnouncement,
   onDeleteAnnouncement,
+  onUnpinAnnouncement,
   onAddCalendarEvent,
   onUpdateCalendarEvent,
   onDeleteCalendarEvent,
@@ -132,6 +134,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
     switch (currentPage) {
       case "announcements":
         return <AnnouncementsPage
+          onUnpinAnnouncement={onUnpinAnnouncement}
           onPageChange={onPageChange}
           onSelectAnnouncement={onSelectAnnouncement}
           posts={announcements}
@@ -139,7 +142,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           user={user}
           announcementSpreadsheetId={announcementSpreadsheetId}
           isLoading={isAnnouncementsLoading}
-          user={user}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost 
@@ -155,6 +157,21 @@ const PageRenderer: React.FC<PageRendererProps> = ({
             onBack={() => onPageChange('announcements')}
             onUpdate={onUpdateAnnouncement}
             onDelete={onDeleteAnnouncement}
+            onRefresh={async () => {
+              if (user?.studentId && user?.userType) {
+                try {
+                  const { fetchAnnouncements } = await import('../../utils/database/papyrusManager');
+                  const updated = await fetchAnnouncements(user.studentId, user.userType);
+                  // 선택된 공지사항도 업데이트
+                  const updatedPost = updated.find(a => a.id === selectedAnnouncement?.id);
+                  if (updatedPost) {
+                    onSelectAnnouncement(updatedPost);
+                  }
+                } catch (error) {
+                  console.error('공지사항 새로고침 오류:', error);
+                }
+              }
+            }}
           />
         ) : (
           // A fallback in case the page is accessed directly without a selected announcement

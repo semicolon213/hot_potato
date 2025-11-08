@@ -191,12 +191,12 @@ export const useAppState = () => {
 
     // 데이터 로드 useEffect들
     useEffect(() => {
-        if (isGapiReady && announcementSpreadsheetId) {
+        if (isGapiReady && announcementSpreadsheetId && user && user.studentId && user.userType) {
             const loadAnnouncements = async () => {
                 setIsAnnouncementsLoading(true);
                 try {
-                    console.log('공지사항 데이터 로딩 시작...');
-                    const announcementsData = await fetchAnnouncements();
+                    console.log('공지사항 데이터 로딩 시작...', { userId: user.studentId, userType: user.userType });
+                    const announcementsData = await fetchAnnouncements(user.studentId, user.userType);
                     setAnnouncements(announcementsData);
                     console.log('공지사항 데이터 로딩 완료:', announcementsData.length, '개');
                 } catch (error) {
@@ -207,7 +207,7 @@ export const useAppState = () => {
             };
             loadAnnouncements();
         }
-    }, [isGapiReady, announcementSpreadsheetId]);
+    }, [isGapiReady, announcementSpreadsheetId, user]);
 
     useEffect(() => {
         if (isGapiReady && (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId)) {
