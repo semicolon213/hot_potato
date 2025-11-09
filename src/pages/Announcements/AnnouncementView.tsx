@@ -5,6 +5,7 @@ import '../../styles/pages/NewAnnouncementPost.css';
 import { BiPencil, BiSave, BiX, BiPaperclip } from "react-icons/bi";
 import TiptapEditor from '../../components/ui/TiptapEditor';
 import { apiClient } from '../../utils/api/apiClient';
+import type { UsersListResponse } from '../../types/api/apiResponses';
 import { API_ACTIONS } from '../../config/api';
 import { ENV_CONFIG } from '../../config/environment';
 import { incrementViewCount } from '../../utils/database/papyrusManager';
@@ -109,9 +110,10 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
             // fallback: getAllUsers 사용
             const fallbackResponse = await apiClient.getAllUsers();
             if (fallbackResponse.success && fallbackResponse.users && Array.isArray(fallbackResponse.users)) {
-              const userList = fallbackResponse.users
-                .filter((u: any) => u.isApproved || u.Approval === 'O')
-                .map((u: any) => ({
+              const usersResponse = fallbackResponse as UsersListResponse;
+              const userList = usersResponse.users
+                .filter((u) => u.isApproved || u.Approval === 'O')
+                .map((u) => ({
                   id: u.studentId || u.no_member || '',
                   name: u.name || u.name_member || '',
                   user_type: u.userType || u.user_type || 'student',

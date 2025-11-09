@@ -36,9 +36,9 @@ const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<num
 
 // papyrus-db에 Google API 인증 설정
 const setupPapyrusAuth = () => {
-  if ((window as any).gapi && (window as any).gapi.client) {
-    (window as any).papyrusAuth = {
-      client: (window as any).gapi.client
+  if (window.gapi && window.gapi.client) {
+    window.papyrusAuth = {
+      client: window.gapi.client
     };
   }
 };

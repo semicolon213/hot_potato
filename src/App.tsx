@@ -186,7 +186,7 @@ const App: React.FC = () => {
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
       // Google 계정 자동 선택 취소
-      window.google.accounts.id.revoke((response: any) => {
+      window.google.accounts.id.revoke((response: { hint?: string }) => {
         console.log('Google 계정 정보 삭제 완료');
       });
     }

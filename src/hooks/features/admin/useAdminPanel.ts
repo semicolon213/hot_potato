@@ -54,7 +54,8 @@ export const useAdminPanel = () => {
       });
 
       if (response.success) {
-        const requests = (response as any).requests || (response.data as any)?.requests || [];
+        const responseData = response.data as { requests?: unknown[] } | undefined;
+        const requests = responseData?.requests || [];
         setPinnedAnnouncementRequests(requests);
         console.log('📌 고정 공지 승인 요청 목록 로딩 완료:', requests.length);
       } else {
@@ -186,7 +187,7 @@ export const useAdminPanel = () => {
         console.log('setUsers 호출 전 현재 users 상태:', users);
         
         // Apps Script에서 받은 데이터를 AdminUser 타입으로 변환
-        const convertedUsers = result.users.map((user: any) => ({
+        const convertedUsers = result.users.map((user: Partial<AdminUser> & Record<string, unknown>) => ({
           id: user.id || user.no_member || `user_${Math.random()}`,
           email: user.email || '',
           studentId: user.studentId || user.no_member || '',
@@ -360,7 +361,7 @@ export const useAdminPanel = () => {
             adminAccessToken = storedToken;
           } else {
             // 3순위: gapi client에서 직접 가져오기 (Auth2 대신)
-            const gapi = (window as any).gapi;
+            const gapi = window.gapi;
             if (!gapi || !gapi.client) {
               throw new Error('Google API가 초기화되지 않았습니다.');
             }
@@ -427,7 +428,8 @@ export const useAdminPanel = () => {
           setEmailStatus('error');
         }
       } else {
-        setMessage('이메일 전송에 실패했습니다: ' + (result as any).error);
+        const errorMessage = result && typeof result === 'object' && 'error' in result ? String(result.error) : '알 수 없는 오류';
+        setMessage('이메일 전송에 실패했습니다: ' + errorMessage);
         setEmailStatus('error');
       }
       

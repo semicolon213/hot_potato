@@ -26,7 +26,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     transactionType: 'all'
   });
 
-  const handleFilterChange = (key: keyof LedgerEntryFilter, value: any) => {
+  const handleFilterChange = (key: keyof LedgerEntryFilter, value: LedgerEntryFilter[keyof LedgerEntryFilter]) => {
     const newFilter = { ...filter, [key]: value };
     setFilter(newFilter);
     onFilterChange(newFilter);

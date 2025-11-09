@@ -8,7 +8,7 @@ import { generateDocumentNumber } from "./documentNumberGenerator";
 import type { DocumentInfo, GoogleFile } from "../../types/documents";
 import { formatDateTime } from "./timeUtils";
 import { apiClient } from "../api/apiClient";
-import type { DocumentInfoResponse, DocumentsListResponse } from "../../types/api/apiResponses";
+import type { DocumentInfoResponse, DocumentsListResponse, UserNameResponse } from "../../types/api/apiResponses";
 
 export interface FileWithDescription {
   id: string;
@@ -43,9 +43,10 @@ async function convertEmailToName(email: string): Promise<string> {
     }
     
     // 응답 구조가 다른 경우를 대비해 직접 name 필드 확인
-    if (response.success && (response as any).name && (response as any).name !== email) {
-      console.log('👤 사용자 이름 변환 성공 (직접 name 필드):', email, '->', (response as any).name);
-      return (response as any).name;
+    const userNameResponse = response as Partial<UserNameResponse>;
+    if (response.success && userNameResponse.name && userNameResponse.name !== email) {
+      console.log('👤 사용자 이름 변환 성공 (직접 name 필드):', email, '->', userNameResponse.name);
+      return userNameResponse.name;
     }
     
     console.log('👤 사용자 이름 변환 실패, 원본 이메일 반환:', email, 'response:', response);

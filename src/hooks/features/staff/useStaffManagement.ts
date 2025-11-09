@@ -281,8 +281,8 @@ export const useStaffManagement = (staffSpreadsheetId: string | null) => {
     if (!sortConfig.key) return filteredStaff;
     
     return [...filteredStaff].sort((a, b) => {
-      const aValue = (a as any)[sortConfig.key!];
-      const bValue = (b as any)[sortConfig.key!];
+      const aValue = (a as Record<string, unknown>)[sortConfig.key!];
+      const bValue = (b as Record<string, unknown>)[sortConfig.key!];
       
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
@@ -298,8 +298,8 @@ export const useStaffManagement = (staffSpreadsheetId: string | null) => {
     if (!sortConfig.key) return filteredCommittee;
     
     return [...filteredCommittee].sort((a, b) => {
-      const aValue = (a as any)[sortConfig.key!];
-      const bValue = (b as any)[sortConfig.key!];
+      const aValue = (a as Record<string, unknown>)[sortConfig.key!];
+      const bValue = (b as Record<string, unknown>)[sortConfig.key!];
       
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;

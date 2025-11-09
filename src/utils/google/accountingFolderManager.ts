@@ -27,12 +27,12 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     // Google API가 준비될 때까지 대기
     let attempts = 0;
     const maxAttempts = 10;
-    while (attempts < maxAttempts && (!(window as any).gapi || !(window as any).gapi.client)) {
+    while (attempts < maxAttempts && (!window.gapi || !window.gapi.client)) {
       await new Promise(resolve => setTimeout(resolve, 500));
       attempts++;
     }
 
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.warn('⚠️ Google API가 초기화되지 않았습니다.');
       return [];
     }
@@ -45,7 +45,7 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     }
 
     try {
-      (window as any).gapi.client.setToken({ access_token: token });
+      window.gapi.client.setToken({ access_token: token });
     } catch (tokenError) {
       console.warn('⚠️ 토큰 설정 실패:', tokenError);
     }
@@ -99,7 +99,7 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     console.log('📁 폴더 ID 원본:', JSON.stringify(folderId));
     console.log('📁 폴더 ID 문자 배열:', folderId.split(''));
 
-    const gapi = (window as any).gapi.client;
+    const gapi = window.gapi.client;
     
     // 회계 폴더 정보 먼저 확인
     const folderIdToUse = folderId; // 변수 복사하여 사용
@@ -200,12 +200,12 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
  */
 export const getLedgerInfo = async (folderId: string): Promise<LedgerInfo | null> => {
   try {
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.warn('⚠️ Google API가 초기화되지 않았습니다.');
       return null;
     }
 
-    const gapi = (window as any).gapi.client;
+    const gapi = window.gapi.client;
 
     // 폴더 정보 조회
     const folderResponse = await gapi.drive.files.get({

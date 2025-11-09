@@ -14,7 +14,7 @@ interface Column {
   key: string;
   header: string;
   sortable?: boolean;
-  render?: (row: any) => React.ReactNode;
+  render?: (row: StudentWithCouncil) => React.ReactNode;
 }
 
 interface SortConfig {

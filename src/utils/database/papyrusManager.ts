@@ -12,7 +12,7 @@ import {ENV_CONFIG} from '../../config/environment';
 import {apiClient} from '../api/apiClient';
 import {tokenManager} from '../auth/tokenManager';
 import type {StaffMember, Committee as CommitteeType} from '../../types/features/staff';
-import type {SpreadsheetIdsResponse} from '../../types/api/apiResponses';
+import type {SpreadsheetIdsResponse, AnnouncementsResponse, AnnouncementItem, StudentIssue} from '../../types/api/apiResponses';
 
 // 헬퍼 함수들
 const addRow = async (spreadsheetId: string, sheetName: string, data: Record<string, unknown>) => {
@@ -299,8 +299,9 @@ export const fetchAnnouncements = async (userId: string, userType: string): Prom
         }
 
         // 앱스크립트 응답 구조: response.announcements 또는 response.data.announcements
-        const announcementsData = (response as any).announcements || (response.data as any)?.announcements || [];
-        const announcements = announcementsData.map((ann: any) => {
+        const announcementsResponse = response as AnnouncementsResponse;
+        const announcementsData = announcementsResponse.announcements || announcementsResponse.data?.announcements || [];
+        const announcements = announcementsData.map((ann: AnnouncementItem) => {
             // ID를 문자열로 통일 (앱스크립트에서 숫자로 올 수 있음)
             const announcementId = String(ann.id || ann.no_notice || '');
             return {
@@ -1104,7 +1105,7 @@ export interface StudentIssue {
 }
 
 // 학생 이슈 관련 함수들
-export const fetchStudentIssues = async (studentNo: string): Promise<any[]> => {
+export const fetchStudentIssues = async (studentNo: string): Promise<StudentIssue[]> => {
     try {
         if (!studentSpreadsheetId) {
             console.warn('Student spreadsheet ID not found');

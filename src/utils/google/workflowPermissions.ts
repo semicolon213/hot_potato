@@ -87,14 +87,15 @@ export async function grantPersonalDocumentPermissions(
       // API 제한 방지 (짧은 대기)
       await new Promise(resolve => setTimeout(resolve, 100));
       
-    } catch (error: any) {
-      console.error(`❌ 권한 부여 실패 [${email}]:`, error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ 권한 부여 실패 [${email}]:`, errorMessage);
       results.failCount++;
       results.failedUsers.push(email);
       results.details.push({
         email: email,
         success: false,
-        message: error.message || '권한 부여 실패'
+        message: errorMessage
       });
     }
   }

@@ -11,6 +11,7 @@ import { getAccounts } from '../../../utils/database/accountingManager';
 import { apiClient } from '../../../utils/api/apiClient';
 import { UserMultiSelect } from './UserMultiSelect';
 import type { Account } from '../../../types/features/accounting';
+import type { UserNameResponse, UsersListResponse } from '../../../types/api/apiResponses';
 import './accounting.css';
 
 interface AccountDisplayProps {
@@ -76,7 +77,8 @@ export const AccountDisplay: React.FC<AccountDisplayProps> = ({
       if (accountData.mainManagerId) {
         promises.push(
           apiClient.getUserNameByEmail(accountData.mainManagerId).then(response => {
-            const name = (response as any).name || response.data?.name;
+            const userNameResponse = response as Partial<UserNameResponse>;
+            const name = userNameResponse.name || (response.data && typeof response.data === 'object' && 'name' in response.data ? (response.data as { name?: string }).name : undefined);
             if (response.success && name && name !== accountData.mainManagerId && name !== '') {
               return name;
             }
@@ -90,7 +92,8 @@ export const AccountDisplay: React.FC<AccountDisplayProps> = ({
         accountData.subManagerIds.forEach(email => {
           promises.push(
             apiClient.getUserNameByEmail(email).then(response => {
-              const name = (response as any).name || response.data?.name;
+              const userNameResponse = response as Partial<UserNameResponse>;
+              const name = userNameResponse.name || (response.data && typeof response.data === 'object' && 'name' in response.data ? (response.data as { name?: string }).name : undefined);
               if (response.success && name && name !== email && name !== '') {
                 return name;
               }
@@ -134,12 +137,13 @@ export const AccountDisplay: React.FC<AccountDisplayProps> = ({
     try {
       const response = await apiClient.getAllUsers();
       if (response.success && response.users && Array.isArray(response.users)) {
-        const userList = response.users
-          .filter((user: any) => {
+        const usersResponse = response as UsersListResponse;
+        const userList = usersResponse.users
+          .filter((user) => {
             const isApproved = user.isApproved || user.Approval === 'O';
-            return isApproved && user.email && user.name;
+            return isApproved && user.email && (user.name || user.name_member);
           })
-          .map((user: any) => ({
+          .map((user) => ({
             email: user.email || '',
             name: user.name || user.name_member || '',
             studentId: user.studentId || user.no_member || '',
@@ -183,9 +187,10 @@ export const AccountDisplay: React.FC<AccountDisplayProps> = ({
       await loadAccount();
       setIsEditModalOpen(false);
       alert('서브 관리자 목록이 성공적으로 업데이트되었습니다.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 서브 관리자 업데이트 오류:', err);
-      alert(err.message || '서브 관리자 목록 업데이트에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '서브 관리자 목록 업데이트에 실패했습니다.';
+      alert(errorMessage);
     } finally {
       setIsSaving(false);
     }

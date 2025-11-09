@@ -76,9 +76,10 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
       setNewCategoryName('');
       setNewCategoryDescription('');
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 카테고리 추가 오류:', err);
-      setError(err.message || '카테고리 추가에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '카테고리 추가에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -138,9 +139,10 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
       await loadCategories();
       handleCloseEditModal();
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 카테고리 수정 오류:', err);
-      setError(err.message || '카테고리 수정에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '카테고리 수정에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -158,10 +160,11 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
       await deleteCategory(spreadsheetId, category.categoryId);
       await loadCategories();
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 카테고리 삭제 오류:', err);
-      alert(err.message || '카테고리 삭제에 실패했습니다.');
-      setError(err.message || '카테고리 삭제에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '카테고리 삭제에 실패했습니다.';
+      alert(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

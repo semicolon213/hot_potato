@@ -74,8 +74,8 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       };
       // undefined 값 제거
       Object.keys(convertedFilter).forEach(key => {
-        if ((convertedFilter as any)[key] === undefined) {
-          delete (convertedFilter as any)[key];
+        if ((convertedFilter as Record<string, unknown>)[key] === undefined) {
+          delete (convertedFilter as Record<string, unknown>)[key];
         }
       });
       
@@ -84,7 +84,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       const entriesData = await getLedgerEntries(
         spreadsheetId,
         targetAccountId,
-        convertedFilter as any
+        convertedFilter as LedgerEntryFilter
       );
       console.log('✅ 장부 항목 로드 완료:', entriesData.length, '개');
       setEntries(entriesData);
@@ -224,9 +224,10 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       setNewEntryEvidenceFile(null);
       await loadEntries();
       await loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 항목 추가 오류:', err);
-      setError(err.message || '장부 항목 추가에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '장부 항목 추가에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -287,9 +288,10 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       setEditingEntry(null);
       await loadEntries();
       await loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 항목 수정 오류:', err);
-      setError(err.message || '장부 항목 수정에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '장부 항목 수정에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -310,10 +312,11 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       await deleteLedgerEntry(spreadsheetId, entry.entryId, selectedAccountId);
       await loadEntries();
       await loadData(); // 잔액 업데이트를 위해
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 항목 삭제 오류:', err);
-      setError(err.message || '장부 항목 삭제에 실패했습니다.');
-      alert('장부 항목 삭제에 실패했습니다: ' + (err.message || '알 수 없는 오류'));
+      const errorMessage = err instanceof Error ? err.message : '장부 항목 삭제에 실패했습니다.';
+      setError(errorMessage);
+      alert('장부 항목 삭제에 실패했습니다: ' + errorMessage);
     } finally {
       setIsLoading(false);
     }

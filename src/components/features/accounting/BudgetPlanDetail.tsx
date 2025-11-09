@@ -69,9 +69,10 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
       if (foundAccount) {
         setAccount(foundAccount);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 데이터 로드 오류:', err);
-      setError(err.message || '데이터를 불러오는데 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -158,14 +159,15 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
       setHasChanges(false);
       onSave();
       alert('예산 항목이 저장되었습니다.\n상세 항목이 수정되어 승인 요청 상태로 변경되었습니다.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 예산 항목 저장 오류:', err);
       
       // 인증 오류인 경우
-      if (err.message?.includes('인증') || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+      const errorMessage = err instanceof Error ? err.message : '예산 항목 저장에 실패했습니다.';
+      if (errorMessage.includes('인증') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
         setError('인증이 만료되었습니다. 페이지를 새로고침해주세요.');
       } else {
-        setError(err.message || '예산 항목 저장에 실패했습니다.');
+        setError(errorMessage);
       }
     } finally {
       setIsSaving(false);

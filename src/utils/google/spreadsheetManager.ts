@@ -171,7 +171,7 @@ export const addAnnouncement = async (
 
 export const incrementViewCount = async (announcementSpreadsheetId: string, announcementSheetName: string, announcementId: string): Promise<void> => {
   try {
-    const data = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+    const data = await window.gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: announcementSpreadsheetId,
         range: `${announcementSheetName}!A:H`,
     });
@@ -191,7 +191,7 @@ export const incrementViewCount = async (announcementSpreadsheetId: string, anno
     const currentViews = parseInt(data.result.values[rowIndex][6] || '0', 10);
     const newViews = currentViews + 1;
 
-    await (window as any).gapi.client.sheets.spreadsheets.values.update({
+    await window.gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: announcementSpreadsheetId,
         range: `${announcementSheetName}!G${sheetRowIndex}`,
         valueInputOption: 'RAW',
@@ -263,7 +263,7 @@ export const addTemplate = async (
 ): Promise<void> => {
     try {
         // 1. Create a new Google Doc
-        const doc = await (window as any).gapi.client.docs.documents.create({
+        const doc = await window.gapi.client.docs.documents.create({
             title: newDocData.title,
         });
 
@@ -280,7 +280,7 @@ export const addTemplate = async (
             documentId, // F column - documentId
         ];
 
-        await (window as any).gapi.client.sheets.spreadsheets.values.append({
+        await window.gapi.client.sheets.spreadsheets.values.append({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             range: 'document_template!A1',
             valueInputOption: 'RAW',
@@ -309,7 +309,7 @@ export const deleteTemplate = async (
     rowIndex: number
 ): Promise<void> => {
     try {
-        await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+        await window.gapi.client.sheets.spreadsheets.batchUpdate({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             resource: {
                 requests: [
@@ -350,7 +350,7 @@ export const updateTemplate = async (
             documentId // F column - documentId
         ];
 
-        await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        await window.gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             range: `document_template!A${rowIndex}`,
             valueInputOption: 'RAW',
@@ -404,7 +404,7 @@ export const fetchCalendarEvents = async (
                 console.log(`Fetching calendar events from spreadsheet: ${spreadsheetId}`);
                 
                 // 먼저 시트가 존재하는지 확인
-                const sheetResponse = await (window as any).gapi.client.sheets.spreadsheets.get({
+                const sheetResponse = await window.gapi.client.sheets.spreadsheets.get({
                     spreadsheetId: spreadsheetId,
                     ranges: [calendarSheetName]
                 });
@@ -427,7 +427,7 @@ export const fetchCalendarEvents = async (
                 }
 
                 // 전체 데이터 가져오기
-                const fullResponse = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+                const fullResponse = await window.gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: spreadsheetId,
                     range: `${calendarSheetName}!A:K`,
                 });
@@ -499,9 +499,9 @@ export const addCalendarEvent = async (
             'startDateTime_calendar': eventData.startDateTime,
             'endDateTime_calendar': eventData.endDateTime,
             'tag_calendar': eventData.type || '',
-            'colorId_calendar': (eventData as any).color || '',
-            'recurrence_rule_calendar': (eventData as any).rrule || '',
-            'attendees_calendar': (eventData as any).attendees || ''
+            'colorId_calendar': eventData.color || '',
+            'recurrence_rule_calendar': eventData.rrule || '',
+            'attendees_calendar': eventData.attendees || ''
         };
 
         await appendRow(targetSpreadsheetId, calendarSheetName, newEventForSheet);
@@ -554,17 +554,17 @@ export const updateCalendarEvent = async (
             eventData.startDate, // C: startDate
             eventData.endDate, // D: endDate
             eventData.description || ' ', // E: description
-            (eventData as any).color || '', // F: color
+            eventData.color || '', // F: color
             eventData.startDateTime || '', // G: startDateTime
             eventData.endDateTime || '', // H: endDateTime
             eventData.type || '', // I: type
-            (eventData as any).rrule || '', // J: rrule
-            (eventData as any).attendees || '' // K: attendees
+            eventData.rrule || '', // J: rrule
+            eventData.attendees || '' // K: attendees
         ];
 
         // 3. Update the row
         const updateRange = `${sheetName}!A${targetRow}:K${targetRow}`;
-        await (window as any).gapi.client.sheets.spreadsheets.values.update({
+        await window.gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: spreadsheetId,
             range: updateRange,
             valueInputOption: 'RAW',
@@ -674,7 +674,7 @@ export const saveAcademicScheduleToSheet = async (
         return newDate;
     };
 
-    const eventsToSave: any[] = [];
+    const eventsToSave: Array<{ title: string; startDate: string; endDate: string; type?: string }> = [];
 
     // 개강일
     eventsToSave.push({ title: '개강일', startDate: formatDate(semesterStartDate), endDate: formatDate(semesterStartDate) });
@@ -723,13 +723,13 @@ export const saveAcademicScheduleToSheet = async (
 
     try {
         // Clear existing academic events (e.g., rows A2:I100)
-        await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+        await window.gapi.client.sheets.spreadsheets.values.clear({
             spreadsheetId: calendarStudentSpreadsheetId,
             range: `${calendarSheetName}!A2:I100`, // Assuming academic events are within this range
         });
 
         // Append new events
-        await (window as any).gapi.client.sheets.spreadsheets.values.append({
+        await window.gapi.client.sheets.spreadsheets.values.append({
             spreadsheetId: calendarStudentSpreadsheetId,
             range: `${calendarSheetName}!A2`,
             valueInputOption: 'RAW',
@@ -768,7 +768,7 @@ export const deleteTag = async (
     tagToDelete: string
 ): Promise<void> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.get({
+        const response = await window.gapi.client.sheets.spreadsheets.get({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             ranges: ['document_template!A:E'],
             includeGridData: true,
@@ -803,7 +803,7 @@ export const deleteTag = async (
                 },
             }));
 
-            await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+            await window.gapi.client.sheets.spreadsheets.batchUpdate({
                 spreadsheetId: hotPotatoDBSpreadsheetId,
                 resource: { requests },
             });
@@ -821,7 +821,7 @@ export const updateTag = async (
     newTag: string
 ): Promise<void> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.get({
+        const response = await window.gapi.client.sheets.spreadsheets.get({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             ranges: ['document_template!A:E'],
             includeGridData: true,
@@ -851,7 +851,7 @@ export const updateTag = async (
         }
 
         if (requests.length > 0) {
-            await (window as any).gapi.client.sheets.spreadsheets.batchUpdate({
+            await window.gapi.client.sheets.spreadsheets.batchUpdate({
                 spreadsheetId: hotPotatoDBSpreadsheetId,
                 resource: { requests },
             });

@@ -179,9 +179,10 @@ export const AddLedgerEntryModal: React.FC<AddLedgerEntryModalProps> = ({
       // 폼 초기화
       resetForm();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 항목 추가 오류:', err);
-      setError(err.message || '장부 항목 추가에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '장부 항목 추가에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

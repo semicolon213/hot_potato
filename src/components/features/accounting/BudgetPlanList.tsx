@@ -234,9 +234,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       await reviewBudgetPlan(spreadsheetId, budgetId, reviewerEmail);
       await loadBudgetPlans();
       alert('검토가 완료되었습니다.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 검토 오류:', err);
-      alert(err.message || '검토 처리에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '검토 처리에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -260,9 +261,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       await approveBudgetPlan(spreadsheetId, budgetId, approverId);
       await loadBudgetPlans();
       alert('승인이 완료되었습니다.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 승인 오류:', err);
-      alert(err.message || '승인 처리에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '승인 처리에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -299,9 +301,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       await loadBudgetPlans();
       handleCloseRejectModal();
       alert('반려가 완료되었습니다.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 반려 오류:', err);
-      alert(err.message || '반려 처리에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '반려 처리에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -318,8 +321,9 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       await executeBudgetPlan(spreadsheetId, budgetId, userInfo.studentId || userInfo.email || 'unknown');
       await loadBudgetPlans();
       alert('예산 계획이 성공적으로 집행되었습니다.');
-    } catch (err: any) {
-      alert(err.message || '집행 처리에 실패했습니다.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '집행 처리에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -348,9 +352,10 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
       await deleteBudgetPlan(spreadsheetId, budgetId, deleterId);
       await loadBudgetPlans();
       alert('예산 계획이 삭제되었습니다.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 삭제 오류:', err);
-      alert(err.message || '삭제 처리에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '삭제 처리에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -449,7 +454,7 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
           )}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as BudgetPlan['status'] | 'all')}
             className="status-filter"
           >
             <option value="all">전체</option>

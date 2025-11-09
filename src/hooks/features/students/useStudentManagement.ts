@@ -113,7 +113,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
       if (studentsData && studentsData.length > 0) {
         // 전화번호 복호화 처리
         const studentData: StudentWithCouncil[] = await Promise.all(
-          studentsData.map(async (student: any) => {
+          studentsData.map(async (student: Student) => {
             const decryptedPhone = await decryptPhone(student.phone_num || '');
             
             const studentObj: Student = {
@@ -379,7 +379,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
               student.council
             ]);
 
-            await (window as any).gapi.client.sheets.spreadsheets.values.append({
+            await window.gapi.client.sheets.spreadsheets.values.append({
               spreadsheetId: studentSpreadsheetId,
               range: 'A:F',
               valueInputOption: 'RAW',
@@ -423,7 +423,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
         ]
       ];
 
-      await (window as any).gapi.client.sheets.spreadsheets.values.append({
+      await window.gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId: studentSpreadsheetId,
         range: 'A:F',
         valueInputOption: 'RAW',

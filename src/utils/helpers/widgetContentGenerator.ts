@@ -11,7 +11,7 @@ import { widgetData } from '../../components/features/dashboard/widgetData';
  * `widgetData`에 정의된 위젯 정보를 기반으로 하며, 해당 타입이 없을 경우 기본 위젯 데이터를 반환합니다.
  *
  * @param {string} type - 생성할 위젯의 타입 (예: 'assignmentList', 'busList').
- * @returns {{ title: string; componentType: string; props: any }} 위젯의 제목, 컴포넌트 타입, props를 포함하는 객체.
+ * @returns {{ title: string; componentType: string; props: Record<string, unknown> }} 위젯의 제목, 컴포넌트 타입, props를 포함하는 객체.
  */
 export const generateWidgetContent = (type: string) => {
     // widgetData에서 주어진 타입에 해당하는 데이터를 찾거나, 없을 경우 기본(default) 데이터를 사용합니다.

@@ -3,6 +3,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { registerUser, verifyAdminKey } from '../../../utils/api/authApi';
 import { tokenManager } from '../../../utils/auth/tokenManager';
 import { lastUserManager } from '../../../utils/auth/lastUserManager';
+import type { GoogleTokenResponse } from '../../../types/auth';
 
 // 타입 정의
 interface User {
@@ -134,7 +135,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
   });
 
   // Google 로그인 공통 핸들러
-  const handleGoogleLoginSuccess = async (tokenResponse: any) => {
+  const handleGoogleLoginSuccess = async (tokenResponse: GoogleTokenResponse) => {
       try {
         setLoginState(prev => ({ ...prev, isLoading: true, error: '' }));
 
@@ -174,7 +175,7 @@ export const useAuth = (onLogin: (user: User) => void) => {
     };
 
   // Google 로그인 공통 에러 핸들러
-  const handleGoogleLoginError = (error: any) => {
+  const handleGoogleLoginError = (error: unknown) => {
     console.error('Google 로그인 오류:', error);
     setLoginState(prev => ({
       ...prev,

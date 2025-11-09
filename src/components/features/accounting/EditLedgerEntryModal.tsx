@@ -117,15 +117,16 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
       };
 
       // 현재 사용자 ID 가져오기 (실제로는 인증된 사용자 정보에서 가져와야 함)
-      const currentUserEmail = (window as any).gapi?.auth2?.getAuthInstance()?.currentUser?.get()?.getBasicProfile()?.getEmail() || 'unknown';
+      const currentUserEmail = window.gapi?.auth2?.getAuthInstance()?.currentUser?.get()?.getBasicProfile()?.getEmail() || 'unknown';
 
       await updateLedgerEntry(spreadsheetId, entry.entryId, updateData, currentUserEmail);
       
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 항목 수정 오류:', err);
-      setError(err.message || '장부 항목 수정에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '장부 항목 수정에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

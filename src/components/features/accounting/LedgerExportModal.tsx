@@ -11,6 +11,7 @@ import type { LedgerEntry } from '../../../types/features/accounting';
 import { useTemplateUI } from '../../../hooks/features/templates/useTemplateUI';
 import type { Template } from '../../../hooks/features/templates/useTemplateUI';
 import { initializeGoogleAPIOnce, findPersonalDocumentFolder } from '../../../utils/google/googleSheetUtils';
+import type { GridRange, RowData, CellData, BatchUpdateData } from '../../../types/googleSheets';
 import './accounting.css';
 
 interface LedgerExportModalProps {
@@ -117,7 +118,14 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [evidenceInfo, setEvidenceInfo] = useState<Array<{ entryId: string; description: string; fileName: string; fileId: string }>>([]);
-  const [sheetData, setSheetData] = useState<Array<Array<{ value: any; formattedValue?: string; backgroundColor?: string; textColor?: string; border?: any }>>>([]);
+  interface CellData {
+    value: string | number | boolean | null;
+    formattedValue?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    border?: { style?: string; width?: number; color?: string };
+  }
+  const [sheetData, setSheetData] = useState<CellData[][]>([]);
   const [sheetHtml, setSheetHtml] = useState<string>('');
   const [mergeMap, setMergeMap] = useState<Map<string, { startRow: number; startCol: number; rowspan: number; colspan: number }>>(new Map());
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
@@ -161,7 +169,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
       // Google API 초기화
       await initializeGoogleAPIOnce();
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
       if (!gapi?.client?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
       }
@@ -170,13 +178,13 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       setTemplateSpreadsheetId(template.documentId);
 
       // 시트 목록 가져오기
-      const spreadsheetResponse = await (gapi.client as any).sheets.spreadsheets.get({
+      const spreadsheetResponse = await gapi.client.sheets.spreadsheets.get({
         spreadsheetId: template.documentId,
         fields: 'sheets.properties(title,sheetId)'
       });
 
       const sheets = spreadsheetResponse.result.sheets || [];
-      const sheetNamesList = sheets.map((s: any) => s.properties.title);
+      const sheetNamesList = sheets.map((s: { properties: { title?: string } }) => s.properties.title || '');
       setSheetNames(sheetNamesList);
       
       if (sheetNamesList.length > 0) {
@@ -184,9 +192,10 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         await loadSheetData(template.documentId, sheetNamesList[0]);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('템플릿 파일 선택 오류:', err);
-      setError(err.message || '템플릿에서 양식을 불러올 수 없습니다.');
+      setError(errorMessage || '템플릿에서 양식을 불러올 수 없습니다.');
     } finally {
       setIsLoadingTemplate(false);
     }
@@ -195,18 +204,18 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
   const loadSheetData = async (spreadsheetId: string, sheetName: string) => {
     try {
       await initializeGoogleAPIOnce();
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
       if (!gapi?.client?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
       }
 
       // 시트 ID 찾기
-      const spreadsheetResponse = await (gapi.client as any).sheets.spreadsheets.get({
+      const spreadsheetResponse = await gapi.client.sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         fields: 'sheets.properties(title,sheetId)'
       });
 
-      const sheet = spreadsheetResponse.result.sheets?.find((s: any) => s.properties.title === sheetName);
+      const sheet = spreadsheetResponse.result.sheets?.find((s: { properties: { title?: string } }) => s.properties.title === sheetName);
       if (!sheet) {
         throw new Error(`시트를 찾을 수 없습니다: ${sheetName}`);
       }
@@ -214,7 +223,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       const sheetId = sheet.properties.sheetId;
 
       // 병합 정보 가져오기
-      const mergeResponse = await (gapi.client as any).sheets.spreadsheets.get({
+      const mergeResponse = await gapi.client.sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         ranges: [`${sheetName}!A1:ZZ1000`],
         fields: 'sheets.merges'
@@ -223,7 +232,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       const merges = mergeResponse.result.sheets?.[0]?.merges || [];
       const mergeInfoMap = new Map<string, { startRow: number; startCol: number; rowspan: number; colspan: number }>();
       
-      merges.forEach((merge: any) => {
+      merges.forEach((merge: GridRange) => {
         const startRow = merge.startRowIndex || 0;
         const endRow = merge.endRowIndex || 0;
         const startCol = merge.startColumnIndex || 0;
@@ -249,7 +258,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       setMergeMap(mergeInfoMap);
 
       // 시트 데이터 가져오기 (값만, 스타일 제거하여 성능 최적화)
-      const dataResponse = await (gapi.client as any).sheets.spreadsheets.get({
+      const dataResponse = await gapi.client.sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         ranges: [`${sheetName}!A1:ZZ1000`], // 충분히 큰 범위
         includeGridData: true,
@@ -259,15 +268,15 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       const rowData = dataResponse.result.sheets?.[0]?.data?.[0]?.rowData || [];
       
       // 데이터 배열로 변환 (스타일 제거하여 성능 최적화)
-      const data: Array<Array<{ value: any; formattedValue?: string }>> = [];
+      const data: Array<Array<{ value: string | number | boolean | null; formattedValue?: string }>> = [];
       let maxCols = 0;
 
-      rowData.forEach((row: any) => {
-        const rowArray: Array<{ value: any; formattedValue?: string }> = [];
+      rowData.forEach((row: RowData) => {
+        const rowArray: Array<{ value: string | number | boolean | null; formattedValue?: string }> = [];
         if (row.values) {
-          row.values.forEach((cell: any) => {
+          row.values.forEach((cell: CellData) => {
             const value = cell.effectiveValue;
-            let cellValue: any = '';
+            let cellValue: string | number | boolean | null = '';
             if (value) {
               if (value.numberValue !== undefined) {
                 cellValue = value.numberValue;
@@ -420,7 +429,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       
       table.appendChild(tbody);
       setSheetHtml(table.outerHTML);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('시트 데이터 로드 오류:', err);
       setError(err.message || '시트 데이터를 불러올 수 없습니다.');
     }
@@ -792,7 +801,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     titleOptions?: TitleOptions
   ) => {
     await initializeGoogleAPIOnce();
-    const gapi = (window as any).gapi;
+    const gapi = window.gapi;
     if (!gapi?.client?.sheets) {
       throw new Error('Google Sheets API가 초기화되지 않았습니다.');
     }
@@ -853,7 +862,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     };
 
     // 배치 업데이트를 위한 데이터 수집
-    const data: Array<{ range: string; values: any[][] }> = [];
+    const data: BatchUpdateData[] = [];
     
     // 전월 이월금 항목 추가 처리 (나중에 처리됨)
     let actualEntries = entriesToWrite;
@@ -1354,7 +1363,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         데이터범위: data.map(d => d.range)
       });
       
-      await (gapi.client as any).sheets.spreadsheets.values.batchUpdate({
+      await gapi.client.sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: spreadsheetId,
         resource: {
           valueInputOption: 'USER_ENTERED',
@@ -1385,7 +1394,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
     try {
       await initializeGoogleAPIOnce();
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
       if (!gapi?.client?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
       }
@@ -1407,7 +1416,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       });
 
       // 템플릿을 복사하여 새 스프레드시트 생성 (원본 보존)
-      const token = (gapi.client as any).getToken();
+      const token = gapi.client.getToken();
       if (!token || !token.access_token) {
         throw new Error('Google 인증 토큰이 없습니다. 다시 로그인해주세요.');
       }
@@ -1470,7 +1479,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
           const sortedMonths = Object.keys(groupedEntries).sort((a, b) => b.localeCompare(a));
 
           // 시트 목록 가져오기
-          const spreadsheetResponse = await (gapi.client as any).sheets.spreadsheets.get({
+          const spreadsheetResponse = await gapi.client.sheets.spreadsheets.get({
             spreadsheetId: newSpreadsheetId,
             fields: 'sheets.properties(title,sheetId)'
           });
@@ -1493,9 +1502,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
             const monthLabel = formatMonthLabel(monthKey);
             
             // 새 시트 복사
-            const sourceSheet = spreadsheetResponse.result.sheets?.find((s: any) => s.properties.title === selectedSheet);
+            const sourceSheet = spreadsheetResponse.result.sheets?.find((s: { properties: { title?: string } }) => s.properties.title === selectedSheet);
             if (sourceSheet) {
-              await (gapi.client as any).sheets.spreadsheets.batchUpdate({
+              await gapi.client.sheets.spreadsheets.batchUpdate({
                 spreadsheetId: newSpreadsheetId,
                 resource: {
                   requests: [{
@@ -1571,7 +1580,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         } catch {}
         throw err;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('내보내기 오류:', err);
       setError(err.message || '내보내기 중 오류가 발생했습니다.');
     } finally {

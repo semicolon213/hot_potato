@@ -4,8 +4,12 @@ import './EmailAutocomplete.css';
 
 interface User {
   email: string;
-  name: string;
+  name?: string;
+  name_member?: string;
   userType?: string;
+  user_type?: string;
+  isApproved?: boolean;
+  Approval?: string;
 }
 
 interface EmailAutocompleteProps {
@@ -39,12 +43,12 @@ const EmailAutocomplete: React.FC<EmailAutocompleteProps> = ({
         if (response.success && response.users && Array.isArray(response.users)) {
           // 승인된 사용자만 필터링하고 정리
           const userList = response.users
-            .filter((user: any) => {
+            .filter((user: User) => {
               const isApproved = user.isApproved || user.Approval === 'O';
               // 이메일과 이름이 있는 사용자만
               return isApproved && user.email && user.name;
             })
-            .map((user: any) => ({
+            .map((user: User) => ({
               email: user.email || '',
               name: user.name || user.name_member || '',
               userType: user.userType || user.user_type || 'student'

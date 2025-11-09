@@ -105,9 +105,10 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
       onClose();
       resetForm();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 예산 계획 작성 오류:', err);
-      setError(err.message || '예산 계획 작성에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '예산 계획 작성에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

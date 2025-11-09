@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../styles/pages/Mypage.css";
 import { useAppState } from "../hooks/core/useAppState";
 import { apiClient } from "../utils/api/apiClient";
+import type { UserNameResponse, UsersListResponse } from "../types/api/apiResponses";
 
 const Mypage: React.FC = () => {
   const { user } = useAppState();
@@ -23,21 +24,24 @@ const Mypage: React.FC = () => {
       try {
         setIsLoadingName(true);
         const res = await apiClient.getUserNameByEmail(user.email);
-        if (res?.success && (res as any).name) {
-          setAppScriptName((res as any).name);
-        } else if ((res as any)?.data?.name) {
-          setAppScriptName((res as any).data.name);
+        const userNameRes = res as Partial<UserNameResponse>;
+        if (res?.success && userNameRes.name) {
+          setAppScriptName(userNameRes.name);
+        } else if (res?.success && res.data && typeof res.data === 'object' && 'name' in res.data) {
+          setAppScriptName((res.data as { name: string }).name);
         }
 
         // getUserNameByEmail가 사용자 전체 행을 반환하므로 여기서 학번/교번도 보강
-        const rawUser = (res as any)?.user || (res as any)?.data?.user;
-        if (rawUser) {
-          const sid = rawUser.no_member || rawUser.student_id || rawUser.no || rawUser.staff_no || rawUser.id || "";
+        const userData = res.data as Partial<UsersListResponse['users'][0]>;
+        const rawUser = userData || (res.data && typeof res.data === 'object' && 'user' in res.data ? (res.data as { user: unknown }).user : undefined);
+        if (rawUser && typeof rawUser === 'object') {
+          const userObj = rawUser as Record<string, unknown>;
+          const sid = (userObj.no_member || userObj.student_id || userObj.no || userObj.staff_no || userObj.id || "") as string;
           if (sid && !appScriptStatus.studentId) {
             setAppScriptStatus(prev => ({ ...prev, studentId: sid }));
           }
           // user_type / is_admin도 비어있으면 보강
-          const role = rawUser.user_type || (rawUser.is_admin === 'O' || rawUser.isAdmin ? 'admin' : undefined);
+          const role = (userObj.user_type || ((userObj.is_admin === 'O' || userObj.isAdmin) ? 'admin' : undefined)) as string | undefined;
           if (role && !appScriptStatus.userType && !appScriptStatus.isAdmin) {
             setAppScriptStatus(prev => ({ ...prev, userType: role, isAdmin: prev.isAdmin }));
           }
@@ -58,26 +62,27 @@ const Mypage: React.FC = () => {
         setStatusLoading(true);
         const res = await apiClient.checkApprovalStatus(user.email);
         // 두 가지 응답 형태 모두 처리 (래핑/직접)
-        if (res?.success && (res as any).data) {
-          const data = (res as any).data;
-          const u = data.user || {};
-          const sid = u.no_member || u.student_id || u.no || u.staff_no || u.id || "";
+        if (res?.success && res.data && typeof res.data === 'object') {
+          const data = res.data as Record<string, unknown>;
+          const u = (data.user || {}) as Record<string, unknown>;
+          const sid = (u.no_member || u.student_id || u.no || u.staff_no || u.id || "") as string;
           setAppScriptStatus({
-            isApproved: u.isApproved,
-            isAdmin: u.isAdmin,
+            isApproved: u.isApproved as boolean | undefined,
+            isAdmin: u.isAdmin as boolean | undefined,
             studentId: sid,
-            userType: u.user_type,
-            status: data.status,
-            message: data.message
+            userType: u.user_type as string | undefined,
+            status: data.status as string | undefined,
+            message: data.message as string | undefined
           });
-        } else if ((res as any).isApproved !== undefined) {
+        } else if (res && typeof res === 'object' && 'isApproved' in res) {
+          const directRes = res as Record<string, unknown>;
           setAppScriptStatus({
-            isApproved: (res as any).isApproved,
-            isAdmin: (res as any).isAdmin,
-            studentId: (res as any).studentId,
-            userType: (res as any).userType,
-            status: (res as any).approvalStatus,
-            message: (res as any).error ? String((res as any).error) : undefined
+            isApproved: directRes.isApproved as boolean | undefined,
+            isAdmin: directRes.isAdmin as boolean | undefined,
+            studentId: directRes.studentId as string | undefined,
+            userType: directRes.userType as string | undefined,
+            status: directRes.approvalStatus as string | undefined,
+            message: directRes.error ? String(directRes.error) : undefined
           });
         }
       } catch (e) {
@@ -97,7 +102,7 @@ const Mypage: React.FC = () => {
     : (
         appScriptStatus.userType
           || (appScriptStatus.isAdmin ? "admin" : "")
-          || (user as any)?.userType
+          || (user && typeof user === 'object' && 'userType' in user ? (user as { userType?: string }).userType : undefined)
           || ""
       );
 

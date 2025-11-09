@@ -11,6 +11,7 @@ import { apiClient } from '../../../utils/api/apiClient';
 import { ENV_CONFIG } from '../../../config/environment';
 import { UserMultiSelect } from './UserMultiSelect';
 import type { CreateLedgerRequest } from '../../../types/features/accounting';
+import type { UsersListResponse } from '../../../types/api/apiResponses';
 import './accounting.css';
 
 interface CreateLedgerModalProps {
@@ -61,12 +62,13 @@ export const CreateLedgerModal: React.FC<CreateLedgerModalProps> = ({
     try {
       const response = await apiClient.getAllUsers();
       if (response.success && response.users && Array.isArray(response.users)) {
-        const userList = response.users
-          .filter((user: any) => {
+        const usersResponse = response as UsersListResponse;
+        const userList = usersResponse.users
+          .filter((user) => {
             const isApproved = user.isApproved || user.Approval === 'O';
-            return isApproved && user.email && user.name;
+            return isApproved && user.email && (user.name || user.name_member);
           })
-          .map((user: any) => ({
+          .map((user) => ({
             email: user.email || '',
             name: user.name || user.name_member || '',
             studentId: user.studentId || user.no_member || '',
@@ -157,9 +159,10 @@ export const CreateLedgerModal: React.FC<CreateLedgerModalProps> = ({
       setAccessUsers([]);
       setAccessGroups([]);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 생성 오류:', err);
-      setError(err.message || '장부 생성에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '장부 생성에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

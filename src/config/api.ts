@@ -72,13 +72,13 @@ export const API_ACTIONS = {
  * @details API 호출 결과를 나타내는 표준 응답 형식입니다.
  * @template T 응답 데이터의 타입
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: string;
   // 관리자 관련 응답
-  users?: any[];
+  users?: Array<Record<string, unknown>>;
   adminKey?: string;
   encryptedKey?: string;
   layersUsed?: number;

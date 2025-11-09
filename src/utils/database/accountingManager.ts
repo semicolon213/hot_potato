@@ -26,10 +26,10 @@ const ACCOUNTING_SHEETS = {
 };
 
 // papyrus-db 설정
-const setupPapyrusAuth = () => {
-  if ((window as any).gapi && (window as any).gapi.client) {
-    (window as any).papyrusAuth = {
-      client: (window as any).gapi.client
+const setupPapyrusAuth = (): void => {
+  if (window.gapi && window.gapi.client) {
+    window.papyrusAuth = {
+      client: window.gapi.client
     };
   }
 };
@@ -46,12 +46,12 @@ const ensureAuth = () => {
  */
 const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<number | null> => {
   try {
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.error('❌ Google API가 초기화되지 않았습니다.');
       return null;
     }
 
-    const response = await ((window as any).gapi.client as any).sheets.spreadsheets.get({
+    const response = await window.gapi.client.sheets.spreadsheets.get({
       spreadsheetId: spreadsheetId,
       fields: 'sheets.properties'
     });
@@ -69,12 +69,12 @@ const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<num
  */
 export const getEvidenceFolderIdFromSpreadsheet = async (spreadsheetId: string): Promise<string | null> => {
   try {
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.warn('⚠️ Google API가 초기화되지 않았습니다.');
       return null;
     }
 
-    const gapi = (window as any).gapi.client;
+    const gapi = window.gapi.client;
 
     // 스프레드시트 파일의 부모 폴더 찾기
     const fileResponse = await gapi.drive.files.get({
@@ -116,11 +116,11 @@ export const uploadEvidenceFile = async (
   entryId: string
 ): Promise<{ fileId: string; fileName: string }> => {
   try {
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       throw new Error('Google API가 초기화되지 않았습니다.');
     }
 
-    const gapi = (window as any).gapi;
+    const gapi = window.gapi;
     const token = gapi.client.getToken();
     
     if (!token || !token.access_token) {

@@ -12,10 +12,10 @@ import type { SheetInfo } from '../../types/google';
 import { getAccounts } from './accountingManager';
 
 // papyrus-db 설정
-const setupPapyrusAuth = () => {
-  if ((window as any).gapi && (window as any).gapi.client) {
-    (window as any).papyrusAuth = {
-      client: (window as any).gapi.client
+const setupPapyrusAuth = (): void => {
+  if (window.gapi && window.gapi.client) {
+    window.papyrusAuth = {
+      client: window.gapi.client
     };
   }
 };
@@ -36,12 +36,12 @@ const ACCOUNTING_SHEETS = {
  */
 const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<number | null> => {
   try {
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.error('❌ Google API가 초기화되지 않았습니다.');
       return null;
     }
 
-    const response = await ((window as any).gapi.client as any).sheets.spreadsheets.get({
+    const response = await window.gapi.client.sheets.spreadsheets.get({
       spreadsheetId: spreadsheetId,
       fields: 'sheets.properties'
     });
@@ -65,7 +65,7 @@ export const getBudgetPlans = async (
     ensureAuth();
     
     // Google API 인증 확인
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.error('❌ Google API가 초기화되지 않았습니다.');
       throw new Error('Google API 인증이 필요합니다. 페이지를 새로고침해주세요.');
     }
@@ -618,7 +618,7 @@ export const updateBudgetPlanDetails = async (
     ensureAuth();
     
     // Google API 인증 확인
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.error('❌ Google API가 초기화되지 않았습니다.');
       throw new Error('Google API 인증이 필요합니다. 페이지를 새로고침해주세요.');
     }
@@ -1121,7 +1121,7 @@ export const deleteBudgetPlan = async (
     });
 
     // Google Sheets API를 직접 사용하여 행 삭제
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       throw new Error('Google API가 초기화되지 않았습니다.');
     }
 
@@ -1140,7 +1140,7 @@ export const deleteBudgetPlan = async (
     // 따라서 rowIndex를 그대로 사용하면 됩니다
     const apiRowIndex = rowIndex; // 0-based
     
-    await ((window as any).gapi.client as any).sheets.spreadsheets.batchUpdate({
+    await window.gapi.client.sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: {
         requests: [
