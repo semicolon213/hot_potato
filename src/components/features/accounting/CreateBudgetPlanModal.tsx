@@ -23,13 +23,11 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  spreadsheetId,
-  accountId
+  spreadsheetId
 }) => {
   // 기본 정보만 입력
   const [title, setTitle] = useState('');
-  const [selectedAccountId, setSelectedAccountId] = useState(accountId || '');
-  const [plannedExecutionDate, setPlannedExecutionDate] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
   
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,11 +73,6 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
       return;
     }
 
-    if (!plannedExecutionDate) {
-      setError('집행 예정일을 입력해주세요.');
-      return;
-    }
-
     // 장부마다 통장이 하나이므로 첫 번째 통장 사용
     const effectiveAccountId = selectedAccountId || (accounts.length > 0 ? accounts[0].accountId : '');
     
@@ -99,7 +92,6 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
         accountId: effectiveAccountId,
         title: title.trim(),
         totalAmount: 0, // 초기에는 0, 나중에 항목 추가 시 업데이트
-        plannedExecutionDate,
         details: [] // 초기에는 빈 배열, 상세 화면에서 추가
       };
 
@@ -123,7 +115,6 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
 
   const resetForm = () => {
     setTitle('');
-    setPlannedExecutionDate('');
   };
 
   if (!isOpen) return null;
@@ -161,16 +152,6 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
             <p className="form-hint">예산 계획의 제목을 입력하세요. 항목은 저장 후 상세 화면에서 추가할 수 있습니다.</p>
           </div>
 
-          <div className="form-group">
-            <label>집행 예정일 *</label>
-            <input
-              type="date"
-              value={plannedExecutionDate}
-              onChange={(e) => setPlannedExecutionDate(e.target.value)}
-              required
-            />
-          </div>
-
           {error && (
             <div className="form-error">
               {error}
@@ -181,7 +162,7 @@ export const CreateBudgetPlanModal: React.FC<CreateBudgetPlanModalProps> = ({
             <button type="button" onClick={onClose} disabled={isLoading}>
               취소
             </button>
-            <button type="submit" disabled={isLoading || !title.trim() || !plannedExecutionDate}>
+            <button type="submit" disabled={isLoading || !title.trim()}>
               {isLoading ? '작성 중...' : '작성 완료'}
             </button>
           </div>

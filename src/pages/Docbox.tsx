@@ -164,8 +164,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
     })
     .sort((a, b) => {
       if (sortConfig) {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number | Date;
+        let bValue: string | number | Date;
         
         switch (sortConfig.key) {
           case 'documentNumber':
@@ -185,8 +185,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             bValue = new Date(b.lastModified.replace(/\./g, '-').slice(0, -1));
             break;
           case 'tag':
-            aValue = a.tag;
-            bValue = b.tag;
+            aValue = a.tag || '';
+            bValue = b.tag || '';
             break;
           case 'documentType':
             aValue = typeMap[a.documentType] || a.documentType;

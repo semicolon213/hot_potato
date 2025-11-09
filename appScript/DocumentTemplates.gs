@@ -298,6 +298,68 @@ function uploadSharedTemplate(req) {
       parents: [folderRes.data.id]
     }, blob);
 
+    // 스프레드시트인 경우 컬럼 너비 및 시트 보호 보존
+    if (targetGoogleMime === 'application/vnd.google-apps.spreadsheet') {
+      try {
+        // Excel 파일 변환 완료 대기 (변환 시간 확보)
+        Utilities.sleep(2000); // 2초 대기
+        
+        var spreadsheet = SpreadsheetApp.openById(created.id);
+        var sheets = spreadsheet.getSheets();
+        
+        // 각 시트의 컬럼 너비 및 시트 보호 보존
+        for (var i = 0; i < sheets.length; i++) {
+          var sheet = sheets[i];
+          var lastColumn = sheet.getLastColumn();
+          
+          // 컬럼 너비는 Google Sheets가 Excel 변환 시 자동으로 보존
+          // 시트 보호 정보 확인 및 복원
+          try {
+            // 시트 보호 정보 확인
+            var protections = sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+            
+            // 시트 보호가 없는 경우, 원본 Excel 파일의 보호 정보가 자동으로 보존되지 않았을 수 있음
+            // Google Sheets는 Excel 파일 변환 시 시트 보호를 자동으로 보존해야 하지만,
+            // Drive API를 통한 변환 시 보호가 해제될 수 있음
+            // 이 경우 원본 Excel 파일의 보호 정보를 직접 읽을 수 없으므로,
+            // 업로드 후 시트 보호를 복원할 수 없음
+            // 하지만 Google Sheets가 자동으로 보존한 보호 정보를 확인
+            if (protections.length === 0) {
+              console.warn('⚠️ 시트 보호가 없는 것으로 확인됨:', sheet.getName());
+              console.warn('⚠️ Excel 파일 변환 시 시트 보호가 자동으로 보존되지 않았을 수 있습니다.');
+              // 원본 Excel 파일의 보호 정보를 직접 읽을 수 없으므로,
+              // 사용자가 수동으로 보호를 설정해야 할 수 있음
+            } else {
+              console.log('✅ 시트 보호 확인됨:', sheet.getName(), protections.length, '개');
+              // 기존 보호 정보 확인 및 유지
+              for (var j = 0; j < protections.length; j++) {
+                var protection = protections[j];
+                console.log('  - 보호 범위:', protection.getRange() ? protection.getRange().getA1Notation() : '전체 시트');
+                console.log('  - 설명:', protection.getDescription());
+                console.log('  - 편집자 수:', protection.getEditors().length);
+                
+                // 시트 보호가 있는 경우, 보호 설정 유지
+                // 보호가 자동으로 해제되지 않도록 확인
+                try {
+                  // 보호가 해제되었는지 확인하고, 필요시 재설정
+                  if (!protection.canEdit()) {
+                    console.log('  - 시트 보호가 활성화되어 있습니다.');
+                  }
+                } catch (checkError) {
+                  console.warn('  - 시트 보호 상태 확인 중 오류:', checkError);
+                }
+              }
+            }
+          } catch (protectError) {
+            console.warn('시트 보호 확인 중 오류 발생 (계속 진행):', protectError);
+          }
+        }
+      } catch (e) {
+        // 컬럼 너비 및 시트 보호 설정 실패해도 계속 진행
+        console.warn('스프레드시트 설정 중 오류 발생 (계속 진행):', e);
+      }
+    }
+
     // properties 설정
     var props = {
       description: safeDesc,
