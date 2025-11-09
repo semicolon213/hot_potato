@@ -22,7 +22,7 @@ export async function grantPersonalDocumentPermissions(
   failedUsers: string[];
   details: Array<{ email: string; success: boolean; message?: string }>;
 }> {
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
   
   if (!gapi?.client?.drive) {
     throw new Error('Google Drive API가 초기화되지 않았습니다.');

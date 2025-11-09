@@ -9,37 +9,32 @@
 import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { ENV_CONFIG } from '../../config/environment';
-
-// Google API 클라이언트 타입 정의
-interface GoogleSheetsClient {
-  spreadsheets: {
-    create: (params: any) => Promise<any>;
-    get: (params: any) => Promise<any>;
-    values: {
-      update: (params: any) => Promise<any>;
-    };
-    batchUpdate: (params: any) => Promise<any>;
-  };
-}
-
-interface GoogleDriveClient {
-  files: {
-    list: (params: any) => Promise<any>;
-    update: (params: any) => Promise<any>;
-  };
-}
-
-interface GoogleClient {
-  sheets: GoogleSheetsClient;
-  drive: GoogleDriveClient;
-}
+import { tokenManager } from '../auth/tokenManager';
+import type { GoogleClient, GoogleSheetsCreateParams, GoogleSheetsCreateResponse, GoogleSheetsGetParams, GoogleSheetsGetResponse, GoogleSheetsValuesUpdateParams, GoogleSheetsBatchUpdateParams, GoogleDriveFilesListParams, GoogleDriveFilesUpdateParams, PapyrusAuth } from '../../types/google';
 
 // papyrus-db에 Google API 인증 설정
-const setupPapyrusAuth = () => {
-  if ((window as any).gapi && (window as any).gapi.client) {
-    (window as any).papyrusAuth = {
-      client: (window as any).gapi.client
+const setupPapyrusAuth = (): void => {
+  if (window.gapi && window.gapi.client) {
+    // tokenManager를 사용하여 올바른 토큰 가져오기 (만료 체크 포함)
+    const token = tokenManager.get();
+    
+    if (token) {
+      try {
+        window.gapi.client.setToken({ access_token: token });
+        console.log('✅ 토큰이 gapi client에 설정되었습니다.');
+      } catch (tokenError) {
+        console.warn('토큰 설정 실패:', tokenError);
+      }
+    } else {
+      console.warn('⚠️ Google API 인증 토큰이 없거나 만료되었습니다.');
+    }
+    
+    // papyrus-db가 gapi.client를 사용하도록 설정
+    window.papyrusAuth = {
+      client: window.gapi.client
     };
+  } else {
+    console.warn('⚠️ Google API가 초기화되지 않았습니다.');
   }
 };
 
@@ -70,7 +65,7 @@ export const findPersonalConfigFile = async (): Promise<string | null> => {
     const configFileName = ENV_CONFIG.PERSONAL_CONFIG_FILE_NAME;
 
     // 1단계: 루트에서 루트 폴더 찾기
-    const hotPotatoResponse = await gapi.client.drive.files.list({
+    const hotPotatoResponse = await window.gapi.client.drive.files.list({
       q: `'root' in parents and name='${rootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
@@ -86,7 +81,7 @@ export const findPersonalConfigFile = async (): Promise<string | null> => {
     console.log(`✅ ${rootFolderName} 폴더 찾음:`, hotPotatoFolder.id);
 
     // 2단계: 루트 폴더에서 개인 설정 파일 찾기
-    const configFileResponse = await gapi.client.drive.files.list({
+    const configFileResponse = await window.gapi.client.drive.files.list({
       q: `'${hotPotatoFolder.id}' in parents and name='${configFileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
@@ -123,7 +118,7 @@ export const findPersonalTemplateFolder = async (): Promise<string | null> => {
     const personalTemplateFolderName = ENV_CONFIG.PERSONAL_TEMPLATE_FOLDER_NAME;
 
     // 1단계: 루트에서 루트 폴더 찾기
-    const hotPotatoResponse = await gapi.client.drive.files.list({
+    const hotPotatoResponse = await window.gapi.client.drive.files.list({
       q: `'root' in parents and name='${rootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
@@ -139,7 +134,7 @@ export const findPersonalTemplateFolder = async (): Promise<string | null> => {
     console.log(`✅ ${rootFolderName} 폴더 찾음:`, hotPotatoFolder.id);
 
     // 2단계: 루트 폴더에서 문서 폴더 찾기
-    const documentResponse = await gapi.client.drive.files.list({
+    const documentResponse = await window.gapi.client.drive.files.list({
       q: `'${hotPotatoFolder.id}' in parents and name='${documentFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
@@ -155,7 +150,7 @@ export const findPersonalTemplateFolder = async (): Promise<string | null> => {
     console.log(`✅ ${documentFolderName} 폴더 찾음:`, documentFolder.id);
 
     // 3단계: 문서 폴더에서 개인 양식 폴더 찾기
-    const personalTemplateResponse = await gapi.client.drive.files.list({
+    const personalTemplateResponse = await window.gapi.client.drive.files.list({
       q: `'${documentFolder.id}' in parents and name='${personalTemplateFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
@@ -189,7 +184,7 @@ export const createPersonalConfigFile = async (): Promise<string | null> => {
     console.log('📄 개인 설정 파일 생성 시작');
     
     // 1단계: hot potato 폴더 찾기
-    const hotPotatoResponse = await gapi.client.drive.files.list({
+    const hotPotatoResponse = await window.gapi.client.drive.files.list({
       q: "'root' in parents and name='hot potato' and mimeType='application/vnd.google-apps.folder' and trashed=false",
       fields: 'files(id,name)',
       spaces: 'drive',
@@ -205,7 +200,7 @@ export const createPersonalConfigFile = async (): Promise<string | null> => {
     console.log('✅ hot potato 폴더 찾음:', hotPotatoFolder.id);
 
     // 2단계: hp_potato_DB 스프레드시트 생성
-    const sheetsClient = (gapi.client as unknown as GoogleClient).sheets;
+    const sheetsClient = window.gapi.client.sheets;
     const spreadsheet = await sheetsClient.spreadsheets.create({
       resource: {
         properties: {
@@ -247,7 +242,7 @@ export const createPersonalConfigFile = async (): Promise<string | null> => {
     console.log('✅ hp_potato_DB 파일 생성 완료:', spreadsheetId);
 
     // 3단계: hot potato 폴더로 이동
-    const driveClient = (gapi.client as unknown as GoogleClient).drive;
+    const driveClient = window.gapi.client.drive;
     await driveClient.files.update({
       fileId: spreadsheetId,
       addParents: hotPotatoFolder.id,
@@ -274,7 +269,7 @@ export const setupPersonalConfigHeaders = async (spreadsheetId: string): Promise
   try {
     setupPapyrusAuth();
     
-    const sheetsClient = (gapi.client as unknown as GoogleClient).sheets;
+    const sheetsClient = window.gapi.client.sheets;
     
     // favorite 시트 헤더 설정
     await sheetsClient.spreadsheets.values.update({
@@ -329,7 +324,7 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
       
       // 기존 파일의 시트 확인 및 누락된 시트 생성
       try {
-        const sheetsClient = (gapi.client as unknown as GoogleClient).sheets;
+        const sheetsClient = window.gapi.client.sheets;
         const spreadsheet = await sheetsClient.spreadsheets.get({
           spreadsheetId: spreadsheetId,
           fields: 'sheets.properties'

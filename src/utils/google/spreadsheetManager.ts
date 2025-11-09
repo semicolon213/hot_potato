@@ -20,12 +20,12 @@ import type { Template } from '../../hooks/features/templates/useTemplateUI';
 export const findSpreadsheetById = async (name: string): Promise<string | null> => {
     try {
         // Google API가 초기화되지 않은 경우
-        if (!(window as any).gapi || !(window as any).gapi.client) {
+        if (!window.gapi || !window.gapi.client) {
             console.warn('Google API가 초기화되지 않았습니다.');
             return null;
         }
 
-        const response = await (window as any).gapi.client.drive.files.list({
+        const response = await window.gapi.client.drive.files.list({
             q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
             fields: 'files(id,name,owners,parents)',
             orderBy: 'name',
@@ -52,7 +52,7 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
 // 게시글 관련 함수들
 export const fetchPosts = async (boardSpreadsheetId: string, boardSheetName: string): Promise<Post[]> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: boardSpreadsheetId,
             range: `${boardSheetName}!A:E`,
         });
@@ -83,7 +83,7 @@ export const addPost = async (
     postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>
 ): Promise<void> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: boardSpreadsheetId,
             range: `${boardSheetName}!A:A`,
         });
@@ -110,7 +110,7 @@ export const addPost = async (
 // 공지사항 관련 함수들
 export const fetchAnnouncements = async (announcementSpreadsheetId: string, announcementSheetName: string): Promise<Post[]> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: announcementSpreadsheetId,
             range: `${announcementSheetName}!A:H`,
         });
@@ -142,7 +142,7 @@ export const addAnnouncement = async (
     postData: Omit<Post, 'id' | 'date' | 'views' | 'likes'>
 ): Promise<void> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: announcementSpreadsheetId,
             range: `${announcementSheetName}!A:A`,
         });
@@ -209,7 +209,7 @@ export const incrementViewCount = async (announcementSpreadsheetId: string, anno
 // 템플릿 관련 함수들
 export const fetchTemplates = async (hotPotatoDBSpreadsheetId: string): Promise<Template[]> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             range: 'document_template!B2:G',
         });
@@ -243,7 +243,7 @@ export const fetchTemplates = async (hotPotatoDBSpreadsheetId: string): Promise<
 
 export const fetchTags = async (hotPotatoDBSpreadsheetId: string): Promise<string[]> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             range: 'document_template!E2:E',
         });
@@ -415,7 +415,7 @@ export const fetchCalendarEvents = async (
                 }
 
                 // 데이터가 있는지 확인하기 위해 작은 범위부터 시도
-                const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+                const response = await window.gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: spreadsheetId,
                     range: `${calendarSheetName}!A1:I1`, // 헤더만 먼저 확인
                 });
@@ -482,7 +482,7 @@ export const addCalendarEvent = async (
     eventData: Omit<Event, 'id'>
 ): Promise<void> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: targetSpreadsheetId,
             range: `${calendarSheetName}!A:A`,
         });
@@ -521,7 +521,7 @@ export const updateCalendarEvent = async (
     try {
         // 1. Find the row index for the eventId
         const idColumnRange = `${sheetName}!A:A`;
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
             range: idColumnRange,
         });
@@ -583,7 +583,7 @@ export const updateCalendarEvent = async (
 
 export const fetchStudents = async (spreadsheetId: string, sheetName: string): Promise<Student[]> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
             range: `${sheetName}!A:G`,
         });
@@ -610,7 +610,7 @@ export const fetchStudents = async (spreadsheetId: string, sheetName: string): P
 
 export const fetchStaff = async (spreadsheetId: string, sheetName: string): Promise<Staff[]> => {
     try {
-        const response = await (window as any).gapi.client.sheets.spreadsheets.values.get({
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
             range: `${sheetName}!A:H`,
         });

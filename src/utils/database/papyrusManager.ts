@@ -10,6 +10,7 @@ import {getSheetData, append, update} from 'papyrus-db';
 import {deleteRow} from 'papyrus-db/dist/sheets/delete';
 import {ENV_CONFIG} from '../../config/environment';
 import {apiClient} from '../api/apiClient';
+import {tokenManager} from '../auth/tokenManager';
 import type {StaffMember, Committee as CommitteeType} from '../../types/features/staff';
 import type {SpreadsheetIdsResponse} from '../../types/api/apiResponses';
 
@@ -26,7 +27,7 @@ const updateRow = async (spreadsheetId: string, sheetName: string, key: string, 
 const setupPapyrusAuth = () => {
     if (window.gapi && window.gapi.client) {
         // papyrus-db가 gapi.client를 사용하도록 설정
-        (window as any).papyrusAuth = {
+        window.papyrusAuth = {
             client: window.gapi.client
         };
     }
@@ -80,9 +81,9 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
         }
 
         // Google API 인증 상태 확인 (더 안전한 방법)
-        const token = localStorage.getItem('googleAccessToken');
+        const token = tokenManager.get();
         if (!token) {
-            console.warn(`Google API 인증 토큰이 없습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
+            console.warn(`Google API 인증 토큰이 없거나 만료되었습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
             return null;
         }
 
@@ -342,9 +343,9 @@ const dataURLtoBlob = (dataurl: string) => {
 
 // [MERGE] File 2의 uploadFileToDrive 헬퍼 함수
 const uploadFileToDrive = async (file: File): Promise<{ name: string, url: string }> => {
-    const token = localStorage.getItem('googleAccessToken');
+    const token = tokenManager.get();
     if (!token) {
-        throw new Error('Google Access Token not found');
+        throw new Error('Google Access Token not found or expired');
     }
 
     const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
@@ -411,9 +412,9 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
         }
 
         setupPapyrusAuth();
-        const token = localStorage.getItem('googleAccessToken');
+        const token = tokenManager.get();
         if (!token) {
-            throw new Error('Google Access Token not found');
+            throw new Error('Google Access Token not found or expired');
         }
         
         try {
@@ -577,9 +578,9 @@ export const updateAnnouncement = async (announcementId: string, userId: string,
         }
 
         setupPapyrusAuth();
-        const token = localStorage.getItem('googleAccessToken');
+        const token = tokenManager.get();
         if (!token) {
-            throw new Error('Google Access Token not found');
+            throw new Error('Google Access Token not found or expired');
         }
         
         try {
@@ -1277,7 +1278,7 @@ export const saveAcademicScheduleToSheet = async (scheduleData: {
             console.log(`Clearing ${rowsToDelete.length} academic schedule event rows that no longer exist.`);
             for (const rowIndex of rowsToDelete) {
                 const range = `${ENV_CONFIG.CALENDAR_SHEET_NAME}!A${rowIndex}:K${rowIndex}`;
-                await (window as any).gapi.client.sheets.spreadsheets.values.clear({
+                await window.gapi.client.sheets.spreadsheets.values.clear({
                     spreadsheetId: calendarSpreadsheetId,
                     range: range,
                 });
@@ -1536,7 +1537,7 @@ export const updateStaff = async (spreadsheetId: string, staffNo: string, staff:
             staff.note
         ]];
 
-        const gapi = (window as any).gapi;
+        const gapi = window.gapi;
         await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: effectiveSpreadsheetId,
             range: range,
@@ -1674,7 +1675,7 @@ export const updateCommittee = async (spreadsheetId: string, committeeName: stri
             committee.note
         ]];
 
-        const gapi = (window as any).gapi;
+        const gapi = window.gapi;
         await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: effectiveSpreadsheetId,
             range: range,

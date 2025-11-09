@@ -1,4 +1,20 @@
 // Google Identity Services (GIS) 및 Google API Client Library 타입 정의
+import type { GoogleClient, PapyrusAuth, GoogleToken, GoogleCredentialResponse, GoogleCredential } from './google';
+import type { 
+  GoogleSheetsValuesGetParams, 
+  GoogleSheetsValuesGetResponse,
+  GoogleSheetsValuesUpdateParams,
+  GoogleSheetsValuesUpdateResponse,
+  GoogleSheetsValuesAppendParams,
+  GoogleSheetsValuesAppendResponse,
+  GoogleSheetsBatchUpdateParams,
+  GoogleSheetsBatchUpdateResponse,
+  GoogleDriveFilesCopyParams,
+  GoogleDriveFilesCopyResponse,
+  GoogleDriveFilesGetParams,
+  GoogleDriveFilesGetResponse
+} from './google';
+
 declare global {
   interface Window {
     google: {
@@ -6,7 +22,7 @@ declare global {
         id: {
           initialize: (config: {
             client_id: string;
-            callback: (response: any) => void;
+            callback: (response: GoogleCredentialResponse) => void;
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
           }) => void;
@@ -20,7 +36,7 @@ declare global {
           }) => void;
           prompt: () => void;
           disableAutoSelect: () => void;
-          storeCredential: (credential: any) => void;
+          storeCredential: (credential: GoogleCredential) => void;
           cancel: () => void;
           revoke: (hint: string, callback: () => void) => void;
         };
@@ -28,48 +44,7 @@ declare global {
     };
     gapi: {
       load: (api: string, callback: () => void) => void;
-      client: {
-        init: (config: {
-          clientId: string;
-          discoveryDocs: string[];
-          scope: string;
-        }) => Promise<void>;
-        load: (api: string, version: string) => Promise<void>;
-        setApiKey: (apiKey: string) => void;
-        getToken: () => any;
-        request: (args: {
-          path: string;
-          method?: string;
-          params?: object;
-          headers?: object;
-          body?: object;
-        }) => Promise<{ result: object }>;
-        drive: {
-          files: {
-            list: (params: gapi.client.drive.files.list.Params) => Promise<gapi.client.drive.files.list.Response>;
-            copy: (params: any) => Promise<any>;
-            create: (params: gapi.client.drive.files.create.Params) => Promise<gapi.client.drive.files.create.Response>;
-            update: (params: gapi.client.drive.files.update.Params) => Promise<gapi.client.drive.files.update.Response>;
-            get: (params: any) => Promise<any>;
-          };
-        };
-        sheets: {
-          spreadsheets: {
-            get: (params: gapi.client.sheets.spreadsheets.get.Params) => Promise<gapi.client.sheets.spreadsheets.get.Response>;
-            values: {
-              get: (params: any) => Promise<any>;
-              update: (params: any) => Promise<any>;
-              append: (params: any) => Promise<any>;
-            };
-            batchUpdate: (params: any) => Promise<any>;
-          };
-        };
-        docs: {
-          documents: {
-            create: (params: { title: string; }) => Promise<{ result: { documentId: string } }>;
-          }
-        }
-      };
+      client: GoogleClient;
       auth2: {
         getAuthInstance: () => {
           isSignedIn: {
@@ -86,6 +61,8 @@ declare global {
         };
       };
     };
+    papyrusAuth?: PapyrusAuth;
+    gapiLoaded?: boolean;
   }
 
   namespace gapi.client.drive.files {
@@ -101,6 +78,8 @@ declare global {
       interface Params {
         q: string;
         fields: string;
+        spaces?: string;
+        orderBy?: string;
       }
       interface Response {
         result: {
@@ -162,6 +141,7 @@ declare global {
       namespace get {
         interface Params {
           spreadsheetId: string;
+          fields?: string;
         }
         interface Response {
           result: Spreadsheet;

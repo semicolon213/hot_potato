@@ -118,7 +118,7 @@ export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
  * @returns 문서 목록
  */
 export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
   
   if (!gapi?.client?.drive) {
     console.error('Google Drive API가 초기화되지 않았습니다.');
