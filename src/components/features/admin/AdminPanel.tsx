@@ -2,6 +2,7 @@ import React from 'react';
 import { useAdminPanel } from '../../../hooks/features/admin/useAdminPanel';
 import AdminKeySection from './AdminKeySection';
 import UserList from './UserList';
+import PinnedAnnouncementList from './PinnedAnnouncementList';
 import './AdminPanel.css';
 
 const AdminPanel: React.FC = () => {
@@ -9,6 +10,7 @@ const AdminPanel: React.FC = () => {
     users,
     pendingUsers,
     approvedUsers,
+    pinnedAnnouncementRequests,
     emailToSend,
     setEmailToSend,
     isLoading,
@@ -17,7 +19,9 @@ const AdminPanel: React.FC = () => {
     debugInfo,
     handleApproveUser,
     handleRejectUser,
-    handleSendAdminKey
+    handleSendAdminKey,
+    handleApprovePinnedAnnouncement,
+    handleRejectPinnedAnnouncement
   } = useAdminPanel();
 
   return (
@@ -38,6 +42,13 @@ const AdminPanel: React.FC = () => {
         isLoading={isLoading}
         onApproveUser={handleApproveUser}
         onRejectUser={handleRejectUser}
+      />
+
+      <PinnedAnnouncementList
+        requests={pinnedAnnouncementRequests}
+        isLoading={isLoading}
+        onApprove={handleApprovePinnedAnnouncement}
+        onReject={handleRejectPinnedAnnouncement}
       />
 
       {/* 디버깅 정보 (개발용) */}

@@ -171,6 +171,10 @@
   background-color: #f8f9fa;
 }
 
+.post-table tr.pinned-announcement-row:hover {
+  background-color: #ffe8e8;
+}
+
 /* Column Specific Styles */
 .post-table .col-number { width: 8%; text-align: center; }
 .post-table .col-title { width: 60%; text-align: left; }

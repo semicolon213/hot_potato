@@ -271,39 +271,58 @@ export const initializeSpreadsheetIds = async (): Promise<{
     }
 };
 
-// 공지사항 관련 함수들
-export const fetchAnnouncements = async (): Promise<Post[]> => {
+// 공지사항 관련 함수들 (앱스크립트 API 사용)
+export const fetchAnnouncements = async (userId: string, userType: string): Promise<Post[]> => {
     try {
         if (!announcementSpreadsheetId) {
             console.warn('Announcement spreadsheet ID not found');
             return [];
         }
 
-        console.log(`Fetching announcements from spreadsheet: ${announcementSpreadsheetId}, sheet: ${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}`);
-        const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
-        console.log('Announcements data received:', data);
-
-        if (!data || !data.values || data.values.length <= 1) {
-            console.log('No announcements data or insufficient rows');
+        if (!userId || !userType) {
+            console.warn('User ID or User Type not provided');
             return [];
         }
 
-        const announcements = data.values.slice(1).map((row: string[]) => ({
-            id: row[0] || '',
-            author: row[1] || '',
-            writer_id: row[2] || '',
-            title: row[3] || '',
-            content: row[4] || '',
-            date: row[5] || new Date().toISOString().slice(0, 10),
-            views: parseInt(row[6] || '0', 10),
-            likes: 0,
-            file_notice: row[7] || ''
-        })).reverse();
+        console.log(`Fetching announcements via Apps Script API for user: ${userId}, type: ${userType}`);
+        
+        const response = await apiClient.request('getAnnouncements', {
+            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            userId: userId,
+            userType: userType
+        });
+
+        if (!response.success) {
+            console.warn('Failed to fetch announcements:', response.message);
+            return [];
+        }
+
+        // 앱스크립트 응답 구조: response.announcements 또는 response.data.announcements
+        const announcementsData = (response as any).announcements || (response.data as any)?.announcements || [];
+        const announcements = announcementsData.map((ann: any) => {
+            // ID를 문자열로 통일 (앱스크립트에서 숫자로 올 수 있음)
+            const announcementId = String(ann.id || ann.no_notice || '');
+            return {
+                id: announcementId,
+                author: ann.writer_notice || '',
+                writer_id: String(ann.writer_id || ''),
+                writer_email: ann.writer_email || '',
+                title: ann.title_notice || '',
+                content: ann.content_notice || '',
+                date: ann.date || new Date().toISOString().slice(0, 10),
+                views: parseInt(ann.view_count || '0', 10),
+                likes: 0,
+                file_notice: ann.file_notice || '',
+                access_rights: ann.access_rights || '',
+                fix_notice: ann.fix_notice || '',
+                isPinned: ann.fix_notice === 'O'
+            };
+        });
 
         console.log(`Loaded ${announcements.length} announcements`);
         return announcements;
     } catch (error) {
-        console.error('Error fetching announcements from Google Sheet:', error);
+        console.error('Error fetching announcements:', error);
         return [];
     }
 };
@@ -370,35 +389,43 @@ const uploadFileToDrive = async (file: File): Promise<{ name: string, url: strin
     }
 };
 
-// [MERGE] File 1과 File 2의 addAnnouncement 함수 병합
+// 공지사항 작성 (앱스크립트 API 사용)
 export const addAnnouncement = async (announcementSpreadsheetId: string, postData: {
     title: string;
     content: string;
     author: string;
     writer_id: string;
+    writerEmail: string; // 작성자 이메일 (암호화용)
     attachments: File[];
+    accessRights?: { individual?: string[]; groups?: string[] }; // 권한 설정
+    isPinned?: boolean;
+    userType?: string;
 }): Promise<void> => {
-    setupPapyrusAuth();
-
-    const token = localStorage.getItem('googleAccessToken');
-    if (!token) {
-        throw new Error('Google Access Token not found');
-    }
-    try {
-        window.gapi.client.setToken({access_token: token});
-    } catch (tokenError) {
-        console.error('Failed to set GAPI token:', tokenError);
-        throw new Error('Failed to set GAPI token');
-    }
-
     try {
         if (!announcementSpreadsheetId) {
             throw new Error('Announcement spreadsheet ID not found');
         }
 
+        if (!postData.writerEmail) {
+            throw new Error('Writer email is required');
+        }
+
+        setupPapyrusAuth();
+        const token = localStorage.getItem('googleAccessToken');
+        if (!token) {
+            throw new Error('Google Access Token not found');
+        }
+        
+        try {
+            window.gapi.client.setToken({access_token: token});
+        } catch (tokenError) {
+            console.error('Failed to set GAPI token:', tokenError);
+            throw new Error('Failed to set GAPI token');
+        }
+
         let processedContent = postData.content;
 
-        // --- File 1의 Base64 이미지 처리 로직 ---
+        // Base64 이미지 처리 (프론트엔드에서 처리)
         const imgRegex = /<img src="(data:image\/[^;]+;base64,[^"]+)"[^>]*>/g;
         let match;
         const uploadPromises = [];
@@ -406,10 +433,10 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
         while ((match = imgRegex.exec(postData.content)) !== null) {
             const base64Src = match[1];
             const blob = dataURLtoBlob(base64Src);
-            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD'; // Same folder as attachments
+            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
 
             const fileMetadata = {
-                name: `announcement-image-${Date.now()}`,
+                name: `announcement-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 parents: [folderId]
             };
 
@@ -435,7 +462,7 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
                         });
                         const fileInfo = await window.gapi.client.drive.files.get({
                             fileId: fileId,
-                            fields: 'thumbnailLink' // 썸네일 링크 사용
+                            fields: 'thumbnailLink'
                         });
                         return {base64Src, url: fileInfo.result.thumbnailLink};
                     } else {
@@ -452,153 +479,198 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
                 processedContent = processedContent.replace(image.base64Src, image.url);
             }
         });
-        // --- File 1의 Base64 이미지 처리 로직 끝 ---
 
-
-        // --- File 2의 다중 첨부파일 처리 로직 ---
+        // 첨부파일 업로드 (프론트엔드에서 처리)
         let fileInfos: { name: string, url: string }[] = [];
         if (postData.attachments && postData.attachments.length > 0) {
             for (const file of postData.attachments) {
-                const fileInfo = await uploadFileToDrive(file); // 헬퍼 함수 사용
+                const fileInfo = await uploadFileToDrive(file);
                 fileInfos.push(fileInfo);
             }
         }
-        // --- File 2의 다중 첨부파일 처리 로직 끝 ---
 
-
-        // --- 데이터 시트 저장 로직 (병합) ---
-        const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
-        const lastRow = data && data.values ? data.values.length : 0;
-        const newPostId = `${lastRow + 1}`;
-
-        // Base64 처리된 컨텐츠와 첨부파일 링크 병합
+        // 첨부파일 링크를 컨텐츠에 추가
         let finalContent = processedContent;
         if (fileInfos.length > 0) {
             const attachmentLinks = fileInfos.map(info => `<p>첨부파일: <a href="${info.url}" target="_blank">${info.name}</a></p>`).join('\n');
             finalContent = `${processedContent}\n\n${attachmentLinks}`;
         }
 
-        // file_notice 컬럼에 JSON 문자열로 저장
+        // file_notice JSON 문자열
         const fileNotice = fileInfos.length > 0 ? JSON.stringify(fileInfos) : '';
 
-        const newAnnouncementForSheet = [
-            newPostId,
-            postData.author,
-            postData.writer_id,
-            postData.title,
-            finalContent, // 병합된 컨텐츠
-            new Date().toISOString().slice(0, 10),
-            0, // view_count
-            fileNotice // JSON 문자열
-        ];
+        // 앱스크립트 API 호출
+        const response = await apiClient.request('createAnnouncement', {
+            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            writerEmail: postData.writerEmail,
+            writerName: postData.author,
+            title: postData.title,
+            content: finalContent,
+            fileNotice: fileNotice,
+            accessRights: postData.accessRights,
+            isPinned: postData.isPinned || false
+        });
 
-        await append(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, [newAnnouncementForSheet]);
+        if (!response.success) {
+            throw new Error(response.message || '공지사항 작성에 실패했습니다.');
+        }
+
         console.log('공지사항이 성공적으로 저장되었습니다.');
+
+        // 고정 공지 요청 (isPinned가 true이고 fix_notice가 '-'가 아닌 경우)
+        if (postData.isPinned && response.data?.announcementId) {
+            await apiClient.request('requestPinnedAnnouncement', {
+                spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+                announcementId: response.data.announcementId,
+                userId: postData.writer_id
+            });
+        }
+
     } catch (error) {
-        console.error('Error saving announcement to Google Sheet:', error);
+        console.error('Error saving announcement:', error);
         throw error;
     }
+};
+
+export const requestPinnedAnnouncementApproval = async (postData: { title: string; author: string; writer_id: string; userType: string; }) => {
+    return apiClient.request('requestPinnedAnnouncementApproval', postData);
 };
 
 export const incrementViewCount = async (announcementId: string): Promise<void> => {
     try {
         if (!announcementSpreadsheetId) {
-            throw new Error('Announcement spreadsheet ID not found');
-        }
-
-        const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
-        if (!data || !data.values) {
-            throw new Error('Could not get sheet data');
-        }
-
-        const rowIndex = data.values.findIndex(row => row[0] === announcementId);
-        if (rowIndex === -1) {
-            // This is not an error, as the sheet may not have been updated yet.
-            console.log(`Announcement with ID ${announcementId} not found in sheet. It might be a new post.`);
+            console.warn('Announcement spreadsheet ID not found');
             return;
         }
 
-        const currentViews = parseInt(data.values[rowIndex][6] || '0', 10);
-        const newViews = currentViews + 1;
-
-        await window.gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: announcementSpreadsheetId,
-            range: `${ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME}!G${rowIndex + 1}`,
-            valueInputOption: 'RAW',
-            resource: {
-                values: [[newViews]]
-            }
+        const response = await apiClient.request('incrementAnnouncementView', {
+            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            announcementId: announcementId
         });
 
-        console.log(`View count for announcement ${announcementId} updated to ${newViews}`);
+        if (!response.success) {
+            console.warn('Failed to increment view count:', response.message);
+        } else {
+            console.log(`View count for announcement ${announcementId} updated`);
+        }
     } catch (error) {
         console.error('Error incrementing view count:', error);
-        // We don't throw error here as it is not critical.
+        // 조회수 증가는 중요하지 않으므로 에러를 throw하지 않음
     }
 };
 
-export const updateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }): Promise<void> => {
+export const updateAnnouncement = async (announcementId: string, userId: string, postData: { 
+    title: string; 
+    content: string; 
+    attachments: File[]; 
+    existingAttachments: { name: string, url: string }[]; 
+    accessRights?: { individual?: string[]; groups?: string[] };
+    isPinned?: boolean; 
+}): Promise<void> => {
     try {
         if (!announcementSpreadsheetId) {
             throw new Error('Announcement spreadsheet ID not found');
         }
 
-        const data = await getSheetData(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME);
-        if (!data || !data.values) {
-            throw new Error('Could not get sheet data');
+        if (!userId) {
+            throw new Error('User ID is required');
         }
 
-        const rowIndex = data.values.findIndex(row => row[0] === announcementId);
-        if (rowIndex === -1) {
-            throw new Error(`Announcement with ID ${announcementId} not found in sheet.`);
+        setupPapyrusAuth();
+        const token = localStorage.getItem('googleAccessToken');
+        if (!token) {
+            throw new Error('Google Access Token not found');
+        }
+        
+        try {
+            window.gapi.client.setToken({access_token: token});
+        } catch (tokenError) {
+            console.error('Failed to set GAPI token:', tokenError);
+            throw new Error('Failed to set GAPI token');
         }
 
-        const newRowData = [
-            data.values[rowIndex][0], // id
-            data.values[rowIndex][1], // author
-            data.values[rowIndex][2], // writer_id
-            postData.title,
-            postData.content,
-            data.values[rowIndex][5], // date
-            data.values[rowIndex][6], // views
-            data.values[rowIndex][7], // file_notice
-        ];
+        // 1. Upload new files
+        let newFileInfos: { name: string, url: string }[] = [];
+        if (postData.attachments && postData.attachments.length > 0) {
+            for (const file of postData.attachments) {
+                const fileInfo = await uploadFileToDrive(file);
+                newFileInfos.push(fileInfo);
+            }
+        }
 
-        await update(announcementSpreadsheetId, ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME, `A${rowIndex + 1}:H${rowIndex + 1}`, [newRowData]);
-        console.log('Announcement updated in Google Sheets successfully');
+        // 2. Combine with existing files
+        const allFileInfos = [...postData.existingAttachments, ...newFileInfos];
+
+        // 3. Create new content and file_notice
+        const attachmentRegex = /<p>첨부파일:.*?<\/p>/gs;
+        const cleanContent = postData.content.replace(attachmentRegex, '').trim();
+
+        let finalContent = cleanContent;
+        if (allFileInfos.length > 0) {
+            const attachmentLinks = allFileInfos.map(info => `<p>첨부파일: <a href="${info.url}" target="_blank">${info.name}</a></p>`).join('\n');
+            finalContent = `${cleanContent}\n\n${attachmentLinks}`;
+        }
+
+        const fileNotice = allFileInfos.length > 0 ? JSON.stringify(allFileInfos) : '';
+
+        // 4. 앱스크립트 API 호출
+        const response = await apiClient.request('updateAnnouncement', {
+            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            announcementId: announcementId,
+            userId: userId,
+            title: postData.title,
+            content: finalContent,
+            fileNotice: fileNotice,
+            accessRights: postData.accessRights,
+            isPinned: postData.isPinned
+        });
+
+        // 고정 공지 요청 처리 (isPinned가 true이고 기존에 요청하지 않은 경우)
+        if (postData.isPinned && response.success) {
+            try {
+                await apiClient.request('requestPinnedAnnouncement', {
+                    spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+                    announcementId: announcementId,
+                    userId: userId
+                });
+            } catch (error) {
+                console.error('고정 공지 요청 오류:', error);
+                // 고정 공지 요청 실패해도 수정은 성공한 것으로 처리
+            }
+        }
+
+        if (!response.success) {
+            throw new Error(response.message || '공지사항 수정에 실패했습니다.');
+        }
+
+        console.log('Announcement updated successfully');
     } catch (error) {
-        console.error('Error updating announcement in Google Sheet:', error);
+        console.error('Error updating announcement:', error);
         throw error;
     }
 };
 
-export const deleteAnnouncement = async (spreadsheetId: string, announcementId: string): Promise<void> => {
+export const deleteAnnouncement = async (spreadsheetId: string, announcementId: string, userId: string): Promise<void> => {
     try {
-        const targetSpreadsheetId = spreadsheetId || announcementSpreadsheetId;
-        if (!targetSpreadsheetId) {
+        if (!announcementSpreadsheetId) {
             throw new Error('Announcement spreadsheet ID not found');
         }
 
-        setupPapyrusAuth();
-
-        const sheetName = ENV_CONFIG.ANNOUNCEMENT_SHEET_NAME;
-        const data = await getSheetData(targetSpreadsheetId, sheetName);
-
-        if (!data || !data.values || data.values.length === 0) {
-            throw new Error('Sheet data not found');
+        if (!userId) {
+            throw new Error('User ID is required');
         }
 
-        const rowIndex = data.values.findIndex(row => row[0] === announcementId);
+        const response = await apiClient.request('deleteAnnouncement', {
+            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+            announcementId: announcementId,
+            userId: userId
+        });
 
-        if (rowIndex === -1) {
-            throw new Error('Announcement not found in the sheet');
+        if (!response.success) {
+            throw new Error(response.message || '공지사항 삭제에 실패했습니다.');
         }
-
-        const sheetId = 0; // Assuming the first sheet
-        await deleteRow(targetSpreadsheetId, sheetId, rowIndex);
 
         console.log(`Announcement with ID ${announcementId} deleted successfully.`);
-
     } catch (error) {
         console.error('Error deleting announcement:', error);
         throw error;
@@ -1634,6 +1706,21 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
         }
 
         const sheetName = ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME;
+
+        // Get sheet metadata to find the correct sheetId
+        const spreadsheet = await window.gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: effectiveSpreadsheetId,
+        });
+
+        const sheet = spreadsheet.result.sheets.find(
+            (s) => s.properties.title === sheetName
+        );
+
+        if (!sheet) {
+            throw new Error(`시트 '${sheetName}'을(를) 찾을 수 없습니다.`);
+        }
+        const sheetId = sheet.properties.sheetId;
+
         const data = await getSheetData(effectiveSpreadsheetId, sheetName);
 
         if (!data || !data.values || data.values.length === 0) {
@@ -1646,7 +1733,6 @@ export const deleteCommittee = async (spreadsheetId: string, committeeName: stri
             throw new Error('해당 위원회 구성원을 시트에서 찾을 수 없습니다.');
         }
 
-        const sheetId = 1; // Assuming the second sheet
         await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
 
     } catch (error) {

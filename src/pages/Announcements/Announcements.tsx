@@ -7,6 +7,7 @@ import RightArrowIcon from '../../assets/Icons/right_black.svg';
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
   onSelectAnnouncement: (post: Post) => void;
+  onUnpinAnnouncement?: (announcementId: string) => Promise<void>;
   posts: Post[];
   isAuthenticated: boolean;
   announcementSpreadsheetId: string | null;
@@ -57,7 +58,7 @@ const getPaginationNumbers = (currentPage: number, totalPages: number) => {
 };
 
 
-const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading, user }) => {
+const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, onUnpinAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading, user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchCriteria, setSearchCriteria] = useState('title'); // 'title' or 'author'
   const [currentPage, setCurrentPage] = useState(1);
@@ -121,7 +122,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
               }}
             />
           </div>
-          {isAuthenticated && user && user.isAdmin && (
+          {isAuthenticated && user && user.userType && user.userType !== 'student' && (
             <button 
               className="new-post-button" 
               onClick={() => onPageChange('new-announcement-post')}
@@ -150,9 +151,63 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
               </thead>
               <tbody>
                 {currentPosts.map((post, index) => (
-                  <tr key={post.id} onClick={() => onSelectAnnouncement(post)}>
-                    <td className="col-number">{filteredPosts.length - (indexOfFirstPost + index)}</td>
-                    <td className="col-title">{post.title}</td>
+                  <tr 
+                    key={post.id} 
+                    onClick={() => onSelectAnnouncement(post)}
+                    className={post.isPinned ? 'pinned-announcement-row' : ''}
+                    style={post.isPinned ? { 
+                      backgroundColor: '#fff5f5', 
+                      borderLeft: '4px solid #ff6b6b',
+                      fontWeight: '500'
+                    } : {}}
+                  >
+                    <td className="col-number">
+                      {post.isPinned ? (
+                        <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>📌</span>
+                      ) : (
+                        filteredPosts.length - (indexOfFirstPost + index)
+                      )}
+                    </td>
+                    <td className="col-title">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ flex: 1 }}>
+                          {post.isPinned && <span style={{ color: '#ff6b6b', marginRight: '5px', fontWeight: 'bold' }}>[고정]</span>}
+                          {post.title}
+                        </span>
+                        {post.isPinned && user && onUnpinAnnouncement && (
+                          (String(user.studentId) === post.writer_id || user.isAdmin) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('고정 공지를 해제하시겠습니까?')) {
+                                  onUnpinAnnouncement(post.id);
+                                }
+                              }}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                backgroundColor: '#fff',
+                                color: '#ff6b6b',
+                                border: '1px solid #ff6b6b',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ff6b6b';
+                                e.currentTarget.style.color = '#fff';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#fff';
+                                e.currentTarget.style.color = '#ff6b6b';
+                              }}
+                            >
+                              해제
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </td>
                     <td className="col-author">{post.author}</td>
                     <td className="col-views">{post.views}</td>
                     <td className="col-date">{post.date}</td>

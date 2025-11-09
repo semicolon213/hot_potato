@@ -32,13 +32,13 @@ const MenuBar = ({ editor }) => {
 
   return (
     <div className="toolbar">
-      <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}>
+      <button onClick={() => editor.chain().focus().toggleBold().run()} className={`toolbar-bold-button ${editor.isActive('bold') ? 'is-active' : ''}`}>
         굵게
       </button>
-      <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'is-active' : ''}>
+      <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={`toolbar-underline-button ${editor.isActive('underline') ? 'is-active' : ''}`}>
           밑줄
       </button>
-      <select onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}>
+      <select className="toolbar-fontsize-select" onChange={(e) => editor.chain().focus().setFontSize(e.target.value).run()}>
         <option value="">글자 크기</option>
         <option value="12px">12px</option>
         <option value="14px">14px</option>
@@ -48,10 +48,11 @@ const MenuBar = ({ editor }) => {
       </select>
       <input
         type="color"
+        className="toolbar-color-input"
         onInput={event => editor.chain().focus().setColor(event.target.value).run()}
         value={editor.getAttributes('textStyle').color || '#000000'}
       />
-      <button onClick={handleImageButtonClick}>이미지</button>
+      <button onClick={handleImageButtonClick} className="toolbar-image-button">이미지</button>
       <input type="file" accept="image/*" ref={fileInputRef} onChange={addImage} style={{ display: 'none' }} />
     </div>
   );

@@ -17,7 +17,8 @@ import {
   HiMiniCalendarDays,
   HiMiniUser,
   HiMiniShieldCheck,
-  HiMiniSquares2X2
+  HiMiniSquares2X2,
+  HiMiniCurrencyDollar
 } from "react-icons/hi2";
 
 // React 19 호환성을 위한 타입 단언
@@ -28,6 +29,7 @@ const UserIcon = HiMiniUser as React.ComponentType<React.SVGProps<SVGSVGElement>
 const ShieldIcon = HiMiniShieldCheck as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const GoogleIcon = HiMiniSquares2X2 as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const DashboardIcon = GoHomeFill as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const AccountingIcon = HiMiniCurrencyDollar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /**
  * @brief 사이드바 Props 타입 정의
@@ -188,6 +190,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
             <UserIcon className="menu-icon" />
             <div className="menu-text">학생 및 교직원</div>
             {/* 하위 항목은 플라이아웃으로 표시 */}
+          </div>
+
+          <div
+            className={`menu-item ${isPageActive('accounting') ? 'active' : ''}`}
+            onClick={() => handleMenuClick("accounting")}
+          >
+            <AccountingIcon className="menu-icon" />
+            <div className="menu-text">회계</div>
           </div>
         </div>
       </div>

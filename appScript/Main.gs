@@ -656,16 +656,42 @@ function callUserManagementPost(req) {
     // 관리자 관련 액션 처리 - 기존 함수들 호출
     if (action === 'getAllUsers') {
       console.log('👥 모든 사용자 목록 조회 요청');
-      const result = getAllUsers();
-      console.log('👥 모든 사용자 목록 조회 결과:', result);
-      console.log('👥 응답 타입:', typeof result);
-      console.log('👥 응답 success:', result.success);
-      console.log('👥 응답 users 길이:', result.users ? result.users.length : 'undefined');
-      const response = ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
-      console.log('👥 ContentService 응답 생성 완료');
-      return response;
+      try {
+        const result = getAllUsers();
+        if (!result) {
+          console.error('👥 getAllUsers가 undefined를 반환했습니다.');
+          return ContentService
+            .createTextOutput(JSON.stringify({
+              success: false,
+              message: '사용자 목록 조회 중 오류가 발생했습니다.',
+              users: [],
+              pendingUsers: [],
+              approvedUsers: []
+            }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+        console.log('👥 모든 사용자 목록 조회 결과:', result);
+        console.log('👥 응답 타입:', typeof result);
+        console.log('👥 응답 success:', result.success);
+        console.log('👥 응답 users 길이:', result.users ? result.users.length : 'undefined');
+        const response = ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+        console.log('👥 ContentService 응답 생성 완료');
+        return response;
+      } catch (error) {
+        console.error('👥 getAllUsers 호출 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '사용자 목록 조회 중 오류가 발생했습니다: ' + error.message,
+            users: [],
+            pendingUsers: [],
+            approvedUsers: [],
+            error: error.toString()
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     if (action === 'getPendingUsers') {
@@ -710,6 +736,82 @@ function callUserManagementPost(req) {
       console.log('📧 관리자 키 이메일 전송 결과:', result);
       return ContentService
         .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공지사항 관련 액션 처리
+    if (action === 'getAnnouncements') {
+      console.log('📢 공지사항 목록 조회 요청:', req);
+      const result = getAnnouncements(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'createAnnouncement') {
+      console.log('📢 공지사항 작성 요청:', req);
+      const result = createAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'updateAnnouncement') {
+      console.log('📢 공지사항 수정 요청:', req);
+      const result = updateAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'deleteAnnouncement') {
+      console.log('📢 공지사항 삭제 요청:', req);
+      const result = deleteAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'incrementAnnouncementView') {
+      console.log('📢 공지사항 조회수 증가 요청:', req);
+      const result = incrementViewCount(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'requestPinnedAnnouncement') {
+      console.log('📌 고정 공지사항 승인 요청:', req);
+      const result = requestPinnedAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'approvePinnedAnnouncement') {
+      console.log('📌 고정 공지사항 승인/거절:', req);
+      const result = approvePinnedAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'getPinnedAnnouncementRequests') {
+      console.log('📌 고정 공지사항 승인 대기 목록 조회:', req);
+      const result = getPinnedAnnouncementRequests(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'getAnnouncementUserList') {
+      console.log('👥 공지사항 권한 설정용 사용자 목록 조회:', req);
+      const result = getUserList();
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: true,
+          users: result
+        }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     

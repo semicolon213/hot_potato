@@ -77,6 +77,34 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
     }
   }, [quill, onChange]);
 
+  React.useEffect(() => {
+    if (quill) {
+      // Apply consistent padding to all buttons
+      const toolbarButtons = document.querySelectorAll('.ql-snow .ql-formats button');
+      toolbarButtons.forEach(button => {
+        (button as HTMLElement).style.setProperty('padding', '2px 6px', 'important');
+      });
+
+      // Apply consistent padding to all picker labels
+      const pickerLabels = document.querySelectorAll('.ql-snow .ql-picker-label');
+      pickerLabels.forEach(label => {
+        (label as HTMLElement).style.setProperty('padding', '2px 6px', 'important');
+      });
+
+      // Specifically target the font size picker label
+      const fontSizePickerLabel = document.querySelector('.ql-snow .ql-picker.ql-size .ql-picker-label');
+      if (fontSizePickerLabel) {
+        (fontSizePickerLabel as HTMLElement).style.setProperty('padding', '2px 4px', 'important');
+      }
+
+      // Optionally, adjust font size for picker items if needed
+      const pickerItems = document.querySelectorAll('.ql-snow .ql-picker-item');
+      pickerItems.forEach(item => {
+        (item as HTMLElement).style.setProperty('font-size', '12px', 'important');
+      });
+    }
+  }, [quill]);
+
   return (
     <div className="workflow-editor-container">
       <div ref={quillRef} className="workflow-editor" />

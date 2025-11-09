@@ -4,6 +4,32 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.post-view-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.post-view-actions .edit-button,
+.post-view-actions .delete-button {
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.post-view-actions .edit-button {
+  background-color: var(--primary);
+  color: white;
+}
+
+.post-view-actions .delete-button {
+  background-color: var(--danger-color, #e53e3e);
+  color: white;
+}
+
 .post-view-header .announcements-title {
   font-size: 1.7em;
 }
@@ -25,6 +51,8 @@
   font-size: 1.1em;
   color: var(--text-dark);
   border-radius: var(--border-radius-md);
+  white-space: pre-wrap; /* Preserve whitespace and wrap */
+  word-break: break-all; /* Break long words */
 }
 
 .post-view-footer {
