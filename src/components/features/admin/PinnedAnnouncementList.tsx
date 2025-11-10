@@ -1,5 +1,6 @@
 import React from 'react';
 import './UserList.css';
+import { formatDateToYYYYMMDD } from '../../../utils/helpers/timeUtils';
 
 interface PinnedAnnouncementRequest {
   id: string;
@@ -47,7 +48,7 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
                     {request.writerEmail}
                   </div>
                 </div>
-                <div className="user-list-cell">{request.date}</div>
+                <div className="user-list-cell">{formatDateToYYYYMMDD(request.date)}</div>
                 <div className="user-list-cell">
                   <div className="user-actions">
                     <button

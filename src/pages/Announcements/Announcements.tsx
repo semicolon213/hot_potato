@@ -3,6 +3,7 @@ import { BiPencil } from "react-icons/bi";
 import '../../styles/pages/Announcements.css';
 import type { Post, User } from '../../types/app';
 import RightArrowIcon from '../../assets/Icons/right_black.svg';
+import { formatDateToYYYYMMDD } from '../../utils/helpers/timeUtils';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
@@ -67,13 +68,13 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
   const filteredPosts = posts.filter(post => {
     const term = searchTerm.toLowerCase();
     if (searchCriteria === 'title') {
-      return post.title.toLowerCase().includes(term);
+      return post.title && typeof post.title === 'string' && post.title.toLowerCase().includes(term);
     }
     if (searchCriteria === 'author') {
-      return post.author.toLowerCase().includes(term);
+      return post.author && typeof post.author === 'string' && post.author.toLowerCase().includes(term);
     }
     if (searchCriteria === 'content') {
-      return post.content.toLowerCase().includes(term);
+      return post.content && typeof post.content === 'string' && post.content.toLowerCase().includes(term);
     }
     return false;
   });
@@ -210,7 +211,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                     </td>
                     <td className="col-author">{post.author}</td>
                     <td className="col-views">{post.views}</td>
-                    <td className="col-date">{post.date}</td>
+                    <td className="col-date">{formatDateToYYYYMMDD(post.date)}</td>
                   </tr>
                 ))}
               </tbody>
