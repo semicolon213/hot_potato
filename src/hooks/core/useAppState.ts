@@ -246,6 +246,7 @@ export const useAppState = () => {
                 try {
                     console.log('공지사항 데이터 로딩 시작...', { userId: user.studentId, userType: user.userType });
                     const announcementsData = await fetchAnnouncements(user.studentId, user.userType);
+                    console.log('DEBUG: Announcements data received from fetchAnnouncements (before setAnnouncements):', announcementsData.map(a => ({id: a.id, title: a.title, fix: a.fix_notice}))); // DEBUG LOG
                     setAnnouncements(announcementsData);
                     console.log('공지사항 데이터 로딩 완료:', announcementsData.length, '개');
                 } catch (error) {

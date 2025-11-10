@@ -250,7 +250,9 @@ function getAnnouncements(req) {
       
       // no_notice가 비어있으면 건너뛰기
       const noticeId = row[headerMap['no_notice']];
+      console.log(`DEBUG: Reading row ${i+1}, raw noticeId: ${noticeId}`); // DEBUG LOG
       if (!noticeId || noticeId === '') {
+        console.log(`DEBUG: Skipping row ${i+1} due to empty noticeId.`); // DEBUG LOG
         continue;
       }
       
@@ -284,18 +286,36 @@ function getAnnouncements(req) {
       // 권한 확인
       if (canReadAnnouncement(announcement, String(userId), userType)) {
         announcements.push(announcement);
+        console.log(`DEBUG: Added announcement (ID: ${announcement.id}, Title: ${announcement.title_notice})`); // DEBUG LOG
+      } else {
+        console.log(`DEBUG: Skipped announcement (ID: ${announcement.id}, Title: ${announcement.title_notice}) due to permissions.`); // DEBUG LOG
       }
     }
+    
+    console.log(`DEBUG: Initial announcements array (before sorting/filtering): ${JSON.stringify(announcements.map(a => ({id: a.id, title: a.title_notice, fix: a.fix_notice})))}`); // DEBUG LOG
     
     // 고정 공지 분리 및 정렬
     const pinnedAnnouncements = announcements.filter(a => a.fix_notice === 'O');
     const normalAnnouncements = announcements.filter(a => a.fix_notice !== 'O');
     
-    // 고정 공지는 최상단, 나머지는 날짜 역순
-    pinnedAnnouncements.sort((a, b) => new Date(b.date) - new Date(a.date));
-    normalAnnouncements.sort((a, b) => new Date(b.date) - new Date(a.date));
+    console.log(`DEBUG: Pinned announcements (before sort): ${JSON.stringify(pinnedAnnouncements.map(a => ({id: a.id, title: a.title_notice})))}`); // DEBUG LOG
+    console.log(`DEBUG: Normal announcements (before sort): ${JSON.stringify(normalAnnouncements.map(a => ({id: a.id, title: a.title_notice})))}`); // DEBUG LOG
+    
+    // 고정 공지와 일반 공지를 각각 ID 역순으로 정렬 (최신순)
+    pinnedAnnouncements.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+    normalAnnouncements.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+    
+    console.log(`DEBUG: Pinned announcements (after sort): ${JSON.stringify(pinnedAnnouncements.map(a => ({id: a.id, title: a.title_notice})))}`); // DEBUG LOG
+    console.log(`DEBUG: Normal announcements (after sort): ${JSON.stringify(normalAnnouncements.map(a => ({id: a.id, title: a.title_notice})))}`); // DEBUG LOG
     
     const sortedAnnouncements = [...pinnedAnnouncements, ...normalAnnouncements];
+    
+    console.log(`DEBUG: Final sorted announcements array: ${JSON.stringify(sortedAnnouncements.map(a => ({id: a.id, title: a.title_notice, fix: a.fix_notice})))}`); // DEBUG LOG
+    
+    return {
+      success: true,
+      announcements: sortedAnnouncements,
+      message: `${sortedAnnouncements.length}개의 공지사항을 불러왔습니다.`
     
     return {
       success: true,
@@ -365,9 +385,21 @@ function createAnnouncement(req) {
       };
     }
     
-    // 새 공지 번호 생성
-    const lastRow = sheet.getLastRow();
-    const newNoticeId = lastRow; // 헤더 제외
+    // 새 공지 번호 생성 (기존 최대값 + 1)
+    const data = sheet.getDataRange().getValues();
+    let maxId = 0;
+    if (data.length > 1) {
+      const ids = data.slice(1) // 헤더 제외
+        .map(row => parseInt(row[0], 10)) // 첫 번째 열(no_notice)을 숫자로 변환
+        .filter(id => !isNaN(id) && id > 0); // 유효한 숫자 ID만 필터링
+      
+      if (ids.length > 0) {
+        maxId = Math.max(...ids);
+      } else {
+        maxId = 0; // 유효한 ID가 없으면 0부터 시작
+      }
+    }
+    const newNoticeId = maxId + 1;
     
     // 이메일 암호화
     const encryptedEmail = applyEncryption(writerEmail, 'Base64', '');

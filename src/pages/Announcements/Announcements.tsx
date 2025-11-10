@@ -79,11 +79,14 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
     return false;
   });
 
+  // 클라이언트 측에서 역순 정렬 (최신순)
+  const sortedFilteredPosts = [...filteredPosts].sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+
   // Pagination logic
-  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+  const totalPages = Math.ceil(sortedFilteredPosts.length / postsPerPage);
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const currentPosts = sortedFilteredPosts.slice(indexOfFirstPost, indexOfLastPost);
 
   const paginate = (pageNumber: number) => {
     if (pageNumber > 0 && pageNumber <= totalPages) {
@@ -166,7 +169,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                       {post.isPinned ? (
                         <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>📌</span>
                       ) : (
-                        filteredPosts.length - (indexOfFirstPost + index)
+                        post.id
                       )}
                     </td>
                     <td className="col-title">
