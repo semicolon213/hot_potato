@@ -29,6 +29,7 @@ import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
 import Accounting from '../../pages/Accounting';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
+import WorkflowManagement from '../../pages/WorkflowManagement';
 
 interface PageRendererProps {
   currentPage: PageType;
@@ -219,6 +220,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
             isTemplatesLoading={isTemplatesLoading} 
             data-oid="ou.h__l" />
         );
+      case "workflow_management":
+        return <WorkflowManagement onPageChange={onPageChange} />;
       case "calendar":
         return <MyCalendarPage
           data-oid="uz.ewbm"

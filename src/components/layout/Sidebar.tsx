@@ -166,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
           </div>
 
           <div
-            className={`menu-item menu-item-with-submenu ${isParentActive("document", ["document_management", "docbox", "new_document"]) ? "active" : ""}`}
+            className={`menu-item menu-item-with-submenu ${isParentActive("document", ["document_management", "docbox", "new_document", "workflow_management"]) ? "active" : ""}`}
             onClick={(e) => handleMenuClick("document", true, e)}
           >
             <FileIcon className="menu-icon" />
@@ -274,6 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
               <div className="submenu-item" onClick={() => { onPageChange('document_management'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>문서관리</div>
               <div className="submenu-item" onClick={() => { onPageChange('docbox'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>문서함</div>
               <div className="submenu-item" onClick={() => { onPageChange('new_document'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>새 문서</div>
+              <div className="submenu-item" onClick={() => { onPageChange('workflow_management'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>결재관리</div>
             </>
           )}
           {activeMenu === 'schedule' && (
