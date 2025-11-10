@@ -30,6 +30,8 @@ const ShieldIcon = HiMiniShieldCheck as React.ComponentType<React.SVGProps<SVGSV
 const GoogleIcon = HiMiniSquares2X2 as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const DashboardIcon = GoHomeFill as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const AccountingIcon = HiMiniCurrencyDollar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const MyPageIcon = FaUser as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const LogoutIcon = FaSignOutAlt as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /**
  * @brief 사이드바 Props 타입 정의
@@ -236,12 +238,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
         <div className="menu-container">
           {user && (
             <div className="menu-item" onClick={() => onPageChange("mypage")}>
-              <FaUser className="menu-icon" />
+              <MyPageIcon className="menu-icon" />
               <div className="menu-text">{user.name || "마이페이지"}</div>
             </div>
           )}
           <div className="menu-item" onClick={handleLogoutClick}>
-            <FaSignOutAlt className="menu-icon" />
+            <LogoutIcon className="menu-icon" />
             <div className="menu-text">로그아웃</div>
           </div>
         </div>

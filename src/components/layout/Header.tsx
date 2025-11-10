@@ -2,6 +2,8 @@ import React from "react";
 import "./Header.css";
 import { FaSearch } from "react-icons/fa";
 
+const SearchIcon = FaSearch as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
  
 
 // 사용자 프로필 타입이 필요해지면 아래를 참조해 확장
@@ -31,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange: _onPageChange, searchTerm
         <div className="header-actions" data-oid="xq1uhkt"></div>
 
         <div className="search-container" data-oid="ztfgwty">
-          <FaSearch
+          <SearchIcon
             className="search-icon"
               onClick={onSearchSubmit}
               data-oid="i8vx3cc"
