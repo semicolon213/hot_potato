@@ -54,10 +54,14 @@ export const useAdminPanel = () => {
       });
 
       if (response.success) {
-        const responseData = response.data as { requests?: unknown[] } | undefined;
-        const requests = responseData?.requests || [];
+        // 백엔드에서 requests가 최상위 레벨에 반환됨
+        const requests = (response as { requests?: PinnedAnnouncementRequest[] }).requests || 
+                         (response.data as { requests?: PinnedAnnouncementRequest[] } | undefined)?.requests || 
+                         [];
         setPinnedAnnouncementRequests(requests);
         console.log('📌 고정 공지 승인 요청 목록 로딩 완료:', requests.length);
+        console.log('📌 응답 전체 구조:', response);
+        console.log('📌 requests 배열:', requests);
       } else {
         console.error('고정 공지 승인 요청 목록 로딩 실패:', response.message);
         setPinnedAnnouncementRequests([]);
