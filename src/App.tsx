@@ -340,29 +340,62 @@ const App: React.FC = () => {
     isPinned?: boolean; 
     userType?: string; 
   }) => {
+    if (!announcementSpreadsheetId) {
+      alert("Announcement spreadsheet ID not found");
+      return;
+    }
+    if (!user || !user.email || !user.studentId || !user.userType) {
+      alert("User information is incomplete for adding announcement.");
+      return;
+    }
+
+    // 1. 다음에 생성될 ID 예측
+    const maxId = announcements.reduce((max, post) => {
+      const currentId = parseInt(post.id, 10);
+      return !isNaN(currentId) && currentId > max ? currentId : max;
+    }, 0);
+    const nextId = String(maxId + 1);
+
+    // 2. 낙관적 업데이트를 위한 새 공지사항 객체 생성
+    const newAnnouncement: Post = {
+      id: nextId, // 예측한 ID 사용
+      title: postData.title,
+      author: postData.author,
+      date: new Date().toISOString().split('T')[0], // 현재 날짜
+      views: 0,
+      likes: 0,
+      content: postData.content,
+      writer_id: postData.writer_id,
+      writer_email: user.email,
+      file_notice: postData.attachments.length > 0 ? '첨부파일 있음' : '',
+      access_rights: postData.accessRights ? JSON.stringify(postData.accessRights) : '',
+      fix_notice: postData.isPinned ? 'O' : '',
+      isPinned: postData.isPinned,
+    };
+
+    // 현재 공지사항 목록 백업 (롤백용)
+    const originalAnnouncements = announcements;
+
+    // 3. UI를 즉시 업데이트 (새 공지사항을 목록 맨 앞에 추가)
+    setAnnouncements([newAnnouncement, ...originalAnnouncements]);
+    handlePageChange('announcements'); // 공지사항 목록 페이지로 이동
+
     try {
-      if (!announcementSpreadsheetId) {
-        throw new Error("Announcement spreadsheet ID not found");
-      }
-      if (!user || !user.email) {
-        throw new Error("User email is required");
-      }
+      // 4. 실제 서버에 공지사항 추가 요청
       await addAnnouncement(announcementSpreadsheetId, {
         ...postData,
         writerEmail: user.email
       });
       
-      // 공지사항 목록 새로고침
-      if (user.studentId && user.userType) {
-        const updatedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
-        setAnnouncements(updatedAnnouncements);
-      }
+      // 5. 서버 응답 성공 시, 전체 공지사항 목록을 다시 가져와서 UI 업데이트
+      const updatedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
+      setAnnouncements(updatedAnnouncements);
       
-      // 성공 시 목록으로 이동
-      handlePageChange('announcements');
     } catch (error) {
       console.error('Error adding announcement:', error);
       alert('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      // 6. 오류 발생 시 UI를 이전 상태로 롤백
+      setAnnouncements(originalAnnouncements);
     }
   };
 
