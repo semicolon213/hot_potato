@@ -208,7 +208,7 @@
   width: 60%; 
   text-align: left; 
   font-weight: var(--font-weight-medium);
-  color: var(--text-dark);
+  color: var(--text-light);
   padding-left: clamp(20px, 2.31vw, 24px);
 }
 
