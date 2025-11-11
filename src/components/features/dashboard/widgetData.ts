@@ -30,12 +30,7 @@ export const widgetData = {
         title: '<i class="fas fa-bullhorn"></i> 공지사항',
         component: 'ListComponent',
         props: {
-            items: [
-                '[학사] 2023-2학기 수강신청 일정 변경 안내',
-                '[장학] 국가장학금 2차 신청 안내 (9/1~9/7)',
-                '[채용] 2023 하반기 취업박람회 개최 (9/15)',
-                '[도서관] 도서관 연장개방 안내 (시험기간)',
-            ]
+            items: []
         }
     },
     'lecture-note': {

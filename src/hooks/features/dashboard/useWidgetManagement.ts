@@ -5,6 +5,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { generateWidgetContent } from "../../../utils/helpers/widgetContentGenerator";
+import { fetchAnnouncements } from "../../../utils/database/papyrusManager";
+import type { User } from '../../../types/app';
 
 /**
  * 위젯의 데이터 구조를 정의하는 인터페이스입니다.
@@ -19,7 +21,7 @@ interface WidgetData {
   type: string;
   title: string;
   componentType: string;
-  props: Record<string, unknown>;
+  props: Record<string, any>; // props can have any shape
 }
 
 import { ENV_CONFIG } from '../../../config/environment';
@@ -176,10 +178,11 @@ const widgetOptions = [
 /**
  * 대시보드 위젯 관리를 위한 커스텀 훅입니다.
  */
-export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => {
+export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, user: User | null) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [loadedData, setLoadedData] = useState<Record<string, boolean>>({});
 
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -285,6 +288,27 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => 
 
     saveWidgetsToGoogleSheets();
   }, [widgets, hotPotatoDBSpreadsheetId, initialLoadComplete]);
+
+  // 위젯 동적 데이터 로딩
+  useEffect(() => {
+    const noticeWidget = widgets.find(w => w.type === 'notice');
+    if (noticeWidget && user && !loadedData['notice']) {
+      const loadNoticeData = async () => {
+        if (user.studentId && user.userType) {
+          const announcements = await fetchAnnouncements(user.studentId, user.userType);
+          setWidgets(prevWidgets =>
+            prevWidgets.map(widget =>
+              widget.type === 'notice'
+                ? { ...widget, props: { items: announcements.slice(0, 4).map(a => a.title) } }
+                : widget
+            )
+          );
+          setLoadedData(prev => ({ ...prev, notice: true }));
+        }
+      };
+      loadNoticeData();
+    }
+  }, [widgets, user, loadedData]);
 
   /**
    * 새 위젯을 대시보드에 추가하는 함수입니다.

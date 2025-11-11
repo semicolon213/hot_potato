@@ -23,7 +23,8 @@
     transform: scale(0.95);
     animation: modalOpen 0.3s forwards;
     max-height: 80vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes modalOpen {
@@ -35,6 +36,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
+    flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -67,6 +69,9 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding-right: 10px;
 }
 
 .widget-option {

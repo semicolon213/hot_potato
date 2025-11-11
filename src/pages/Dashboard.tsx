@@ -3,12 +3,14 @@ import { useWidgetManagement } from "../hooks/features/dashboard/useWidgetManage
 import "../styles/pages/Dashboard.css";
 import WidgetGrid from "../components/features/dashboard/WidgetGrid";
 import AddWidgetModal from "../components/features/dashboard/AddWidgetModal";
+import type { User } from '../../types/app';
 
 interface DashboardProps {
+  user: User | null;
   hotPotatoDBSpreadsheetId: string | null;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ hotPotatoDBSpreadsheetId }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const {
     isModalOpen,
@@ -20,7 +22,7 @@ const Dashboard: React.FC<DashboardProps> = ({ hotPotatoDBSpreadsheetId }) => {
     handleDragEnter,
     handleDrop,
     widgetOptions,
-  } = useWidgetManagement(hotPotatoDBSpreadsheetId);
+  } = useWidgetManagement(hotPotatoDBSpreadsheetId, user);
 
   useEffect(() => {
     console.log("Dashboard 컴포넌트가 마운트되었습니다.");
