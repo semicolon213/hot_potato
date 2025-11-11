@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaCheck, FaTimes } from 'react-icons/fa';
 import './UserList.css';
 import { formatDateToYYYYMMDD } from '../../../utils/helpers/timeUtils';
 
@@ -25,6 +26,8 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
   onApprove,
   onReject
 }) => {
+  console.log('📌 PinnedAnnouncementList 렌더링:', { requestsCount: requests.length, requests });
+  
   return (
     <div className="users-section">
       <h3>📌 고정 공지 승인 요청 ({requests.length}개)</h3>
@@ -56,14 +59,16 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
                       disabled={isLoading}
                       className="approve-btn"
                     >
-                      ✅ 승인
+                      <FaCheck className="btn-icon" />
+                      <span>승인</span>
                     </button>
                     <button
                       onClick={() => onReject(request.id)}
                       disabled={isLoading}
                       className="reject-btn"
                     >
-                      ❌ 거부
+                      <FaTimes className="btn-icon" />
+                      <span>거부</span>
                     </button>
                   </div>
                 </div>

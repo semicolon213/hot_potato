@@ -26,6 +26,7 @@ import type {
   MyPendingWorkflowsParams,
   WorkflowHistoryParams
 } from '../../types/documents';
+import type { ApprovalStatusResponse } from '../../types/api/userResponses';
 
 // API 응답 타입 정의
 export interface ApiResponse<T = unknown> {
@@ -210,7 +211,7 @@ export class ApiClient {
 
   // 인증 API
   async checkApprovalStatus(email: string) {
-    return this.request('checkUserStatus', { email });
+    return this.request<ApprovalStatusResponse>('checkUserStatus', { email });
   }
 
   async submitRegistrationRequest(registrationData: RegistrationData) {

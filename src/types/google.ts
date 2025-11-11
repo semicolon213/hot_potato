@@ -390,6 +390,7 @@ export interface PapyrusAuth {
 
 /**
  * @brief Google Credential Response 타입
+ * @deprecated Use GoogleCredentialResponse from './google/gapi' instead
  */
 export interface GoogleCredentialResponse {
   credential: string;
@@ -398,6 +399,7 @@ export interface GoogleCredentialResponse {
 
 /**
  * @brief Google Credential 타입
+ * @deprecated Use GoogleCredential from './google/gapi' instead
  */
 export interface GoogleCredential {
   id: string;

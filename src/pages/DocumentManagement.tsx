@@ -409,7 +409,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           onRowClick={(doc) => {
             const item = favoriteTemplates.find(fav => fav.name === doc.title);
             if (item) {
-              handleFavoriteClick(item as any);
+              handleFavoriteClick(item);
             }
           }}
           isLoading={false}

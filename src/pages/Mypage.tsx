@@ -24,14 +24,14 @@ const Mypage: React.FC = () => {
       try {
         setIsLoadingName(true);
         const res = await apiClient.getUserNameByEmail(user.email);
-        if (res?.success && (res as any).name) {
-          setAppScriptName((res as any).name);
-        } else if ((res as any)?.data?.name) {
-          setAppScriptName((res as any).data.name);
+        if (res?.success && 'name' in res && res.name) {
+          setAppScriptName(res.name);
+        } else if (res?.data?.name) {
+          setAppScriptName(res.data.name);
         }
 
         // getUserNameByEmail가 사용자 전체 행을 반환하므로 여기서 학번/교번도 보강
-        const rawUser = (res as any)?.user || (res as any)?.data?.user;
+        const rawUser = ('user' in res && res.user) || res?.data?.user;
         if (rawUser) {
           const sid = rawUser.no_member || rawUser.student_id || rawUser.no || rawUser.staff_no || rawUser.id || "";
           if (sid && !appScriptStatus.studentId) {
@@ -59,8 +59,8 @@ const Mypage: React.FC = () => {
         setStatusLoading(true);
         const res = await apiClient.checkApprovalStatus(user.email);
         // 두 가지 응답 형태 모두 처리 (래핑/직접)
-        if (res?.success && (res as any).data) {
-          const data = (res as any).data;
+        if (res?.success && 'data' in res && res.data) {
+          const data = res.data;
           const u = data.user || {};
           const sid = u.no_member || u.student_id || u.no || u.staff_no || u.id || "";
           setAppScriptStatus({
@@ -71,14 +71,14 @@ const Mypage: React.FC = () => {
             status: data.status,
             message: data.message
           });
-        } else if ((res as any).isApproved !== undefined) {
+        } else if ('isApproved' in res && res.isApproved !== undefined) {
           setAppScriptStatus({
-            isApproved: (res as any).isApproved,
-            isAdmin: (res as any).isAdmin,
-            studentId: (res as any).studentId,
-            userType: (res as any).userType,
-            status: (res as any).approvalStatus,
-            message: (res as any).error ? String((res as any).error) : undefined
+            isApproved: res.isApproved,
+            isAdmin: res.isAdmin,
+            studentId: res.studentId,
+            userType: res.userType,
+            status: res.approvalStatus,
+            message: res.error ? String(res.error) : undefined
           });
         }
       } catch (e) {
@@ -98,7 +98,7 @@ const Mypage: React.FC = () => {
     : (
         appScriptStatus.userType
           || (appScriptStatus.isAdmin ? "admin" : "")
-          || (user as any)?.userType
+          || (user?.userType)
           || ""
       );
 
@@ -150,7 +150,7 @@ const Mypage: React.FC = () => {
   const approvalStatus = appScriptStatus.status || (appScriptStatus.isApproved ? 'approved' : 'pending');
   const isAdmin = appScriptStatus.isAdmin || user?.isAdmin || false;
   const lastLoginTime = lastUser?.lastLoginTime;
-  const displayUserType = formatUserType(appScriptStatus.userType || (user as any)?.userType);
+  const displayUserType = formatUserType(appScriptStatus.userType || user?.userType);
 
   return (
     <div className="mypage-container">

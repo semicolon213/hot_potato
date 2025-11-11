@@ -161,37 +161,57 @@ function canEditAnnouncement(writerId, currentUserId) {
  * @returns {boolean} 읽기 권한 여부
  */
 function canReadAnnouncement(announcement, userId, userType) {
+  const writerIdStr = String(announcement.writer_id || '');
+  const userIdStr = String(userId || '');
+  
+  console.log(`DEBUG canReadAnnouncement: announcement.id=${announcement.id}, writer_id="${writerIdStr}", userId="${userIdStr}", userType="${userType}"`);
+  console.log(`DEBUG canReadAnnouncement: access_rights="${announcement.access_rights}"`);
+  
   // 작성자는 항상 읽기 가능
-  if (String(announcement.writer_id) === String(userId)) {
+  if (writerIdStr && writerIdStr !== '' && writerIdStr === userIdStr) {
+    console.log(`DEBUG canReadAnnouncement: User is writer - ALLOWED`);
     return true;
   }
   
   // 권한 설정이 없으면 작성자만 볼 수 있음 (이미 작성자 체크는 위에서 했으므로 false)
   if (!announcement.access_rights || announcement.access_rights === '' || announcement.access_rights.trim() === '') {
+    console.log(`DEBUG canReadAnnouncement: No access_rights and user is not writer - DENIED`);
     return false;
   }
   
   try {
     const accessRights = JSON.parse(announcement.access_rights);
+    console.log(`DEBUG canReadAnnouncement: Parsed accessRights:`, JSON.stringify(accessRights));
     
     // 개별 권한 확인 (ID를 문자열로 통일하여 비교)
     if (accessRights.individual && Array.isArray(accessRights.individual)) {
-      const hasAccess = accessRights.individual.some(id => String(id) === String(userId));
+      console.log(`DEBUG canReadAnnouncement: Checking individual rights:`, accessRights.individual);
+      const hasAccess = accessRights.individual.some(id => {
+        const idStr = String(id);
+        const match = idStr === userIdStr;
+        console.log(`DEBUG canReadAnnouncement: Comparing "${idStr}" === "${userIdStr}" = ${match}`);
+        return match;
+      });
       if (hasAccess) {
+        console.log(`DEBUG canReadAnnouncement: User found in individual rights - ALLOWED`);
         return true;
       }
     }
     
     // 그룹 권한 확인
     if (accessRights.groups && Array.isArray(accessRights.groups)) {
+      console.log(`DEBUG canReadAnnouncement: Checking group rights:`, accessRights.groups, `userType: "${userType}"`);
       if (accessRights.groups.includes(userType)) {
+        console.log(`DEBUG canReadAnnouncement: User type "${userType}" found in groups - ALLOWED`);
         return true;
       }
     }
     
+    console.log(`DEBUG canReadAnnouncement: No matching rights found - DENIED`);
     return false;
   } catch (error) {
     // 파싱 오류 시 접근 불가 (안전하게 처리)
+    console.log(`DEBUG canReadAnnouncement: JSON parse error: ${error.message} - DENIED`);
     return false;
   }
 }
@@ -207,7 +227,10 @@ function getAnnouncements(req) {
   try {
     const { spreadsheetName, userId, userType } = req;
     
+    console.log(`DEBUG getAnnouncements: Received request - spreadsheetName: "${spreadsheetName}", userId: "${userId}", userType: "${userType}"`);
+    
     if (!spreadsheetName || !userId || !userType) {
+      console.log(`DEBUG getAnnouncements: Missing required parameters`);
       return {
         success: false,
         message: '필수 파라미터가 누락되었습니다.',
@@ -245,6 +268,9 @@ function getAnnouncements(req) {
       headerMap[h] = index;
     });
     
+    console.log(`DEBUG: Total rows in sheet: ${data.length - 1}`); // DEBUG LOG
+    console.log(`DEBUG: User ID: ${userId}, User Type: ${userType}`); // DEBUG LOG
+    
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       
@@ -270,21 +296,37 @@ function getAnnouncements(req) {
         fix_notice: row[headerMap['fix_notice']] || ''
       };
       
+      console.log(`DEBUG: Announcement ${announcement.id} - access_rights: "${announcement.access_rights}"`); // DEBUG LOG
+      
       // writer_email에서 writer_id 추출 (암호화된 이메일에서 사용자 찾기)
       if (announcement.writer_email) {
         try {
+          console.log(`DEBUG: Attempting to decrypt writer_email for announcement ${announcement.id}, encrypted: "${announcement.writer_email}"`);
           const decryptedEmail = applyDecryption(announcement.writer_email, 'Base64', '');
+          console.log(`DEBUG: Decrypted email: "${decryptedEmail}"`);
           const writer = getUserByEmail(decryptedEmail);
           if (writer) {
             announcement.writer_id = String(writer.no_member); // ID를 문자열로 통일
+            console.log(`DEBUG: Found writer_id: ${announcement.writer_id} (no_member: ${writer.no_member}) for announcement ${announcement.id}`); // DEBUG LOG
+          } else {
+            console.log(`DEBUG: Writer not found for email: ${decryptedEmail} (user may not be approved or doesn't exist)`); // DEBUG LOG
+            announcement.writer_id = ''; // 명시적으로 빈 문자열 설정
           }
         } catch (error) {
+          console.log(`DEBUG: Failed to decrypt email for announcement ${announcement.id}: ${error.message}`); // DEBUG LOG
+          announcement.writer_id = ''; // 명시적으로 빈 문자열 설정
           // 복호화 실패해도 계속 진행 (작성자 정보만 없을 뿐)
         }
+      } else {
+        console.log(`DEBUG: No writer_email for announcement ${announcement.id}`); // DEBUG LOG
+        announcement.writer_id = ''; // 명시적으로 빈 문자열 설정
       }
       
       // 권한 확인
-      if (canReadAnnouncement(announcement, String(userId), userType)) {
+      const canRead = canReadAnnouncement(announcement, String(userId), userType);
+      console.log(`DEBUG: Can read announcement ${announcement.id}? ${canRead} (writer_id: ${announcement.writer_id}, userId: ${userId})`); // DEBUG LOG
+      
+      if (canRead) {
         announcements.push(announcement);
         console.log(`DEBUG: Added announcement (ID: ${announcement.id}, Title: ${announcement.title_notice})`); // DEBUG LOG
       } else {
@@ -311,11 +353,6 @@ function getAnnouncements(req) {
     const sortedAnnouncements = [...pinnedAnnouncements, ...normalAnnouncements];
     
     console.log(`DEBUG: Final sorted announcements array: ${JSON.stringify(sortedAnnouncements.map(a => ({id: a.id, title: a.title_notice, fix: a.fix_notice})))}`); // DEBUG LOG
-    
-    return {
-      success: true,
-      announcements: sortedAnnouncements,
-      message: `${sortedAnnouncements.length}개의 공지사항을 불러왔습니다.`
     
     return {
       success: true,

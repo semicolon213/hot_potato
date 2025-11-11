@@ -1,5 +1,5 @@
 // Google Identity Services (GIS) 및 Google API Client Library 타입 정의
-import type { GoogleClient, PapyrusAuth, GoogleToken, GoogleCredentialResponse, GoogleCredential } from './google';
+import type { GoogleClient, PapyrusAuth, GoogleToken } from './google';
 import type {
   GoogleSheetsValuesGetParams,
   GoogleSheetsValuesGetResponse,
@@ -9,11 +9,16 @@ import type {
   GoogleSheetsValuesAppendResponse,
   GoogleSheetsBatchUpdateParams,
   GoogleSheetsBatchUpdateResponse,
+  GoogleSheetsGetParams,
+  GoogleSheetsGetResponse
+} from './google';
+import type {
   GoogleDriveFilesCopyParams,
   GoogleDriveFilesCopyResponse,
   GoogleDriveFilesGetParams,
   GoogleDriveFilesGetResponse
 } from './google';
+import type { GoogleCredentialResponse, GoogleCredential, GoogleCredentialCallback } from './google/gapi';
 
 declare global {
   interface Window {
@@ -22,7 +27,7 @@ declare global {
         id: {
           initialize: (config: {
             client_id: string;
-            callback: (response: any) => void;
+            callback: GoogleCredentialCallback;
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
           }) => void;
@@ -36,7 +41,7 @@ declare global {
           }) => void;
           prompt: () => void;
           disableAutoSelect: () => void;
-          storeCredential: (credential: any) => void;
+          storeCredential: (credential: GoogleCredential) => void;
           cancel: () => void;
           revoke: (hint: string, callback: () => void) => void;
         };
@@ -52,32 +57,32 @@ declare global {
         }) => Promise<void>;
         load: (api: string, version: string) => Promise<void>;
         setApiKey: (apiKey: string) => void;
-        getToken: () => any;
+        getToken: () => GoogleToken | null;
         request: (args: {
           path: string;
           method?: string;
-          params?: object;
-          headers?: object;
-          body?: object;
-        }) => Promise<{ result: object }>;
+          params?: Record<string, unknown>;
+          headers?: Record<string, string>;
+          body?: Record<string, unknown>;
+        }) => Promise<{ result: Record<string, unknown> }>;
         drive: {
           files: {
             list: (params: gapi.client.drive.files.list.Params) => Promise<gapi.client.drive.files.list.Response>;
-            copy: (params: any) => Promise<any>;
+            copy: (params: GoogleDriveFilesCopyParams) => Promise<GoogleDriveFilesCopyResponse>;
             create: (params: gapi.client.drive.files.create.Params) => Promise<gapi.client.drive.files.create.Response>;
             update: (params: gapi.client.drive.files.update.Params) => Promise<gapi.client.drive.files.update.Response>;
-            get: (params: any) => Promise<any>;
+            get: (params: GoogleDriveFilesGetParams) => Promise<GoogleDriveFilesGetResponse>;
           };
         };
         sheets: {
           spreadsheets: {
-            get: (params: any) => Promise<any>;
+            get: (params: GoogleSheetsGetParams) => Promise<GoogleSheetsGetResponse>;
             values: {
-              get: (params: any) => Promise<any>;
-              update: (params: any) => Promise<any>;
-              append: (params: any) => Promise<any>;
+              get: (params: GoogleSheetsValuesGetParams) => Promise<GoogleSheetsValuesGetResponse>;
+              update: (params: GoogleSheetsValuesUpdateParams) => Promise<GoogleSheetsValuesUpdateResponse>;
+              append: (params: GoogleSheetsValuesAppendParams) => Promise<GoogleSheetsValuesAppendResponse>;
             };
-            batchUpdate: (params: any) => Promise<any>;
+            batchUpdate: (params: GoogleSheetsBatchUpdateParams) => Promise<GoogleSheetsBatchUpdateResponse>;
           };
         };
         docs: {

@@ -123,7 +123,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   };
 
   const handleRowClick = (doc: Document) => {
-    const fullDoc = documents.find(d => d.url === (doc as any).url);
+    const fullDoc = documents.find(d => d.url === doc.url);
     if (fullDoc) {
       addRecentDocument(fullDoc);
       window.open(fullDoc.url, '_blank');
@@ -234,7 +234,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedDocs(processedDocuments.map((doc) => (doc as any).id || doc.documentNumber));
+      setSelectedDocs(processedDocuments.map((doc) => doc.documentNumber));
     } else {
       setSelectedDocs([]);
     }
