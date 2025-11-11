@@ -224,16 +224,24 @@ const App: React.FC = () => {
     const pageFromUrl = urlParams.get('page');
     const announcementId = urlParams.get('announcementId');
 
-    if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
-      // ID를 문자열로 통일하여 비교
-      const announcement = announcements.find(a => String(a.id) === String(announcementId));
-      if (announcement) {
-        setSelectedAnnouncement(announcement);
-      } else {
-        console.warn('URL의 announcementId와 일치하는 공지사항을 찾을 수 없습니다:', announcementId);
+    if (pageFromUrl === 'announcement-view' && announcementId) {
+      // announcements가 로드된 후, localStorage의 selectedAnnouncement와 비교하여 최신 정보로 업데이트
+      if (announcements.length > 0) {
+        const announcement = announcements.find(a => String(a.id) === String(announcementId));
+        if (announcement) {
+          setSelectedAnnouncement(announcement);
+          localStorage.setItem('selectedAnnouncement', JSON.stringify(announcement)); // 최신 정보로 업데이트
+        } else {
+          console.warn('URL/localStorage의 announcementId와 일치하는 공지사항을 찾을 수 없습니다:', announcementId);
+          setSelectedAnnouncement(null);
+          localStorage.removeItem('selectedAnnouncement');
+        }
       }
+    } else if (pageFromUrl !== 'announcement-view') {
+      setSelectedAnnouncement(null);
+      localStorage.removeItem('selectedAnnouncement');
     }
-  }, [announcements, currentPage]);
+  }, [announcements, currentPage, setSelectedAnnouncement]);
 
   // 페이지 전환 처리
   const handlePageChange = (pageName: string, params?: Record<string, string>) => {
@@ -373,6 +381,7 @@ const App: React.FC = () => {
     // 조회수 증가는 AnnouncementView 컴포넌트에서 처리하므로 여기서는 제거
     setSelectedAnnouncement(selectedPost);
     handlePageChange('announcement-view', { announcementId: postId });
+    localStorage.setItem('selectedAnnouncement', JSON.stringify(selectedPost)); // Save entire object
   };
 
   const handleUpdateAnnouncement = async (announcementId: string, postData: { 
