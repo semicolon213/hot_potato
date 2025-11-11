@@ -1,131 +1,273 @@
 .mypage-container {
   width: 100%;
-  padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 40px);
+  padding: clamp(32px, 3.7vh, 48px) clamp(32px, 4.17vw, 48px);
   margin: 0;
   min-height: 100%;
   box-sizing: border-box;
   background: transparent;
 }
 
-.mypage-header h1 { display: none; }
-
-.profile-section {
-  display: grid;
-  grid-template-columns: clamp(220px, 20vw, 280px) 1fr;
-  gap: clamp(16px, 2.08vw, 24px);
-  margin-bottom: clamp(16px, 1.85vh, 24px);
+/* 마이페이지 내 모든 정보 값에서 실선 완전 제거 */
+.mypage-container .info-value,
+.mypage-container .info-item,
+.mypage-container .info-label,
+.mypage-container .info-value *,
+.mypage-container .info-item *,
+.mypage-container .info-label * {
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
-.avatar-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: clamp(16px, 1.85vh, 24px);
+.profile-wrapper {
   display: flex;
   flex-direction: column;
+  gap: clamp(24px, 2.78vh, 32px);
+}
+
+/* 프로필 헤더 카드 */
+.profile-header {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: clamp(32px, 3.7vh, 40px);
+  display: flex;
   align-items: center;
-  gap: clamp(12px, 1.56vw, 16px);
+  gap: clamp(24px, 2.78vw, 32px);
+  transition: box-shadow 0.2s ease;
+}
+
+.profile-header:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.avatar-wrapper {
+  flex-shrink: 0;
 }
 
 .avatar {
-  width: clamp(120px, 13.89vh, 160px);
-  height: clamp(120px, 13.89vh, 160px);
+  width: clamp(100px, 11.57vh, 120px);
+  height: clamp(100px, 11.57vh, 120px);
   border-radius: 50%;
   background: var(--sidebar-primary);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
-.upload-btn {
-  background: var(--sidebar-primary);
-  color: #f8f8f7;
-  border: none;
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
-  border-radius: var(--sidebar-radius-sm);
-  font-size: clamp(14px, 1.62vh, 16px);
-  font-weight: var(--font-weight-semibold);
-  height: clamp(44px, 5.09vh, 48px);
-  box-sizing: border-box;
+.avatar:hover {
+  transform: scale(1.05);
 }
 
-.upload-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
-.profile-info-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: clamp(16px, 1.85vh, 24px);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(12px, 1.56vw, 16px);
+.avatar-initial {
+  color: #ffffff;
+  font-size: clamp(36px, 4.17vh, 48px);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  line-height: 1;
 }
 
-.info-row { display: flex; flex-direction: column; gap: 6px; }
-.info-row label { font-weight: var(--font-weight-semibold); color: var(--text-dark); font-size: clamp(14px, 1.62vh, 16px); }
+.profile-name-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 0.69vh, 8px);
+}
 
-.form-input {
-  padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  background: #ffffff;
+.profile-name {
+  font-size: clamp(22px, 2.55vh, 28px);
+  font-weight: var(--font-weight-bold);
   color: var(--text-dark);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.profile-email {
   font-size: clamp(14px, 1.62vh, 16px);
-  height: clamp(44px, 5.09vh, 48px);
-  box-sizing: border-box;
-  font-weight: var(--font-weight-medium);
+  color: #666666;
+  margin: 0;
+  line-height: 1.4;
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: var(--sidebar-primary);
-  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+/* 정보 섹션 컨테이너 */
+.info-sections {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2.31vh, 24px);
 }
 
-.account-section .section-card,
-.preferences-section .section-card {
+/* 정보 섹션 카드 */
+.info-section {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: clamp(16px, 1.85vh, 24px);
-  margin-bottom: clamp(16px, 1.85vh, 24px);
+  border-radius: var(--sidebar-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: clamp(28px, 3.24vh, 36px) clamp(28px, 3.24vw, 36px);
+  transition: box-shadow 0.2s ease;
 }
 
+.info-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* 섹션 제목 */
 .section-title {
-  margin: 0 0 clamp(12px, 1.39vh, 16px) 0;
+  font-size: clamp(16px, 1.85vh, 18px);
   font-weight: var(--font-weight-semibold);
   color: var(--text-dark);
-  font-size: clamp(16px, 1.85vh, 20px);
+  margin: 0 0 clamp(20px, 2.31vh, 24px) 0;
+  padding-bottom: clamp(12px, 1.39vh, 16px);
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: -0.3px;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: clamp(12px, 1.56vw, 16px);
+/* 정보 테이블 */
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
 }
 
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-weight: var(--font-weight-semibold); color: var(--text-dark); font-size: clamp(14px, 1.62vh, 16px); }
-
-.actions { display: flex; justify-content: flex-end; margin-top: clamp(12px, 1.39vh, 16px); }
-
-.save-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
+.info-row {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s ease;
 }
 
-.preferences-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px, 1.56vw, 16px); }
-.switch-row { display: flex; align-items: center; justify-content: space-between; padding: clamp(10px, 1.16vh, 14px) clamp(16px, 2.08vw, 20px); border: 1px solid #e2e8f0; border-radius: var(--sidebar-radius-sm); }
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row:hover {
+  background-color: #f8f9fa;
+}
+
+.info-label-cell {
+  font-size: clamp(13px, 1.51vh, 14px);
+  font-weight: var(--font-weight-semibold);
+  color: #666666;
+  padding: clamp(14px, 1.62vh, 16px) clamp(16px, 1.85vw, 20px);
+  padding-right: clamp(24px, 2.78vw, 32px);
+  text-align: left;
+  vertical-align: top;
+  width: clamp(140px, 16.2vw, 180px);
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  text-decoration: none !important;
+}
+
+.info-value-cell {
+  font-size: clamp(15px, 1.74vh, 17px);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-dark);
+  padding: clamp(14px, 1.62vh, 16px) clamp(16px, 1.85vw, 20px);
+  word-break: break-word;
+  line-height: 1.6;
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  text-decoration: none !important;
+}
+
+/* 상태 배지 */
+.status-badge {
+  display: inline-block;
+  padding: clamp(6px, 0.69vh, 8px) clamp(14px, 1.62vw, 18px);
+  border-radius: 20px;
+  font-size: clamp(12px, 1.39vh, 13px);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  width: fit-content;
+  margin: 0;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  text-decoration: none !important;
+}
+
+.status-approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-not_registered {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-admin {
+  background-color: #cfe2ff;
+  color: #084298;
+}
+
+.status-user {
+  background-color: #e7f3ff;
+  color: #055160;
+}
 
 @media (max-width: 768px) {
-  .profile-section { grid-template-columns: 1fr; }
-  .profile-info-card { grid-template-columns: 1fr; }
-  .form-grid { grid-template-columns: 1fr; }
-  .preferences-grid { grid-template-columns: 1fr; }
+  .mypage-container {
+    padding: clamp(24px, 2.78vh, 32px) clamp(20px, 2.6vw, 24px);
+  }
+
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    padding: clamp(28px, 3.24vh, 32px);
+  }
+
+  .profile-name-section {
+    align-items: center;
+  }
+
+  .info-section {
+    padding: clamp(24px, 2.78vh, 28px) clamp(20px, 2.6vw, 24px);
+  }
+
+  .info-label-cell {
+    width: auto;
+    padding: clamp(12px, 1.39vh, 14px) clamp(12px, 1.56vw, 16px);
+    padding-right: clamp(16px, 1.85vw, 20px);
+  }
+
+  .info-value-cell {
+    padding: clamp(12px, 1.39vh, 14px) clamp(12px, 1.56vw, 16px);
+  }
 }
 

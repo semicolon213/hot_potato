@@ -1,142 +1,130 @@
 /* 카드 레이아웃 영역 */
 .cards-row {
   display: flex;
-  gap: 15px;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  gap: clamp(16px, 2.08vw, 24px);
+  margin-bottom: clamp(24px, 2.78vh, 32px);
 }
 
 /* 카드 공통 스타일 */
 .card {
   flex: 1;
   padding: 0;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--sidebar-radius);
   position: relative;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: var(--card-shadow);
-  margin-top: 7px;
+  transition: transform 0.2s;
+  box-shadow: none !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: #fff;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
   height: auto;
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+  box-shadow: none;
 }
 
 /* 카드 헤더 스타일 */
 .card-header {
-  display: block;
-  padding: 20px;
-  position: relative;
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-  height: auto;
-}
-
-.card-icon-container {
-  margin-bottom: 16px;
-}
-
-.card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-sm);
   display: flex;
   align-items: center;
-  justify-content: center;
-  background-color: var(--primary);
+  min-height: clamp(56px, 6.5vh, 72px);
+  padding: 0;
+  position: relative;
+  border-radius: var(--sidebar-radius) var(--sidebar-radius) 0 0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin-left: 60px;
-  margin-top: -53px;
-}
-
-.card-subtitle {
-  font-size: 13px;
-  color: var(--text-medium);
-  margin-left: 60px;
-  margin-top: 2px;
+  font-size: clamp(18px, 2.08vh, 20px);
+  font-weight: var(--font-weight-semibold);
+  color: #000000;
+  margin: 0;
+  margin-left: clamp(24px, 2.78vw, 32px);
+  line-height: 1.3;
 }
 
 /* 목록 스타일 - 카드 내부 항목 리스트 */
 .items-list {
   display: flex;
   flex-direction: column;
+  background-color: #ffffff;
 }
 
 .list-item {
   display: flex;
   align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  height: 65px;
-  gap: 12px;
+  justify-content: space-between;
+  padding: clamp(14px, 1.62vh, 16px) clamp(20px, 2.31vw, 24px);
+  border-bottom: 1px solid #e2e8f0;
+  min-height: clamp(56px, 6.48vh, 64px);
+  gap: clamp(12px, 1.39vw, 16px);
+  transition: background-color 0.2s ease;
+}
+
+.list-item:last-child {
+  border-bottom: none;
 }
 
 .list-item.clickable {
   cursor: pointer;
 }
 
-.list-item.clickable:hover {
+.list-item.clickable:hover,
+.list-item:hover {
   background-color: #f8f9fa;
 }
 
-
-
-.list-item:hover {
-  background-color: #f9f9f9;
-}
-
 .item-info {
-  flex-grow: 1;
-  margin-left: 17px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.46vh, 6px);
 }
 
 .item-badges {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: clamp(6px, 0.69vw, 8px);
   flex-shrink: 0;
 }
 
 .item-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-medium);
   color: var(--text-dark);
-  margin-bottom: 2px;
+  margin-bottom: clamp(2px, 0.23vh, 4px);
+  line-height: 1.4;
 }
 
 .item-time {
-  font-size: 12px;
-  color: var(--text-light);
+  font-size: clamp(12px, 1.39vh, 13px);
+  color: var(--text-medium);
+  line-height: 1.3;
 }
-
-/* 메타 정보 스타일 - 제거됨 (오른쪽 뱃지로 이동) */
 
 .item-tag {
   background-color: #e3f2fd;
   color: #1976d2;
-  padding: 2px 8px;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 0.93vw, 10px);
   border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: clamp(11px, 1.27vh, 12px);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 .item-type {
   background-color: #f3e5f5;
   color: #7b1fa2;
-  padding: 2px 8px;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 0.93vw, 10px);
   border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: clamp(11px, 1.27vh, 12px);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 .item-type.personal {
@@ -147,4 +135,24 @@
 .item-type.public {
   background-color: #fff3e0;
   color: #f57c00;
+}
+
+.item-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-medium);
+  flex-shrink: 0;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .cards-row {
+    flex-direction: column;
+  }
+
+  .card-title {
+    font-size: clamp(16px, 1.85vh, 18px);
+    margin-left: clamp(20px, 2.31vw, 24px);
+  }
 }

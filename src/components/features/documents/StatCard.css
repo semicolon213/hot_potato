@@ -1,36 +1,67 @@
 /* ===== 하단 통계 카드 영역 ===== */
 .stats-container {
   display: flex;
-  gap: 15px;
-  margin-top: 40px;
-  margin-bottom: 20px;
+  gap: clamp(16px, 2.08vw, 24px);
+  margin-top: clamp(24px, 2.78vh, 32px);
+  margin-bottom: 0;
 }
 
 .stat-card {
   flex: 1;
-  padding: clamp(16px, 1.85vh, 24px);
-  border-radius: var(--sidebar-radius-sm);
-  box-shadow: var(--shadow-base);
+  padding: clamp(24px, 2.78vh, 32px) clamp(20px, 2.31vw, 28px);
+  border-radius: var(--sidebar-radius);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: var(--transition-base);
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  box-shadow: none;
 }
 
 .stat-count {
-  font-size: 28px;
-  font-weight: bold;
-  margin-bottom: 8px;
+  font-size: clamp(28px, 3.24vh, 36px);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: clamp(8px, 0.93vh, 12px);
+  line-height: 1;
 }
 
 .stat-title {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+}
+
+/* 파스텔 톤 색상 적용 (인라인 스타일로 전달되지만 기본값 설정) */
+.stat-card[style*="background-color: var(--primary)"] {
+  background-color: #b3d9ff !important;
+  color: #003d7a !important;
+}
+
+.stat-card[style*="background-color: var(--secondary)"] {
+  background-color: #c9e5ff !important;
+  color: #004d99 !important;
+}
+
+.stat-card[style*="background-color: rgb(243, 238, 234)"] {
+  background-color: #ffd9b3 !important;
+  color: #7a3d00 !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .stats-container {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    padding: clamp(20px, 2.31vh, 24px) clamp(16px, 1.85vw, 20px);
+  }
 }

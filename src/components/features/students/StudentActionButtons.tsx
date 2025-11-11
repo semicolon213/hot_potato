@@ -37,48 +37,33 @@ const StudentActionButtons: React.FC<StudentActionButtonsProps> = ({
   };
 
   return (
-    <div className="action-buttons">
-      <div className="action-left">
-        <button className="export-btn" onClick={onExportCSV}>
-          <FaDownload className="btn-icon" />
-          <span className="btn-text">CSV 다운로드</span>
-        </button>
-        <button 
-          className="template-btn"
-          onClick={onDownloadTemplate}
-        >
-          <FaFileDownload className="btn-icon" />
-          <span className="btn-text">양식 다운로드</span>
-        </button>
-        <button 
-          className="import-btn"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <FaUpload className="btn-icon" />
-          <span className="btn-text">일괄 업로드</span>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          onChange={handleFileUpload}
-          style={{ display: 'none' }}
-        />
-      </div>
-      
-      <div className="action-right">
-        <div className="result-info">
-          <span className="result-text">
-            <span className="highlight">{filteredCount}</span>명 표시 중
-          </span>
-          {filteredCount !== totalCount && (
-            <span className="total-text">
-              (전체 {totalCount}명)
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
+    <>
+      <button className="export-btn" onClick={onExportCSV}>
+        <FaDownload className="btn-icon" />
+        <span className="btn-text">CSV 다운로드</span>
+      </button>
+      <button 
+        className="template-btn"
+        onClick={onDownloadTemplate}
+      >
+        <FaFileDownload className="btn-icon" />
+        <span className="btn-text">양식 다운로드</span>
+      </button>
+      <button 
+        className="import-btn"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <FaUpload className="btn-icon" />
+        <span className="btn-text">일괄 업로드</span>
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        onChange={handleFileUpload}
+        style={{ display: 'none' }}
+      />
+    </>
   );
 };
 

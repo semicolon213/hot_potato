@@ -1,11 +1,14 @@
 .admin-panel {
   width: 100%;
+  height: 100%;
   margin: 0;
   padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 40px);
   background: transparent; /* 내부 페이지 배경과 동일 */
-  min-height: 100%;
   font-family: var(--main-font);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .admin-header {
@@ -37,13 +40,14 @@
   background: #ffffff;
   border-radius: var(--sidebar-radius);
   padding: clamp(24px, 2.78vh, 32px);
-  margin-bottom: clamp(32px, 3.7vh, 48px);
+  margin-bottom: clamp(24px, 2.78vh, 32px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
   backdrop-filter: none;
   color: var(--text-dark, #333);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .admin-key-section::before {
@@ -221,10 +225,25 @@
   background: transparent;
   border-radius: 0;
   padding: 0;
-  margin-bottom: clamp(32px, 3.7vh, 48px);
+  margin-bottom: clamp(24px, 2.78vh, 32px);
   box-shadow: none;
   border: none;
   backdrop-filter: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 승인 대기 사용자 섹션 - 우선순위 높음 */
+.users-section:first-of-type {
+  flex: 1.2;
+}
+
+/* 승인된 사용자 섹션 - 남은 공간 사용 */
+.users-section:last-of-type {
+  flex: 1;
+  max-height: 50%;
 }
 
 .users-section h3 {
@@ -235,6 +254,7 @@
   display: flex;
   align-items: center;
   gap: clamp(10px, 1.25vw, 16px);
+  flex-shrink: 0;
 }
 
 .users-section h3::before {
@@ -261,14 +281,20 @@
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .user-list-header, .user-list-row {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr 1.5fr 1.2fr;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1.5fr 2fr;
   padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 24px);
   align-items: center;
   text-align: left;
+  min-width: max-content;
 }
 
 .user-list-header {
@@ -277,11 +303,16 @@
   font-weight: var(--font-weight-semibold);
   color: var(--text-dark, #333);
   font-size: clamp(13px, 1.5vh, 15px);
+  flex-shrink: 0;
 }
 
 .user-list-body {
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .user-list-row {
@@ -303,6 +334,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* 작업 열 셀은 overflow를 허용하여 버튼이 잘리지 않도록 */
+.user-list-row .user-list-cell:last-child {
+  overflow: visible;
+  min-width: max-content;
 }
 
 .user-list-cell .user-type {
@@ -335,23 +373,26 @@
 /* 사용자 액션 */
 .user-actions {
   display: flex;
-  gap: 8px;
+  gap: clamp(8px, 1.04vw, 12px);
   justify-content: flex-start;
+  min-width: max-content;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .approve-btn {
-  background: var(--sidebar-primary);
-  color: #f8f8f7;
-  border: none;
+  background: #b3e5d1;
+  color: #155724;
+  border: 1px solid #a3d5c1;
   border-radius: var(--sidebar-radius-sm);
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 20px);
+  padding: clamp(8px, 0.93vh, 12px) clamp(12px, 1.56vw, 16px);
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  max-width: clamp(90px, 11.72vw, 120px);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex: 0 0 auto;
+  min-width: clamp(70px, 9.11vw, 90px);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -365,13 +406,22 @@
 }
 
 .approve-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
+  background: #a3d5c1;
+  color: #0d3e1a;
+  border-color: #93c5b1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.approve-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .approve-btn:disabled {
-  background: #ccc;
-  color: #666;
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #dee2e6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -379,18 +429,18 @@
 }
 
 .reject-btn {
-  background: var(--sidebar-primary);
-  color: #f8f8f7;
-  border: none;
+  background: #ffb3ba;
+  color: #8b0000;
+  border: 1px solid #ffa3aa;
   border-radius: var(--sidebar-radius-sm);
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 20px);
+  padding: clamp(8px, 0.93vh, 12px) clamp(12px, 1.56vw, 16px);
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  max-width: clamp(90px, 11.72vw, 120px);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex: 0 0 auto;
+  min-width: clamp(70px, 9.11vw, 90px);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -404,13 +454,22 @@
 }
 
 .reject-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
+  background: #ff9999;
+  color: #660000;
+  border-color: #ff8989;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.reject-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .reject-btn:disabled {
-  background: #ccc;
-  color: #666;
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #dee2e6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;

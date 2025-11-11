@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../styles/pages/Mypage.css";
 import { useAppState } from "../hooks/core/useAppState";
 import { apiClient } from "../utils/api/apiClient";
+import { lastUserManager } from "../utils/auth/lastUserManager";
 
 const Mypage: React.FC = () => {
   const { user } = useAppState();
@@ -101,40 +102,111 @@ const Mypage: React.FC = () => {
           || ""
       );
 
+  // Google 계정 프로필 이미지 가져오기
+  const lastUser = user?.email ? lastUserManager.getAll().find(u => u.email === user.email) : null;
+  const profilePicture = lastUser?.picture;
+  const userInitial = displayName ? displayName.charAt(0).toUpperCase() : '';
+
+  // 추가 정보 포맷팅
+  const formatApprovalStatus = (status?: string) => {
+    if (!status) return '정보 없음';
+    switch (status) {
+      case 'approved':
+        return '승인됨';
+      case 'pending':
+        return '대기 중';
+      case 'not_registered':
+        return '미등록';
+      default:
+        return status;
+    }
+  };
+
+  const formatUserType = (userType?: string) => {
+    if (!userType) return '';
+    const typeMap: Record<string, string> = {
+      'student': '학생',
+      'std_council': '집행부',
+      'supp': '조교',
+      'professor': '교수',
+      'ad_professor': '겸임교원',
+      'admin': '관리자'
+    };
+    return typeMap[userType] || userType;
+  };
+
+  const formatLastLoginTime = (timestamp?: number) => {
+    if (!timestamp) return '정보 없음';
+    const date = new Date(timestamp);
+    return date.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const approvalStatus = appScriptStatus.status || (appScriptStatus.isApproved ? 'approved' : 'pending');
+  const isAdmin = appScriptStatus.isAdmin || user?.isAdmin || false;
+  const lastLoginTime = lastUser?.lastLoginTime;
+  const displayUserType = formatUserType(appScriptStatus.userType || (user as any)?.userType);
+
   return (
     <div className="mypage-container">
-      <section className="mypage-header" aria-hidden>
-        <h1>마이페이지</h1>
-      </section>
-
-      <section className="profile-section">
-        <div className="avatar-card">
-          <div className="avatar" aria-hidden></div>
-          <button className="btn btn-primary upload-btn" type="button">프로필 이미지 변경</button>
-        </div>
-        <div className="profile-info-card">
-          <div className="info-row">
-            <label>이름</label>
-            <input className="form-input" type="text" placeholder="이름" value={displayName} readOnly />
+      <div className="profile-wrapper">
+        <div className="profile-header">
+          <div className="avatar-wrapper">
+            <div className="avatar" aria-hidden>
+              {profilePicture ? (
+                <img 
+                  src={profilePicture} 
+                  alt={displayName} 
+                  className="avatar-image"
+                />
+              ) : (
+                <div className="avatar-initial">{userInitial}</div>
+              )}
+            </div>
           </div>
-          <div className="info-row">
-            <label>이메일</label>
-            <input className="form-input" type="email" placeholder="이메일" value={displayEmail} disabled />
-          </div>
-          <div className="info-row">
-            <label>학번/교번</label>
-            <input className="form-input" type="text" placeholder="학번/교번" value={displayStudentId} readOnly />
-          </div>
-          <div className="info-row">
-            <label>역할</label>
-            <input className="form-input" type="text" placeholder="역할" value={displayRole} readOnly />
+          <div className="profile-name-section">
+            <h2 className="profile-name">{displayName}</h2>
+            <p className="profile-email">{displayEmail}</p>
           </div>
         </div>
-      </section>
 
-      {/* 계정 보안(비밀번호 변경) 섹션 제거 */}
-
-      {/* 알림 등 환경 설정 섹션 제거 */}
+        <div className="info-sections">
+          <div className="info-section">
+            <h3 className="section-title">사용자 정보</h3>
+            <table className="info-table">
+              <tbody>
+                <tr className="info-row">
+                  <td className="info-label-cell">학번/교번</td>
+                  <td className="info-value-cell">{displayStudentId || '정보 없음'}</td>
+                </tr>
+                <tr className="info-row">
+                  <td className="info-label-cell">사용자 유형</td>
+                  <td className="info-value-cell">{displayUserType || displayRole || '정보 없음'}</td>
+                </tr>
+                <tr className="info-row">
+                  <td className="info-label-cell">승인 상태</td>
+                  <td className="info-value-cell">{formatApprovalStatus(approvalStatus)}</td>
+                </tr>
+                <tr className="info-row">
+                  <td className="info-label-cell">관리자 여부</td>
+                  <td className="info-value-cell">{isAdmin ? '관리자' : '일반 사용자'}</td>
+                </tr>
+                {lastLoginTime && (
+                  <tr className="info-row">
+                    <td className="info-label-cell">마지막 로그인</td>
+                    <td className="info-value-cell">{formatLastLoginTime(lastLoginTime)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

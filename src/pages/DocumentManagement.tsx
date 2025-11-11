@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../styles/pages/DocumentManagement.css";
-import InfoCard, { type Item as InfoCardItem } from "../components/features/documents/InfoCard";
+import { type Item as InfoCardItem } from "../components/features/documents/InfoCard";
 import DocumentList from "../components/features/documents/DocumentList";
 import StatCard from "../components/features/documents/StatCard";
 import { useDocumentTable, type Document } from "../hooks/features/documents/useDocumentTable";
@@ -321,20 +321,20 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     {
       count: receivedCount,
       title: "수신 문서함",
-      backgroundColor: "var(--primary)",
-      textColor: "white",
+      backgroundColor: "#b3d9ff", // 파스텔 파란색
+      textColor: "#000000",
     },
     {
       count: sentCount,
       title: "발신 문서함",
-      backgroundColor: "var(--secondary)",
-      textColor: "white",
+      backgroundColor: "#b3e5d1", // 파스텔 초록색
+      textColor: "#000000",
     },
     {
       count: myDocumentsCount,
       title: "내 문서함",
-      backgroundColor: "rgb(243, 238, 234)",
-      textColor: "#333",
+      backgroundColor: "#fff3cd", // 파스텔 노란색
+      textColor: "#000000",
     },
   ];
 
@@ -357,24 +357,64 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       tag: doc.tag, // 태그 추가
     }));
 
+  // 최근 문서를 Document 형태로 변환
+  const recentDocumentsAsDocuments: Document[] = recentDocuments.map((item, index) => ({
+    documentNumber: `RECENT-${index + 1}`,
+    title: item.name,
+    creator: '',
+    lastModified: item.time || '',
+    documentType: 'shared' as const,
+    url: item.url || '',
+    tag: item.tag || '',
+  }));
+
+  // 즐겨찾기를 Document 형태로 변환
+  const favoriteTemplatesAsDocuments: Document[] = favoriteTemplates.map((item, index) => ({
+    documentNumber: `FAV-${index + 1}`,
+    title: item.name,
+    creator: '',
+    lastModified: '',
+    documentType: 'shared' as const,
+    url: item.url || '',
+    tag: item.tag || '',
+  }));
+
+  // 이름만 표시하는 간단한 컬럼 정의
+  const simpleColumns = [
+    {
+      key: 'title',
+      header: '',
+      render: (row: Document) => row.title,
+    },
+  ];
+
   return (
-    <div className="content document-management-container">
+    <div className="document-management-container">
       <div className="cards-row">
-        <InfoCard
+        <DocumentList<Document>
           title="최근 문서"
-          subtitle="최근에 열람한 문서를 확인하세요"
-          icon="icon-file"
-          backgroundColor="var(--accent)"
-          items={recentDocuments}
-          onItemClick={handleDocClick}
+          columns={simpleColumns}
+          data={recentDocumentsAsDocuments}
+          onPageChange={onPageChange}
+          onRowClick={handleDocClick}
+          isLoading={false}
+          showViewAll={false}
+          showTableHeader={false}
         />
-        <InfoCard
+        <DocumentList<Document>
           title="즐겨찾기"
-          subtitle="자주 사용하는 양식을 빠르게 접근하세요"
-          icon="icon-star"
-          backgroundColor="var(--table-header-bg)"
-          items={favoriteTemplates}
-          onItemClick={(item: InfoCardItem) => handleFavoriteClick(item)}
+          columns={simpleColumns}
+          data={favoriteTemplatesAsDocuments}
+          onPageChange={onPageChange}
+          onRowClick={(doc) => {
+            const item = favoriteTemplates.find(fav => fav.name === doc.title);
+            if (item) {
+              handleFavoriteClick(item as any);
+            }
+          }}
+          isLoading={false}
+          showViewAll={false}
+          showTableHeader={false}
         />
       </div>
 
@@ -387,14 +427,14 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         isLoading={isLoading}
         headerContent={
           <button
-            className="btn-workflow-request"
+            className="view-all-button"
             onClick={() => {
               setSelectedDocument(null);
               setIsWorkflowModalOpen(true);
             }}
             title="결재 요청"
           >
-            📋 결재 요청
+            결재 요청
           </button>
         }
       />

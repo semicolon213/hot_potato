@@ -29,6 +29,7 @@ interface CouncilSectionProps {
   columns: Column[];
   sortConfig: SortConfig | null;
   onSort: (key: string) => void;
+  onBackToList: () => void;
 }
 
 const CouncilSection: React.FC<CouncilSectionProps> = ({
@@ -38,7 +39,8 @@ const CouncilSection: React.FC<CouncilSectionProps> = ({
   councilData,
   columns,
   sortConfig,
-  onSort
+  onSort,
+  onBackToList
 }) => {
   const enhancedColumns = columns.map(col => ({
     ...col,
@@ -54,19 +56,27 @@ const CouncilSection: React.FC<CouncilSectionProps> = ({
     <div className="council-section">
       <div className="council-header">
         <h2>학생회 집행부</h2>
-        <div className="year-selector">
-          <label htmlFor="year-select">년도 선택:</label>
-          <select 
-            id="year-select"
-            value={selectedYear}
-            onChange={(e) => onYearChange(e.target.value)}
-            className="year-select"
+        <div className="council-header-right">
+          <button 
+            className="back-to-list-btn"
+            onClick={onBackToList}
           >
-            <option value="">년도를 선택하세요</option>
-            {years.map(year => (
-              <option key={year} value={year}>{year}년</option>
-            ))}
-          </select>
+            학생 목록
+          </button>
+          <div className="year-selector">
+            <label htmlFor="year-select">년도 선택:</label>
+            <select 
+              id="year-select"
+              value={selectedYear}
+              onChange={(e) => onYearChange(e.target.value)}
+              className="year-select"
+            >
+              <option value="">년도를 선택하세요</option>
+              {years.map(year => (
+                <option key={year} value={year}>{year}년</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
