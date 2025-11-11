@@ -393,14 +393,14 @@ function handleAnnualGradeUpdate() {
     }
     
     // 1월 1일이 아니면 실행하지 않음 (선택사항 - 원하면 주석 해제)
-    if (currentDate !== 1) {
-       console.log('⏭️ 1월 1일이 아니므로 학년 업데이트를 건너뜁니다.');
-       return {
-         success: true,
-         message: '1월 1일에만 실행됩니다.',
-         skipped: true
-       };
-    }
+    // if (currentDate !== 1) {
+    //   console.log('⏭️ 1월 1일이 아니므로 학년 업데이트를 건너뜁니다.');
+    //   return {
+    //     success: true,
+    //     message: '1월 1일에만 실행됩니다.',
+    //     skipped: true
+    //   };
+    // }
     
     console.log('✅ 1월이므로 학년 업데이트를 실행합니다.');
     
