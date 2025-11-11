@@ -28,7 +28,7 @@ interface WidgetData {
   type: string;
   title: string;
   componentType: string;
-  props: Record<string, any>;
+  props: Record<string, unknown>;
 }
 
 const WIDGET_SHEET_NAME = ENV_CONFIG.DASHBOARD_SHEET_NAME;
@@ -111,7 +111,6 @@ export const useAppState = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [widgets, setWidgets] = useState<WidgetData[]>([]);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-    const [loadedData, setLoadedData] = useState<Record<string, boolean>>({});
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
@@ -385,6 +384,12 @@ export const useAppState = () => {
                     if (!option) return null;
                     const { type } = option;
                     const { title, componentType, props } = generateWidgetContent(type);
+                    
+                    // Pre-populate notice widget if data is already available
+                    if (type === 'notice' && announcements.length > 0) {
+                        props.items = announcements.slice(0, 4).map(a => a.title);
+                    }
+
                     return { id, type, title, componentType, props };
                 }).filter((w): w is WidgetData => w !== null);
                 setWidgets(loadedWidgets);
@@ -396,7 +401,7 @@ export const useAppState = () => {
         } finally {
             setInitialLoadComplete(true);
         }
-    }, [hotPotatoDBSpreadsheetId]);
+    }, [hotPotatoDBSpreadsheetId, announcements]);
 
     useEffect(() => {
         if (hotPotatoDBSpreadsheetId) {
@@ -426,25 +431,19 @@ export const useAppState = () => {
         saveWidgetsToGoogleSheets();
     }, [widgets, hotPotatoDBSpreadsheetId, initialLoadComplete]);
 
+    // Sync global announcements state with the notice widget props
     useEffect(() => {
-        const noticeWidget = widgets.find(w => w.type === 'notice');
-        if (noticeWidget && user && !loadedData['notice']) {
-            const loadNoticeData = async () => {
-                if (user.studentId && user.userType) {
-                    const announcementsData = await fetchAnnouncements(user.studentId, user.userType);
-                    setWidgets(prevWidgets =>
-                        prevWidgets.map(widget =>
-                            widget.type === 'notice'
-                                ? { ...widget, props: { items: announcementsData.slice(0, 4).map(a => a.title) } }
-                                : widget
-                        )
-                    );
-                    setLoadedData(prev => ({ ...prev, notice: true }));
-                }
-            };
-            loadNoticeData();
+        const noticeWidgetExists = widgets.some(w => w.type === 'notice');
+        if (noticeWidgetExists && announcements.length > 0) {
+            setWidgets(prevWidgets =>
+                prevWidgets.map(widget =>
+                    widget.type === 'notice'
+                        ? { ...widget, props: { items: announcements.slice(0, 4).map(a => a.title) } }
+                        : widget
+                )
+            );
         }
-    }, [widgets, user, loadedData]);
+    }, [announcements]); // Dependency on `announcements` is key
 
     const handleAddWidget = (type: string) => {
         const option = widgetOptions.find(opt => opt.type === type);
@@ -528,7 +527,6 @@ export const useAppState = () => {
         setWidgets([]);
         setIsModalOpen(false);
         setInitialLoadComplete(false);
-        setLoadedData({});
 
         console.log('🧹 useAppState 상태 초기화 완료');
     }, []);

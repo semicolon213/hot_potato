@@ -1,15 +1,5 @@
-// 페이지 렌더링 로직을 분리한 컴포넌트
-
-/**
- * @file PageRenderer.tsx
- * @brief 페이지 렌더링 컴포넌트
- * @details 현재 페이지 상태에 따라 적절한 페이지 컴포넌트를 렌더링합니다.
- * @author Hot Potato Team
- * @date 2024
- */
-
 import React from 'react';
-import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff as StaffType } from '../../types/app';
+import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff as StaffType, WidgetData, WidgetOption } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
@@ -86,6 +76,16 @@ interface PageRendererProps {
   onAddTemplate: (newDocData: { title: string; description: string; tag: string; }) => Promise<void>;
   onUpdateTemplate: (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => Promise<void>;
   onUpdateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => Promise<void>;
+  // Widget props
+  isModalOpen: boolean;
+  setIsModalOpen: (isOpen: boolean) => void;
+  widgets: WidgetData[];
+  handleAddWidget: (type: string) => void;
+  handleRemoveWidget: (id: string) => void;
+  handleDragStart: (index: number) => void;
+  handleDragEnter: (index: number) => void;
+  handleDrop: () => void;
+  widgetOptions: WidgetOption[];
 }
 
 const PageRenderer: React.FC<PageRendererProps> = ({
@@ -136,7 +136,17 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onUpdateTag,
   onAddTemplate,
   onUpdateTemplate,
-  onUpdateTemplateFavorite
+  onUpdateTemplateFavorite,
+  // Widget props
+  isModalOpen,
+  setIsModalOpen,
+  widgets,
+  handleAddWidget,
+  handleRemoveWidget,
+  handleDragStart,
+  handleDragEnter,
+  handleDrop,
+  widgetOptions,
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -256,7 +266,18 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard user={user} hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+        return <Dashboard 
+          user={user} 
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          widgets={widgets}
+          handleAddWidget={handleAddWidget}
+          handleRemoveWidget={handleRemoveWidget}
+          handleDragStart={handleDragStart}
+          handleDragEnter={handleDragEnter}
+          handleDrop={handleDrop}
+          widgetOptions={widgetOptions}
+        />;
       case 'accounting':
         return <Accounting />;
       case 'admin':
@@ -291,7 +312,18 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'google_chat':
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       default:
-        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+        return <Dashboard 
+          user={user}
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          widgets={widgets}
+          handleAddWidget={handleAddWidget}
+          handleRemoveWidget={handleRemoveWidget}
+          handleDragStart={handleDragStart}
+          handleDragEnter={handleDragEnter}
+          handleDrop={handleDrop}
+          widgetOptions={widgetOptions}
+        />;
     }
   };
 

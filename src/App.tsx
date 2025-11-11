@@ -115,6 +115,17 @@ const App: React.FC = () => {
     students,
     staff,
 
+    // Widget state and handlers
+    isModalOpen,
+    setIsModalOpen,
+    widgets,
+    handleAddWidget,
+    handleRemoveWidget,
+    handleDragStart,
+    handleDragEnter,
+    handleDrop,
+    widgetOptions,
+
     // State reset
     resetAllState
   } = useAppState();
@@ -948,6 +959,16 @@ const App: React.FC = () => {
               onAddTemplate={handleAddTemplate}
               onUpdateTemplate={handleUpdateTemplate}
               onUpdateTemplateFavorite={handleUpdateTemplateFavorite}
+              // Widget props
+              isModalOpen={isModalOpen}
+              setIsModalOpen={setIsModalOpen}
+              widgets={widgets}
+              handleAddWidget={handleAddWidget}
+              handleRemoveWidget={handleRemoveWidget}
+              handleDragStart={handleDragStart}
+              handleDragEnter={handleDragEnter}
+              handleDrop={handleDrop}
+              widgetOptions={widgetOptions}
             />
           </div>
           <Chat />
