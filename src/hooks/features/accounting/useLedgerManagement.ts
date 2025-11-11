@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getLedgerFolders, getLedgerInfo } from '../../../utils/google/accountingFolderManager';
 import { apiClient } from '../../../utils/api/apiClient';
-import type { LedgerInfo, CreateLedgerRequest } from '../../../types/features/accounting';
+import type { LedgerInfo, CreateLedgerRequest, LedgerResponse } from '../../../types/features/accounting';
 import { ENV_CONFIG } from '../../../config/environment';
 
 export const useLedgerManagement = () => {
@@ -32,7 +32,7 @@ export const useLedgerManagement = () => {
       if (response.success && response.data) {
         console.log('✅ 장부 목록 조회 성공:', response.data.length, '개');
         // Apps Script 응답을 LedgerInfo 형식으로 변환
-        const ledgers: LedgerInfo[] = response.data.map((ledger: any) => ({
+        const ledgers: LedgerInfo[] = response.data.map((ledger: LedgerResponse) => ({
           folderId: ledger.folderId || '',
           folderName: ledger.folderName || '',
           spreadsheetId: ledger.spreadsheetId || '',
@@ -46,13 +46,14 @@ export const useLedgerManagement = () => {
         setLedgers([]);
       }
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 목록 조회 오류:', err);
-      const errorMessage = err?.message || '장부 목록을 불러오는데 실패했습니다.';
+      const error = err as { message?: string; status?: number };
+      const errorMessage = error?.message || '장부 목록을 불러오는데 실패했습니다.';
       setError(errorMessage);
       
       // 403 권한 오류인 경우 특별 처리
-      if (err?.status === 403 || err?.message?.includes('PERMISSION_DENIED')) {
+      if (error?.status === 403 || error?.message?.includes('PERMISSION_DENIED')) {
         setError('Google Drive 권한이 없습니다. 권한을 확인해주세요.');
       }
     } finally {
@@ -90,9 +91,10 @@ export const useLedgerManagement = () => {
       
       return response.data;
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 생성 오류:', err);
-      setError(err.message || '장부 생성에 실패했습니다.');
+      const error = err as { message?: string };
+      setError(error.message || '장부 생성에 실패했습니다.');
       throw err;
     } finally {
       setIsLoading(false);

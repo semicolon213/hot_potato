@@ -63,9 +63,9 @@ export const clearLocalStorageUserData = (): void => {
  */
 export const clearGoogleAPIToken = (): void => {
     try {
-        if (typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.client) {
+        if (typeof window !== 'undefined' && window.gapi && window.gapi.client) {
             // 토큰 제거
-            (window as any).gapi.client.setToken(null);
+            window.gapi.client.setToken({ access_token: '' });
             console.log('🧹 Google API 토큰 제거 완료');
         }
     } catch (error) {

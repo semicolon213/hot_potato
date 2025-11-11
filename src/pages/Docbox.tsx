@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import "../styles/pages/Docbox.css";
 import "../styles/pages/NewDocument.css";
 import { addRecentDocument } from "../utils/helpers/localStorageUtils";
-import { BiShareAlt, BiUpload } from "react-icons/bi";
+import { BiLoaderAlt, BiShareAlt, BiUpload } from "react-icons/bi";
 import { loadAllDocuments } from "../utils/helpers/loadDocumentsFromDrive";
 import { uploadSharedDocument, uploadPersonalDocument } from "../utils/google/documentUploader";
 import { ENV_CONFIG } from "../config/environment";
@@ -27,7 +27,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
-  
+
   // 정렬 상태
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
@@ -37,8 +37,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadTag, setUploadTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  
-  // 권한 설정 상태
+
+  // 권한 설정 상태 (권한 선택에 따라 문서 타입 결정)
   const [permissionType, setPermissionType] = useState<'private' | 'shared'>('shared');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [individualEmails, setIndividualEmails] = useState<string[]>(['']);
@@ -84,11 +84,13 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
     const loadTags = async () => {
       setIsLoadingTags(true);
       try {
+        // 기본 태그 로드
         const staticTagsResponse = await apiClient.getStaticTags();
         if (staticTagsResponse.success && staticTagsResponse.data) {
           setStaticTags(staticTagsResponse.data);
         }
 
+        // 개인 태그 로드
         const personalTagsData = await fetchPersonalTags();
         setPersonalTags(personalTagsData);
       } catch (error) {
@@ -142,7 +144,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         const matchesCreator = selectedCreator === "전체" || doc.creator === selectedCreator;
         const matchesTag = selectedTag === "전체" || doc.tag === selectedTag;
         const matchesType = selectedType === "전체" || typeMap[doc.documentType] === selectedType;
-        
+
         let docDate = null;
         const match = doc.documentNumber.match(/(\d{8})/);
         if (match) {
@@ -168,7 +170,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
         if (sortConfig) {
           let aValue: string | number | Date;
           let bValue: string | number | Date;
-          
+
           switch (sortConfig.key) {
             case 'documentNumber':
               aValue = a.documentNumber;
@@ -197,12 +199,12 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             default:
               return 0;
           }
-          
+
           if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
           if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
           return 0;
         }
-        
+
         // 기본 정렬: 최신순
         const dateA = new Date(a.lastModified.replace(/\./g, '-').slice(0, -1));
         const dateB = new Date(b.lastModified.replace(/\./g, '-').slice(0, -1));
@@ -284,6 +286,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadFile(file);
+      // 파일명이 비어있으면 파일명으로 설정
       if (!uploadFileName) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
         setUploadFileName(nameWithoutExt);
@@ -298,6 +301,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       return;
     }
 
+    // 권한 부여를 선택했을 때만 태그 필수
     if (permissionType === 'shared' && !uploadTag.trim()) {
       alert('태그를 입력해주세요.');
       return;
@@ -310,11 +314,12 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       const creatorEmail = userInfo.email || '';
 
       let result;
-      
+
       if (permissionType === 'shared') {
+        // 공유 문서 업로드 (권한 부여 선택 시)
         const groupEmails = selectedGroups.map(group => ENV_CONFIG.GROUP_EMAILS[group as keyof typeof ENV_CONFIG.GROUP_EMAILS]).filter(Boolean) as string[];
         const allEditors = [...groupEmails, ...individualEmails.filter(email => email.trim())];
-        
+
         result = await uploadSharedDocument(
           uploadFile,
           uploadFileName,
@@ -323,6 +328,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
           allEditors
         );
       } else {
+        // 개인 문서 업로드 (나만 보기 선택 시)
         result = await uploadPersonalDocument(
           uploadFile,
           uploadFileName,
@@ -334,7 +340,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
       if (result.success) {
         alert('문서가 성공적으로 업로드되었습니다.');
         closeUploadModal();
-        
+
+        // 문서 목록 새로고침
         setIsLoading(true);
         const allDocs = await loadAllDocuments();
         setDocuments(allDocs);
@@ -476,7 +483,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 <span>&times;</span>
               </button>
             </div>
-            
+
             <div className="document-modal-body">
               {/* 파일 선택 */}
               <div className="form-section">
@@ -562,8 +569,8 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                     )}
                   </select>
                   <div className="input-hint">
-                    {permissionType === 'shared' 
-                      ? '문서를 분류할 태그를 선택하세요 (필수)' 
+                    {permissionType === 'shared'
+                      ? '문서를 분류할 태그를 선택하세요 (필수)'
                       : '문서를 분류할 태그를 선택하세요 (선택사항)'
                     }
                   </div>
@@ -608,7 +615,7 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
                 {permissionType === 'shared' && (
                   <div className="sharing-options">
                     <h4 className="section-title">공유 설정</h4>
-                    
+
                     <div className="group-permissions-section">
                       <h5 className="subsection-title">그룹 권한</h5>
                       <div className="group-permissions">
@@ -685,17 +692,17 @@ const Docbox: React.FC<DocboxProps> = ({ searchTerm }) => {
             </div>
 
             <div className="document-modal-actions">
-              <button 
-                type="button" 
-                className="action-btn cancel-btn" 
+              <button
+                type="button"
+                className="action-btn cancel-btn"
                 onClick={closeUploadModal}
                 disabled={isUploading}
               >
                 <span>취소</span>
               </button>
-              <button 
-                type="button" 
-                className="action-btn save-btn" 
+              <button
+                type="button"
+                className="action-btn save-btn"
                 onClick={handleUpload}
                 disabled={!uploadFile || !uploadFileName.trim() || (permissionType === 'shared' && !uploadTag.trim()) || isUploading}
               >

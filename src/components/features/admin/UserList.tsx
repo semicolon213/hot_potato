@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import GroupRoleModal from './GroupRoleModal';
 import './UserList.css';
+import { formatDateToYYYYMMDD } from '../../../utils/helpers/timeUtils';
 // 타입 정의
 interface AdminUser {
   id: string;
@@ -168,7 +169,7 @@ const UserList: React.FC<UserListProps> = ({
                     </span>
                   </div>
                   <div className="user-list-cell">
-                    {user.approvalDate || user.requestDate}
+                    {formatDateToYYYYMMDD(user.approvalDate || user.requestDate)}
                   </div>
                   <div className="user-list-cell"></div>
                 </div>

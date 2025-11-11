@@ -16,6 +16,7 @@ import type {
   WorkflowTemplateResponse,
   WorkflowTemplatesListResponse
 } from '../../types/api/apiResponses';
+import type { LedgerResponse } from '../../types/features/accounting';
 import type {
   WorkflowRequestData,
   SetWorkflowLineData,
@@ -199,6 +200,10 @@ export class ApiClient {
     return this.request(API_ACTIONS.REJECT_USER, { studentId });
   }
 
+  async requestPinnedAnnouncementApproval(postData: { title: string; author: string; writer_id: string; userType: string; }) {
+    return this.request(API_ACTIONS.REQUEST_PINNED_ANNOUNCEMENT_APPROVAL, postData);
+  }
+
   async clearUserCache() {
     return this.request(API_ACTIONS.CLEAR_USER_CACHE);
   }
@@ -336,7 +341,7 @@ export class ApiClient {
   }
 
   async getLedgerList() {
-    return this.request<{ success: boolean; data: any[] }>('getLedgerList', {});
+    return this.request<{ success: boolean; data: LedgerResponse[] }>('getLedgerList', {});
   }
 
   async updateAccountSubManagers(data: {

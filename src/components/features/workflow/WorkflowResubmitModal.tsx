@@ -9,7 +9,7 @@ import { apiClient } from '../../../utils/api/apiClient';
 import { NotificationModal } from '../../ui/NotificationModal';
 import WorkflowEditor from './WorkflowEditor';
 import type { ReviewLine, PaymentLine, WorkflowLineStep } from '../../../types/documents';
-import type { WorkflowInfoResponse } from '../../../types/api/apiResponses';
+import type { WorkflowInfoResponse, UsersListResponse } from '../../../types/api/apiResponses';
 import './WorkflowResubmitModal.css';
 
 interface WorkflowResubmitModalProps {
@@ -48,10 +48,11 @@ const WorkflowResubmitModal: React.FC<WorkflowResubmitModalProps> = ({
         console.log('📋 사용자 목록 응답:', response);
         
         if (response.success && response.users && Array.isArray(response.users)) {
-          const userList = response.users.filter((user: any) => {
+          const usersResponse = response as UsersListResponse;
+          const userList = usersResponse.users.filter((user) => {
             const isApproved = user.isApproved || user.Approval === 'O';
-            return isApproved && user.email && user.name;
-          }).map((user: any) => ({
+            return isApproved && user.email && (user.name || user.name_member);
+          }).map((user) => ({
             email: user.email || '',
             name: user.name || user.name_member || '',
             userType: user.userType || user.user_type || 'student',

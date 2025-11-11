@@ -229,8 +229,8 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
     const sortableItems = [...filteredStaff];
     if (sortConfig.key) {
       sortableItems.sort((a, b) => {
-        const aValue = (a as any)[sortConfig.key!];
-        const bValue = (b as any)[sortConfig.key!];
+        const aValue = (a as Record<string, unknown>)[sortConfig.key!];
+        const bValue = (b as Record<string, unknown>)[sortConfig.key!];
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -250,7 +250,7 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
     const csvContent = [
       headers.join(','),
       ...sortedStaff.map(row => headers.map(header => {
-        let value = (row as any)[header];
+        let value = (row as Record<string, unknown>)[header];
         if (typeof value === 'string' && value.includes(',')) {
           value = `"${value}"`;
         }

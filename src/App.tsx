@@ -186,7 +186,7 @@ const App: React.FC = () => {
     if (window.google && window.google.accounts) {
       window.google.accounts.id.disableAutoSelect();
       // Google 계정 자동 선택 취소
-      window.google.accounts.id.revoke((response: any) => {
+      window.google.accounts.id.revoke((response: { hint?: string }) => {
         console.log('Google 계정 정보 삭제 완료');
       });
     }
@@ -225,9 +225,12 @@ const App: React.FC = () => {
     const announcementId = urlParams.get('announcementId');
 
     if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
-      const announcement = announcements.find(a => a.id === announcementId);
+      // ID를 문자열로 통일하여 비교
+      const announcement = announcements.find(a => String(a.id) === String(announcementId));
       if (announcement) {
         setSelectedAnnouncement(announcement);
+      } else {
+        console.warn('URL의 announcementId와 일치하는 공지사항을 찾을 수 없습니다:', announcementId);
       }
     }
   }, [announcements, currentPage]);
@@ -319,65 +322,171 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { title: string; content: string; author: string; writer_id: string; attachments: File[]; }) => {
+  const handleAddAnnouncement = async (postData: { 
+    title: string; 
+    content: string; 
+    author: string; 
+    writer_id: string; 
+    attachments: File[]; 
+    accessRights?: { individual?: string[]; groups?: string[] };
+    isPinned?: boolean; 
+    userType?: string; 
+  }) => {
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
       }
-      await addAnnouncement(announcementSpreadsheetId, postData);
+      if (!user || !user.email) {
+        throw new Error("User email is required");
+      }
+      await addAnnouncement(announcementSpreadsheetId, {
+        ...postData,
+        writerEmail: user.email
+      });
+      
       // 공지사항 목록 새로고침
-      const updatedAnnouncements = await fetchAnnouncements();
-      setAnnouncements(updatedAnnouncements);
+      if (user.studentId && user.userType) {
+        const updatedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
+        setAnnouncements(updatedAnnouncements);
+      }
+      
+      // 성공 시 목록으로 이동
       handlePageChange('announcements');
     } catch (error) {
       console.error('Error adding announcement:', error);
+      alert('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
     }
   };
 
   const handleSelectAnnouncement = async (post: Post) => {
-    // Optimistically update the UI
-    const updatedAnnouncements = announcements.map(a =>
-      a.id === post.id ? { ...a, views: a.views + 1 } : a
-    );
-    setAnnouncements(updatedAnnouncements);
-    setSelectedAnnouncement({ ...post, views: post.views + 1 });
+    // ID를 문자열로 통일하여 비교
+    const postId = String(post.id);
+    console.log('공지사항 선택:', { postId, postTitle: post.title, allIds: announcements.map(a => String(a.id)) });
+    
+    // 선택된 공지사항 찾기 (ID로 정확히 매칭)
+    const selectedPost = announcements.find(a => String(a.id) === postId);
+    if (!selectedPost) {
+      console.error('선택한 공지사항을 찾을 수 없습니다:', postId);
+      return;
+    }
+    
+    // 조회수 증가는 AnnouncementView 컴포넌트에서 처리하므로 여기서는 제거
+    setSelectedAnnouncement(selectedPost);
+    handlePageChange('announcement-view', { announcementId: postId });
+  };
 
-    handlePageChange('announcement-view', { announcementId: post.id });
+  const handleUpdateAnnouncement = async (announcementId: string, postData: { 
+    title: string; 
+    content: string; 
+    attachments: File[]; 
+    existingAttachments: { name: string, url: string }[];
+    accessRights?: { individual?: string[]; groups?: string[] };
+    isPinned?: boolean;
+  }) => {
+    if (!user || !user.studentId) {
+      alert('사용자 정보가 없습니다.');
+      return;
+    }
+
+    const originalAnnouncements = announcements;
+
+    // Optimistically update the local state
+    const updatedAnnouncements = announcements.map(post => {
+      if (post.id === announcementId) {
+        return {
+          ...post,
+          title: postData.title,
+          content: postData.content, // This is the clean content, without attachment links
+        };
+      }
+      return post;
+    });
+    setAnnouncements(updatedAnnouncements);
+    handlePageChange('announcements');
 
     try {
-      await incrementViewCount(post.id);
+      await updateAnnouncement(announcementId, user.studentId, postData);
+      // Re-fetch to get the final content with attachment links
+      if (user.userType) {
+        const refreshedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
+        setAnnouncements(refreshedAnnouncements);
+      }
     } catch (error) {
-      console.error('Failed to increment view count:', error);
-      // Optionally, revert the optimistic update here
+      console.error('Error updating announcement:', error);
+      setAnnouncements(originalAnnouncements);
+      alert('공지사항 수정에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
     }
   };
 
-  const handleUpdateAnnouncement = async (announcementId: string, postData: { title: string; content: string; }) => {
+  const handleUnpinAnnouncement = async (announcementId: string) => {
+    if (!user || !user.studentId) {
+      alert('사용자 정보가 없습니다.');
+      return;
+    }
+
+    const originalAnnouncements = announcements;
+    
+    // Optimistically update the UI
+    const updatedAnnouncements = announcements.map(post => {
+      if (post.id === announcementId) {
+        return {
+          ...post,
+          isPinned: false,
+          fix_notice: ''
+        };
+      }
+      return post;
+    });
+    setAnnouncements(updatedAnnouncements);
+
     try {
-      await updateAnnouncement(announcementId, postData);
-      // Refresh the announcements list
-      const updatedAnnouncements = await fetchAnnouncements();
-      setAnnouncements(updatedAnnouncements);
-      // Go back to the announcements list
-      handlePageChange('announcements');
+      // 고정 해제: isPinned를 false로 설정
+      await updateAnnouncement(announcementId, user.studentId, {
+        title: announcements.find(a => a.id === announcementId)?.title || '',
+        content: announcements.find(a => a.id === announcementId)?.content || '',
+        attachments: [],
+        existingAttachments: [],
+        isPinned: false
+      });
+      
+      // 목록 새로고침
+      if (user.userType) {
+        const refreshedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
+        setAnnouncements(refreshedAnnouncements);
+      }
     } catch (error) {
-      console.error('Error updating announcement:', error);
+      console.error('Error unpinning announcement:', error);
+      setAnnouncements(originalAnnouncements);
+      alert('고정 해제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
     }
   };
 
   const handleDeleteAnnouncement = async (announcementId: string) => {
+    if (!user || !user.studentId) {
+      alert('사용자 정보가 없습니다.');
+      return;
+    }
+
+    const originalAnnouncements = announcements;
+    // Optimistically update the UI
+    setAnnouncements(announcements.filter(a => a.id !== announcementId));
+    handlePageChange('announcements');
+
     try {
       if (!announcementSpreadsheetId) {
         throw new Error("Announcement spreadsheet ID not found");
       }
-      await deleteAnnouncement(announcementSpreadsheetId, announcementId);
-      // Refresh the announcements list
-      const updatedAnnouncements = await fetchAnnouncements();
-      setAnnouncements(updatedAnnouncements);
-      // Go back to the announcements list
-      handlePageChange('announcements');
+      await deleteAnnouncement(announcementSpreadsheetId, announcementId, user.studentId);
+      // 삭제 성공 후 목록 새로고침
+      if (user.userType) {
+        const refreshedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
+        setAnnouncements(refreshedAnnouncements);
+      }
     } catch (error) {
       console.error('Error deleting announcement:', error);
+      // Revert the change if the delete fails
+      setAnnouncements(originalAnnouncements);
+      alert('공지사항 삭제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
     }
   };
 
@@ -822,6 +931,7 @@ const App: React.FC = () => {
               onSelectAnnouncement={handleSelectAnnouncement}
               onUpdateAnnouncement={handleUpdateAnnouncement}
               onDeleteAnnouncement={handleDeleteAnnouncement}
+              onUnpinAnnouncement={handleUnpinAnnouncement}
               onAddCalendarEvent={handleAddCalendarEvent}
               onUpdateCalendarEvent={handleUpdateCalendarEvent}
               onDeleteCalendarEvent={handleDeleteCalendarEvent}

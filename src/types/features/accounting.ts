@@ -58,6 +58,7 @@ export interface LedgerEntry {
   createdDate: string;             // 작성일
   isBudgetExecuted: boolean;       // 예산 집행 여부
   budgetPlanId?: string;           // 예산 계획 ID (예산 집행인 경우)
+  budgetPlanTitle?: string;        // 예산 계획 제목 (예산 집행인 경우)
 }
 
 /**
@@ -68,15 +69,14 @@ export interface BudgetPlan {
   accountId: string;               // 통장 ID
   title: string;                    // 예산 계획 제목
   totalAmount: number;             // 총 예산액
-  requestedDate: string;           // 신청일
-  plannedExecutionDate: string;     // 계획된 집행일
+  modificationDate: string;         // 수정일 (분까지 표기)
   status: 'pending' | 'reviewed' | 'approved' | 'executed' | 'rejected'; // 상태
   subManagerReviewed: boolean;    // 부관리인 검토 여부 (하위 호환성)
   subManagerReviewDate?: string;   // 부관리인 검토일 (하위 호환성)
   subManagerReviews: Array<{ email: string; date: string }>; // 서브 관리자별 검토 목록
   mainManagerApproved: boolean;    // 주관리인 승인 여부
   mainManagerApprovalDate?: string; // 주관리인 승인일
-  executedDate?: string;           // 집행일
+  executedDate?: string;           // 집행일 (분까지 표기)
   createdBy: string;               // 작성자 ID
   rejectionReason?: string;        // 거부 사유
   details: BudgetPlanDetail[];     // 예산 계획 상세
@@ -91,6 +91,7 @@ export interface BudgetPlanDetail {
   description: string;              // 설명
   amount: number;                   // 금액
   plannedDate?: string;             // 항목별 집행 예정일
+  source?: string;                  // 출처/수입처
 }
 
 /**
@@ -144,6 +145,22 @@ export interface CreateLedgerEntryRequest {
   source: string;                  // 출처/수입처
   transactionType: 'income' | 'expense'; // 거래 유형
   evidenceFile?: File;              // 증빙 문서 (선택사항)
+  budgetPlanId?: string;            // 예산 계획 ID (예산 집행인 경우)
+  budgetPlanTitle?: string;         // 예산 계획 제목 (예산 집행인 경우)
+}
+
+/**
+ * @brief 장부 항목 수정 요청 타입
+ */
+export interface UpdateLedgerEntryRequest {
+  accountId: string;                // 통장 ID
+  date: string;                     // 거래일
+  category: string;                 // 카테고리
+  description: string;              // 내용
+  amount: number;                   // 금액 (양수)
+  source: string;                  // 출처/수입처
+  transactionType: 'income' | 'expense'; // 거래 유형
+  evidenceFile?: File;              // 증빙 문서 (선택사항)
 }
 
 /**
@@ -153,7 +170,7 @@ export interface CreateBudgetPlanRequest {
   accountId: string;                // 통장 ID
   title: string;                     // 제목
   totalAmount: number;              // 총 예산액
-  plannedExecutionDate: string;      // 계획된 집행일
+  executedDate?: string;             // 집행일 (선택사항)
   details?: Omit<BudgetPlanDetail, 'detailId'>[]; // 예산 계획 상세 (선택사항)
 }
 
@@ -223,4 +240,15 @@ export type RoleCode =
   | 'supp'
   | 'professor'
   | 'ad_professor';
+
+/**
+ * @brief 장부 응답 타입 (API 응답)
+ */
+export interface LedgerResponse {
+  folderId?: string;
+  folderName?: string;
+  spreadsheetId?: string;
+  evidenceFolderId?: string;
+  createdDate?: string;
+}
 

@@ -60,7 +60,8 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
         category: d.category, 
         description: d.description, 
         amount: d.amount,
-        plannedDate: d.plannedDate 
+        plannedDate: d.plannedDate,
+        source: d.source || ''
       })));
       setCategories(categoriesData);
       
@@ -68,17 +69,28 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
       if (foundAccount) {
         setAccount(foundAccount);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 데이터 로드 오류:', err);
-      setError(err.message || '데이터를 불러오는데 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleAddDetail = () => {
-    setDetails([...details, { category: '', description: '', amount: 0, plannedDate: '' }]);
+    const newDetails = [...details, { category: '', description: '', amount: 0, plannedDate: '', source: '' }];
+    setDetails(newDetails);
     setHasChanges(true);
+    
+    // 새로 추가된 항목의 첫 번째 입력 필드에 포커스
+    setTimeout(() => {
+      const newIndex = newDetails.length - 1;
+      const categorySelect = document.querySelector(`.budget-detail-table tbody tr:nth-child(${newIndex + 1}) select`) as HTMLSelectElement;
+      if (categorySelect) {
+        categorySelect.focus();
+      }
+    }, 100);
   };
 
   const handleRemoveDetail = (index: number) => {
@@ -91,6 +103,16 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
     newDetails[index] = { ...newDetails[index], [field]: value } as Omit<BudgetPlanDetail, 'detailId'>;
     setDetails(newDetails);
     setHasChanges(true);
+  };
+
+  const formatAmount = (value: number): string => {
+    if (!value) return '';
+    return value.toLocaleString('ko-KR');
+  };
+
+  const parseAmount = (value: string): number => {
+    const cleaned = value.replace(/[^\d]/g, '');
+    return cleaned ? parseInt(cleaned, 10) : 0;
   };
 
   const handleSave = async () => {
@@ -118,6 +140,11 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
       return;
     }
 
+    if (!budgetPlan) {
+      setError('예산 계획 정보를 찾을 수 없습니다.');
+      return;
+    }
+
     const totalAmount = details.reduce((sum, d) => sum + d.amount, 0);
     if (totalAmount > account.currentBalance) {
       setError(`예산 금액(${totalAmount.toLocaleString()}원)이 통장 잔액(${account.currentBalance.toLocaleString()}원)을 초과합니다.`);
@@ -127,13 +154,21 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
     setIsSaving(true);
 
     try {
+      console.log('💾 예산 항목 저장 시도:', { budgetId, detailsCount: details.length });
       await updateBudgetPlanDetails(spreadsheetId, budgetId, { details });
       setHasChanges(false);
       onSave();
-      alert('예산 항목이 저장되었습니다.');
-    } catch (err: any) {
+      alert('예산 항목이 저장되었습니다.\n상세 항목이 수정되어 승인 요청 상태로 변경되었습니다.');
+    } catch (err: unknown) {
       console.error('❌ 예산 항목 저장 오류:', err);
-      setError(err.message || '예산 항목 저장에 실패했습니다.');
+      
+      // 인증 오류인 경우
+      const errorMessage = err instanceof Error ? err.message : '예산 항목 저장에 실패했습니다.';
+      if (errorMessage.includes('인증') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        setError('인증이 만료되었습니다. 페이지를 새로고침해주세요.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -170,7 +205,13 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
           <div>
             <h2>{budgetPlan.title}</h2>
             <p className="budget-plan-meta">
-              집행 예정일: {new Date(budgetPlan.plannedExecutionDate).toLocaleDateString('ko-KR')}
+              집행일: {budgetPlan.executedDate ? new Date(budgetPlan.executedDate).toLocaleString('ko-KR', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              }) : '미정'}
             </p>
           </div>
           <button onClick={onClose} className="close-btn">×</button>
@@ -202,72 +243,98 @@ export const BudgetPlanDetail: React.FC<BudgetPlanDetailProps> = ({
               <p className="form-hint">예산 항목을 추가해주세요.</p>
             </div>
           ) : (
-            <div className="budget-details-list">
-              {details.map((detail, index) => (
-                <div key={index} className="budget-detail-item">
-                  <div className="budget-detail-header">
-                    <span className="detail-index">항목 {index + 1}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDetail(index)}
-                      className="remove-detail-btn"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                  <div className="budget-detail-row">
-                    <div className="detail-field">
-                      <label>카테고리</label>
-                      <select
-                        value={detail.category}
-                        onChange={(e) => handleDetailChange(index, 'category', e.target.value)}
-                        className="detail-category-select"
-                        required
-                      >
-                        <option value="">카테고리 선택</option>
-                        {categories.map(cat => (
-                          <option key={cat.categoryId} value={cat.categoryName}>
-                            {cat.categoryName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="detail-field">
-                      <label>설명</label>
-                      <input
-                        type="text"
-                        value={detail.description}
-                        onChange={(e) => handleDetailChange(index, 'description', e.target.value)}
-                        placeholder="항목 설명을 입력하세요"
-                        className="detail-description-input"
-                        required
-                      />
-                    </div>
-                    <div className="detail-field">
-                      <label>금액</label>
-                      <input
-                        type="number"
-                        value={detail.amount || ''}
-                        onChange={(e) => handleDetailChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                        min="1"
-                        step="1"
-                        className="detail-amount-input"
-                        required
-                      />
-                    </div>
-                    <div className="detail-field">
-                      <label>집행 예정일</label>
-                      <input
-                        type="date"
-                        value={detail.plannedDate || ''}
-                        onChange={(e) => handleDetailChange(index, 'plannedDate', e.target.value)}
-                        className="detail-date-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="budget-details-table-wrapper">
+              <table className="budget-detail-table">
+                <thead>
+                  <tr>
+                    <th className="col-index">#</th>
+                    <th className="col-category">카테고리</th>
+                    <th className="col-description">설명</th>
+                    <th className="col-amount">금액</th>
+                    <th className="col-date">집행 예정일</th>
+                    <th className="col-source">출처</th>
+                    <th className="col-action">작업</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {details.map((detail, index) => (
+                    <tr key={index}>
+                      <td className="cell-index">{index + 1}</td>
+                      <td className="cell-category">
+                        <select
+                          value={detail.category}
+                          onChange={(e) => handleDetailChange(index, 'category', e.target.value)}
+                          className="table-input-select"
+                          required
+                        >
+                          <option value="">카테고리 선택</option>
+                          {categories.map(cat => (
+                            <option key={cat.categoryId} value={cat.categoryName}>
+                              {cat.categoryName}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="cell-description">
+                        <input
+                          type="text"
+                          value={detail.description}
+                          onChange={(e) => handleDetailChange(index, 'description', e.target.value)}
+                          placeholder="항목 설명을 입력하세요"
+                          className="table-input-text"
+                          required
+                        />
+                      </td>
+                      <td className="cell-amount">
+                        <input
+                          type="text"
+                          value={detail.amount ? formatAmount(detail.amount) : ''}
+                          onChange={(e) => {
+                            const parsed = parseAmount(e.target.value);
+                            handleDetailChange(index, 'amount', parsed);
+                          }}
+                          onBlur={(e) => {
+                            const parsed = parseAmount(e.target.value);
+                            if (parsed !== detail.amount) {
+                              handleDetailChange(index, 'amount', parsed);
+                            }
+                          }}
+                          placeholder="0"
+                          className="table-input-text"
+                          required
+                        />
+                      </td>
+                      <td className="cell-date">
+                        <input
+                          type="date"
+                          value={detail.plannedDate || ''}
+                          onChange={(e) => handleDetailChange(index, 'plannedDate', e.target.value)}
+                          className="table-input-date"
+                        />
+                      </td>
+                      <td className="cell-source">
+                        <input
+                          type="text"
+                          value={detail.source || ''}
+                          onChange={(e) => handleDetailChange(index, 'source', e.target.value)}
+                          placeholder="출처/수입처를 입력하세요"
+                          className="table-input-text"
+                        />
+                      </td>
+                      <td className="cell-action">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDetail(index)}
+                          className="table-btn-delete"
+                          title="삭제"
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 

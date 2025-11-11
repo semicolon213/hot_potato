@@ -20,9 +20,9 @@ interface StudentSearchFilterProps {
   onSearchChange: (term: string) => void;
   showFilters: boolean;
   onToggleFilters: () => void;
-  filters: any; // 더 유연한 타입으로 변경
-  onFiltersChange: (filters: any) => void; // 더 유연한 타입으로 변경
-  filterOptions: any; // 더 유연한 타입으로 변경
+  filters: Record<string, unknown>; // 필터 객체
+  onFiltersChange: (filters: Record<string, unknown>) => void; // 필터 변경 핸들러
+  filterOptions: Record<string, string[]>; // 필터 옵션
   isStaffMode?: boolean; // 교직원 모드 추가
   activeTab?: 'staff' | 'committee'; // 활성 탭 추가
 }

@@ -9,6 +9,7 @@
 import { getAccountingFolderId as getPapyrusAccountingFolderId } from '../database/papyrusManager';
 import { ENV_CONFIG } from '../../config/environment';
 import type { LedgerInfo } from '../../types/features/accounting';
+import type { FileItem, DriveFile, FolderItem } from '../../types/google';
 
 /**
  * 회계 폴더 ID 가져오기
@@ -26,12 +27,12 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     // Google API가 준비될 때까지 대기
     let attempts = 0;
     const maxAttempts = 10;
-    while (attempts < maxAttempts && (!(window as any).gapi || !(window as any).gapi.client)) {
+    while (attempts < maxAttempts && (!window.gapi || !window.gapi.client)) {
       await new Promise(resolve => setTimeout(resolve, 500));
       attempts++;
     }
 
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.warn('⚠️ Google API가 초기화되지 않았습니다.');
       return [];
     }
@@ -44,7 +45,7 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     }
 
     try {
-      (window as any).gapi.client.setToken({ access_token: token });
+      window.gapi.client.setToken({ access_token: token });
     } catch (tokenError) {
       console.warn('⚠️ 토큰 설정 실패:', tokenError);
     }
@@ -72,10 +73,11 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
         console.warn('⚠️ 응답 데이터:', response.data);
         return [];
       }
-    } catch (apiError: any) {
+    } catch (apiError: unknown) {
       console.error('❌ Apps Script를 통한 회계 폴더 ID 조회 실패:', apiError);
+      const err = apiError as { status?: number; message?: string };
       // 403 에러인 경우 권한 문제
-      if (apiError?.status === 403 || apiError?.message?.includes('PERMISSION_DENIED')) {
+      if (err?.status === 403 || err?.message?.includes('PERMISSION_DENIED')) {
         console.error('❌ Google Drive 권한이 없습니다. 권한을 확인해주세요.');
       }
       return [];
@@ -97,7 +99,7 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     console.log('📁 폴더 ID 원본:', JSON.stringify(folderId));
     console.log('📁 폴더 ID 문자 배열:', folderId.split(''));
 
-    const gapi = (window as any).gapi.client;
+    const gapi = window.gapi.client;
     
     // 회계 폴더 정보 먼저 확인
     const folderIdToUse = folderId; // 변수 복사하여 사용
@@ -111,11 +113,12 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
         fields: 'id, name, mimeType'
       });
       console.log('📁 회계 폴더 정보:', folderInfo.result);
-    } catch (folderError: any) {
+    } catch (folderError: unknown) {
       console.error('❌ 회계 폴더 정보 조회 실패:', folderError);
       console.error('❌ 사용된 폴더 ID:', folderIdToUse);
       console.error('❌ 폴더 ID 문자 배열:', folderIdToUse.split(''));
-      if (folderError.status === 403) {
+      const err = folderError as { status?: number };
+      if (err.status === 403) {
         throw new Error('회계 폴더에 대한 읽기 권한이 없습니다.');
       }
       throw folderError;
@@ -142,14 +145,15 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
       
       if (response.result.files && response.result.files.length > 0) {
         console.log('📋 조회된 항목 목록:');
-        response.result.files.forEach((item: any, index: number) => {
+        response.result.files.forEach((item: FileItem, index: number) => {
           console.log(`  ${index + 1}. ${item.name} (${item.mimeType})`);
         });
       }
-    } catch (listError: any) {
+    } catch (listError: unknown) {
       console.error('❌ 회계 폴더 내 항목 조회 실패:', listError);
       console.error('❌ 에러 상세:', JSON.stringify(listError, null, 2));
-      if (listError.status === 403) {
+      const err = listError as { status?: number };
+      if (err.status === 403) {
         throw new Error('회계 폴더 내 항목을 읽을 권한이 없습니다. 폴더 접근 권한을 확인해주세요.');
       }
       throw listError;
@@ -161,7 +165,7 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
     }
 
     // 폴더만 필터링 (장부 폴더)
-    const folders = response.result.files.filter((item: any) => 
+    const folders = response.result.files.filter((item: DriveFile) => 
       item.mimeType === 'application/vnd.google-apps.folder' &&
       item.name !== ENV_CONFIG.EVIDENCE_FOLDER_NAME
     );
@@ -174,7 +178,7 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
 
     // 각 장부 폴더의 상세 정보 조회
     const ledgers: LedgerInfo[] = await Promise.all(
-      folders.map(async (folder: any) => {
+      folders.map(async (folder: FolderItem) => {
         const ledgerInfo = await getLedgerInfo(folder.id);
         return ledgerInfo;
       })
@@ -196,12 +200,12 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
  */
 export const getLedgerInfo = async (folderId: string): Promise<LedgerInfo | null> => {
   try {
-    if (!(window as any).gapi || !(window as any).gapi.client) {
+    if (!window.gapi || !window.gapi.client) {
       console.warn('⚠️ Google API가 초기화되지 않았습니다.');
       return null;
     }
 
-    const gapi = (window as any).gapi.client;
+    const gapi = window.gapi.client;
 
     // 폴더 정보 조회
     const folderResponse = await gapi.drive.files.get({
@@ -222,7 +226,7 @@ export const getLedgerInfo = async (folderId: string): Promise<LedgerInfo | null
     let evidenceFolderId: string | null = null;
 
     // 스프레드시트 파일 찾기
-    const spreadsheetFile = filesResponse.result.files?.find((file: any) => 
+    const spreadsheetFile = filesResponse.result.files?.find((file: DriveFile) => 
       file.mimeType === 'application/vnd.google-apps.spreadsheet'
     );
     if (spreadsheetFile) {
@@ -230,7 +234,7 @@ export const getLedgerInfo = async (folderId: string): Promise<LedgerInfo | null
     }
 
     // 증빙 폴더 찾기
-    const evidenceFolder = filesResponse.result.files?.find((file: any) => 
+    const evidenceFolder = filesResponse.result.files?.find((file: DriveFile) => 
       file.mimeType === 'application/vnd.google-apps.folder' && 
       file.name === ENV_CONFIG.EVIDENCE_FOLDER_NAME
     );

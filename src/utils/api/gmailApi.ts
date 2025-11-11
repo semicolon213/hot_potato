@@ -35,18 +35,29 @@ export const sendEmailWithGmailAPI = async (emailTemplate: EmailTemplate): Promi
     });
     
     // Gmail API가 초기화되었는지 확인
-    if (!window.gapi || !window.gapi.client || !(window.gapi.client as any).gmail || !(window.gapi.client as any).gmail.users) {
+    interface GmailClient {
+      gmail?: {
+        users?: {
+          messages?: {
+            list: (params: { userId: string; q?: string; maxResults?: number }) => Promise<{ result: { messages?: Array<{ id: string }> } }>;
+            get: (params: { userId: string; id: string; format: string }) => Promise<{ result: { payload?: { headers?: Array<{ name: string; value: string }> } } }>;
+          };
+        };
+      };
+    }
+    const gapiClient = window.gapi.client as unknown as GmailClient;
+    if (!window.gapi || !window.gapi.client || !gapiClient.gmail || !gapiClient.gmail.users) {
       console.error('Gmail API 초기화 상태:', {
         gapi: !!window.gapi,
         client: !!(window.gapi && window.gapi.client),
-        gmail: !!(window.gapi && window.gapi.client && (window.gapi.client as any).gmail),
-        gmailUsers: !!(window.gapi && window.gapi.client && (window.gapi.client as any).gmail && (window.gapi.client as any).gmail.users)
+        gmail: !!(window.gapi && window.gapi.client && gapiClient.gmail),
+        gmailUsers: !!(window.gapi && window.gapi.client && gapiClient.gmail && gapiClient.gmail.users)
       });
       throw new Error('Gmail API가 초기화되지 않았습니다. 페이지를 새로고침해주세요.');
     }
     
     // Gmail API를 사용하여 이메일 전송
-    const gmail = (window.gapi.client as any).gmail;
+    const gmail = gapiClient.gmail;
     
     // 이메일 메시지 구성 (RFC 2822 형식)
     const message = [

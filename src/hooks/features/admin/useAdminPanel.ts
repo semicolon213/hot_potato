@@ -13,9 +13,22 @@ interface AdminUser {
   userType: string;
 }
 
+interface PinnedAnnouncementRequest {
+  id: string;
+  title: string;
+  writer: string;
+  writerEmail: string;
+  writerId: string;
+  date: string;
+  status: 'pending';
+}
+
 type EmailStatus = 'idle' | 'sending' | 'success' | 'error';
 import { fetchAllUsers, sendAdminKeyEmail, approveUserWithGroup, rejectUser, clearUserCache } from '../../../utils/api/adminApi';
 import { sendEmailWithGmailAPI } from '../../../utils/api/gmailApi';
+import { apiClient } from '../../../utils/api/apiClient';
+import { API_ACTIONS } from '../../../config/api';
+import { ENV_CONFIG } from '../../../config/environment';
 import type { ApiResponse } from '../../../config/api';
 import { tokenManager } from '../../../utils/auth/tokenManager';
 
@@ -23,6 +36,7 @@ export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<AdminUser[]>([]);
+  const [pinnedAnnouncementRequests, setPinnedAnnouncementRequests] = useState<PinnedAnnouncementRequest[]>([]);
   const [emailToSend, setEmailToSend] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -30,6 +44,99 @@ export const useAdminPanel = () => {
   const [debugInfo, setDebugInfo] = useState('');
   
   const { user, setUser } = useAuthStore();
+
+  // 고정 공지 승인 요청 목록 가져오기
+  const loadPinnedAnnouncementRequests = async () => {
+    try {
+      console.log('📌 고정 공지 승인 요청 목록 로딩 시작');
+      const response = await apiClient.request(API_ACTIONS.GET_PINNED_ANNOUNCEMENT_REQUESTS, {
+        spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME
+      });
+
+      if (response.success) {
+        // 백엔드에서 requests가 최상위 레벨에 반환됨
+        const requests = (response as { requests?: PinnedAnnouncementRequest[] }).requests || 
+                         (response.data as { requests?: PinnedAnnouncementRequest[] } | undefined)?.requests || 
+                         [];
+        setPinnedAnnouncementRequests(requests);
+        console.log('📌 고정 공지 승인 요청 목록 로딩 완료:', requests.length);
+        console.log('📌 응답 전체 구조:', response);
+        console.log('📌 requests 배열:', requests);
+      } else {
+        console.error('고정 공지 승인 요청 목록 로딩 실패:', response.message);
+        setPinnedAnnouncementRequests([]);
+      }
+    } catch (error) {
+      console.error('고정 공지 승인 요청 목록 로딩 오류:', error);
+      setPinnedAnnouncementRequests([]);
+    }
+  };
+
+  // 고정 공지 승인
+  const handleApprovePinnedAnnouncement = async (announcementId: string) => {
+    try {
+      setIsLoading(true);
+      setMessage('');
+
+      console.log('📌 고정 공지 승인 요청:', announcementId);
+
+      const response = await apiClient.request(API_ACTIONS.APPROVE_PINNED_ANNOUNCEMENT, {
+        spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+        announcementId: announcementId,
+        approvalAction: 'approve'
+      });
+
+      console.log('📌 고정 공지 승인 응답:', response);
+
+      if (response.success) {
+        setMessage('고정 공지가 승인되었습니다.');
+        // 목록 새로고침 (약간의 지연 후)
+        setTimeout(async () => {
+          await loadPinnedAnnouncementRequests();
+        }, 500);
+      } else {
+        setMessage(response.message || '고정 공지 승인에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('고정 공지 승인 실패:', error);
+      setMessage('고정 공지 승인에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 고정 공지 거절
+  const handleRejectPinnedAnnouncement = async (announcementId: string) => {
+    try {
+      setIsLoading(true);
+      setMessage('');
+
+      console.log('📌 고정 공지 거절 요청:', announcementId);
+
+      const response = await apiClient.request(API_ACTIONS.APPROVE_PINNED_ANNOUNCEMENT, {
+        spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+        announcementId: announcementId,
+        approvalAction: 'reject'
+      });
+
+      console.log('📌 고정 공지 거절 응답:', response);
+
+      if (response.success) {
+        setMessage('고정 공지가 거절되었습니다.');
+        // 목록 새로고침 (약간의 지연 후)
+        setTimeout(async () => {
+          await loadPinnedAnnouncementRequests();
+        }, 500);
+      } else {
+        setMessage(response.message || '고정 공지 거절에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('고정 공지 거절 실패:', error);
+      setMessage('고정 공지 거절에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 사용자 목록 가져오기
   const loadUsers = async () => {
@@ -84,7 +191,7 @@ export const useAdminPanel = () => {
         console.log('setUsers 호출 전 현재 users 상태:', users);
         
         // Apps Script에서 받은 데이터를 AdminUser 타입으로 변환
-        const convertedUsers = result.users.map((user: any) => ({
+        const convertedUsers = result.users.map((user: Partial<AdminUser> & Record<string, unknown>) => ({
           id: user.id || user.no_member || `user_${Math.random()}`,
           email: user.email || '',
           studentId: user.studentId || user.no_member || '',
@@ -258,7 +365,7 @@ export const useAdminPanel = () => {
             adminAccessToken = storedToken;
           } else {
             // 3순위: gapi client에서 직접 가져오기 (Auth2 대신)
-            const gapi = (window as any).gapi;
+            const gapi = window.gapi;
             if (!gapi || !gapi.client) {
               throw new Error('Google API가 초기화되지 않았습니다.');
             }
@@ -325,7 +432,8 @@ export const useAdminPanel = () => {
           setEmailStatus('error');
         }
       } else {
-        setMessage('이메일 전송에 실패했습니다: ' + (result as any).error);
+        const errorMessage = result && typeof result === 'object' && 'error' in result ? String(result.error) : '알 수 없는 오류';
+        setMessage('이메일 전송에 실패했습니다: ' + errorMessage);
         setEmailStatus('error');
       }
       
@@ -341,6 +449,7 @@ export const useAdminPanel = () => {
   // 초기화
   useEffect(() => {
     loadUsers();
+    loadPinnedAnnouncementRequests();
   }, []);
 
   // 메시지 자동 사라짐
@@ -369,6 +478,7 @@ export const useAdminPanel = () => {
     users,
     pendingUsers,
     approvedUsers,
+    pinnedAnnouncementRequests,
     emailToSend,
     setEmailToSend,
     isLoading,
@@ -378,6 +488,9 @@ export const useAdminPanel = () => {
     handleApproveUser,
     handleRejectUser,
     handleSendAdminKey,
-    loadUsers
+    handleApprovePinnedAnnouncement,
+    handleRejectPinnedAnnouncement,
+    loadUsers,
+    loadPinnedAnnouncementRequests
   };
 };

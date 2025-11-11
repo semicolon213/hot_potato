@@ -12,7 +12,7 @@ import { loadAllDocuments } from '../../../utils/helpers/loadDocumentsFromDrive'
 import type { DocumentInfo } from '../../../types/documents';
 import WorkflowEditor from './WorkflowEditor';
 import type { WorkflowRequestData, ReviewLine, PaymentLine, WorkflowLineStep } from '../../../types/documents';
-import type { WorkflowRequestResponse } from '../../../types/api/apiResponses';
+import type { WorkflowRequestResponse, UsersListResponse } from '../../../types/api/apiResponses';
 import './WorkflowRequestModal.css';
 
 interface WorkflowRequestModalProps {
@@ -64,11 +64,12 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
         // Apps Script는 response.users에 직접 배열을 반환함
         if (response.success && response.users && Array.isArray(response.users)) {
           // 승인된 사용자만 필터링
-          const userList = response.users.filter((user: any) => {
+          const usersResponse = response as UsersListResponse;
+          const userList = usersResponse.users.filter((user) => {
             const isApproved = user.isApproved || user.Approval === 'O';
             // 이메일과 이름이 있는 사용자만
-            return isApproved && user.email && user.name;
-          }).map((user: any) => ({
+            return isApproved && user.email && (user.name || user.name_member);
+          }).map((user) => ({
             email: user.email || '',
             name: user.name || user.name_member || '',
             userType: user.userType || user.user_type || 'student',

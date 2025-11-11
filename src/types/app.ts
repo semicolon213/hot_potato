@@ -38,6 +38,29 @@ export interface Post {
   likes: number;
   content: string;
   writer_id: string;
+  writer_email?: string; // 암호화된 이메일
+  file_notice?: string;
+  access_rights?: string; // JSON 문자열: {individual: [user_ids], groups: [user_types]}
+  fix_notice?: string; // 고정 공지 상태: '' | '-' (요청) | 'O' (승인) | 'X' (거절)
+  isPinned?: boolean; // fix_notice === 'O'인지 확인하는 편의 속성
+}
+
+/**
+ * @brief 공지사항 접근 권한 타입 정의
+ */
+export interface AnnouncementAccessRights {
+  individual?: string[]; // 개별 사용자 ID 목록
+  groups?: string[]; // 그룹(user_type) 목록
+}
+
+/**
+ * @brief 공지사항 작성용 사용자 정보
+ */
+export interface AnnouncementUser {
+  id: string;
+  name: string;
+  user_type: string;
+  email: string;
   file_notice?: string;
 }
 
@@ -52,34 +75,36 @@ export interface User {
   accessToken?: string;
 }
 
-export type PageType = 
-  | 'dashboard' 
-  | 'admin' 
-  | 'board' 
-  | 'documents' 
-  | 'calendar' 
-  | 'users' 
-  | 'settings' 
-  | 'new-board-post' 
-  | 'announcements' 
+export type PageType =
+  | 'dashboard'
+  | 'admin'
+  | 'board'
+  | 'documents'
+  | 'calendar'
+  | 'users'
+  | 'settings'
+  | 'new-board-post'
+  | 'announcements'
+  | 'announcement-view'
   | 'new-announcement-post'
   | 'accounting'
-  | 'document_management' 
-  | 'docbox' 
-  | 'new_document' 
-  | 'preferences' 
-  | 'mypage' 
-  | 'empty_document' 
-  | 'proceedings' 
-  | 'students' 
-  | 'staff' 
+  | 'document_management'
+  | 'docbox'
+  | 'new_document'
+  | 'preferences'
+  | 'mypage'
+  | 'empty_document'
+  | 'proceedings'
+  | 'students'
+  | 'staff'
   | 'workflow_management'
   | 'google_appscript'
-  | 'google_sheets' 
-  | 'google_docs' 
-  | 'google_gemini' 
-  | 'google_groups' 
-  | 'google_calendar';
+  | 'google_sheets'
+  | 'google_docs'
+  | 'google_gemini'
+  | 'google_groups'
+  | 'google_calendar'
+  | 'google_chat';
 
 export interface DateRange {
   start: Date | null;

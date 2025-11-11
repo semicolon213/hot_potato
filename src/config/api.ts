@@ -37,6 +37,18 @@ export const API_ACTIONS = {
   APPROVE_USER: 'approveUser',
   APPROVE_USER_WITH_GROUP: 'approveUserWithGroup',
   REJECT_USER: 'rejectUser',
+  REQUEST_PINNED_ANNOUNCEMENT_APPROVAL: 'requestPinnedAnnouncementApproval',
+  
+  // 공지사항 관리
+  GET_ANNOUNCEMENTS: 'getAnnouncements',
+  CREATE_ANNOUNCEMENT: 'createAnnouncement',
+  UPDATE_ANNOUNCEMENT: 'updateAnnouncement',
+  DELETE_ANNOUNCEMENT: 'deleteAnnouncement',
+  INCREMENT_ANNOUNCEMENT_VIEW: 'incrementAnnouncementView',
+  REQUEST_PINNED_ANNOUNCEMENT: 'requestPinnedAnnouncement',
+  APPROVE_PINNED_ANNOUNCEMENT: 'approvePinnedAnnouncement',
+  GET_PINNED_ANNOUNCEMENT_REQUESTS: 'getPinnedAnnouncementRequests',
+  GET_ANNOUNCEMENT_USER_LIST: 'getAnnouncementUserList',
   
   // 인증
   CHECK_APPROVAL_STATUS: 'checkApprovalStatus',
@@ -60,13 +72,13 @@ export const API_ACTIONS = {
  * @details API 호출 결과를 나타내는 표준 응답 형식입니다.
  * @template T 응답 데이터의 타입
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: string;
   // 관리자 관련 응답
-  users?: any[];
+  users?: Array<Record<string, unknown>>;
   adminKey?: string;
   encryptedKey?: string;
   layersUsed?: number;

@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff } from '../../types/app';
+import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff as StaffType } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
@@ -26,8 +26,10 @@ import NewBoardPost from '../../pages/Board/NewBoardPost';
 import AnnouncementsPage from '../../pages/Announcements/Announcements';
 import AnnouncementView from '../../pages/Announcements/AnnouncementView';
 import NewAnnouncementPost from '../../pages/Announcements/NewAnnouncementPost';
+import Accounting from '../../pages/Accounting';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
+import WorkflowManagement from '../../pages/WorkflowManagement';
 
 interface PageRendererProps {
   currentPage: PageType;
@@ -54,12 +56,14 @@ interface PageRendererProps {
   hotPotatoDBSpreadsheetId: string | null;
   studentSpreadsheetId: string | null;
   students: Student[];
-  staff: Staff[];
+  staff: StaffType[];
   searchTerm: string;
   onPageChange: (pageName: string) => void;
-  onAddPost: (postData: { title: string; content: string; author: string; writer_id: string; }) => Promise<void>;
-  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; }) => Promise<void>;
+  onAddAnnouncement: (postData: { title:string; content: string; author: string; writer_id: string; attachments: File[]; }) => Promise<void>;
   onSelectAnnouncement: (post: Post) => void;
+  onUpdateAnnouncement: (announcementId: string, postData: { title: string; content: string; attachments: File[]; existingAttachments: { name: string, url: string }[] }) => Promise<void>;
+  onDeleteAnnouncement: (announcementId: string) => Promise<void>;
+  onUnpinAnnouncement?: (announcementId: string) => Promise<void>;
   onAddCalendarEvent: (eventData: Omit<Event, 'id'>) => Promise<void>;
   onUpdateCalendarEvent: (eventId: string, eventData: Omit<Event, 'id'>) => Promise<void>;
   onDeleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -112,9 +116,11 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   staff,
   searchTerm,
   onPageChange,
-  onAddPost,
   onAddAnnouncement,
   onSelectAnnouncement,
+  onUpdateAnnouncement,
+  onDeleteAnnouncement,
+  onUnpinAnnouncement,
   onAddCalendarEvent,
   onUpdateCalendarEvent,
   onDeleteCalendarEvent,
@@ -145,17 +151,19 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "new-board-post":
         return <NewBoardPost 
           onPageChange={onPageChange} 
-          onAddPost={onAddPost} 
+          onAddPost={(postData: { title: string; content: string; author: string; writer_id: string; }) => Promise.resolve()} 
           user={user} 
           isAuthenticated={isGoogleAuthenticatedForBoard} />;
       case "announcements":
         return <AnnouncementsPage
+          onUnpinAnnouncement={onUnpinAnnouncement}
           onPageChange={onPageChange}
           onSelectAnnouncement={onSelectAnnouncement}
           posts={announcements}
           isAuthenticated={isGoogleAuthenticatedForAnnouncements}
           announcementSpreadsheetId={announcementSpreadsheetId}
           isLoading={isAnnouncementsLoading}
+          user={user}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
         return <NewAnnouncementPost 
@@ -167,7 +175,25 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return selectedAnnouncement ? (
           <AnnouncementView
             post={selectedAnnouncement}
+            user={user}
             onBack={() => onPageChange('announcements')}
+            onUpdate={onUpdateAnnouncement}
+            onDelete={onDeleteAnnouncement}
+            onRefresh={async () => {
+              if (user?.studentId && user?.userType) {
+                try {
+                  const { fetchAnnouncements } = await import('../../utils/database/papyrusManager');
+                  const updated = await fetchAnnouncements(user.studentId, user.userType);
+                  // 선택된 공지사항도 업데이트
+                  const updatedPost = updated.find(a => a.id === selectedAnnouncement?.id);
+                  if (updatedPost) {
+                    onSelectAnnouncement(updatedPost);
+                  }
+                } catch (error) {
+                  console.error('공지사항 새로고침 오류:', error);
+                }
+              }
+            }}
           />
         ) : (
           // A fallback in case the page is accessed directly without a selected announcement
@@ -187,18 +213,15 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return (
           <NewDocument 
             onPageChange={onPageChange} 
-            customTemplates={customTemplates} 
-            deleteTemplate={onDeleteTemplate} 
             tags={tags} 
             addTag={onAddTag} 
             deleteTag={onDeleteTag} 
             updateTag={onUpdateTag} 
-            addTemplate={onAddTemplate} 
-            updateTemplate={onUpdateTemplate} 
-            updateTemplateFavorite={onUpdateTemplateFavorite} 
             isTemplatesLoading={isTemplatesLoading} 
             data-oid="ou.h__l" />
         );
+      case "workflow_management":
+        return <WorkflowManagement onPageChange={onPageChange} />;
       case "calendar":
         return <MyCalendarPage
           data-oid="uz.ewbm"
@@ -234,6 +257,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return <Proceedings />;
       case 'dashboard':
         return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+      case 'accounting':
+        return <Accounting />;
       case 'admin':
         return <Admin />;
       case 'students':

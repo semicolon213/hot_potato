@@ -111,7 +111,7 @@ export const uploadPersonalDocument = async (
   tag: string,
   creatorEmail: string
 ): Promise<{ success: boolean; message?: string; documentId?: string; url?: string }> => {
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
   
   if (!gapi?.client?.drive) {
     return {

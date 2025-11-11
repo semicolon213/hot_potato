@@ -30,7 +30,8 @@ function getAllUsers() {
     spreadsheetId = spreadsheet.getId();
     console.log('📊 스프레드시트 ID:', spreadsheetId);
     
-    sheetName = 'user';
+    // 스크립트 속성에서 시트 이름 가져오기
+    sheetName = PropertiesService.getScriptProperties().getProperty('SHEET_NAME_USER') || 'user';
     console.log('📊 시트 이름:', sheetName);
     const data = getSheetData(spreadsheetId, sheetName, 'A:G');
     console.log('📊 가져온 데이터:', data);
@@ -531,6 +532,126 @@ function clearUserCache() {
       success: false,
       message: '사용자 캐시 초기화 중 오류가 발생했습니다: ' + error.message
     };
+  }
+}
+
+function handlePinnedAnnouncementRequest(req) {
+  try {
+    console.log('📌 고정 공지사항 승인 요청 처리 시작:', req);
+    const { writer_id, userType, author, title } = req;
+
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
+      return { success: false, message: '스프레드시트를 찾을 수 없습니다.' };
+    }
+
+    const sheet = spreadsheet.getSheetByName('user');
+    if (!sheet) {
+      return { success: false, message: 'user 시트를 찾을 수 없습니다.' };
+    }
+
+    const newRow = [
+      writer_id, // no_member
+      userType, // user_type
+      '고정공지사항', // name_member
+      author, // google_member
+      'X', // Approval
+      'X', // is_admin
+      new Date() // approval_date
+    ];
+
+    sheet.appendRow(newRow);
+
+    return { success: true, message: '고정 공지사항 승인 요청이 추가되었습니다.' };
+  } catch (error) {
+    console.error('📌 고정 공지사항 승인 요청 처리 오류:', error);
+    return { success: false, message: '고정 공지사항 승인 요청 처리 중 오류가 발생했습니다: ' + error.message };
+  }
+}
+
+function handleApprovePinnedAnnouncement(req) {
+  try {
+    console.log('📌 고정 공지사항 승인 시작:', req);
+    const { announcementId } = req;
+
+    if (!announcementId) {
+      return { success: false, message: 'announcementId가 필요합니다.' };
+    }
+
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
+      return { success: false, message: '스프레드시트를 찾을 수 없습니다.' };
+    }
+
+    const sheet = spreadsheet.getSheetByName('user');
+    if (!sheet) {
+      return { success: false, message: 'user 시트를 찾을 수 없습니다.' };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const header = data[0];
+    const idIndex = header.indexOf('no_member');
+    const approvalIndex = header.indexOf('Approval');
+
+    if (idIndex === -1 || approvalIndex === -1) {
+      return { success: false, message: '필수 컬럼(no_member, Approval)을 찾을 수 없습니다.' };
+    }
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIndex]) === String(announcementId)) {
+        sheet.getRange(i + 1, approvalIndex + 1).setValue('O');
+        console.log(`📌 고정 공지사항 승인 완료: ${announcementId}`);
+        return { success: true, message: '고정 공지사항이 승인되었습니다.' };
+      }
+    }
+
+    return { success: false, message: '해당 공지사항 요청을 찾을 수 없습니다.' };
+  } catch (error) {
+    console.error('📌 고정 공지사항 승인 오류:', error);
+    return { success: false, message: '고정 공지사항 승인 중 오류가 발생했습니다: ' + error.message };
+  }
+}
+
+function handleRejectPinnedAnnouncement(req) {
+  try {
+    console.log('📌 고정 공지사항 거부 시작:', req);
+    const { announcementId } = req;
+
+    if (!announcementId) {
+      return { success: false, message: 'announcementId가 필요합니다.' };
+    }
+
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
+      return { success: false, message: '스프레드시트를 찾을 수 없습니다.' };
+    }
+
+    const sheet = spreadsheet.getSheetByName('user');
+    if (!sheet) {
+      return { success: false, message: 'user 시트를 찾을 수 없습니다.' };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const header = data[0];
+    const idIndex = header.indexOf('no_member');
+
+    if (idIndex === -1) {
+      return { success: false, message: '필수 컬럼(no_member)을 찾을 수 없습니다.' };
+    }
+
+    // Iterate backwards when deleting rows to avoid index shifting issues
+    for (let i = data.length - 1; i > 0; i--) {
+      if (String(data[i][idIndex]) === String(announcementId)) {
+        sheet.deleteRow(i + 1);
+        console.log(`📌 고정 공지사항 거부 완료: ${announcementId}`);
+        return { success: true, message: '고정 공지사항이 거부되었습니다.' };
+      }
+    }
+
+    return { success: false, message: '해당 공지사항 요청을 찾을 수 없습니다.' };
+  } catch (error) {
+    console.error('📌 고정 공지사항 거부 오류:', error);
+    return { success: false, message: '고정 공지사항 거부 중 오류가 발생했습니다: ' + error.message };
   }
 }
 

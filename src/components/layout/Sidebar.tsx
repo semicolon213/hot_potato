@@ -17,7 +17,8 @@ import {
   HiMiniCalendarDays,
   HiMiniUser,
   HiMiniShieldCheck,
-  HiMiniSquares2X2
+  HiMiniSquares2X2,
+  HiMiniCurrencyDollar
 } from "react-icons/hi2";
 
 // React 19 호환성을 위한 타입 단언
@@ -28,6 +29,7 @@ const UserIcon = HiMiniUser as React.ComponentType<React.SVGProps<SVGSVGElement>
 const ShieldIcon = HiMiniShieldCheck as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const GoogleIcon = HiMiniSquares2X2 as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const DashboardIcon = GoHomeFill as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const AccountingIcon = HiMiniCurrencyDollar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /**
  * @brief 사이드바 Props 타입 정의
@@ -164,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
           </div>
 
           <div
-            className={`menu-item menu-item-with-submenu ${isParentActive("document", ["document_management", "docbox", "new_document"]) ? "active" : ""}`}
+            className={`menu-item menu-item-with-submenu ${isParentActive("document", ["document_management", "docbox", "new_document", "workflow_management"]) ? "active" : ""}`}
             onClick={(e) => handleMenuClick("document", true, e)}
           >
             <FileIcon className="menu-icon" />
@@ -188,6 +190,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
             <UserIcon className="menu-icon" />
             <div className="menu-text">학생 및 교직원</div>
             {/* 하위 항목은 플라이아웃으로 표시 */}
+          </div>
+
+          <div
+            className={`menu-item ${isPageActive('accounting') ? 'active' : ''}`}
+            onClick={() => handleMenuClick("accounting")}
+          >
+            <AccountingIcon className="menu-icon" />
+            <div className="menu-text">회계</div>
           </div>
         </div>
       </div>
@@ -264,6 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
               <div className="submenu-item" onClick={() => { onPageChange('document_management'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>문서관리</div>
               <div className="submenu-item" onClick={() => { onPageChange('docbox'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>문서함</div>
               <div className="submenu-item" onClick={() => { onPageChange('new_document'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>새 문서</div>
+              <div className="submenu-item" onClick={() => { onPageChange('workflow_management'); setIsFlyoutOpen(false); setActiveMenu(null); }}><span className="submenu-bullet">•</span>결재관리</div>
             </>
           )}
           {activeMenu === 'schedule' && (

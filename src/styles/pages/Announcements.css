@@ -192,6 +192,10 @@
   border-bottom: none;
 }
 
+.post-table tr.pinned-announcement-row:hover {
+  background-color: #ffe8e8;
+}
+
 /* Column Specific Styles */
 .post-table .col-number { 
   width: 8%; 

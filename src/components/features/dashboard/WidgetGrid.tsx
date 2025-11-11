@@ -9,28 +9,13 @@ import React from "react";
 import "./WidgetGrid.css";
 import * as WidgetTemplates from "./AllWidgetTemplates";
 import { DefaultMessage } from "./AllWidgetTemplates";
+import type { WidgetData, WidgetComponentsMap } from "../../../types/widget";
 
 /**
  * `AllWidgetTemplates`에서 가져온 모든 위젯 컴포넌트들을 포함하는 객체입니다.
  * 런타임에 위젯의 `componentType` 문자열을 사용하여 해당 컴포넌트를 동적으로 찾아 렌더링하는 데 사용됩니다.
  */
-const WidgetComponents: { [key: string]: React.FC<any> } = WidgetTemplates as any;
-
-/**
- * 개별 위젯의 데이터 구조를 정의하는 인터페이스입니다.
- * @property {string} id - 위젯의 고유 식별자.
- * @property {string} type - 위젯의 타입 (예: 'welcome', 'notice').
- * @property {string} title - 위젯 헤더에 표시될 제목.
- * @property {string} componentType - 렌더링할 위젯 컴포넌트의 이름 (AllWidgetTemplates.tsx에 정의된 이름).
- * @property {any} props - 위젯 컴포넌트에 전달될 데이터.
- */
-interface WidgetData {
-  id: string;
-  type: string;
-  title: string;
-  componentType: string;
-  props: any;
-}
+const WidgetComponents: WidgetComponentsMap = WidgetTemplates as WidgetComponentsMap;
 
 /**
  * `WidgetGrid` 컴포넌트의 props를 정의하는 인터페이스입니다.

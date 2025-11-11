@@ -81,12 +81,12 @@ export const testAppsScriptMigration = async () => {
 
 // 브라우저 콘솔에서 실행할 수 있도록 전역 함수로 등록
 if (typeof window !== 'undefined') {
-  (window as any).testAppsScriptMigration = testAppsScriptMigration;
-  (window as any).testConnection = () => apiClient.testConnection();
-  (window as any).apiClient = apiClient;
+  (window as Record<string, unknown>).testAppsScriptMigration = testAppsScriptMigration;
+  (window as Record<string, unknown>).testConnection = () => apiClient.testConnection();
+  (window as Record<string, unknown>).apiClient = apiClient;
   
   // 직접 URL 테스트 함수
-  (window as any).testDirectUrl = async () => {
+  (window as Record<string, unknown>).testDirectUrl = async () => {
     const url = 'https://script.google.com/macros/s/AKfycbwW-XbxPLmQcx_gzMB0ZGQkubfaXFjJ-hSenVP0ORxI9niLJPQN6EB_hGKglo_eNBvw/exec';
     try {
       console.log('직접 URL 테스트:', url);
@@ -101,7 +101,7 @@ if (typeof window !== 'undefined') {
   };
   
   // 프록시 URL 테스트 함수
-  (window as any).testProxyUrl = async () => {
+  (window as Record<string, unknown>).testProxyUrl = async () => {
     const url = '/api';
     try {
       console.log('프록시 URL 테스트:', url);

@@ -29,7 +29,7 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
           const maxAttempts = 30;
           const checkGapi = () => {
             attempts++;
-            if (typeof window !== 'undefined' && (window as any).gapi) {
+            if (typeof window !== 'undefined' && window.gapi) {
               resolve();
             } else if (attempts >= maxAttempts) {
               reject(new Error("gapi 스크립트 로드 타임아웃"));
@@ -41,7 +41,7 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
         });
       };
       await waitForGapi();
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
 
       await new Promise<void>((resolve, reject) => {
         gapi.load('client', async () => {
@@ -81,7 +81,7 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
   }
 
   try {
-    const response = await (window as any).gapi.client.drive.files.list({
+    const response = await window.gapi.client.drive.files.list({
       q: `name='${name}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
       fields: 'files(id,name,owners,parents)',
       orderBy: 'name',
@@ -107,7 +107,7 @@ export const getSheetIdByName = async (name: string): Promise<string | null> => 
 
 export const updateSheetCell = async (spreadsheetId: string, sheetName: string, rowIndex: number, columnIndex: number, value: string): Promise<void> => {
     await initializeGoogleAPIOnce();
-    const gapi = (window as any).gapi;
+    const gapi = window.gapi;
 
     const range = `${sheetName}!${String.fromCharCode(65 + columnIndex)}${rowIndex}`;
 
@@ -145,14 +145,14 @@ export const useResetGoogleAPIStateOnUnload = () => {
 
 export const deleteSheetRow = async (spreadsheetId: string, sheetName: string, rowIndex: number): Promise<void> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   const sheetIdResponse = await gapi.client.sheets.spreadsheets.get({
     spreadsheetId: spreadsheetId,
   });
 
   const sheet = sheetIdResponse.result.sheets.find(
-    (s: any) => s.properties.title === sheetName
+    (s: { properties: { title: string } }) => s.properties.title === sheetName
   );
 
   if (!sheet) {
@@ -181,7 +181,7 @@ export const deleteSheetRow = async (spreadsheetId: string, sheetName: string, r
 
 export const checkSheetExists = async (spreadsheetId: string, sheetName: string): Promise<boolean> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     const response = await gapi.client.sheets.spreadsheets.get({
@@ -189,7 +189,7 @@ export const checkSheetExists = async (spreadsheetId: string, sheetName: string)
     });
 
     const sheet = response.result.sheets.find(
-      (s: any) => s.properties.title === sheetName
+      (s: { properties: { title: string } }) => s.properties.title === sheetName
     );
 
     return !!sheet;
@@ -201,7 +201,7 @@ export const checkSheetExists = async (spreadsheetId: string, sheetName: string)
 
 export const createNewSheet = async (spreadsheetId: string, sheetName: string): Promise<void> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     await gapi.client.sheets.spreadsheets.batchUpdate({
@@ -223,9 +223,9 @@ export const createNewSheet = async (spreadsheetId: string, sheetName: string): 
   }
 };
 
-export const appendSheetData = async (spreadsheetId: string, sheetName: string, values: any[][]): Promise<void> => {
+export const appendSheetData = async (spreadsheetId: string, sheetName: string, values: string[][]): Promise<void> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     await gapi.client.sheets.spreadsheets.values.append({
@@ -242,9 +242,9 @@ export const appendSheetData = async (spreadsheetId: string, sheetName: string, 
   }
 };
 
-export const getSheetData = async (spreadsheetId: string, sheetName: string, range: string): Promise<any[][] | null> => {
+export const getSheetData = async (spreadsheetId: string, sheetName: string, range: string): Promise<string[][] | null> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -265,7 +265,7 @@ export const updateTitleInSheetByDocId = async (
   newTitle: string
 ): Promise<void> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     const data = await getSheetData(spreadsheetId, sheetName, 'A:C'); // Assuming id is in A, title in C
@@ -305,7 +305,7 @@ export const updateLastModifiedInSheetByDocId = async (
   newLastModified: string
 ): Promise<void> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     const data = await getSheetData(spreadsheetId, sheetName, 'A:D'); // Assuming id is in A, last_modified in D
@@ -481,7 +481,7 @@ export const deleteRowsByDocIds = async (
   docIds: string[]
 ): Promise<void> => {
   await initializeGoogleAPIOnce();
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
 
   try {
     // 1. Find the sheetId (numeric) for the given sheetName
@@ -489,7 +489,7 @@ export const deleteRowsByDocIds = async (
       spreadsheetId: spreadsheetId,
     });
     const sheet = sheetIdResponse.result.sheets.find(
-      (s: any) => s.properties.title === sheetName
+      (s: { properties: { title: string } }) => s.properties.title === sheetName
     );
     if (!sheet) {
       throw new Error(`Sheet "${sheetName}" not found.`);

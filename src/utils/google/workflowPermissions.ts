@@ -22,7 +22,7 @@ export async function grantPersonalDocumentPermissions(
   failedUsers: string[];
   details: Array<{ email: string; success: boolean; message?: string }>;
 }> {
-  const gapi = (window as any).gapi;
+  const gapi = window.gapi;
   
   if (!gapi?.client?.drive) {
     throw new Error('Google Drive API가 초기화되지 않았습니다.');
@@ -87,14 +87,15 @@ export async function grantPersonalDocumentPermissions(
       // API 제한 방지 (짧은 대기)
       await new Promise(resolve => setTimeout(resolve, 100));
       
-    } catch (error: any) {
-      console.error(`❌ 권한 부여 실패 [${email}]:`, error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ 권한 부여 실패 [${email}]:`, errorMessage);
       results.failCount++;
       results.failedUsers.push(email);
       results.details.push({
         email: email,
         success: false,
-        message: error.message || '권한 부여 실패'
+        message: errorMessage
       });
     }
   }

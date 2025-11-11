@@ -22,7 +22,7 @@ import {
  */
 const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<number | null> => {
   try {
-    const response = await (gapi.client as any).sheets.spreadsheets.get({
+    const response = await gapi.client.sheets.spreadsheets.get({
       spreadsheetId: spreadsheetId,
       fields: 'sheets.properties'
     });
@@ -37,9 +37,9 @@ const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<num
 
 // papyrus-db에 Google API 인증 설정
 const setupPapyrusAuth = () => {
-  if ((window as any).gapi && (window as any).gapi.client) {
-    (window as any).papyrusAuth = {
-      client: (window as any).gapi.client
+  if (window.gapi && window.gapi.client) {
+    window.papyrusAuth = {
+      client: window.gapi.client
     };
   }
 };
@@ -350,7 +350,7 @@ export const updatePersonalTemplateMetadata = async (oldTag: string, newTag: str
     // 각 파일의 메타데이터 업데이트
     for (const fileName of affectedFiles) {
       // Google Drive에서 파일 ID 찾기
-      const filesResponse = await (gapi.client as any).drive.files.list({
+      const filesResponse = await gapi.client.drive.files.list({
         q: `name='${fileName}' and parents in '${await findPersonalTemplateFolder()}'`,
         fields: 'files(id,name)',
         spaces: 'drive'
@@ -360,7 +360,7 @@ export const updatePersonalTemplateMetadata = async (oldTag: string, newTag: str
         const fileId = filesResponse.result.files[0].id;
         
         // 메타데이터 업데이트 (태그만 변경)
-        await (gapi.client as any).drive.files.update({
+        await gapi.client.drive.files.update({
           fileId: fileId,
           resource: {
             properties: {

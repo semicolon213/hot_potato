@@ -18,6 +18,7 @@ import {
 import { ENV_CONFIG } from "../../../config/environment";
 import { apiClient } from "../../../utils/api/apiClient";
 import { usePersonalTemplates } from "./usePersonalTemplates";
+import type { CreateDocumentResponse } from "../../../types/api/apiResponses";
 import { 
   addFavorite,
   removeFavorite,
@@ -191,7 +192,8 @@ export function useTemplateUI(
             } else {
                 const errorMessage = result ? result.message : 'API 응답이 null입니다';
                 console.error('📄 동적 템플릿 로드 실패:', errorMessage);
-                console.error('📄 디버깅 정보:', (result as any)?.debugInfo);
+                const createResponse = result as CreateDocumentResponse;
+                console.error('📄 디버깅 정보:', createResponse.debug);
                 setTemplateError(errorMessage || '템플릿을 불러올 수 없습니다');
             }
         } catch (error) {

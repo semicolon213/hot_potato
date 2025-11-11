@@ -7,6 +7,8 @@
  */
 
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../auth/tokenManager';
+import type { PapyrusAuth } from '../../types/google';
 
 const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
@@ -100,7 +102,7 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
             await new Promise<void>((resolve) => {
                 console.log("Google API Client Library 초기화 중...");
 
-                (window as any).gapi.load('client', async () => {
+                window.gapi.load('client', async () => {
                     try {
                         console.log("gapi.load 완료, client.init 시작...");
 
@@ -112,22 +114,22 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                             ]
                         });
 
-                        // 저장된 토큰이 있으면 복원
-                        const savedToken = localStorage.getItem('googleAccessToken');
+                        // 저장된 토큰이 있으면 복원 (tokenManager 사용)
+                        const savedToken = tokenManager.get();
                         if (savedToken) {
                             try {
-                                (window as any).gapi.client.setToken({ access_token: savedToken });
+                                window.gapi.client.setToken({ access_token: savedToken });
                                 console.log("✅ 액세스 토큰이 gapi.client에 설정되었습니다.");
                             } catch (tokenError) {
                                 console.warn("토큰 설정 실패:", tokenError);
                             }
                         } else {
-                            console.warn('저장된 Google 액세스 토큰이 없습니다. 로그인 후 토큰을 저장하세요.');
+                            console.warn('저장된 Google 액세스 토큰이 없거나 만료되었습니다. 로그인 후 토큰을 저장하세요.');
                         }
 
                         // papyrus-db가 사용할 클라이언트 연결
                         try {
-                            (window as any).papyrusAuth = { client: (window as any).gapi.client };
+                            window.papyrusAuth = { client: window.gapi.client };
                         } catch {}
 
                         console.log("Google API Client Library 초기화 성공!");

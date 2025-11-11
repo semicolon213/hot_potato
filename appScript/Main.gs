@@ -656,16 +656,42 @@ function callUserManagementPost(req) {
     // 관리자 관련 액션 처리 - 기존 함수들 호출
     if (action === 'getAllUsers') {
       console.log('👥 모든 사용자 목록 조회 요청');
-      const result = getAllUsers();
-      console.log('👥 모든 사용자 목록 조회 결과:', result);
-      console.log('👥 응답 타입:', typeof result);
-      console.log('👥 응답 success:', result.success);
-      console.log('👥 응답 users 길이:', result.users ? result.users.length : 'undefined');
-      const response = ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
-      console.log('👥 ContentService 응답 생성 완료');
-      return response;
+      try {
+        const result = getAllUsers();
+        if (!result) {
+          console.error('👥 getAllUsers가 undefined를 반환했습니다.');
+          return ContentService
+            .createTextOutput(JSON.stringify({
+              success: false,
+              message: '사용자 목록 조회 중 오류가 발생했습니다.',
+              users: [],
+              pendingUsers: [],
+              approvedUsers: []
+            }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+        console.log('👥 모든 사용자 목록 조회 결과:', result);
+        console.log('👥 응답 타입:', typeof result);
+        console.log('👥 응답 success:', result.success);
+        console.log('👥 응답 users 길이:', result.users ? result.users.length : 'undefined');
+        const response = ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+        console.log('👥 ContentService 응답 생성 완료');
+        return response;
+      } catch (error) {
+        console.error('👥 getAllUsers 호출 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '사용자 목록 조회 중 오류가 발생했습니다: ' + error.message,
+            users: [],
+            pendingUsers: [],
+            approvedUsers: [],
+            error: error.toString()
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     if (action === 'getPendingUsers') {
@@ -711,6 +737,406 @@ function callUserManagementPost(req) {
       return ContentService
         .createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 공지사항 관련 액션 처리
+    if (action === 'getAnnouncements') {
+      console.log('📢 공지사항 목록 조회 요청:', req);
+      const result = getAnnouncements(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'createAnnouncement') {
+      console.log('📢 공지사항 작성 요청:', req);
+      const result = createAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'updateAnnouncement') {
+      console.log('📢 공지사항 수정 요청:', req);
+      const result = updateAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'deleteAnnouncement') {
+      console.log('📢 공지사항 삭제 요청:', req);
+      const result = deleteAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'incrementAnnouncementView') {
+      console.log('📢 공지사항 조회수 증가 요청:', req);
+      const result = incrementViewCount(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'requestPinnedAnnouncement') {
+      console.log('📌 고정 공지사항 승인 요청:', req);
+      const result = requestPinnedAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'approvePinnedAnnouncement') {
+      console.log('📌 고정 공지사항 승인/거절:', req);
+      const result = approvePinnedAnnouncement(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'getPinnedAnnouncementRequests') {
+      console.log('📌 고정 공지사항 승인 대기 목록 조회:', req);
+      const result = getPinnedAnnouncementRequests(req);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    if (action === 'getAnnouncementUserList') {
+      console.log('👥 공지사항 권한 설정용 사용자 목록 조회:', req);
+      const result = getUserList();
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: true,
+          users: result
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 워크플로우 관련 액션 처리
+    if (action === 'requestWorkflow') {
+      try {
+        // 워크플로우 스프레드시트 초기화
+        initializeWorkflowSheets();
+        const result = requestWorkflow(req);
+        
+        // 성공 응답에 디버그 정보 포함
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            ...result,
+            debug: {
+              actionReceived: req.action,
+              actionType: typeof req.action,
+              actionTrimmed: action,
+              hasRequesterEmail: !!req.requesterEmail,
+              hasReviewLine: !!req.reviewLine,
+              reviewLineLength: req.reviewLine ? req.reviewLine.length : 0,
+              hasPaymentLine: !!req.paymentLine,
+              paymentLineLength: req.paymentLine ? req.paymentLine.length : 0,
+              requestKeys: Object.keys(req)
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        // 에러 응답에 상세 디버그 정보 포함
+        return ContentService
+          .createTextOutput(JSON.stringify({ 
+            success: false, 
+            message: '워크플로우 요청 처리 중 오류가 발생했습니다: ' + error.message,
+            error: error.toString(),
+            stack: error.stack,
+            debug: {
+              actionReceived: req.action,
+              actionType: typeof req.action,
+              actionTrimmed: action,
+              hasRequesterEmail: !!req.requesterEmail,
+              hasReviewLine: !!req.reviewLine,
+              reviewLineLength: req.reviewLine ? req.reviewLine.length : 0,
+              hasPaymentLine: !!req.paymentLine,
+              paymentLineLength: req.paymentLine ? req.paymentLine.length : 0,
+              requestKeys: Object.keys(req),
+              requestData: JSON.stringify(req)
+            }
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'grantWorkflowPermissions') {
+      console.log('🔐 워크플로우 권한 부여:', req);
+      try {
+        let documentId = null;
+        if (req.documentId) {
+          documentId = req.documentId;
+        } else if (req.workflowDocumentId) {
+          documentId = req.workflowDocumentId;
+        } else if (req.attachedDocumentId) {
+          documentId = req.attachedDocumentId;
+        }
+        
+        if (!documentId) {
+          return ContentService
+            .createTextOutput(JSON.stringify({
+              success: false,
+              message: '문서 ID가 필요합니다 (documentId, workflowDocumentId, 또는 attachedDocumentId 중 하나)'
+            }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+        
+        const result = grantWorkflowPermissions(
+          documentId,
+          req.userEmails || [],
+          req.permissionType || 'reader'
+        );
+        
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            message: `권한 부여 완료: 성공 ${result.successCount}명, 실패 ${result.failCount}명`,
+            data: result
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 권한 부여 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '권한 부여 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getWorkflowStatus') {
+      console.log('📋 워크플로우 상태 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getWorkflowStatus(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 상태 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '워크플로우 상태 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getMyPendingWorkflows') {
+      console.log('📋 내 담당 워크플로우 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getMyPendingWorkflows(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 내 담당 워크플로우 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '내 담당 워크플로우 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getMyRequestedWorkflows') {
+      console.log('📋 내가 올린 결재 목록 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getMyRequestedWorkflows(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 내가 올린 결재 목록 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '내가 올린 결재 목록 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getCompletedWorkflows') {
+      console.log('📋 결재 완료된 리스트 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getCompletedWorkflows(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 완료된 리스트 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 완료된 리스트 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 검토 단계 액션
+    if (action === 'approveReview') {
+      console.log('✅ 검토 승인:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = approveReview(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 검토 승인 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '검토 승인 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'rejectReview') {
+      console.log('❌ 검토 반려:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = rejectReview(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 검토 반려 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '검토 반려 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'holdReview') {
+      console.log('⏸️ 검토 보류:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = holdReview(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 검토 보류 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '검토 보류 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 결재 단계 액션
+    if (action === 'approvePayment') {
+      console.log('✅ 결재 승인:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = approvePayment(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 승인 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 승인 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'rejectPayment') {
+      console.log('❌ 결재 반려:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = rejectPayment(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 반려 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 반려 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'holdPayment') {
+      console.log('⏸️ 결재 보류:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = holdPayment(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 결재 보류 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '결재 보류 처리 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'resubmitWorkflow') {
+      console.log('🔄 워크플로우 재제출:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = resubmitWorkflow(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 재제출 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '워크플로우 재제출 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getWorkflowHistory') {
+      console.log('📋 워크플로우 히스토리 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getWorkflowHistory(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 히스토리 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '워크플로우 히스토리 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     // 워크플로우 관련 액션 처리

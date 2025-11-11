@@ -117,15 +117,16 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
       };
 
       // 현재 사용자 ID 가져오기 (실제로는 인증된 사용자 정보에서 가져와야 함)
-      const currentUserEmail = (window as any).gapi?.auth2?.getAuthInstance()?.currentUser?.get()?.getBasicProfile()?.getEmail() || 'unknown';
+      const currentUserEmail = window.gapi?.auth2?.getAuthInstance()?.currentUser?.get()?.getBasicProfile()?.getEmail() || 'unknown';
 
       await updateLedgerEntry(spreadsheetId, entry.entryId, updateData, currentUserEmail);
       
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 장부 항목 수정 오류:', err);
-      setError(err.message || '장부 항목 수정에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '장부 항목 수정에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +193,7 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               required
+              disabled={entry.isBudgetExecuted && entry.budgetPlanId}
             >
               <option value="">선택하세요</option>
               {categoryNames.map(catName => (
@@ -199,6 +201,20 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
               ))}
             </select>
           </div>
+
+          {entry.isBudgetExecuted && entry.budgetPlanTitle && (
+            <div className="form-group">
+              <label>예산안 이름</label>
+              <input
+                type="text"
+                value={entry.budgetPlanTitle}
+                disabled
+                className="disabled-input"
+                readOnly
+              />
+              <p className="form-hint">예산안으로 생성된 항목은 예산안 이름을 수정할 수 없습니다.</p>
+            </div>
+          )}
 
           <div className="form-group">
             <label>내용 *</label>
@@ -208,7 +224,11 @@ export const EditLedgerEntryModal: React.FC<EditLedgerEntryModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="거래 내용을 입력하세요"
               required
+              disabled={entry.isBudgetExecuted && entry.budgetPlanId}
             />
+            {entry.isBudgetExecuted && entry.budgetPlanId && (
+              <p className="form-hint">예산안으로 생성된 항목은 내용을 수정할 수 없습니다.</p>
+            )}
           </div>
 
           <div className="form-group">

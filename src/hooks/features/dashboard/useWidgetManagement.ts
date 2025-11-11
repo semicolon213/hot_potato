@@ -12,14 +12,14 @@ import { generateWidgetContent } from "../../../utils/helpers/widgetContentGener
  * @property {string} type - 위젯의 고유 식별자 (예: 'welcome', 'notice').
  * @property {string} title - 위젯 헤더에 표시될 제목.
  * @property {string} componentType - 렌더링할 React 컴포넌트의 이름 (AllWidgetTemplates.tsx에 정의된 이름).
- * @property {Record<string, any>} props - 위젯 컴포넌트에 전달될 데이터.
+ * @property {Record<string, unknown>} props - 위젯 컴포넌트에 전달될 데이터.
  */
 interface WidgetData {
   id: string;
   type: string;
   title: string;
   componentType: string;
-  props: Record<string, any>;
+  props: Record<string, unknown>;
 }
 
 import { ENV_CONFIG } from '../../../config/environment';
@@ -190,7 +190,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => 
     try {
       console.log("Google Sheets와 위젯 데이터 동기화 시작");
       
-      const gapi = (window as any).gapi;
+      const gapi = window.gapi;
       if (!gapi || !gapi.client || !gapi.client.sheets) {
         throw new Error("Google API가 초기화되지 않았습니다. 먼저 로그인해주세요.");
       }
@@ -259,7 +259,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null) => 
       
       // Google Sheets에 저장 (gapi가 사용 가능한 경우에만)
       try {
-        const gapi = (window as any).gapi;
+        const gapi = window.gapi;
         if (gapi && gapi.client && gapi.client.sheets) {
           const dataToSave = widgets.map(({ id }) => id);
           console.log("Google Sheets에 위젯 데이터 저장 시도:", dataToSave);

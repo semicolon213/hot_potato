@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getCategories, createCategory } from '../../../utils/database/accountingManager';
+import { getCategories, createCategory, updateCategory, deleteCategory } from '../../../utils/database/accountingManager';
 import type { Category } from '../../../types/features/accounting';
 import './accounting.css';
 
@@ -20,8 +20,12 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryDescription, setEditCategoryDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,9 +76,10 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
       setNewCategoryName('');
       setNewCategoryDescription('');
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ 카테고리 추가 오류:', err);
-      setError(err.message || '카테고리 추가에 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '카테고리 추가에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -85,6 +90,84 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
     setNewCategoryName('');
     setNewCategoryDescription('');
     setError(null);
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setEditCategoryName(category.categoryName);
+    setEditCategoryDescription(category.description || '');
+    setIsEditModalOpen(true);
+    setError(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingCategory(null);
+    setEditCategoryName('');
+    setEditCategoryDescription('');
+    setError(null);
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return;
+
+    if (!editCategoryName.trim()) {
+      setError('카테고리 이름을 입력해주세요.');
+      return;
+    }
+
+    // 중복 체크 (자기 자신 제외)
+    if (categories.some(cat => 
+      cat.categoryId !== editingCategory.categoryId && 
+      cat.categoryName.toLowerCase() === editCategoryName.trim().toLowerCase()
+    )) {
+      setError('이미 존재하는 카테고리 이름입니다.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await updateCategory(
+        spreadsheetId,
+        editingCategory.categoryId,
+        editCategoryName.trim(),
+        editCategoryDescription.trim()
+      );
+
+      await loadCategories();
+      handleCloseEditModal();
+      setError(null);
+    } catch (err: unknown) {
+      console.error('❌ 카테고리 수정 오류:', err);
+      const errorMessage = err instanceof Error ? err.message : '카테고리 수정에 실패했습니다.';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (category: Category) => {
+    if (!window.confirm(`카테고리 "${category.categoryName}"를 삭제하시겠습니까?\n\n사용 중인 항목이 있으면 삭제할 수 없습니다.`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await deleteCategory(spreadsheetId, category.categoryId);
+      await loadCategories();
+      setError(null);
+    } catch (err: unknown) {
+      console.error('❌ 카테고리 삭제 오류:', err);
+      const errorMessage = err instanceof Error ? err.message : '카테고리 삭제에 실패했습니다.';
+      alert(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -157,16 +240,40 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
         ) : (
           <div className="category-grid">
             {filteredCategories.map(category => (
-              <div key={category.categoryId} className="category-card">
+              <div 
+                key={category.categoryId} 
+                className="category-card"
+                onClick={() => handleEditCategory(category)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="category-card-header">
                   <h4 className="category-name">{category.categoryName}</h4>
+                  <div className="category-card-actions" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleEditCategory(category)}
+                      className="category-edit-btn"
+                      title="수정"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(category)}
+                      className="category-delete-btn"
+                      title="삭제"
+                      disabled={category.usageCount > 0}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+                <div className="category-card-body">
                   <span className="category-usage-badge">
                     {category.usageCount}회 사용
                   </span>
+                  {category.description && (
+                    <p className="category-description">{category.description}</p>
+                  )}
                 </div>
-                {category.description && (
-                  <p className="category-description">{category.description}</p>
-                )}
               </div>
             ))}
           </div>
@@ -245,6 +352,86 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </>
                 ) : (
                   '추가'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 카테고리 수정 모달 */}
+      {isEditModalOpen && editingCategory && (
+        <div className="modal-overlay" onClick={handleCloseEditModal}>
+          <div className="modal-content category-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>카테고리 수정</h2>
+              <button className="modal-close-btn" onClick={handleCloseEditModal}>×</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="edit-category-name">
+                  카테고리 이름 <span className="required">*</span>
+                </label>
+                <input
+                  id="edit-category-name"
+                  type="text"
+                  value={editCategoryName}
+                  onChange={(e) => {
+                    setEditCategoryName(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="예: MT, 회식, 소모품 등"
+                  autoFocus
+                  className={error && !editCategoryName.trim() ? 'input-error' : ''}
+                />
+                <p className="form-hint">
+                  카테고리 이름을 변경하면 장부 항목과 예산안의 카테고리도 자동으로 업데이트됩니다.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-category-description">설명</label>
+                <textarea
+                  id="edit-category-description"
+                  value={editCategoryDescription}
+                  onChange={(e) => setEditCategoryDescription(e.target.value)}
+                  placeholder="카테고리 설명 (선택사항)"
+                  rows={3}
+                  className="category-description-textarea"
+                />
+                <p className="form-hint">카테고리 설명은 자유롭게 수정할 수 있으며, 다른 항목에 영향을 주지 않습니다.</p>
+              </div>
+
+              {error && (
+                <div className="form-error">
+                  <span className="error-icon">⚠️</span>
+                  {error}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={handleCloseEditModal}
+                disabled={isLoading}
+                className="btn-cancel"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleUpdateCategory}
+                disabled={isLoading || !editCategoryName.trim()}
+                className="btn-primary"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="spinner"></span>
+                    수정 중...
+                  </>
+                ) : (
+                  '수정'
                 )}
               </button>
             </div>

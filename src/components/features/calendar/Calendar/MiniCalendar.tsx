@@ -85,8 +85,16 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ selectedWeek, viewMode, onD
     return days;
   }, [miniCalendarDate]);
 
+  interface DayInfo {
+    year: string;
+    month: string;
+    day: string;
+    date: string;
+    dayIndexOfWeek: number;
+  }
+
   const weeksInMonth = useMemo(() => {
-      const weeksArr: any[][] = [];
+      const weeksArr: DayInfo[][] = [];
       if (!daysInMiniMonth) return [];
       for (let i = 0; i < daysInMiniMonth.length; i += 7) {
           weeksArr.push(daysInMiniMonth.slice(i, i + 7));

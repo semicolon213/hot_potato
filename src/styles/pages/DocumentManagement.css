@@ -6,8 +6,24 @@
   min-height: 100%;
   box-sizing: border-box;
   background: transparent;
+/* DocumentManagement.css - 결재 요청 버튼 스타일 추가 */
+
+.btn-workflow-request {
+  padding: 8px 16px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 12px;
 }
 
+.btn-workflow-request:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 /* 문서 관리 페이지 내부 모든 요소의 그림자 제거 */
 .document-management-container *,
 .document-management-container *::before,
