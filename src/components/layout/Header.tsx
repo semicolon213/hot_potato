@@ -40,7 +40,6 @@ const Header: React.FC<HeaderProps> = ({ onPageChange: _onPageChange, searchTerm
           <input
               type="text"
               className="search-inputbox"
-              placeholder="문서 검색"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyPress={(e) => {

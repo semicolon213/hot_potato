@@ -24,13 +24,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
   return (
     <div className="card document-card">
       <div className="card-header" style={{ backgroundColor }}>
-        <div className="card-icon-container">
-          <div className="card-icon">
-            <div className={`icon ${icon}`}></div>
-          </div>
-        </div>
         <div className="card-title">{title}</div>
-        <div className="card-subtitle">{subtitle}</div>
       </div>
 
       <div className="items-list">

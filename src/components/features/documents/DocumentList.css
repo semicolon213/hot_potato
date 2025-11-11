@@ -2,11 +2,22 @@
 .document-container {
   position: relative;
   z-index: 5;
-  border: 1px solid var(--border-color);
-  margin-top: 15px;
-  margin-bottom: 1px;
-  border-radius: var(--sidebar-radius-sm);
+  border: 1px solid #e2e8f0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-radius: var(--sidebar-radius);
   overflow: hidden;
+  background-color: #ffffff;
+  box-shadow: none;
+  flex: 1;
+}
+
+.cards-row .document-container {
+  margin-bottom: 0;
+}
+
+.document-container * {
+  border-color: #e2e8f0 !important;
 }
 
 .table-container {
@@ -19,18 +30,36 @@
 /* 테이블 헤더 스타일 */
 .table-header {
   display: flex;
-  padding: 12px 0;
-  background-color: var(--table-header-bg);
-  border-bottom: 1px solid var(--border-light);
+  padding: 0;
+  min-height: clamp(56px, 6.48vh, 64px);
+  background-color: #ffffff !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  align-items: center;
+}
+
+.document-container .table-header,
+.table-container .table-header {
+  background-color: #ffffff !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
 .table-header-cell {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-dark);
-  padding: 8px 16px;
+  padding: 0 clamp(16px, 1.85vw, 20px);
   display: flex;
   align-items: center;
+  background-color: #ffffff !important;
+  border: none !important;
+  height: 100%;
+  min-height: clamp(56px, 6.48vh, 64px);
 }
 
 .table-header-cell.sortable {
@@ -40,7 +69,7 @@
 }
 
 .table-header-cell.sortable:hover {
-  background-color: #f8f9fa;
+  background-color: #f8f9fa !important;
 }
 
 .header-content {
@@ -60,26 +89,48 @@
 /* 테이블 행 스타일 */
 .table-row {
   display: flex;
-  border-bottom: 1px solid var(--border-lighter);
-  padding: 10px 0;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 0;
+  min-height: clamp(56px, 6.48vh, 64px);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  align-items: center;
 }
 
 .table-row:hover {
-  background-color: #f9f9f9;
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: none;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
 .table-row:last-child {
-  border-bottom: none;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.table-row.last-row-no-header {
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
 }
 
 .table-cell {
-  font-size: 14px;
+  font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-dark);
-  padding: 8px 16px;
+  padding: 0 clamp(16px, 1.85vw, 20px);
   display: flex;
   align-items: center;
+  line-height: 1.5;
+  border: none !important;
+  height: 100%;
+  min-height: clamp(56px, 6.48vh, 64px);
 }
 
 /* 테이블 셀 너비 및 정렬 클래스 */
@@ -149,8 +200,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px;
-
+  min-height: clamp(56px, 6.48vh, 64px);
+  height: clamp(56px, 6.48vh, 64px);
+  background-color: #ffffff;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
 }
 
 .section-title-container {
@@ -160,28 +216,68 @@
   height: 100%; /* 컨테이너 높이를 100%로 설정하여 내부 아이템 중앙 정렬 */
 }
 
-.section-title {
-  font-size: 17px;
-  font-weight: bold;
-  color: var(--text-dark);
-  margin-left: 30px;
+.section-header .section-title,
+.section-header .section-title.no-line,
+.document-container .section-title,
+.document-container .section-title.no-line {
+  font-size: clamp(24px, 2.78vh, 28px);
+  font-weight: var(--font-weight-semibold);
+  color: #000000 !important;
+  margin: 0;
+  margin-left: clamp(24px, 2.78vw, 32px);
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
-.view-all-button {
-  font-size: 14px;
-  color: var(--text-medium);
-  cursor: pointer;
-  margin-right: 20px;
-  padding: 10px 0;
-  align-self: center;
+/* 통일된 헤더 버튼 스타일 - 결재 요청과 모두 보기 버튼 모두 동일 */
+.view-all-button,
+.btn-workflow-request {
+  font-size: clamp(14px, 1.62vh, 16px) !important;
+  color: #ffffff !important;
+  background-color: #1a1a1a !important;
+  border: 1px solid #1a1a1a !important;
+  border-radius: var(--sidebar-radius-sm) !important;
+  cursor: pointer !important;
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px) !important;
+  margin: 0 !important;
+  margin-left: clamp(12px, 1.39vw, 20px) !important;
+  transition: var(--transition-base) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  display: inline-block !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  align-self: center !important;
+}
+
+.view-all-button:hover,
+.btn-workflow-request:hover,
+.section-header .view-all-button:hover,
+.section-header .btn-workflow-request:hover {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border-color: #2a2a2a !important;
+  box-shadow: none !important;
+  transform: translateY(-1px) !important;
+}
+
+.view-all-button:active,
+.btn-workflow-request:active {
+  transform: translateY(0) !important;
+  box-shadow: none !important;
+  background-color: #1a1a1a !important;
 }
 
 .section-header .submenu-item:hover {
-  background-color: transparent;
-}
-
-.section-header .view-all-button:hover {
-  color: #f8f8f7;
   background-color: transparent;
 }
 
@@ -190,9 +286,10 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100px;
-  gap: 10px;
-  color: black;
+  min-height: clamp(100px, 11.57vh, 120px);
+  gap: clamp(10px, 1.16vw, 12px);
+  color: var(--text-dark);
+  padding: clamp(20px, 2.31vh, 24px);
 }
 
 .no-results-cell {
@@ -200,8 +297,10 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  height: 100px;
-  color: #888;
+  min-height: clamp(100px, 11.57vh, 120px);
+  color: var(--text-medium);
+  padding: clamp(20px, 2.31vh, 24px);
+  font-size: clamp(14px, 1.62vh, 16px);
 }
 
 .spinner {

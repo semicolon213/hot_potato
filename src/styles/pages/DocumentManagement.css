@@ -1,3 +1,11 @@
+/* 문서 관리 페이지 컨테이너 */
+.document-management-container {
+  width: 100%;
+  padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 40px);
+  margin: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: transparent;
 /* DocumentManagement.css - 결재 요청 버튼 스타일 추가 */
 
 .btn-workflow-request {
@@ -16,4 +24,43 @@
 .btn-workflow-request:hover {
   background-color: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
+/* 문서 관리 페이지 내부 모든 요소의 그림자 제거 */
+.document-management-container *,
+.document-management-container *::before,
+.document-management-container *::after {
+  box-shadow: none !important;
+}
+
+/* 카드 행 레이아웃 */
+.cards-row {
+  display: flex;
+  gap: clamp(16px, 2.08vw, 24px);
+  margin-bottom: clamp(24px, 2.78vh, 32px);
+}
+
+/* 통계 카드 컨테이너 */
+.stats-container {
+  display: flex;
+  gap: clamp(16px, 2.08vw, 24px);
+  margin-top: clamp(24px, 2.78vh, 32px);
+  margin-bottom: 0;
+}
+
+/* 결재 요청 버튼 - DocumentList.css의 .view-all-button과 동일한 스타일 사용 */
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .document-management-container {
+    padding: clamp(16px, 1.85vh, 20px) clamp(16px, 2.08vw, 20px);
+  }
+
+  .cards-row {
+    flex-direction: column;
+    gap: clamp(16px, 1.85vh, 20px);
+  }
+
+  .stats-container {
+    flex-direction: column;
+    gap: clamp(16px, 1.85vh, 20px);
+  }
 }

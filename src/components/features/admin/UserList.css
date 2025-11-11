@@ -27,11 +27,16 @@
   box-shadow: var(--shadow-base);
   overflow: hidden;
   border: 1px solid #e9ecef;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .user-list-header {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 1.5fr;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 2fr;
   gap: clamp(12px, 1.5vw, 20px);
   padding: clamp(12px, 1.39vh, 20px) clamp(16px, 2.08vw, 24px);
   background: #f8f9fa;
@@ -39,20 +44,25 @@
   color: var(--text-dark, #333);
   font-weight: var(--font-weight-semibold);
   font-size: clamp(13px, 1.5vh, 17px);
+  min-width: max-content;
+  flex-shrink: 0;
 }
 
 .user-list-body {
-  max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .user-list-row {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 1.5fr;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 2fr;
   gap: clamp(12px, 1.5vw, 16px);
   padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
   border-bottom: 1px solid #e2e8f0;
   transition: var(--transition-base);
+  min-width: max-content;
 }
 
 .user-list-row:hover {
@@ -65,6 +75,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* 작업 열 셀은 overflow를 허용하여 버튼이 잘리지 않도록 */
+.user-list-row .user-list-cell:last-child {
+  overflow: visible;
+  min-width: max-content;
 }
 
 .user-list-cell .user-type {
@@ -96,23 +113,26 @@
 /* 사용자 액션 */
 .user-actions {
   display: flex;
-  gap: 8px;
+  gap: clamp(8px, 1.04vw, 12px);
   justify-content: flex-start;
+  min-width: max-content;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .approve-btn {
-  background: var(--sidebar-primary);
-  color: #f8f8f7;
-  border: none;
+  background: #b3e5d1;
+  color: #155724;
+  border: 1px solid #a3d5c1;
   border-radius: var(--sidebar-radius-sm);
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 20px);
+  padding: clamp(8px, 0.93vh, 12px) clamp(12px, 1.56vw, 16px);
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  max-width: clamp(90px, 11.72vw, 120px);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex: 0 0 auto;
+  min-width: clamp(70px, 9.11vw, 90px);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -126,13 +146,22 @@
 }
 
 .approve-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
+  background: #a3d5c1;
+  color: #0d3e1a;
+  border-color: #93c5b1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.approve-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .approve-btn:disabled {
-  background: #ccc;
-  color: #666;
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #dee2e6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -140,18 +169,18 @@
 }
 
 .reject-btn {
-  background: var(--sidebar-primary);
-  color: #f8f8f7;
-  border: none;
+  background: #ffb3ba;
+  color: #8b0000;
+  border: 1px solid #ffa3aa;
   border-radius: var(--sidebar-radius-sm);
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 20px);
+  padding: clamp(8px, 0.93vh, 12px) clamp(12px, 1.56vw, 16px);
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  max-width: clamp(90px, 11.72vw, 120px);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex: 0 0 auto;
+  min-width: clamp(70px, 9.11vw, 90px);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -165,13 +194,22 @@
 }
 
 .reject-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
+  background: #ff9999;
+  color: #660000;
+  border-color: #ff8989;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.reject-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .reject-btn:disabled {
-  background: #ccc;
-  color: #666;
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #dee2e6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;

@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import { FaListUl, FaUsers } from 'react-icons/fa';
 import { useStaffOnly } from '../hooks/features/staff/useStaffOnly';
 import { useCommitteeOnly } from '../hooks/features/staff/useCommitteeOnly';
 import StudentDetailModal from '../components/ui/StudentDetailModal';
@@ -16,8 +17,10 @@ import {
   StudentSearchFilter,
   StudentActionButtons,
   StudentList,
+  CouncilSection
 } from '../components/features/students';
 import '../styles/pages/Students.css';
+import './Staff.css';
 import type { StudentWithCouncil } from '../types/features/students/student';
 
 // 타입 정의
@@ -222,8 +225,21 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     handleModalClose();
   };
 
-  if (currentHook.isLoading) return <div className="staff-loading">데이터를 불러오는 중...</div>;
-  if (currentHook.error) return <div className="staff-error">오류: {currentHook.error}</div>;
+  if (currentHook.isLoading) {
+    return (
+      <div className="staff-management-page">
+        <div className="loading">교직원 데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (currentHook.error) {
+    return (
+      <div className="staff-management-page">
+        <div className="error">오류: {currentHook.error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="staff-management-page">
@@ -234,71 +250,137 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         onTabChange={(tab) => setActiveTab(tab === 'list' ? 'staff' : 'committee')}
         isStaffMode={true}
       />
-      
-      <StudentSearchFilter
-        searchTerm={currentHook.searchTerm}
-        onSearchChange={currentHook.setSearchTerm}
-        showFilters={showFilters}
-        onToggleFilters={() => setShowFilters(!showFilters)}
-        filters={activeTab === 'staff' ? staffHook.filters : {
-          grade: '', // 위원회 탭에서는 사용하지 않음
-          state: committeeHook.filters.sortation,
-          council: committeeHook.filters.position,
-        }}
-        onFiltersChange={(newFilters) => {
-          if (activeTab === 'staff') {
-            staffHook.setFilters(newFilters);
-          } else {
-            committeeHook.setFilters({
-              sortation: newFilters.state,
-              position: newFilters.council,
-            });
-          }
-        }}
-        filterOptions={activeTab === 'staff' ? {
-          grades: staffHook.filterOptions.grades, // 교직원 구분 (전임교수, 조교, 외부강사 등)
-          states: ['전체 상태', '재학', '졸업', '휴학', '자퇴'], // 교직원 상태 (사용하지 않음)
-          councilPositions: ['전체 직책', '학생장', '부학생장', '총무부장', '기획부장', '학술부장', '서기'] // 교직원 직책 (사용하지 않지 않음)
-        } : {
-          grades: ['교과과정위원회', '학과운영위원회', '입학위원회', '졸업위원회'], // 위원회 구분
-          states: committeeHook.filterOptions.sortations, // 위원회 종류
-          councilPositions: committeeHook.filterOptions.positions // 위원회 직책
-        }}
-        isStaffMode={true}
-        activeTab={activeTab}
-      />
 
-      <StudentActionButtons
-        onExportCSV={currentHook.exportToCSV}
-        onDownloadTemplate={currentHook.downloadExcelTemplate}
-        onFileUpload={currentHook.handleFileUpload}
-        filteredCount={activeTab === 'staff' ? staffHook.filteredStaffCount : committeeHook.filteredCommitteeCount}
-        totalCount={activeTab === 'staff' ? staffHook.totalStaff : committeeHook.totalCommittee}
-      />
+      {activeTab === 'staff' && (
+        <div className="students-list">
+          <div className="action-buttons">
+            <div className="action-left">
+              <StudentActionButtons
+                onExportCSV={staffHook.exportToCSV}
+                onDownloadTemplate={staffHook.downloadExcelTemplate}
+                onFileUpload={staffHook.handleFileUpload}
+                filteredCount={staffHook.filteredStaffCount}
+                totalCount={staffHook.totalStaff}
+              />
+            </div>
+            <div className="action-right">
+              <div className="tab-buttons">
+                <button 
+                  className={`tab-button ${activeTab === 'staff' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('staff')}
+                >
+                  <FaListUl className="tab-icon" />
+                  <span>교직원 목록</span>
+                </button>
+                <button 
+                  className={`tab-button ${activeTab === 'committee' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('committee')}
+                >
+                  <FaUsers className="tab-icon" />
+                  <span>학과 위원회</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
-            {activeTab === 'staff' ? (
-              <StudentList
-                students={convertedStaff}
-                columns={staffColumns}
-                sortConfig={staffHook.sortConfig}
-                onSort={staffHook.handleSort}
-                onStudentDoubleClick={handleStaffDoubleClick}
-                isStaffMode={true}
-                onAddStaff={handleAddStaff}
-                staffTabType='staff'
+          <StudentSearchFilter
+            searchTerm={staffHook.searchTerm}
+            onSearchChange={staffHook.setSearchTerm}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            filters={staffHook.filters}
+            onFiltersChange={staffHook.setFilters}
+            filterOptions={{
+              grades: staffHook.filterOptions.grades,
+              states: [],
+              councilPositions: []
+            }}
+            isStaffMode={true}
+            activeTab={activeTab}
+          />
+
+          <StudentList
+            students={convertedStaff}
+            columns={staffColumns}
+            sortConfig={staffHook.sortConfig}
+            onSort={staffHook.handleSort}
+            onStudentDoubleClick={handleStaffDoubleClick}
+            isStaffMode={true}
+            onAddStaff={handleAddStaff}
+            staffTabType='staff'
+          />
+        </div>
+      )}
+
+      {activeTab === 'committee' && (
+        <div className="students-list">
+          <div className="action-buttons">
+            <div className="action-left">
+              <StudentActionButtons
+                onExportCSV={committeeHook.exportToCSV}
+                onDownloadTemplate={committeeHook.downloadExcelTemplate}
+                onFileUpload={committeeHook.handleFileUpload}
+                filteredCount={committeeHook.filteredCommitteeCount}
+                totalCount={committeeHook.totalCommittee}
               />
-            ) : (
-              <StudentList
-                students={convertedCommittee}
-                columns={committeeColumns}
-                sortConfig={committeeHook.sortConfig}
-                onSort={committeeHook.handleSort}
-                onStudentDoubleClick={handleCommitteeDoubleClick}
-                isStaffMode={true}
-                onAddCommittee={handleAddCommittee}
-                staffTabType='committee'
-              />
-            )}
+            </div>
+            <div className="action-right">
+              <div className="tab-buttons">
+                <button 
+                  className={`tab-button ${activeTab === 'staff' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('staff')}
+                >
+                  <FaListUl className="tab-icon" />
+                  <span>교직원 목록</span>
+                </button>
+                <button 
+                  className={`tab-button ${activeTab === 'committee' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('committee')}
+                >
+                  <FaUsers className="tab-icon" />
+                  <span>학과 위원회</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <StudentSearchFilter
+            searchTerm={committeeHook.searchTerm}
+            onSearchChange={committeeHook.setSearchTerm}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            filters={{
+              grade: '',
+              state: committeeHook.filters.sortation,
+              council: committeeHook.filters.position,
+            }}
+            onFiltersChange={(newFilters) => {
+              committeeHook.setFilters({
+                sortation: newFilters.state,
+                position: newFilters.council,
+              });
+            }}
+            filterOptions={{
+              grades: [],
+              states: committeeHook.filterOptions.sortations,
+              councilPositions: committeeHook.filterOptions.positions
+            }}
+            isStaffMode={true}
+            activeTab={activeTab}
+          />
+
+          <StudentList
+            students={convertedCommittee}
+            columns={committeeColumns}
+            sortConfig={committeeHook.sortConfig}
+            onSort={committeeHook.handleSort}
+            onStudentDoubleClick={handleCommitteeDoubleClick}
+            isStaffMode={true}
+            onAddCommittee={handleAddCommittee}
+            staffTabType='committee'
+          />
+        </div>
+      )}
 
       <StudentDetailModal
         student={selectedStaff ? {

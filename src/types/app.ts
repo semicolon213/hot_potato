@@ -61,6 +61,7 @@ export interface AnnouncementUser {
   name: string;
   user_type: string;
   email: string;
+  file_notice?: string;
 }
 
 export interface User {
@@ -74,34 +75,34 @@ export interface User {
   accessToken?: string;
 }
 
-export type PageType = 
-  | 'dashboard' 
-  | 'admin' 
-  | 'board' 
-  | 'documents' 
-  | 'calendar' 
-  | 'users' 
-  | 'settings' 
-  | 'new-board-post' 
-  | 'announcements' 
+export type PageType =
+  | 'dashboard'
+  | 'admin'
+  | 'board'
+  | 'documents'
+  | 'calendar'
+  | 'users'
+  | 'settings'
+  | 'new-board-post'
+  | 'announcements'
   | 'announcement-view'
   | 'new-announcement-post'
   | 'accounting'
-  | 'document_management' 
-  | 'docbox' 
-  | 'new_document' 
-  | 'preferences' 
-  | 'mypage' 
-  | 'empty_document' 
-  | 'proceedings' 
-  | 'students' 
-  | 'staff' 
+  | 'document_management'
+  | 'docbox'
+  | 'new_document'
+  | 'preferences'
+  | 'mypage'
+  | 'empty_document'
+  | 'proceedings'
+  | 'students'
+  | 'staff'
   | 'workflow_management'
   | 'google_appscript'
-  | 'google_sheets' 
-  | 'google_docs' 
-  | 'google_gemini' 
-  | 'google_groups' 
+  | 'google_sheets'
+  | 'google_docs'
+  | 'google_gemini'
+  | 'google_groups'
   | 'google_calendar'
   | 'google_chat';
 

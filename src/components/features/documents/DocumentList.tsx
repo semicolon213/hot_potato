@@ -28,56 +28,56 @@ interface DocumentListProps<T extends object> {
   isLoading?: boolean;
   onRowDoubleClick?: (row: T) => void;
   headerContent?: React.ReactNode;
+  showTableHeader?: boolean;
 }
 
-const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick, headerContent }: DocumentListProps<T>) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick, headerContent, showTableHeader = true }: DocumentListProps<T>) => {
   return (
     <div className="document-container">
       <div className="table-container">
         <div
           className="section-header"
-          style={{ backgroundColor: "var(--primary)", display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px' }}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px' }}
         >
           <div className="section-title-container">
-            <div className="section-title no-line" style={{ color: "white", margin: "10px 0 10px 20px" }}>
+            <div className="section-title no-line">
               {title}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {headerContent}
             {showViewAll && (
-              <div
-                className="submenu-item"
+              <button
+                className="view-all-button"
                 onClick={() => onPageChange("docbox")}
-                style={{ textDecoration: "none", color: "inherit", marginLeft: '20px' }}
               >
-                <div className="view-all-button" style={{ color: "#e0e0e0" }}>
-                  모두 보기
-                </div>
-              </div>
+                모두 보기
+              </button>
             )}
           </div>
         </div>
 
-        <div className="table-header">
-          {columns.map((col) => (
-            <div
-              key={String(col.key)}
-              className={`table-header-cell ${col.cellClassName || ''} ${col.sortable !== false ? 'sortable' : ''}`}
-              style={{ width: col.width, flex: col.width ? 'none' : 1 }}
-              onClick={() => col.sortable !== false && onSort?.(col.key)}
-            >
-              <div className="header-content">
-                <span>{col.header}</span>
-                {col.sortable !== false && sortConfig?.key === col.key && (
-                  <span className="sort-indicator">
-                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                  </span>
-                )}
+        {showTableHeader && (
+          <div className="table-header">
+            {columns.map((col) => (
+              <div
+                key={String(col.key)}
+                className={`table-header-cell ${col.cellClassName || ''} ${col.sortable !== false ? 'sortable' : ''}`}
+                style={{ width: col.width, flex: col.width ? 'none' : 1 }}
+                onClick={() => col.sortable !== false && onSort?.(col.key)}
+              >
+                <div className="header-content">
+                  <span>{col.header}</span>
+                  {col.sortable !== false && sortConfig?.key === col.key && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="table-row">
@@ -87,28 +87,31 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
             </div>
           </div>
         ) : data.length > 0 ? (
-          data.map((row, index) => (
-            <div 
-              className="table-row" 
-              key={index}
-              onClick={() => onRowClick && onRowClick(row)}
-              onDoubleClick={() => onRowDoubleClick?.(row)}
-              style={{ cursor: (onRowClick || onRowDoubleClick) ? 'pointer' : 'default' }}
-            >
-              {columns.map((col) => (
-                <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
-                  {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '') as React.ReactNode}
-                </div>
-              ))}
-            </div>
-          ))
-        ) : (
+          data.map((row, index) => {
+            const isLastRow = index === data.length - 1;
+            return (
+              <div 
+                className={`table-row ${isLastRow ? 'last-row-no-header' : ''}`}
+                key={index}
+                onClick={() => onRowClick && onRowClick(row)}
+                onDoubleClick={() => onRowDoubleClick?.(row)}
+                style={{ cursor: (onRowClick || onRowDoubleClick) ? 'pointer' : 'default' }}
+              >
+                {columns.map((col) => (
+                  <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
+                    {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '') as React.ReactNode}
+                  </div>
+                ))}
+              </div>
+            );
+          })
+        ) : showTableHeader ? (
           <div className="table-row">
             <div className="table-cell no-results-cell" style={{ width: '100%' }}>
               문서가 없습니다.
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

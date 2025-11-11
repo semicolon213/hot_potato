@@ -46,12 +46,12 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
   const [favoriteTemplates, setFavoriteTemplates] = useState<InfoCardItem[]>([]);
   const { onUseTemplate, allDefaultTemplates, personalTemplates } = useTemplateUI(customTemplates, onPageChange, '', '전체');
-  
+
   // 결재 관련 통계 상태
   const [receivedCount, setReceivedCount] = useState<number>(0); // 수신 문서함 (내가 결재해야 하는 것)
   const [sentCount, setSentCount] = useState<number>(0); // 발신 문서함 (내가 올린 결재)
   const [myDocumentsCount, setMyDocumentsCount] = useState<number>(0); // 내 문서함 (내가 만든 문서)
-  
+
   // 결재 요청 모달 상태
   const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState<boolean>(false);
   const [selectedDocument, setSelectedDocument] = useState<{ id?: string; title?: string; documentType?: 'shared' | 'personal' } | null>(null);
@@ -74,11 +74,11 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         console.log('⭐ 즐겨찾기 템플릿 로드 시작');
         const favorites = await fetchFavorites();
         console.log('⭐ 즐겨찾기 목록:', favorites);
-        
+
         // 모든 템플릿에서 즐겨찾기된 것들 찾기 (기본 템플릿 + 개인 템플릿)
         const allTemplates = [...customTemplates, ...allDefaultTemplates, ...personalTemplates];
         const favoriteItems: InfoCardItem[] = [];
-        
+
         for (const favorite of favorites) {
           const template = allTemplates.find(t => t.title === favorite.favorite);
           if (template) {
@@ -94,14 +94,14 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
             });
           }
         }
-        
+
         console.log('⭐ 즐겨찾기 템플릿 아이템:', favoriteItems);
         setFavoriteTemplates(favoriteItems);
       } catch (error) {
         console.error('❌ 즐겨찾기 템플릿 로드 오류:', error);
       }
     };
-    
+
     loadFavoriteTemplates();
   }, [customTemplates, allDefaultTemplates, personalTemplates]);
 
@@ -113,7 +113,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       try {
         // Google Drive에서 직접 문서 로드
         const driveDocs = await loadAllDocuments();
-        
+
         if (driveDocs.length > 0) {
           // Drive에서 로드한 문서를 FetchedDocument 형식으로 변환
           const convertedDocs: FetchedDocument[] = driveDocs.map((doc, index) => ({
@@ -130,7 +130,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
             creator: doc.creator,
             tag: doc.tag
           }));
-          
+
           setDocuments(convertedDocs);
           return;
         }
@@ -250,22 +250,22 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     const handleFavoriteClick = (item: { name: string; type: string; title: string; originalName?: string; }) => {
         // 원본 템플릿 이름 사용 (item.title이 원본 이름)
         const templateName = item.title;
-        
+
         // 모든 템플릿에서 찾기 (커스텀, 동적, 개인 템플릿)
         const customTemplate = customTemplates.find(t => t.title === templateName);
         const dynamicTemplate = allDefaultTemplates.find(t => t.title === templateName);
         const personalTemplate = personalTemplates.find(t => t.title === templateName);
         const template = customTemplate || dynamicTemplate || personalTemplate;
         const templateType = template?.documentId || item.type;
-        
-        console.log('📄 즐겨찾기 템플릿 클릭:', { 
-            type: item.type, 
-            title: templateName, 
-            templateType, 
+
+        console.log('📄 즐겨찾기 템플릿 클릭:', {
+            type: item.type,
+            title: templateName,
+            templateType,
             template,
             isPersonal: !!personalTemplate
         });
-        
+
         onUseTemplate(templateType, templateName, 'user');
     };
 
@@ -275,12 +275,12 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       try {
         const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
         const userEmail = userInfo.email;
-        
+
         if (!userEmail) {
           console.warn('사용자 이메일이 없어 결재 통계를 로드할 수 없습니다.');
           return;
         }
-        
+
         // 수신 문서함: 내가 결재해야 하는 문서 (대기 중인 결재)
         const pendingResponse = await apiClient.getMyPendingWorkflows({
           userEmail,
@@ -289,7 +289,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         if (pendingResponse.success && pendingResponse.data) {
           setReceivedCount(pendingResponse.data.length);
         }
-        
+
         // 발신 문서함: 내가 올린 결재 문서
         const requestedResponse = await apiClient.getMyRequestedWorkflows(userEmail);
         if (requestedResponse.success && requestedResponse.data) {
@@ -299,15 +299,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         console.error('❌ 결재 통계 로드 오류:', error);
       }
     };
-    
+
     loadWorkflowStats();
   }, []);
-  
+
   // 내 문서함 개수 계산 (내가 만든 문서)
   useEffect(() => {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
     const userEmail = userInfo.email;
-    
+
     if (userEmail && documents.length > 0) {
       const myDocs = documents.filter(doc => {
         const creatorEmail = doc.creator || doc.author;
@@ -321,20 +321,20 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     {
       count: receivedCount,
       title: "수신 문서함",
-      backgroundColor: "var(--primary)",
-      textColor: "white",
+      backgroundColor: "#b3d9ff", // 파스텔 파란색
+      textColor: "#000000",
     },
     {
       count: sentCount,
       title: "발신 문서함",
-      backgroundColor: "var(--secondary)",
-      textColor: "white",
+      backgroundColor: "#b3e5d1", // 파스텔 초록색
+      textColor: "#000000",
     },
     {
       count: myDocumentsCount,
       title: "내 문서함",
-      backgroundColor: "rgb(243, 238, 234)",
-      textColor: "#333",
+      backgroundColor: "#fff3cd", // 파스텔 노란색
+      textColor: "#000000",
     },
   ];
 
@@ -357,24 +357,64 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       tag: doc.tag, // 태그 추가
     }));
 
+  // 최근 문서를 Document 형태로 변환
+  const recentDocumentsAsDocuments: Document[] = recentDocuments.map((item, index) => ({
+    documentNumber: `RECENT-${index + 1}`,
+    title: item.name,
+    creator: '',
+    lastModified: item.time || '',
+    documentType: 'shared' as const,
+    url: item.url || '',
+    tag: item.tag || '',
+  }));
+
+  // 즐겨찾기를 Document 형태로 변환
+  const favoriteTemplatesAsDocuments: Document[] = favoriteTemplates.map((item, index) => ({
+    documentNumber: `FAV-${index + 1}`,
+    title: item.name,
+    creator: '',
+    lastModified: '',
+    documentType: 'shared' as const,
+    url: item.url || '',
+    tag: item.tag || '',
+  }));
+
+  // 이름만 표시하는 간단한 컬럼 정의
+  const simpleColumns = [
+    {
+      key: 'title',
+      header: '',
+      render: (row: Document) => row.title,
+    },
+  ];
+
   return (
-    <div className="content document-management-container">
+    <div className="document-management-container">
       <div className="cards-row">
-        <InfoCard
+        <DocumentList<Document>
           title="최근 문서"
-          subtitle="최근에 열람한 문서를 확인하세요"
-          icon="icon-file"
-          backgroundColor="var(--accent)"
-          items={recentDocuments}
-          onItemClick={handleDocClick}
+          columns={simpleColumns}
+          data={recentDocumentsAsDocuments}
+          onPageChange={onPageChange}
+          onRowClick={handleDocClick}
+          isLoading={false}
+          showViewAll={false}
+          showTableHeader={false}
         />
-        <InfoCard
+        <DocumentList<Document>
           title="즐겨찾기"
-          subtitle="자주 사용하는 양식을 빠르게 접근하세요"
-          icon="icon-star"
-          backgroundColor="var(--table-header-bg)"
-          items={favoriteTemplates}
-          onItemClick={(item: InfoCardItem) => handleFavoriteClick(item)}
+          columns={simpleColumns}
+          data={favoriteTemplatesAsDocuments}
+          onPageChange={onPageChange}
+          onRowClick={(doc) => {
+            const item = favoriteTemplates.find(fav => fav.name === doc.title);
+            if (item) {
+              handleFavoriteClick(item as any);
+            }
+          }}
+          isLoading={false}
+          showViewAll={false}
+          showTableHeader={false}
         />
       </div>
 
@@ -398,7 +438,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           </button>
         }
       />
-      
+
       <WorkflowRequestModal
         isOpen={isWorkflowModalOpen}
         onClose={() => {

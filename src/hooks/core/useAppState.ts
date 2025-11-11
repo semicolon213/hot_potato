@@ -44,7 +44,7 @@ export const useAppState = () => {
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<Post | null>(null);
     const [isGoogleAuthenticatedForAnnouncements, setIsGoogleAuthenticatedForAnnouncements] = useState(false);
     const [isGoogleAuthenticatedForBoard, setIsGoogleAuthenticatedForBoard] = useState(false);
-    const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(true);
+    const [isAnnouncementsLoading, setIsAnnouncementsLoading] = useState(false);
     const [announcementSpreadsheetId, setAnnouncementSpreadsheetId] = useState<string | null>(null);
     const [hotPotatoDBSpreadsheetId, setHotPotatoDBSpreadsheetId] = useState<string | null>(null);
     const [studentSpreadsheetId, setStudentSpreadsheetId] = useState<string | null>(null);
@@ -240,13 +240,12 @@ export const useAppState = () => {
 
     // 데이터 로드 useEffect들
     useEffect(() => {
-        if (isGapiReady && announcementSpreadsheetId && user && user.studentId && user.userType) {
+        if (isGapiReady && announcementSpreadsheetId) {
             const loadAnnouncements = async () => {
                 setIsAnnouncementsLoading(true);
                 try {
-                    console.log('공지사항 데이터 로딩 시작...', { userId: user.studentId, userType: user.userType });
-                    const announcementsData = await fetchAnnouncements(user.studentId, user.userType);
-                    console.log('DEBUG: Announcements data received from fetchAnnouncements (before setAnnouncements):', announcementsData.map(a => ({id: a.id, title: a.title, fix: a.fix_notice}))); // DEBUG LOG
+                    console.log('공지사항 데이터 로딩 시작...');
+                    const announcementsData = await fetchAnnouncements();
                     setAnnouncements(announcementsData);
                     console.log('공지사항 데이터 로딩 완료:', announcementsData.length, '개');
                 } catch (error) {
@@ -257,7 +256,7 @@ export const useAppState = () => {
             };
             loadAnnouncements();
         }
-    }, [isGapiReady, announcementSpreadsheetId, user]);
+    }, [isGapiReady, announcementSpreadsheetId]);
 
     useEffect(() => {
         if (isGapiReady && (calendarProfessorSpreadsheetId || calendarStudentSpreadsheetId || calendarCouncilSpreadsheetId || calendarADProfessorSpreadsheetId || calendarSuppSpreadsheetId)) {
@@ -342,7 +341,7 @@ export const useAppState = () => {
         setSelectedAnnouncement(null);
         setIsGoogleAuthenticatedForAnnouncements(false);
         setIsGoogleAuthenticatedForBoard(false);
-        setIsAnnouncementsLoading(true); // 로딩 상태로 변경
+        setIsAnnouncementsLoading(false);
         setAnnouncementSpreadsheetId(null);
 
         // 캘린더 상태 초기화
