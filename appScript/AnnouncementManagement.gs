@@ -173,10 +173,10 @@ function canReadAnnouncement(announcement, userId, userType) {
     return true;
   }
   
-  // 권한 설정이 없으면 작성자만 볼 수 있음 (이미 작성자 체크는 위에서 했으므로 false)
+  // 권한 설정이 없으면 전체 사용자 대상 공지 (모든 승인된 사용자가 볼 수 있음)
   if (!announcement.access_rights || announcement.access_rights === '' || announcement.access_rights.trim() === '') {
-    console.log(`DEBUG canReadAnnouncement: No access_rights and user is not writer - DENIED`);
-    return false;
+    console.log(`DEBUG canReadAnnouncement: No access_rights - ALLOWED (전체 사용자 대상)`);
+    return true;
   }
   
   try {
