@@ -5,6 +5,7 @@ import type { Student, StudentWithCouncil } from '../../types/features/students/
 import type { CareerItem } from '../../types/features/staff';
 import './StudentDetailModal.css';
 import { ENV_CONFIG } from '../../config/environment';
+import { apiClient } from '../../utils/api/apiClient';
 
 type ModalMode = 'student' | 'staff' | 'committee';
 
@@ -17,6 +18,9 @@ interface StudentDetailModalProps {
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
   isAdding?: boolean;
+  user?: {
+    userType?: string;
+  } | null;
 }
 
 const emptyStaff: StudentWithCouncil = {
@@ -41,6 +45,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   studentSpreadsheetId,
   mode = 'student',
   isAdding = false,
+  user,
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'issues'>('info');
   const [isEditing, setIsEditing] = useState(isAdding);
@@ -54,6 +59,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     content_issue: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isRetained, setIsRetained] = useState(false); // 유급 여부
+  const isSupp = user?.userType === 'supp'; // 조교 여부
 
   const handleDelete = () => {
     if (window.confirm('정말로 이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -225,13 +232,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             level_issue: '',
             content_issue: ''
           });
+          // 유급 정보 로드
+          await loadRetainedStatus();
           loadStudentIssues();
         };
         
         loadStudentData();
       }
     }
-  }, [student, isOpen, isAdding]);
+  }, [student, isOpen, isAdding, user]);
 
   const loadStudentIssues = async () => {
     if (!student) return;
@@ -244,6 +253,50 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       console.error('특이사항 로드 실패:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 유급 정보 로드
+  const loadRetainedStatus = async () => {
+    if (!student || !studentSpreadsheetId) return;
+    
+    try {
+      const response = await apiClient.request('getStudentRetainedStatus', {
+        studentId: student.no_student,
+        spreadsheetId: studentSpreadsheetId
+      });
+      
+      if (response.success && response.data) {
+        setIsRetained(response.data.isRetained === 'O' || response.data.isRetained === true);
+      }
+    } catch (error) {
+      console.error('유급 정보 로드 실패:', error);
+    }
+  };
+
+  // 유급 여부 업데이트
+  const handleRetainedChange = async (checked: boolean) => {
+    if (!student || !studentSpreadsheetId) return;
+    
+    setIsRetained(checked);
+    
+    try {
+      const response = await apiClient.request('updateStudentRetained', {
+        studentId: student.no_student,
+        spreadsheetId: studentSpreadsheetId,
+        isRetained: checked
+      });
+      
+      if (response.success) {
+        alert(checked ? '유급으로 표시되었습니다.' : '유급 표시가 해제되었습니다.');
+      } else {
+        alert('유급 정보 업데이트에 실패했습니다.');
+        setIsRetained(!checked); // 롤백
+      }
+    } catch (error) {
+      console.error('유급 정보 업데이트 실패:', error);
+      alert('유급 정보 업데이트에 실패했습니다.');
+      setIsRetained(!checked); // 롤백
     }
   };
 
@@ -897,6 +950,21 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         onFocus={handleInputFocus}
                       />
                     </div>
+
+                    {/* 조교만 유급 여부 체크 가능 */}
+                    {isSupp && mode === 'student' && !isAdding && (
+                      <div className="form-group">
+                        <label className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={isRetained}
+                            onChange={(e) => handleRetainedChange(e.target.checked)}
+                            className="checkbox-input"
+                          />
+                          <span className="checkbox-text">유급 여부</span>
+                        </label>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

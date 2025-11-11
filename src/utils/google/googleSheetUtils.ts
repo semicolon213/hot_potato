@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../auth/tokenManager';
 
 const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
@@ -53,7 +54,7 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
               ],
             });
-            const token = localStorage.getItem('googleAccessToken');
+            const token = tokenManager.get();
             if (token) {
               gapi.client.setToken({ access_token: token });
             }

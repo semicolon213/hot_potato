@@ -167,8 +167,8 @@ export const uploadPersonalDocument = async (
       closeDelim
     ]);
 
-    // 토큰 가져오기
-    const token = localStorage.getItem('googleAccessToken');
+    // 토큰 가져오기 (tokenManager 사용)
+    const token = tokenManager.get();
     if (!token) {
       return {
         success: false,

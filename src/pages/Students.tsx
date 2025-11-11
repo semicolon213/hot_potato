@@ -15,9 +15,12 @@ import '../styles/pages/Students.css';
 interface StudentsProps {
   onPageChange: (pageName: string) => void;
   studentSpreadsheetId: string | null;
+  user?: {
+    userType?: string;
+  } | null;
 }
 
-const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
+const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
   const {
     students,
     filteredStudents,
@@ -35,6 +38,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
     handleExcelUpload,
     getAllYears,
     addStudent, // 학생 추가 함수
+    updateStudent, // 학생 업데이트 함수
     deleteStudent,
     getCouncilTableData,
     studentColumns,
@@ -103,13 +107,15 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
   };
 
   // 학생 정보 업데이트 핸들러
-  const handleStudentUpdate = async () => {
-    // 데이터 다시 로드
-    if (studentSpreadsheetId) {
-      await fetchStudents();
+  const handleStudentUpdate = async (updatedStudent: StudentWithCouncil) => {
+    try {
+      await updateStudent(updatedStudent);
+      setIsModalOpen(false);
+      setSelectedStudent(null);
+    } catch (error) {
+      console.error('학생 정보 업데이트 실패:', error);
+      // 에러는 updateStudent 내부에서 이미 alert로 표시됨
     }
-    setIsModalOpen(false);
-    setSelectedStudent(null);
   };
 
   const handleDeleteStudent = (studentToDelete: StudentWithCouncil) => {
@@ -270,6 +276,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
         onUpdate={handleStudentUpdate}
         onDelete={handleDeleteStudent}
         studentSpreadsheetId={studentSpreadsheetId}
+        user={user}
       />
 
       {/* 학생 추가 모달 */}

@@ -7,6 +7,7 @@
  */
 
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../auth/tokenManager';
 
 const GOOGLE_CLIENT_ID = ENV_CONFIG.GOOGLE_CLIENT_ID;
 
@@ -112,8 +113,8 @@ export const initializeGoogleAPIOnce = async (_hotPotatoDBSpreadsheetId: string 
                             ]
                         });
 
-                        // 저장된 토큰이 있으면 복원
-                        const savedToken = localStorage.getItem('googleAccessToken');
+                        // 저장된 토큰이 있으면 복원 (tokenManager 사용)
+                        const savedToken = tokenManager.get();
                         if (savedToken) {
                             try {
                                 (window as any).gapi.client.setToken({ access_token: savedToken });

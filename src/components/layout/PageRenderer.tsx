@@ -239,7 +239,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'students':
         return <Students 
           onPageChange={onPageChange} 
-          studentSpreadsheetId={studentSpreadsheetId} />;
+          studentSpreadsheetId={studentSpreadsheetId}
+          user={user} />;
       case 'staff':
         return <Staff 
           onPageChange={onPageChange} 

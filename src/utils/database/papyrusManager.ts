@@ -10,6 +10,7 @@ import {getSheetData, append, update} from 'papyrus-db';
 import {deleteRow} from 'papyrus-db/dist/sheets/delete';
 import {ENV_CONFIG} from '../../config/environment';
 import {apiClient} from '../api/apiClient';
+import {tokenManager} from '../auth/tokenManager';
 import type {StaffMember, Committee as CommitteeType} from '../../types/features/staff';
 import type {SpreadsheetIdsResponse} from '../../types/api/apiResponses';
 
@@ -79,8 +80,8 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
             return null;
         }
 
-        // Google API 인증 상태 확인 (더 안전한 방법)
-        const token = localStorage.getItem('googleAccessToken');
+        // Google API 인증 상태 확인 (tokenManager 사용)
+        const token = tokenManager.get();
         if (!token) {
             console.warn(`Google API 인증 토큰이 없습니다. 스프레드시트 '${name}' 검색을 건너뜁니다.`);
             return null;
@@ -323,7 +324,7 @@ const dataURLtoBlob = (dataurl: string) => {
 
 // [MERGE] File 2의 uploadFileToDrive 헬퍼 함수
 const uploadFileToDrive = async (file: File): Promise<{ name: string, url: string }> => {
-    const token = localStorage.getItem('googleAccessToken');
+    const token = tokenManager.get();
     if (!token) {
         throw new Error('Google Access Token not found');
     }
@@ -380,7 +381,7 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
 }): Promise<void> => {
     setupPapyrusAuth();
 
-    const token = localStorage.getItem('googleAccessToken');
+    const token = tokenManager.get();
     if (!token) {
         throw new Error('Google Access Token not found');
     }
@@ -901,6 +902,17 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             return [];
         }
 
+        // papyrus-db 인증 설정 및 토큰 설정
+        setupPapyrusAuth();
+        const token = tokenManager.get();
+        if (token && window.gapi && window.gapi.client) {
+            try {
+                window.gapi.client.setToken({access_token: token});
+            } catch (tokenError) {
+                console.warn('토큰 설정 실패:', tokenError);
+            }
+        }
+
         console.log(`Fetching students from spreadsheet: ${targetSpreadsheetId}, sheet: ${ENV_CONFIG.STUDENT_SHEET_NAME}`);
         const data = await getSheetData(targetSpreadsheetId, ENV_CONFIG.STUDENT_SHEET_NAME);
         console.log('Students data received:', data);
@@ -918,6 +930,7 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             grade: row[4] || '',
             state: row[5] || '',
             council: row[6] || '',
+            // 유급 정보는 별도로 가져오므로 여기서는 제외
         }));
 
         console.log(`Loaded ${students.length} students`);
@@ -925,6 +938,96 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
     } catch (error) {
         console.error('Error fetching students from Google Sheet:', error);
         return [];
+    }
+};
+
+export const updateStudent = async (spreadsheetId: string, studentNo: string, student: Student): Promise<void> => {
+    try {
+        const targetSpreadsheetId = spreadsheetId || studentSpreadsheetId;
+        if (!targetSpreadsheetId) {
+            throw new Error('Student spreadsheet ID not found');
+        }
+
+        setupPapyrusAuth();
+        const token = tokenManager.get();
+        if (token && window.gapi && window.gapi.client) {
+            try {
+                window.gapi.client.setToken({access_token: token});
+            } catch (tokenError) {
+                console.warn('토큰 설정 실패:', tokenError);
+            }
+        }
+
+        const sheetName = ENV_CONFIG.STUDENT_SHEET_NAME;
+        const data = await getSheetData(targetSpreadsheetId, sheetName);
+
+        if (!data || !data.values || data.values.length === 0) {
+            throw new Error('Sheet data not found');
+        }
+
+        const rowIndex = data.values.findIndex(row => row[0] === studentNo);
+
+        if (rowIndex === -1) {
+            throw new Error('Student not found in the sheet');
+        }
+
+        // 전화번호 암호화 (이미 암호화되어 있지 않은 경우)
+        let encryptedPhone = student.phone_num;
+        if (student.phone_num && /^010-\d{4}-\d{4}$/.test(student.phone_num)) {
+            // 평문 전화번호인 경우 암호화
+            try {
+                const isDevelopment = import.meta.env.DEV;
+                const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+                
+                const requestBody = {
+                    action: 'encryptEmail',
+                    data: student.phone_num
+                };
+                
+                const response = await fetch(baseUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        encryptedPhone = result.data;
+                    }
+                }
+            } catch (encryptError) {
+                console.warn('전화번호 암호화 실패, 평문으로 저장:', encryptError);
+            }
+        }
+
+        const range = `${sheetName}!A${rowIndex + 1}:G${rowIndex + 1}`;
+        const values = [[
+            student.no_student,
+            student.name,
+            student.address,
+            encryptedPhone,
+            student.grade,
+            student.state,
+            student.council
+        ]];
+
+        await (window as any).gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: targetSpreadsheetId,
+            range: range,
+            valueInputOption: 'RAW',
+            resource: {
+                values: values
+            }
+        });
+
+        console.log(`Student with number ${studentNo} updated successfully.`);
+
+    } catch (error) {
+        console.error('Error updating student:', error);
+        throw error;
     }
 };
 
@@ -949,23 +1052,6 @@ export const deleteStudent = async (spreadsheetId: string, studentNo: string): P
         if (rowIndex === -1) {
             throw new Error('Student not found in the sheet');
         }
-
-        // rowIndex is 0-based for the array, but sheet rows are 1-based.
-        // The deleteRow function from papyrus-db likely needs the 1-based index.
-        // The header is at rowIndex 0, so data starts at 1. The actual sheet row is rowIndex + 1.
-        // However, deleteTemplate uses rowIndex directly. Let's check the papyrus-db library.
-        // The deleteRow function in papyrus-db takes (spreadsheetId, sheetId, rowIndex).
-        // It seems sheetId is a number (0 for the first sheet). I'll assume that.
-        // Let's trust the existing deleteTemplate implementation and use the 0-based rowIndex from findIndex.
-        // The sheet data from getSheetData includes the header, so we need to adjust the index.
-        // The findIndex is on `data.values`, which includes the header. So if student is on row 5 in the sheet, it's at index 4 in `data.values`.
-        // The `deleteRow` in `papyrus-db` seems to take a 1-based row index. So we should pass `rowIndex + 1`.
-        // Let's re-examine `deleteTemplate`. It gets `rowIndex` and passes it directly. But that `rowIndex` comes from the UI and is already 1-based.
-        // Here, `rowIndex` is 0-based from an array. So we need to add 1.
-        // The `deleteRow` function from `papyrus-db` expects a 1-based index.
-        // The `data.values` array is 0-indexed. So, we need to pass `rowIndex + 1` to `deleteRow`.
-        // The `deleteTemplate` function receives `rowIndex` which is `index + 2`. This seems to be a 1-based index.
-        // So I will use `rowIndex` directly, as it seems to be what `deleteRow` expects.
 
         const sheetId = 0; // Assuming the first sheet
         await deleteRow(targetSpreadsheetId, sheetId, rowIndex);

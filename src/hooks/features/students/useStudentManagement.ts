@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { fetchStudents as fetchStudentsFromPapyrus, deleteStudent as deleteStudentFromPapyrus } from '../../../utils/database/papyrusManager';
+import { fetchStudents as fetchStudentsFromPapyrus, deleteStudent as deleteStudentFromPapyrus, updateStudent as updateStudentFromPapyrus } from '../../../utils/database/papyrusManager';
 import type { Student, StudentWithCouncil, CouncilPosition } from '../../../types/features/students/student';
 
 /**
@@ -441,6 +441,38 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     }
   };
 
+  const updateStudent = async (updatedStudent: StudentWithCouncil) => {
+    if (!studentSpreadsheetId) return;
+
+    try {
+      // Student 타입으로 변환 (parsedCouncil 제외)
+      const studentData: Student = {
+        no_student: updatedStudent.no_student,
+        name: updatedStudent.name,
+        address: updatedStudent.address,
+        phone_num: updatedStudent.phone_num,
+        grade: updatedStudent.grade,
+        state: updatedStudent.state,
+        council: updatedStudent.council
+      };
+
+      await updateStudentFromPapyrus(studentSpreadsheetId, updatedStudent.no_student, studentData);
+      
+      // 로컬 상태 업데이트
+      setStudents(prev => prev.map(s => 
+        s.no_student === updatedStudent.no_student 
+          ? { ...updatedStudent, parsedCouncil: parseCouncil(updatedStudent.council) }
+          : s
+      ));
+      
+      alert('학생 정보가 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('학생 업데이트 실패:', error);
+      alert('학생 정보 업데이트에 실패했습니다.');
+      throw error;
+    }
+  };
+
   const deleteStudent = async (studentNo: string) => {
     if (!studentSpreadsheetId) return;
 
@@ -475,7 +507,8 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     exportToCSV,
     downloadExcelTemplate,
     handleExcelUpload,
-    addStudent, // addStudent 추가
+    addStudent,
+    updateStudent,
     deleteStudent,
     fetchStudents,
     getCouncilByYear,

@@ -36,8 +36,9 @@ export const getLedgerFolders = async (): Promise<LedgerInfo[]> => {
       return [];
     }
 
-    // 토큰 확인 및 설정
-    const token = localStorage.getItem('googleAccessToken');
+    // 토큰 확인 및 설정 (tokenManager 사용)
+    const { tokenManager } = await import('../auth/tokenManager');
+    const token = tokenManager.get();
     if (!token) {
       console.warn('⚠️ Google API 인증 토큰이 없습니다.');
       return [];
