@@ -357,6 +357,20 @@ const App: React.FC = () => {
     const nextId = String(maxId + 1);
 
     // 2. 낙관적 업데이트를 위한 새 공지사항 객체 생성
+    const filesForOptimisticUpdate = postData.attachments.map(file => ({
+      name: file.name,
+      url: '' // URL은 아직 알 수 없으므로 비워둠
+    }));
+    const fileNoticeForOptimisticUpdate = filesForOptimisticUpdate.length > 0 
+      ? JSON.stringify(filesForOptimisticUpdate) 
+      : '';
+
+    // 보기 모드에서 즉시 표시하기 위해 content에 첨부파일 HTML 추가
+    const attachmentHtmlString = filesForOptimisticUpdate.map(file => 
+      `<p>첨부파일: <a href="${file.url}" download="${file.name}">${file.name}</a></p>`
+    ).join('');
+    const contentForOptimisticUpdate = postData.content + attachmentHtmlString;
+
     const newAnnouncement: Post = {
       id: nextId, // 예측한 ID 사용
       title: postData.title,
@@ -364,10 +378,10 @@ const App: React.FC = () => {
       date: new Date().toISOString().split('T')[0], // 현재 날짜
       views: 0,
       likes: 0,
-      content: postData.content,
+      content: contentForOptimisticUpdate, // 첨부파일 HTML이 포함된 내용
       writer_id: postData.writer_id,
       writer_email: user.email,
-      file_notice: postData.attachments.length > 0 ? '첨부파일 있음' : '',
+      file_notice: fileNoticeForOptimisticUpdate, // 수정 모드를 위한 데이터
       access_rights: postData.accessRights ? JSON.stringify(postData.accessRights) : '',
       fix_notice: postData.isPinned ? 'O' : '',
       isPinned: postData.isPinned,
