@@ -36,6 +36,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                                                  }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const [authorName, setAuthorName] = useState(''); // 작성자 이름 상태 추가
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isPinned, setIsPinned] = useState(false);
     const [users, setUsers] = useState<AnnouncementUser[]>([]);
@@ -50,6 +51,28 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
             onPageChange('announcements');
         }
     }, [isAuthenticated, onPageChange]);
+
+    // 작성자 이름 로드
+    useEffect(() => {
+        if (user?.email) {
+            // 초기값으로 Google 계정 이름 설정
+            setAuthorName(user.name || '');
+            
+            // DB에서 실제 이름 조회
+            apiClient.getUserNameByEmail(user.email)
+                .then(res => {
+                    if (res.success && res.name) {
+                        setAuthorName(res.name);
+                    } else if (res.data?.name) {
+                        setAuthorName(res.data.name);
+                    }
+                })
+                .catch(error => {
+                    console.error('작성자 이름 조회 실패:', error);
+                    // 실패 시 초기값(user.name)이 유지됨
+                });
+        }
+    }, [user?.email, user?.name]);
 
     // 사용자 목록 로드
     useEffect(() => {
@@ -100,7 +123,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
             await onAddPost({
                 title,
                 content, // HTML content from TiptapEditor
-                author: user?.name || 'Unknown',
+                author: authorName || user?.name || 'Unknown',
                 writer_id: user?.studentId || '',
                 attachments: attachments,
                 accessRights: Object.keys(accessRights).length > 0 ? accessRights : undefined,
@@ -325,7 +348,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                 </div>
 
                 <div className="card-footer">
-                    <span>작성자: {user?.name || '인증 확인 중...'}</span>
+                    <span>작성자: {authorName || '이름 로딩 중...'}</span>
                 </div>
             </div>
         </div>
