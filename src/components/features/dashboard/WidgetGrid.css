@@ -14,6 +14,7 @@
     transition: var(--transition-base);
     border: 1px solid var(--border-light);
     overflow: hidden;
+    min-height: 250px;
 }
 
 .widget:hover {

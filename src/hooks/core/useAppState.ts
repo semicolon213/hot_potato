@@ -385,11 +385,6 @@ export const useAppState = () => {
                     const { type } = option;
                     const { title, componentType, props } = generateWidgetContent(type);
                     
-                    // Pre-populate notice widget if data is already available
-                    if (type === 'notice' && announcements.length > 0) {
-                        props.items = announcements.slice(0, 4).map(a => a.title);
-                    }
-
                     return { id, type, title, componentType, props };
                 }).filter((w): w is WidgetData => w !== null);
                 setWidgets(loadedWidgets);
@@ -401,7 +396,7 @@ export const useAppState = () => {
         } finally {
             setInitialLoadComplete(true);
         }
-    }, [hotPotatoDBSpreadsheetId, announcements]);
+    }, [hotPotatoDBSpreadsheetId]);
 
     useEffect(() => {
         if (hotPotatoDBSpreadsheetId) {
@@ -433,17 +428,39 @@ export const useAppState = () => {
 
     // Sync global announcements state with the notice widget props
     useEffect(() => {
-        const noticeWidgetExists = widgets.some(w => w.type === 'notice');
-        if (noticeWidgetExists && announcements.length > 0) {
-            setWidgets(prevWidgets =>
-                prevWidgets.map(widget =>
-                    widget.type === 'notice'
-                        ? { ...widget, props: { items: announcements.slice(0, 4).map(a => a.title) } }
-                        : widget
-                )
-            );
+        const noticeWidget = widgets.find(w => w.type === 'notice');
+        if (noticeWidget && announcements.length > 0) {
+            const newItems = announcements.slice(0, 4).map(a => a.title);
+            const currentItems = noticeWidget.props.items as string[] || [];
+            if (JSON.stringify(newItems) !== JSON.stringify(currentItems)) {
+                setWidgets(prevWidgets =>
+                    prevWidgets.map(widget =>
+                        widget.type === 'notice'
+                            ? { ...widget, props: { items: newItems } }
+                            : widget
+                    )
+                );
+            }
         }
-    }, [announcements]); // Dependency on `announcements` is key
+    }, [announcements, widgets]);
+
+    // Sync global calendar events state with the calendar widget props
+    useEffect(() => {
+        const calendarWidget = widgets.find(w => w.type === 'calendar');
+        if (calendarWidget && calendarEvents.length > 0) {
+            const newItems = calendarEvents.slice(0, 4).map(e => ({ date: e.startDate, event: e.title }));
+            const currentItems = calendarWidget.props.items as { date: string, event: string }[] || [];
+            if (JSON.stringify(newItems) !== JSON.stringify(currentItems)) {
+                setWidgets(prevWidgets =>
+                    prevWidgets.map(widget =>
+                        widget.type === 'calendar'
+                            ? { ...widget, props: { items: newItems } }
+                            : widget
+                    )
+                );
+            }
+        }
+    }, [calendarEvents, widgets]);
 
     const handleAddWidget = (type: string) => {
         const option = widgetOptions.find(opt => opt.type === type);
