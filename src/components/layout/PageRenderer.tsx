@@ -20,6 +20,7 @@ import Accounting from '../../pages/Accounting';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
 import WorkflowManagement from '../../pages/WorkflowManagement';
+import Timetable from '../../pages/Timetable';
 
 interface PageRendererProps {
   currentPage: PageType;
@@ -235,6 +236,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           students={students}
           staff={staff}
         />;
+      case "timetable":
+        return <Timetable />;
       case "preferences":
         return (
           <div>환경설정 페이지 (구현 예정)</div>

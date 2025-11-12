@@ -233,6 +233,15 @@ export const createPersonalConfigFile = async (): Promise<string | null> => {
                 columnCount: 10
               }
             }
+          },
+          {
+            properties: {
+              title: 'schedule',
+              gridProperties: {
+                rowCount: 1000,
+                columnCount: 7
+              }
+            }
           }
         ]
       }
@@ -301,6 +310,16 @@ export const setupPersonalConfigHeaders = async (spreadsheetId: string): Promise
       }
     });
 
+    // schedule 시트 헤더 설정
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId,
+      range: 'schedule!A1:G1',
+      valueInputOption: 'RAW',
+      resource: {
+        values: [['no', 'title', 'date', 'startTime', 'endTime', 'description', 'color']]
+      }
+    });
+
     console.log('✅ 개인 설정 파일 헤더 설정 완료');
   } catch (error) {
     console.error('❌ 헤더 설정 오류:', error);
@@ -333,7 +352,7 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
         const existingSheets = spreadsheet.result.sheets?.map(sheet => sheet.properties?.title) || [];
         console.log('📄 기존 시트 목록:', existingSheets);
         
-        const requiredSheets = ['favorite', 'tag', 'user_custom'];
+        const requiredSheets = ['favorite', 'tag', 'user_custom', 'schedule'];
         const missingSheets = requiredSheets.filter(sheetName => !existingSheets.includes(sheetName));
         
         if (missingSheets.length > 0) {
@@ -349,7 +368,7 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
                       title: sheetName,
                       gridProperties: {
                         rowCount: 1000,
-                        columnCount: sheetName === 'user_custom' ? 10 : (sheetName === 'favorite' ? 2 : 1)
+                        columnCount: sheetName === 'user_custom' ? 10 : (sheetName === 'schedule' ? 7 : (sheetName === 'favorite' ? 2 : 1))
                       }
                     }
                   }
@@ -357,10 +376,36 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
               }
             });
             console.log(`✅ ${sheetName} 시트 생성 완료`);
+
+            // 생성된 시트에 바로 헤더 설정
+            let range = '';
+            let values: string[][] = [];
+            if (sheetName === 'favorite') {
+              range = 'favorite!A1:B1';
+              values = [['type', 'favorite']];
+            } else if (sheetName === 'tag') {
+              range = 'tag!A1';
+              values = [['tag']];
+            } else if (sheetName === 'user_custom') {
+              range = 'user_custom!A1:B1';
+              values = [['dashboard', 'menu']];
+            } else if (sheetName === 'schedule') {
+              range = 'schedule!A1:G1';
+              values = [['no', 'title', 'date', 'startTime', 'endTime', 'description', 'color']];
+            }
+
+            if (range && values.length > 0) {
+              await sheetsClient.spreadsheets.values.update({
+                spreadsheetId: spreadsheetId,
+                range: range,
+                valueInputOption: 'RAW',
+                resource: {
+                  values: values
+                }
+              });
+              console.log(`✅ ${sheetName} 시트 헤더 설정 완료`);
+            }
           }
-          
-          // 헤더 설정
-          await setupPersonalConfigHeaders(spreadsheetId);
         }
       } catch (error) {
         console.warn('⚠️ 시트 확인 중 오류 발생, 계속 진행:', error);
