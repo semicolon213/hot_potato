@@ -273,35 +273,38 @@
   background-color: #e9ecef;
 }
 
-.custom-tag-container {
-    display: flex;
-    gap: 10px;
+.add-event-modal-overlay .custom-tag-container {
+    display: grid;
+    grid-template-columns: 200px 36px;
     align-items: center;
+    width: 100%;
 }
 
-.custom-tag-input {
-    flex-grow: 1;
-    padding: 8px;
+.add-event-modal-overlay .custom-tag-container .custom-tag-input {
+    height: 36px; /* Match button height */
     border-radius: var(--sidebar-radius-sm);
     border: 1px solid #ccc;
+    box-sizing: border-box; /* Be explicit */
 }
 
-.custom-color-picker {
+.add-event-modal-overlay .custom-tag-container .custom-color-picker {
     position: relative;
+    /* Size is now on the button itself */
 }
 
 .color-display {
     width: 36px;
     height: 36px;
-    border-radius: 50%;
+    border-radius: 50% !important;
     border: 2px solid #ddd;
     cursor: pointer;
+    box-sizing: border-box; /* Be explicit */
 }
 
 .color-palette-popup {
     position: absolute;
     top: 100%;
-    right: 0;
+    left: 0; /* Changed from right: 0 */
     background: white;
     border: 1px solid #ccc;
     border-radius: var(--sidebar-radius-sm);
@@ -385,15 +388,3 @@
     font-size: 14px;
 }
 
-.checkmark-icon {
-  margin-left: auto;
-  color: var(--color-accent);
-  font-weight: bold;
-}
-
-.selected-attendees-count {
-  margin-top: 8px;
-  font-size: 14px;
-  color: var(--text-medium);
-  text-align: right;
-}

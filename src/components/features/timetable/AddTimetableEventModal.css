@@ -94,7 +94,7 @@
 }
 
 .color-display {
-    width: 100%;
+    width: 38px;
     height: 38px;
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
