@@ -42,6 +42,8 @@ interface SidebarProps {
   user?: {
     isAdmin: boolean;
     name?: string;
+    userType?: string;
+    user_type?: string;
   };
   currentPage?: string;
 }
@@ -188,13 +190,20 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
             <div className="menu-text">학생 및 교직원</div>
           </div>
 
-          <div
-            className={`menu-item ${isPageActive('accounting') ? 'active' : ''}`}
-            onClick={() => handleMenuClick("accounting")}
-          >
-            <AccountingIcon className="menu-icon" />
-            <div className="menu-text">회계</div>
-          </div>
+          {/* 회계 메뉴: 집행부, 교수, 조교만 접근 가능 */}
+          {(() => {
+            const userType = user?.userType || user?.user_type;
+            const hasAccountingAccess = userType === 'std_council' || userType === 'professor' || userType === 'supp';
+            return hasAccountingAccess ? (
+              <div
+                className={`menu-item ${isPageActive('accounting') ? 'active' : ''}`}
+                onClick={() => handleMenuClick("accounting")}
+              >
+                <AccountingIcon className="menu-icon" />
+                <div className="menu-text">회계</div>
+              </div>
+            ) : null;
+          })()}
         </div>
       </div>
 

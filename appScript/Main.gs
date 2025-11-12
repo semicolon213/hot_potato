@@ -594,6 +594,29 @@ function doPost(e) {
       }
     }
     
+    // 장부 카테고리 조회
+    if (req.action === 'getAccountingCategories') {
+      console.log('📊 장부 카테고리 조회 요청:', req.spreadsheetId);
+      try {
+        const categories = getAccountingCategories(req.spreadsheetId);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            data: categories
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 장부 카테고리 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '장부 카테고리 조회 중 오류가 발생했습니다: ' + error.message,
+            data: []
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     // 학생 유급 여부 조회
     if (req.action === 'getStudentRetainedStatus') {
       console.log('📚 학생 유급 여부 조회 요청:', req);

@@ -28,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId })
     accountingSheets,
     openSheetSelectionModal,
     handleSheetSelect,
+    handleStudentStatusChange,
   } = useWidgetManagement(hotPotatoDBSpreadsheetId, user);
 
   useEffect(() => {
@@ -71,7 +72,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId })
           handleDragEnter={handleDragEnter}
           handleDrop={handleDrop}
           handleRemoveWidget={handleRemoveWidget}
-          onWidgetButtonClick={openSheetSelectionModal}
+          onWidgetButtonClick={(widgetId) => openSheetSelectionModal(widgetId)}
+          onStudentStatusChange={handleStudentStatusChange}
         />
       )}
 

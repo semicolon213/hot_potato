@@ -8,6 +8,7 @@ export interface Student {
   grade: string;
   state: string;
   council: string;
+  flunk?: string; // 유급 필드
 }
 
 export interface CouncilPosition {
