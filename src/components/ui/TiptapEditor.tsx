@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -7,6 +7,27 @@ import { Color } from '@tiptap/extension-color';
 import Image from '@tiptap/extension-image';
 import { FontSize } from './FontSize';
 import './TiptapEditor.css';
+import ResizableImageComponent from './ResizableImage';
+
+// Create the custom Tiptap extension
+const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+      },
+      height: {
+        default: null,
+      },
+    };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageComponent);
+  },
+});
+
 
 const MenuBar = ({ editor }) => {
   if (!editor) {
@@ -65,7 +86,7 @@ const TiptapEditor = ({ content, onContentChange }) => {
       Underline,
       TextStyle,
       Color,
-      Image,
+      CustomImage, // Use the custom image extension
       FontSize,
     ],
     content: content,

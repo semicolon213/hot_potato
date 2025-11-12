@@ -50,4 +50,37 @@
   outline: none;
 }
 
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
+.resizable-image-wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+/* When the image is selected, show a blue outline */
+.resizable-image-wrapper.selected img {
+  outline: 2px solid #007bff;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #007bff;
+  border: 1px solid #fff;
+  border-radius: 2px;
+}
+
+.resize-handle[data-direction="top-left"] { top: -5px; left: -5px; cursor: nwse-resize; }
+.resize-handle[data-direction="top"] { top: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.resize-handle[data-direction="top-right"] { top: -5px; right: -5px; cursor: nesw-resize; }
+.resize-handle[data-direction="left"] { top: 50%; left: -5px; transform: translateY(-50%); cursor: ew-resize; }
+.resize-handle[data-direction="right"] { top: 50%; right: -5px; transform: translateY(-50%); cursor: ew-resize; }
+.resize-handle[data-direction="bottom-left"] { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.resize-handle[data-direction="bottom"] { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+.resize-handle[data-direction="bottom-right"] { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
 
