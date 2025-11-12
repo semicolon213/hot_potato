@@ -603,7 +603,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         <div className="modal-header">
           <h2>
             {isAdding
-              ? (mode === 'staff' ? '교직원 추가' : '위원 추가')
+              ? (mode === 'staff' ? '교직원 추가' :
+                 mode === 'committee' ? '위원 추가' :
+                 '학생 추가')
               : (mode === 'staff' ? '교직원 정보' :
                  mode === 'committee' ? '위원회 정보' :
                  '학생 정보')}
@@ -720,17 +722,28 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         type="text"
                         value={mode === 'staff' || mode === 'committee' ? editedStudent.phone_num : (editedStudent.council.split(' / ')[0] || '')}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          let formattedValue = digitsOnly;
+
+                          if (digitsOnly.length > 3 && digitsOnly.length <= 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+                          } else if (digitsOnly.length > 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7, 11)}`;
+                          }
+                          
                           if (mode === 'staff' || mode === 'committee') {
-                            handleInputChange('phone_num', e.target.value);
+                            handleInputChange('phone_num', formattedValue);
                           } else {
                             const parts = editedStudent.council.split(' / ');
-                            const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
+                            const newCouncil = `${value} / ${parts[1] || ''} / ${parts[2] || ''}`;
                             handleInputChange('council', newCouncil);
                           }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
+                        maxLength={13}
                       />
                     </div>
 
