@@ -7,13 +7,14 @@
 }
 
 .post-view-header {
-  padding: clamp(24px, 2.78vh, 32px) 0;
-  border-bottom: 2px solid #e2e8f0;
+  padding: 0;
+  border-bottom: 1px solid #e2e8f0;
   margin-bottom: clamp(24px, 2.78vh, 32px);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: clamp(16px, 1.85vw, 24px);
+  min-height: clamp(56px, 6.48vh, 64px);
 }
 
 .post-view-actions {
@@ -43,12 +44,17 @@
 }
 
 .post-view-header .announcements-title {
-  font-size: clamp(24px, 2.78vh, 32px);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-dark);
+  font-size: clamp(24px, 2.78vh, 28px);
+  font-weight: var(--font-weight-semibold);
+  color: #000000;
   margin: 0;
-  line-height: 1.4;
+  margin-left: clamp(24px, 2.78vw, 32px);
+  padding: 0;
+  line-height: 1;
   flex: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .post-view-actions {
@@ -58,48 +64,76 @@
 }
 
 .edit-button, .delete-button {
-  padding: clamp(8px, 0.93vh, 10px) clamp(16px, 1.85vw, 20px);
-  border: 1px solid #e2e8f0;
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+  border: 1px solid #1a1a1a;
   border-radius: var(--sidebar-radius-sm);
-  font-size: clamp(13px, 1.51vh, 14px);
+  font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #ffffff;
+  transition: var(--transition-base);
+  white-space: nowrap;
+  box-shadow: none;
+  display: inline-block;
+  line-height: 1.5;
+  text-align: center;
+  vertical-align: middle;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .edit-button {
-  color: var(--sidebar-primary);
-  border-color: var(--sidebar-primary);
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .edit-button:hover {
-  background-color: var(--sidebar-primary);
+  background-color: #2a2a2a;
   color: #ffffff;
+  border-color: #2a2a2a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.edit-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+  background-color: #1a1a1a;
 }
 
 .delete-button {
-  color: #dc3545;
-  border-color: #dc3545;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
 }
 
 .delete-button:hover {
-  background-color: #dc3545;
+  background-color: #2a2a2a;
   color: #ffffff;
+  border-color: #2a2a2a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.delete-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+  background-color: #1a1a1a;
 }
 
 .post-view-meta-details {
   display: flex;
   justify-content: flex-start;
   gap: clamp(20px, 2.31vw, 32px);
-  padding: clamp(16px, 1.85vh, 20px) 0;
+  padding: clamp(16px, 1.85vh, 20px) clamp(20px, 2.31vw, 24px);
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: clamp(24px, 2.78vh, 32px);
-  color: #666666;
+  color: var(--text-medium);
   font-size: clamp(14px, 1.62vh, 16px);
-  background: #f8f9fa;
-  padding-left: clamp(20px, 2.31vw, 24px);
-  padding-right: clamp(20px, 2.31vw, 24px);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: var(--sidebar-radius-sm);
 }
 
@@ -127,8 +161,8 @@
   color: var(--text-dark);
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: var(--sidebar-radius-sm);
+  box-shadow: none;
   word-break: break-word;
 }
 
@@ -141,10 +175,10 @@
 }
 
 .back-to-list-button {
-  background-color: var(--sidebar-primary);
+  background-color: #1a1a1a;
   color: #ffffff;
-  padding: clamp(10px, 1.16vh, 12px) clamp(24px, 2.78vw, 32px);
-  border: none;
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+  border: 1px solid #1a1a1a;
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(14px, 1.62vh, 16px);
   cursor: pointer;
@@ -152,18 +186,60 @@
   align-items: center;
   gap: clamp(6px, 0.74vw, 8px);
   font-weight: var(--font-weight-semibold);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: var(--transition-base);
+  box-shadow: none;
+  white-space: nowrap;
+  line-height: 1.5;
+  text-align: center;
+  vertical-align: middle;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .back-to-list-button:hover {
-  background-color: #000000;
+  background-color: #2a2a2a;
   color: #ffffff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border-color: #2a2a2a;
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
 .back-to-list-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
+  background-color: #1a1a1a;
+}
+
+.pinned-badge {
+  color: #ff6b6b;
+  margin-right: 8px;
+}
+
+.pinned-rejected-message {
+  color: #ff6b6b;
+  margin-left: 10px;
+}
+
+.pinned-retry-button {
+  margin-left: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid #ff6b6b;
+  border-radius: 4px;
+  background: white;
+  color: #ff6b6b;
+  transition: var(--transition-base);
+}
+
+.pinned-retry-button:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+.pinned-pending-message {
+  color: #ffa500;
+  margin-left: 10px;
 }

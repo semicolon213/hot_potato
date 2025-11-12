@@ -1,3 +1,84 @@
+/* ===== 문서 관리 페이지 컨테이너 스타일 ===== */
+.document-management-container {
+  width: 100%;
+  padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 40px);
+  margin: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* 검색 및 필터 영역 스타일 */
+.search-filter-section {
+  margin-bottom: clamp(16px, 1.85vh, 24px);
+}
+
+.search-controls {
+  display: flex;
+  gap: clamp(12px, 1.56vw, 16px);
+  align-items: center;
+  margin-bottom: clamp(16px, 1.85vh, 24px);
+}
+
+.search-input-group {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: clamp(16px, 2.08vw, 20px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: var(--text-medium);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: clamp(12px, 1.39vh, 16px) clamp(40px, 5.2vw, 50px) clamp(12px, 1.39vh, 16px) clamp(40px, 5.2vw, 50px);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  background-color: #ffffff;
+  color: var(--text-dark);
+  transition: var(--transition-base);
+  height: clamp(44px, 5.09vh, 48px);
+  box-sizing: border-box;
+  font-weight: var(--font-weight-medium);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--sidebar-primary);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: clamp(12px, 1.5vw, 16px);
+  background: none;
+  border: none;
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: var(--text-medium);
+  cursor: pointer;
+  padding: clamp(4px, 0.46vh, 6px);
+  border-radius: 50%;
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.clear-search-btn:hover {
+  color: var(--sidebar-primary);
+  background-color: #f8f9fa;
+}
+
 /* ===== 새 문서 모달 스타일 ===== */
 
 /* 모달 오버레이 */

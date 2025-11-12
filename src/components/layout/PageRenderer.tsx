@@ -16,7 +16,6 @@ import Students from '../../pages/Students';
 import Staff from '../../pages/Staff';
 import MyCalendarPage from '../../pages/Calendar';
 import Dashboard from '../../pages/Dashboard';
-import Docbox from '../../pages/Docbox';
 import DocumentManagement from '../../pages/DocumentManagement';
 import EmptyDocument from '../../pages/EmptyDocument';
 import Mypage from '../../pages/Mypage';
@@ -208,7 +207,13 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           />
         );
       case "docbox":
-        return <Docbox data-oid="t94yibd" searchTerm={searchTerm} />;
+        return (
+          <DocumentManagement
+            onPageChange={onPageChange}
+            customTemplates={customTemplates}
+            searchTerm={searchTerm}
+          />
+        );
       case "new_document":
         return (
           <NewDocument 

@@ -17,7 +17,7 @@
   justify-content: center;
   text-align: center;
   transition: all 0.2s ease;
-  border: 1px solid #e2e8f0;
+  border: none;
   background-color: #ffffff;
 }
 

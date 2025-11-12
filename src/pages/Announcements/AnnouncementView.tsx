@@ -282,7 +282,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
 
             <div className="form-group">
               <label><BiPaperclip /> 파일 첨부</label>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="attachment-area">
                   <button onClick={triggerFileInput} className="attachment-button">
                       파일 선택
                   </button>
@@ -304,7 +304,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
                   multiple
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  style={{ display: 'none' }}
+                  className="file-input-hidden"
               />
               <div className="attachment-list">
                   {existingAttachments.map((file, index) => (
@@ -323,39 +323,26 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
             </div>
 
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div className="permission-header">
                 <label>권한 설정</label>
                 <button 
                   type="button"
                   onClick={() => setShowPermissionSettings(!showPermissionSettings)}
-                  style={{ 
-                    padding: '5px 10px', 
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px',
-                    background: showPermissionSettings ? '#f0f0f0' : 'white'
-                  }}
+                  className={`permission-toggle-button ${showPermissionSettings ? 'active' : ''}`}
                 >
                   {showPermissionSettings ? '접기' : '권한 설정'}
                 </button>
               </div>
               
               {showPermissionSettings && (
-                <div style={{ 
-                  border: '1px solid #ddd', 
-                  borderRadius: '8px', 
-                  padding: '15px', 
-                  marginTop: '10px',
-                  background: '#f9f9f9'
-                }}>
-                  <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                <div className="permission-settings-panel">
+                  <div className="permission-section">
+                    <label className="permission-section-label">
                       그룹 권한
                     </label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    <div className="permission-group-list">
                       {GROUP_TYPES.map(group => (
-                        <label key={group.value} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <label key={group.value} className="permission-group-item">
                           <input
                             type="checkbox"
                             checked={selectedGroups.includes(group.value)}
@@ -366,7 +353,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
                                 setSelectedGroups(selectedGroups.filter(g => g !== group.value));
                               }
                             }}
-                            style={{ marginRight: '5px' }}
+                            className="permission-checkbox"
                           />
                           {group.label}
                         </label>
@@ -374,32 +361,20 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
                     </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                  <div className="permission-section">
+                    <label className="permission-section-label">
                       개별 사용자 권한
                     </label>
-                    <div style={{ 
-                      maxHeight: '200px', 
-                      overflowY: 'auto', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '4px', 
-                      padding: '10px',
-                      background: 'white'
-                    }}>
+                    <div className="permission-user-list">
                       {users.length === 0 ? (
-                        <div style={{ padding: '10px', textAlign: 'center', color: '#666' }}>
+                        <div className="permission-loading">
                           사용자 목록을 불러오는 중...
                         </div>
                       ) : (
                         users.map(userItem => (
                           <label 
                             key={userItem.id} 
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              padding: '5px',
-                              cursor: 'pointer'
-                            }}
+                            className="permission-user-item"
                           >
                             <input
                               type="checkbox"
@@ -411,19 +386,19 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
                                   setSelectedIndividualUsers(selectedIndividualUsers.filter(id => id !== userItem.id));
                                 }
                               }}
-                              style={{ marginRight: '8px' }}
+                              className="permission-checkbox"
                             />
                             <span>{userItem.name} ({userItem.user_type})</span>
                           </label>
                         ))
                       )}
                     </div>
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                    <div className="permission-footer">
                       {selectedIndividualUsers.length > 0 && (
-                        <div>선택된 사용자: {selectedIndividualUsers.length}명</div>
+                        <div className="permission-selected-count">선택된 사용자: {selectedIndividualUsers.length}명</div>
                       )}
                       {selectedGroups.length === 0 && selectedIndividualUsers.length === 0 && (
-                        <div style={{ color: '#999', fontStyle: 'italic' }}>
+                        <div className="permission-default-message">
                           권한을 설정하지 않으면 모든 승인된 사용자에게 공개됩니다.
                         </div>
                       )}
@@ -446,7 +421,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     <div className="announcements-container">
       <div className="post-view-header">
         <h1 className="announcements-title">
-          {post.isPinned && <span style={{ color: '#ff6b6b', marginRight: '8px' }}>📌 [고정]</span>}
+          {post.isPinned && <span className="pinned-badge">📌 [고정]</span>}
           {post.title}
         </h1>
         {isAuthor && (
@@ -461,27 +436,18 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
         <span>작성일: {post.date}</span>
         <span>조회수: {post.views}</span>
         {post.fix_notice === 'X' && isAuthor && (
-          <span style={{ color: '#ff6b6b', marginLeft: '10px' }}>
+          <span className="pinned-rejected-message">
             [고정 공지 거절됨]
             <button 
               onClick={handleRequestPinnedAnnouncement}
-              style={{ 
-                marginLeft: '10px', 
-                padding: '4px 8px', 
-                fontSize: '12px',
-                cursor: 'pointer',
-                border: '1px solid #ff6b6b',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#ff6b6b'
-              }}
+              className="pinned-retry-button"
             >
               재요청
             </button>
           </span>
         )}
         {post.fix_notice === '-' && isAuthor && (
-          <span style={{ color: '#ffa500', marginLeft: '10px' }}>[고정 공지 승인 대기 중]</span>
+          <span className="pinned-pending-message">[고정 공지 승인 대기 중]</span>
         )}
       </div>
 

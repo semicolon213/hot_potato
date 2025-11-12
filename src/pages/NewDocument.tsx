@@ -507,10 +507,10 @@ function NewDocument({
         setCreatedDocumentUrl("");
     };
     
-    const goToDocbox = () => {
+    const goToDocumentManagement = () => {
         setShowAfterCreateModal(false);
         setCreatedDocumentUrl("");
-        onPageChange('docbox');
+        onPageChange('document_management');
     };
     
     const closeAfterCreateModal = () => {
@@ -1292,7 +1292,7 @@ function NewDocument({
     }, [staticTags, tags]);
 
     return (
-        <div>
+        <div className="document-management-container">
             {/* Top Level Controls */}
             <CategoryTabs 
                 activeTab={activeTab} 
@@ -2082,12 +2082,12 @@ function NewDocument({
                                     <button 
                                         type="button" 
                                         className="option-btn secondary-btn" 
-                                        onClick={goToDocbox}
+                                        onClick={goToDocumentManagement}
                                     >
                                         <div className="option-icon">📁</div>
                                         <div className="option-content">
-                                            <div className="option-title">문서함으로 이동</div>
-                                            <div className="option-desc">문서함에서 생성된 문서를 확인합니다</div>
+                                            <div className="option-title">문서관리로 이동</div>
+                                            <div className="option-desc">문서관리에서 생성된 문서를 확인합니다</div>
                                         </div>
                                     </button>
                                 </div>

@@ -53,7 +53,9 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
               ],
             });
-            const token = localStorage.getItem('googleAccessToken');
+            // tokenManager를 사용하여 토큰 가져오기
+            const { tokenManager } = await import('../auth/tokenManager');
+            const token = tokenManager.get();
             if (token) {
               gapi.client.setToken({ access_token: token });
             }

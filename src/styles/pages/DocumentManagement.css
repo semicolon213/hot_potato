@@ -6,24 +6,10 @@
   min-height: 100%;
   box-sizing: border-box;
   background: transparent;
-/* DocumentManagement.css - 결재 요청 버튼 스타일 추가 */
-
-.btn-workflow-request {
-  padding: 8px 16px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--border-radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-right: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
-.btn-workflow-request:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
 /* 문서 관리 페이지 내부 모든 요소의 그림자 제거 */
 .document-management-container *,
 .document-management-container *::before,
@@ -42,11 +28,430 @@
 .stats-container {
   display: flex;
   gap: clamp(16px, 2.08vw, 24px);
-  margin-top: clamp(24px, 2.78vh, 32px);
-  margin-bottom: 0;
+  margin-bottom: clamp(32px, 3.7vh, 40px);
 }
 
-/* 결재 요청 버튼 - DocumentList.css의 .view-all-button과 동일한 스타일 사용 */
+/* 문서 리스트 섹션 */
+.document-list-section {
+  width: 100%;
+  margin-top: 0;
+}
+
+/* 액션 바 (검색 + 버튼) */
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: clamp(16px, 1.85vh, 20px);
+  gap: clamp(12px, 1.56vw, 16px);
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+/* 검색 입력 그룹 */
+.document-list-section .search-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: clamp(300px, 31.25vw, 400px);
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  padding: 0 clamp(12px, 1.56vw, 16px);
+  transition: var(--transition-base);
+  height: clamp(44px, 5.09vh, 48px);
+  box-sizing: border-box;
+}
+
+.document-list-section .search-input-group:hover {
+  border-color: #cbd5e0;
+}
+
+.document-list-section .search-input-group:focus-within {
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+}
+
+.document-list-section .search-icon {
+  color: #999999;
+  font-size: clamp(14px, 1.62vh, 16px);
+  margin-right: clamp(8px, 1.04vw, 12px);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.document-list-section .search-input-group:hover .search-icon,
+.document-list-section .search-input-group:focus-within .search-icon {
+  color: var(--text-dark);
+}
+
+.document-list-section .search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-dark);
+  background: transparent;
+  height: 100%;
+}
+
+.document-list-section .search-input::placeholder {
+  color: #999999;
+}
+
+.document-list-section .clear-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #999999;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: clamp(8px, 1.04vw, 12px);
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+  width: clamp(20px, 2.6vh, 24px);
+  height: clamp(20px, 2.6vh, 24px);
+}
+
+.document-list-section .clear-search-btn:hover {
+  color: var(--text-dark);
+}
+
+/* 액션 버튼 그룹 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.04vw, 12px);
+}
+
+.btn-print {
+  padding: clamp(10px, 1.16vh, 14px) clamp(16px, 2.08vw, 24px);
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #1a1a1a;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.btn-print:hover {
+  background-color: #2a2a2a;
+  border-color: #2a2a2a;
+  transform: translateY(-1px);
+}
+
+.btn-print:active {
+  transform: translateY(0);
+  background-color: #1a1a1a;
+}
+
+/* 문서 리스트 컨테이너 */
+.post-list {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* 문서 테이블 기본 스타일 */
+.document-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  table-layout: fixed;
+  background: #ffffff;
+}
+
+.document-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #ffffff;
+  color: var(--text-dark);
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+  font-size: clamp(13px, 1.51vh, 15px);
+  letter-spacing: 0.2px;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
+}
+
+.document-table th, .document-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-table td {
+  color: #000000;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
+  transition: background-color 0.2s ease;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  vertical-align: middle;
+}
+
+/* 문서 테이블 컬럼 너비 */
+.document-table col.col-number-width {
+  width: 19%;
+}
+
+.document-table col.col-title-width {
+  width: 27%; /* 17.5% + 9.5% (생성자 절반) */
+}
+
+.document-table col.col-author-width {
+  width: 9.5%; /* 19%의 절반 */
+}
+
+.document-table col.col-date-width {
+  width: 19%;
+}
+
+.document-table col.col-tag-width {
+  width: 12.75%;
+}
+
+.document-table col.col-type-width {
+  width: 12.75%;
+}
+
+/* 문서 테이블 컬럼 스타일 */
+.document-table .col-number {
+  width: 19%;
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.document-table .col-title {
+  width: 27%; /* 17.5% + 9.5% (생성자 절반) */
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.document-table .col-author {
+  width: 9.5%; /* 19%의 절반 */
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.document-table .col-date {
+  width: 19%;
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.document-table .col-tag {
+  width: 12.75%;
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.document-table .col-type {
+  width: 12.75%;
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+/* 정렬 가능한 헤더 */
+.document-table th.sortable {
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.document-table th.sortable:hover {
+  background-color: #f8f9fa;
+}
+
+.document-table th.sortable.sorted {
+  background-color: transparent;
+}
+
+.document-table th.sortable.filtered {
+  position: relative;
+}
+
+.document-table th.sortable.filtered::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background-color: var(--sidebar-primary);
+  border-radius: 50%;
+}
+
+/* 헤더 셀 내용 */
+.document-table th .th-content {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 0.52vw, 8px);
+  justify-content: flex-start;
+}
+
+.filter-indicator {
+  font-size: clamp(10px, 1.16vh, 12px);
+  margin-left: auto;
+}
+
+.sort-indicator {
+  margin-left: 4px;
+  color: var(--sidebar-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: clamp(12px, 1.39vh, 14px);
+}
+
+/* 제목 셀 내부 */
+.title-cell-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.title-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 태그 뱃지 */
+.tag-badge {
+  display: inline-block;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  background-color: #f1f5f9;
+  color: #000000;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
+  white-space: nowrap;
+}
+
+.no-tag {
+  color: #000000;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
+}
+
+/* 유형 뱃지 */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(4px, 0.46vh, 6px) clamp(10px, 1.3vw, 14px);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
+  white-space: nowrap;
+}
+
+.type-badge.shared {
+  background-color: #e3f2fd;
+  color: #000000;
+}
+
+.type-badge.personal {
+  background-color: #f3e5f5;
+  color: #000000;
+}
+
+.type-text {
+  white-space: nowrap;
+}
+
+/* 문서 행 스타일 */
+.document-table tbody tr.document-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.document-table tbody tr.document-row:hover {
+  background-color: #f8f9fa;
+}
+
+.document-table tbody tr.document-row:last-child td {
+  border-bottom: none;
+}
+
+/* 로딩 및 빈 상태 메시지 */
+.loading-message,
+.no-results {
+  text-align: center;
+  padding: clamp(40px, 4.63vh, 48px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: var(--text-medium);
+  background-color: transparent;
+}
+
+/* 페이지네이션 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(4px, 0.52vw, 8px);
+  margin-top: clamp(20px, 2.31vh, 24px);
+  padding: 0;
+}
+
+.pagination button {
+  min-width: clamp(32px, 3.7vh, 40px);
+  height: clamp(36px, 4.17vh, 44px);
+  padding: 0 clamp(8px, 1.04vw, 12px);
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: var(--text-dark);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(13px, 1.51vh, 15px);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #cbd5e0;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination button.active {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+}
+
+.pagination button.active:hover {
+  background-color: #2a2a2a;
+}
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
@@ -62,5 +467,18 @@
   .stats-container {
     flex-direction: column;
     gap: clamp(16px, 1.85vh, 20px);
+  }
+
+  .actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-group {
+    max-width: 100%;
+  }
+
+  .action-buttons {
+    justify-content: flex-end;
   }
 }
