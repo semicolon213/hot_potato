@@ -60,6 +60,10 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isRetained, setIsRetained] = useState(false); // 유급 여부
+  const [isGradeOther, setIsGradeOther] = useState(false);
+  const [customGrade, setCustomGrade] = useState('');
+  const [isStateOther, setIsStateOther] = useState(false);
+  const [customState, setCustomState] = useState('');
   const isSupp = user?.userType === 'supp'; // 조교 여부
 
   const handleDelete = () => {
@@ -239,9 +243,30 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         
         loadStudentData();
       }
-    }
-  }, [student, isOpen, isAdding, user]);
-
+          }
+        }, [student, isOpen, isAdding, user]);
+    
+        useEffect(() => {
+          if (editedStudent && mode === 'committee') {
+            const standardGrades = ["교과과정위원회", "학과운영위원회", "입학위원회", "졸업위원회"];
+            if (editedStudent.grade && !standardGrades.includes(editedStudent.grade)) {
+              setIsGradeOther(true);
+              setCustomGrade(editedStudent.grade);
+            } else {
+              setIsGradeOther(false);
+              setCustomGrade('');
+            }
+    
+            const standardStates = ["위원장", "위원", "간사", "자문위원"];
+            if (editedStudent.state && !standardStates.includes(editedStudent.state)) {
+              setIsStateOther(true);
+              setCustomState(editedStudent.state);
+            } else {
+              setIsStateOther(false);
+              setCustomState('');
+            }
+          }
+        }, [editedStudent, mode]);
   const loadStudentIssues = async () => {
     if (!student) return;
 
@@ -325,14 +350,26 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const handleSave = async () => {
     if (!editedStudent) return;
 
+    // Create a mutable copy to hold the final values
+    const studentToSave = { ...editedStudent };
+
+    if (mode === 'committee') {
+      if (isGradeOther) {
+        studentToSave.grade = customGrade;
+      }
+      if (isStateOther) {
+        studentToSave.state = customState;
+      }
+    }
+
     // 연락처와 이메일 유효성 검사
     if (mode === 'staff' || mode === 'committee') {
-      const phone = editedStudent.phone_num;
+      const phone = studentToSave.phone_num;
       if (!/^\d{3}-\d{3,4}-\d{4}$/.test(phone)) {
         alert('연락처는 하이픈(-)을 포함한 12~13자리 숫자로 입력해야 합니다.');
         return;
       }
-      if (!editedStudent.email.includes('@')) {
+      if (!studentToSave.email.includes('@')) {
         alert('이메일 형식이 올바르지 않습니다. "@"를 포함해야 합니다.');
         return;
       }
@@ -349,7 +386,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       ];
 
       for (const field of requiredFields) {
-        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        const value = studentToSave[field.key as keyof StudentWithCouncil];
         if (typeof value !== 'string' || !value.trim()) {
           alert(`${field.name}은(는) 필수 입력 항목입니다.`);
           return; // 저장 중단
@@ -368,7 +405,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       ];
 
       for (const field of requiredFields) {
-        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        const value = studentToSave[field.key as keyof StudentWithCouncil];
         if (typeof value !== 'string' || !value.trim()) {
           alert(`${field.name}은(는) 필수 입력 항목입니다.`);
           return; // 저장 중단
@@ -387,7 +424,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       ];
 
       for (const field of requiredFields) {
-        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        const value = studentToSave[field.key as keyof StudentWithCouncil];
         if (typeof value !== 'string' || !value.trim()) {
           alert(`${field.name}은(는) 필수 입력 항목입니다.`);
           return; // 저장 중단
@@ -396,16 +433,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
 
     // 저장하기 전 비어있는 경력 항목 자동 삭제
-    const cleanedStudent = { ...editedStudent };
-    if (cleanedStudent.career && Array.isArray(cleanedStudent.career)) {
-      cleanedStudent.career = cleanedStudent.career.filter(
+    if (studentToSave.career && Array.isArray(studentToSave.career)) {
+      studentToSave.career = studentToSave.career.filter(
         item => item.period.trim() !== '' || item.company.trim() !== '' || item.position.trim() !== ''
       );
     }
 
     // The modal should not handle the update logic itself.
     // It should pass the cleaned data back to the parent component.
-    onUpdate(cleanedStudent);
+    onUpdate(studentToSave);
     setIsEditing(false);
     onClose();
   };
@@ -684,8 +720,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>위원회 구분<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.grade} // sortation -> grade
-                        onChange={(e) => handleInputChange('grade', e.target.value)}
+                        value={isGradeOther ? '직접 입력' : editedStudent.grade}
+                        onChange={(e) => {
+                          if (e.target.value === '직접 입력') {
+                            setIsGradeOther(true);
+                          } else {
+                            setIsGradeOther(false);
+                            handleInputChange('grade', e.target.value);
+                          }
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                       >
@@ -694,7 +737,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="학과운영위원회">학과운영위원회</option>
                         <option value="입학위원회">입학위원회</option>
                         <option value="졸업위원회">졸업위원회</option>
+                        <option value="직접 입력">직접 입력</option>
                       </select>
+                      {isGradeOther && (
+                        <input
+                          type="text"
+                          value={customGrade}
+                          onChange={(e) => setCustomGrade(e.target.value)}
+                          placeholder="위원회 구분 직접 입력"
+                          disabled={!isEditing}
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -735,8 +789,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>직책<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.state} // position -> state
-                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        value={isStateOther ? '기타' : editedStudent.state}
+                        onChange={(e) => {
+                          if (e.target.value === '기타') {
+                            setIsStateOther(true);
+                          } else {
+                            setIsStateOther(false);
+                            handleInputChange('state', e.target.value);
+                          }
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                       >
@@ -745,7 +806,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="위원">위원</option>
                         <option value="간사">간사</option>
                         <option value="자문위원">자문위원</option>
+                        <option value="기타">기타</option>
                       </select>
+                      {isStateOther && (
+                        <input
+                          type="text"
+                          value={customState}
+                          onChange={(e) => setCustomState(e.target.value)}
+                          placeholder="직책 직접 입력"
+                          disabled={!isEditing}
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
