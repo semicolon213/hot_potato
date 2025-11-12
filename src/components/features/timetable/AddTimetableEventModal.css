@@ -1,129 +1,159 @@
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+/* AddTimetableEventModal.css */
+/* Based on AddEventModal.css */
+
+.add-event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
 }
 
 .modal-content {
-    background-color: var(--primary); /* Using primary color for the background */
-    color: white;
-    padding: 24px;
-    border-radius: var(--border-radius-lg);
-    width: 90%;
-    max-width: 500px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    border: 1px solid var(--primary-dark);
+  background: var(--background, #fff);
+  padding: 24px;
+  border-radius: var(--border-radius-lg, 12px);
+  box-shadow: var(--shadow-base);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.close-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
 }
 
-.modal-title {
-    font-size: 20px;
-    font-weight: 600;
+.title-input,
+.add-event-description {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  padding: 8px 0;
+  font-size: var(--font-size-base);
+  background-color: transparent;
 }
 
-.modal-close-button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+.title-input {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
 }
 
-.modal-close-button:hover {
-    opacity: 1;
+.title-input:focus,
+.add-event-description:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
 }
 
-.modal-form {
+.add-event-description {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.timetable-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.modal-grid-item {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+.modal-grid-item label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-light);
 }
 
-.form-group label {
-    font-size: 14px;
-    font-weight: 500;
-    opacity: 0.9;
-}
-
-.form-group input,
-.form-group select {
-    padding: 10px;
+.modal-grid-item input[type="time"],
+.modal-grid-item .day-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    border: 1px solid transparent;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 16px;
+    font-size: var(--font-size-base);
 }
 
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.5);
+.custom-color-picker {
+    position: relative;
 }
 
-/* Style for time inputs */
-.time-inputs {
+.color-display {
+    width: 100%;
+    height: 38px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.color-palette-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-base);
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 8px;
+    width: 150px;
+    z-index: 10;
 }
 
-.time-inputs .form-group {
-    flex: 1;
+.color-swatch-popup {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
 }
 
 .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.modal-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: var(--border-radius-md);
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: all 0.2s;
+.submit-button,
+.cancel-button {
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  border: none;
 }
 
-.modal-button.save {
-    background-color: #fff;
-    color: var(--primary);
+.submit-button {
+  background-color: var(--primary);
+  color: white;
 }
 
-.modal-button.save:hover {
-    background-color: #f0f0f0;
+.submit-button:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
 }
 
-.modal-button.cancel {
-    background-color: transparent;
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.modal-button.cancel:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+.cancel-button {
+  background-color: var(--lightgrey);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
 }

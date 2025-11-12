@@ -447,3 +447,91 @@ export const setPersonalConfigSpreadsheetId = (id: string): void => {
   personalConfigSpreadsheetId = id;
 };
 
+/**
+ * @brief 시간표 일정 가져오기
+ * @returns {Promise<any[]>} 시간표 일정 목록
+ */
+export const getScheduleEvents = async (): Promise<any[]> => {
+  try {
+    if (!personalConfigSpreadsheetId) {
+      console.warn('⚠️ 개인 설정 파일 ID가 없습니다. 초기화를 먼저 시도합니다.');
+      await initializePersonalConfigFile();
+      if (!personalConfigSpreadsheetId) {
+        throw new Error('개인 설정 파일을 찾거나 생성할 수 없습니다.');
+      }
+    }
+    
+    setupPapyrusAuth();
+    
+    // papyrus-db 함수 시그니처에 맞게 수정: getSheetData(spreadsheetId, sheetName)
+    const response = await getSheetData(personalConfigSpreadsheetId, 'schedule');
+
+    // getSheetData가 { values: [...] } 형태의 객체를 반환한다고 가정
+    const data = response.values;
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // 헤더를 기반으로 객체 생성
+    const header = data[0];
+    const events = data.slice(1).map(row => {
+      const event: any = {};
+      header.forEach((key, index) => {
+        event[key] = row[index];
+      });
+      return event;
+    });
+
+    return events;
+
+  } catch (error) {
+    console.error('❌ 시간표 일정 가져오기 오류:', error);
+    return [];
+  }
+};
+
+/**
+ * @brief 시간표 일정 추가
+ * @param {any} event - 추가할 시간표 일정 데이터
+ */
+export const addScheduleEvent = async (event: any): Promise<void> => {
+  try {
+    if (!personalConfigSpreadsheetId) {
+      console.warn('⚠️ 개인 설정 파일 ID가 없습니다. 초기화를 먼저 시도합니다.');
+      await initializePersonalConfigFile();
+      if (!personalConfigSpreadsheetId) {
+        throw new Error('개인 설정 파일을 찾거나 생성할 수 없습니다.');
+      }
+    }
+    
+    setupPapyrusAuth();
+
+    // 새 'no'를 결정하기 위해 기존 데이터 가져오기
+    const existingEvents = await getScheduleEvents();
+    const nextNo = existingEvents.length > 0 
+      ? Math.max(...existingEvents.map(e => parseInt(e.no, 10) || 0)) + 1 
+      : 1;
+
+    const newRow = [
+      nextNo.toString(),
+      event.title,
+      event.day,
+      event.startTime,
+      event.endTime,
+      event.description,
+      event.color
+    ];
+    
+    // papyrus-db 함수 시그니처에 맞게 수정: append(spreadsheetId, sheetName, rows)
+    await append(personalConfigSpreadsheetId, 'schedule', [newRow]);
+
+    console.log('✅ 시간표 일정 추가 완료');
+
+  } catch (error) {
+    console.error('❌ 시간표 일정 추가 오류:', error);
+    throw error;
+  }
+};
+
+
