@@ -15,9 +15,12 @@ import '../styles/pages/Students.css';
 interface StudentsProps {
   onPageChange: (pageName: string) => void;
   studentSpreadsheetId: string | null;
+  user?: {
+    userType?: string;
+  } | null;
 }
 
-const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
+const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
   const {
     students,
     filteredStudents,
@@ -270,6 +273,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
         onUpdate={handleStudentUpdate}
         onDelete={handleDeleteStudent}
         studentSpreadsheetId={studentSpreadsheetId}
+        user={user}
       />
 
       {/* 학생 추가 모달 */}
@@ -281,6 +285,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId }) => {
         studentSpreadsheetId={studentSpreadsheetId}
         mode="student"
         isAdding={true}
+        user={user}
       />
     </div>
   );

@@ -241,7 +241,13 @@
 }
 
 /* 승인된 사용자 섹션 - 남은 공간 사용 */
-.users-section:last-of-type {
+.users-section:nth-of-type(2) {
+  flex: 1;
+  max-height: 50%;
+}
+
+/* 고정 공지 승인 요청 섹션 */
+.users-section:nth-of-type(3) {
   flex: 1;
   max-height: 50%;
 }

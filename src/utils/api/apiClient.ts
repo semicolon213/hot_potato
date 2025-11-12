@@ -26,6 +26,7 @@ import type {
   MyPendingWorkflowsParams,
   WorkflowHistoryParams
 } from '../../types/documents';
+import type { ApprovalStatusResponse } from '../../types/api/userResponses';
 
 // API 응답 타입 정의
 export interface ApiResponse<T = unknown> {
@@ -210,7 +211,7 @@ export class ApiClient {
 
   // 인증 API
   async checkApprovalStatus(email: string) {
-    return this.request('checkUserStatus', { email });
+    return this.request<ApprovalStatusResponse>('checkUserStatus', { email });
   }
 
   async submitRegistrationRequest(registrationData: RegistrationData) {
@@ -354,6 +355,18 @@ export class ApiClient {
 
   async getAccountingFolderId() {
     return this.request<{ success: boolean; data: { accountingFolderId: string } }>('getAccountingFolderId', {});
+  }
+
+  async getAccountingCategories(spreadsheetId: string) {
+    return this.request<string[]>('getAccountingCategories', { spreadsheetId });
+  }
+
+  async getAccountingCategorySummary(spreadsheetId: string) {
+    return this.request<{ category: string; income: number; expense: number }[]>('getAccountingCategorySummary', { spreadsheetId });
+  }
+
+  async getPendingBudgetPlans(spreadsheetId: string, userEmail: string) {
+    return this.request<{ budget_id: string; title: string; total_amount: number; status: string; action_required: string }[]>('getPendingBudgetPlans', { spreadsheetId, userEmail });
   }
 
   // 기본 태그 목록 조회

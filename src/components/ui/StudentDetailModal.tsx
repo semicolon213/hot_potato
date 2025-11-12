@@ -5,6 +5,7 @@ import type { Student, StudentWithCouncil } from '../../types/features/students/
 import type { CareerItem } from '../../types/features/staff';
 import './StudentDetailModal.css';
 import { ENV_CONFIG } from '../../config/environment';
+import { apiClient } from '../../utils/api/apiClient';
 
 type ModalMode = 'student' | 'staff' | 'committee';
 
@@ -17,6 +18,11 @@ interface StudentDetailModalProps {
   studentSpreadsheetId: string | null;
   mode?: ModalMode;
   isAdding?: boolean;
+  user?: {
+    userType?: string;
+  } | null;
+  mainClassifications?: string[];
+  otherClassifications?: string[];
 }
 
 const emptyStaff: StudentWithCouncil = {
@@ -41,6 +47,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   studentSpreadsheetId,
   mode = 'student',
   isAdding = false,
+  user,
+  mainClassifications = [],
+  otherClassifications = [],
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'issues'>('info');
   const [isEditing, setIsEditing] = useState(isAdding);
@@ -54,6 +63,16 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     content_issue: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isRetained, setIsRetained] = useState(false); // 유급 여부
+  const [isGradeOther, setIsGradeOther] = useState(false);
+  const [customGrade, setCustomGrade] = useState('');
+  const [isStateOther, setIsStateOther] = useState(false);
+  const [customState, setCustomState] = useState('');
+  const [isLevelOther, setIsLevelOther] = useState(false);
+  const [customLevel, setCustomLevel] = useState('');
+  const [isTypeOther, setIsTypeOther] = useState(false);
+  const [customType, setCustomType] = useState('');
+  const isSupp = user?.userType === 'supp'; // 조교 여부
 
   const handleDelete = () => {
     if (window.confirm('정말로 이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -225,15 +244,75 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             level_issue: '',
             content_issue: ''
           });
+          // 유급 정보 로드
+          await loadRetainedStatus();
           loadStudentIssues();
         };
         
         loadStudentData();
       }
-    }
-  }, [student, isOpen, isAdding]);
-
-  const loadStudentIssues = async () => {
+          }
+        }, [student, isOpen, isAdding, user]);
+    
+                    useEffect(() => {
+    
+                      if (editedStudent && mode === 'committee') {
+    
+                        const standardGrades = ["교과과정위원회", "학과운영위원회", "입학위원회", "졸업위원회"];
+    
+                        if (editedStudent.grade && !standardGrades.includes(editedStudent.grade)) {
+    
+                          setIsGradeOther(true);
+    
+                          setCustomGrade(editedStudent.grade);
+    
+                        } else {
+    
+                          setIsGradeOther(false);
+    
+                          setCustomGrade('');
+    
+                        }
+    
+                
+    
+                        const standardStates = ["위원장", "위원", "간사", "자문위원", "직접 입력"];
+    
+                        if (editedStudent.state && !standardStates.includes(editedStudent.state)) {
+    
+                          setIsStateOther(true);
+    
+                          setCustomState(editedStudent.state);
+    
+                        } else {
+    
+                          setIsStateOther(false);
+    
+                          setCustomState('');
+    
+                        }
+    
+                      } else if (editedStudent && mode === 'student') {
+    
+                        const standardStates = ["재학", "휴학", "졸업", "자퇴"];
+    
+                        if (editedStudent.state && !standardStates.includes(editedStudent.state)) {
+    
+                          setIsStateOther(true);
+    
+                          setCustomState(editedStudent.state);
+    
+                        } else {
+    
+                          setIsStateOther(false);
+    
+                          setCustomState('');
+    
+                        }
+    
+                      }
+    
+                    }, [editedStudent, mode]);  const loadStudentIssues = async () => {
     if (!student) return;
 
     setIsLoading(true);
@@ -244,6 +323,52 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       console.error('특이사항 로드 실패:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 유급 정보 로드
+  const loadRetainedStatus = async () => {
+    if (!student || !studentSpreadsheetId) return;
+    
+    try {
+      const response = await apiClient.request('getStudentRetainedStatus', {
+        studentId: student.no_student,
+        spreadsheetId: studentSpreadsheetId
+      });
+      
+      if (response.success && response.data) {
+        const retainedValue = response.data.isRetained;
+        setIsRetained(retainedValue === 'O' || retainedValue === true || retainedValue === 'TRUE');
+      }
+    } catch (error) {
+      console.error('유급 정보 로드 실패:', error);
+    }
+  };
+
+  // 유급 여부 업데이트
+  const handleRetainedChange = async (checked: boolean) => {
+    if (!student || !studentSpreadsheetId) return;
+    
+    setIsRetained(checked);
+    
+    try {
+      const response = await apiClient.request('updateStudentRetained', {
+        studentId: student.no_student,
+        spreadsheetId: studentSpreadsheetId,
+        isRetained: checked
+      });
+      
+      if (response.success) {
+        // 성공 메시지는 생략 (조용히 업데이트)
+        console.log('유급 정보 업데이트 성공:', checked ? '유급' : '정상');
+      } else {
+        alert('유급 정보 업데이트에 실패했습니다.');
+        setIsRetained(!checked); // 롤백
+      }
+    } catch (error) {
+      console.error('유급 정보 업데이트 실패:', error);
+      alert('유급 정보 업데이트에 실패했습니다.');
+      setIsRetained(!checked); // 롤백
     }
   };
 
@@ -270,14 +395,40 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const handleSave = async () => {
     if (!editedStudent) return;
 
-    // 연락처와 이메일 유효성 검사
-    if (mode === 'staff' || mode === 'committee') {
-      const phone = editedStudent.phone_num;
+    // Create a mutable copy to hold the final values
+    const studentToSave = { ...editedStudent };
+
+                      if (mode === 'committee') {
+
+                        if (isGradeOther) {
+
+                          studentToSave.grade = customGrade;
+
+                        }
+
+                        if (isStateOther) {
+
+                          studentToSave.state = customState;
+
+                        }
+
+                      } else if (mode === 'student') {
+
+                        if (isStateOther) {
+
+                          studentToSave.state = customState;
+
+                        }
+
+                      }    // 연락처와 이메일 유효성 검사
+    if (mode === 'staff' || mode === 'committee' || mode === 'student') {
+      const phone = studentToSave.phone_num;
       if (!/^\d{3}-\d{3,4}-\d{4}$/.test(phone)) {
         alert('연락처는 하이픈(-)을 포함한 12~13자리 숫자로 입력해야 합니다.');
         return;
       }
-      if (!editedStudent.email.includes('@')) {
+      // 이메일 유효성 검사는 교직원/위원회 모드에서만 적용
+      if ((mode === 'staff' || mode === 'committee') && !studentToSave.email.includes('@')) {
         alert('이메일 형식이 올바르지 않습니다. "@"를 포함해야 합니다.');
         return;
       }
@@ -294,7 +445,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       ];
 
       for (const field of requiredFields) {
-        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        const value = studentToSave[field.key as keyof StudentWithCouncil];
         if (typeof value !== 'string' || !value.trim()) {
           alert(`${field.name}은(는) 필수 입력 항목입니다.`);
           return; // 저장 중단
@@ -313,7 +464,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       ];
 
       for (const field of requiredFields) {
-        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        const value = studentToSave[field.key as keyof StudentWithCouncil];
         if (typeof value !== 'string' || !value.trim()) {
           alert(`${field.name}은(는) 필수 입력 항목입니다.`);
           return; // 저장 중단
@@ -332,7 +483,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       ];
 
       for (const field of requiredFields) {
-        const value = editedStudent[field.key as keyof StudentWithCouncil];
+        const value = studentToSave[field.key as keyof StudentWithCouncil];
         if (typeof value !== 'string' || !value.trim()) {
           alert(`${field.name}은(는) 필수 입력 항목입니다.`);
           return; // 저장 중단
@@ -341,29 +492,49 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
 
     // 저장하기 전 비어있는 경력 항목 자동 삭제
-    const cleanedStudent = { ...editedStudent };
-    if (cleanedStudent.career && Array.isArray(cleanedStudent.career)) {
-      cleanedStudent.career = cleanedStudent.career.filter(
+    if (studentToSave.career && Array.isArray(studentToSave.career)) {
+      studentToSave.career = studentToSave.career.filter(
         item => item.period.trim() !== '' || item.company.trim() !== '' || item.position.trim() !== ''
       );
     }
 
     // The modal should not handle the update logic itself.
     // It should pass the cleaned data back to the parent component.
-    onUpdate(cleanedStudent);
+    onUpdate(studentToSave);
     setIsEditing(false);
     onClose();
   };
 
   const handleAddIssue = async () => {
-    if (!newIssue.content_issue.trim()) return;
+    // Updated validation for type_issue
+    if (!isTypeOther && !newIssue.type_issue) {
+      alert('유형을 선택해주세요.');
+      return;
+    }
+    if (isTypeOther && !customType.trim()) {
+      alert('유형을 직접 입력해주세요.');
+      return;
+    }
+    // Updated validation for level_issue
+    if (!isLevelOther && !newIssue.level_issue) {
+      alert('주의도를 선택해주세요.');
+      return;
+    }
+    if (isLevelOther && !customLevel.trim()) {
+      alert('주의도를 직접 입력해주세요.');
+      return;
+    }
+    if (!newIssue.content_issue.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
 
     try {
       const issueData = {
         no_member: newIssue.no_member,
         date_issue: newIssue.date_issue || new Date().toISOString().split('T')[0],
-        type_issue: newIssue.type_issue,
-        level_issue: newIssue.level_issue,
+        type_issue: isTypeOther ? customType : newIssue.type_issue, // Use custom type if set
+        level_issue: isLevelOther ? customLevel : newIssue.level_issue, // Use custom level if set
         content_issue: newIssue.content_issue
       };
 
@@ -375,6 +546,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       };
       setIssues(prev => [...prev, newIssueWithId]);
       
+      // Reset form including all custom fields
       setNewIssue({
         no_member: student?.no_student || '',
         date_issue: new Date().toISOString().split('T')[0],
@@ -382,6 +554,10 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         level_issue: '',
         content_issue: ''
       });
+      setIsTypeOther(false);
+      setCustomType('');
+      setIsLevelOther(false);
+      setCustomLevel('');
       
       alert('특이사항이 성공적으로 추가되었습니다.');
     } catch (error) {
@@ -394,6 +570,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     if (!editedStudent) return;
     setEditedStudent(prev => prev ? { ...prev, [field]: value } : null);
   };
+
+
 
   const handleIssueInputChange = (field: keyof Omit<StudentIssue, 'id'>, value: string) => {
     setNewIssue(prev => ({ ...prev, [field]: value }));
@@ -444,7 +622,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         <div className="modal-header">
           <h2>
             {isAdding
-              ? (mode === 'staff' ? '교직원 추가' : '위원 추가')
+              ? (mode === 'staff' ? '교직원 추가' :
+                 mode === 'committee' ? '위원 추가' :
+                 '학생 추가')
               : (mode === 'staff' ? '교직원 정보' :
                  mode === 'committee' ? '위원회 정보' :
                  '학생 정보')}
@@ -460,11 +640,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 </button>
               </>
             ) : (
-              <div className="edit-actions">
-                <button className="save-btn" onClick={handleSave}>
-                  저장
-                </button>
-              </div>
+              <button className="save-btn" onClick={handleSave}>
+                저장
+              </button>
             )}
             <button className="close-btn" onClick={handleCloseModal}>
               ✕
@@ -521,11 +699,16 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         onFocus={handleInputFocus}
                       >
                         <option value="">선택하세요</option>
-                        <option value="전임교수">전임교수</option>
-                        <option value="조교">조교</option>
-                        <option value="외부강사">외부강사</option>
-                        <option value="겸임교수">겸임교수</option>
-                        <option value="시간강사">시간강사</option>
+                        {mainClassifications.map(pos => (
+                          <option key={pos} value={pos}>{pos}</option>
+                        ))}
+                        {otherClassifications.length > 0 && (
+                          <optgroup label="기타">
+                            {otherClassifications.map(pos => (
+                              <option key={pos} value={pos}>{pos}</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </div>
 
@@ -558,17 +741,28 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         type="text"
                         value={mode === 'staff' || mode === 'committee' ? editedStudent.phone_num : (editedStudent.council.split(' / ')[0] || '')}
                         onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          let formattedValue = digitsOnly;
+
+                          if (digitsOnly.length > 3 && digitsOnly.length <= 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+                          } else if (digitsOnly.length > 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7, 11)}`;
+                          }
+                          
                           if (mode === 'staff' || mode === 'committee') {
-                            handleInputChange('phone_num', e.target.value);
+                            handleInputChange('phone_num', formattedValue);
                           } else {
                             const parts = editedStudent.council.split(' / ');
-                            const newCouncil = `${e.target.value} / ${parts[1] || ''} / ${parts[2] || ''}`;
+                            const newCouncil = `${value} / ${parts[1] || ''} / ${parts[2] || ''}`;
                             handleInputChange('council', newCouncil);
                           }
                         }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
+                        maxLength={13}
                       />
                     </div>
 
@@ -629,8 +823,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>위원회 구분<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.grade} // sortation -> grade
-                        onChange={(e) => handleInputChange('grade', e.target.value)}
+                        value={isGradeOther ? '직접 입력' : editedStudent.grade}
+                        onChange={(e) => {
+                          if (e.target.value === '직접 입력') {
+                            setIsGradeOther(true);
+                          } else {
+                            setIsGradeOther(false);
+                            handleInputChange('grade', e.target.value);
+                          }
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                       >
@@ -639,7 +840,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="학과운영위원회">학과운영위원회</option>
                         <option value="입학위원회">입학위원회</option>
                         <option value="졸업위원회">졸업위원회</option>
+                        <option value="직접 입력">직접 입력</option>
                       </select>
+                      {isGradeOther && (
+                        <input
+                          type="text"
+                          value={customGrade}
+                          onChange={(e) => setCustomGrade(e.target.value)}
+                          placeholder="위원회 구분 직접 입력"
+                          disabled={!isEditing}
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -658,10 +870,23 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <input
                         type="text"
                         value={editedStudent.phone_num} // phone_num 직접 사용
-                        onChange={(e) => handleInputChange('phone_num', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          let formattedValue = digitsOnly;
+
+                          if (digitsOnly.length > 3 && digitsOnly.length <= 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+                          } else if (digitsOnly.length > 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7, 11)}`;
+                          }
+                          
+                          handleInputChange('phone_num', formattedValue);
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
+                        maxLength={13}
                       />
                     </div>
 
@@ -680,8 +905,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>직책<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.state} // position -> state
-                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        value={isStateOther ? '기타' : editedStudent.state}
+                        onChange={(e) => {
+                          if (e.target.value === '직접 입력') {
+                            setIsStateOther(true);
+                          } else {
+                            setIsStateOther(false);
+                            handleInputChange('state', e.target.value);
+                          }
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                       >
@@ -690,7 +922,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="위원">위원</option>
                         <option value="간사">간사</option>
                         <option value="자문위원">자문위원</option>
+                        <option value="직접 입력">직접 입력</option>
                       </select>
+                      {isStateOther && (
+                        <input
+                          type="text"
+                          value={customState}
+                          onChange={(e) => setCustomState(e.target.value)}
+                          placeholder="직책 직접 입력"
+                          disabled={!isEditing}
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -835,10 +1078,23 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <input
                         type="text"
                         value={editedStudent.phone_num}
-                        onChange={(e) => handleInputChange('phone_num', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          let formattedValue = digitsOnly;
+
+                          if (digitsOnly.length > 3 && digitsOnly.length <= 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+                          } else if (digitsOnly.length > 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7, 11)}`;
+                          }
+                          
+                          handleInputChange('phone_num', formattedValue);
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
+                        maxLength={13}
                       />
                     </div>
 
@@ -861,8 +1117,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>상태</label>
                       <select
-                        value={editedStudent.state}
-                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        value={isStateOther ? '직접 입력' : editedStudent.state}
+                        onChange={(e) => {
+                          if (e.target.value === '직접 입력') {
+                            setIsStateOther(true);
+                          } else {
+                            setIsStateOther(false);
+                            handleInputChange('state', e.target.value);
+                          }
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                       >
@@ -871,7 +1134,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="휴학">휴학</option>
                         <option value="졸업">졸업</option>
                         <option value="자퇴">자퇴</option>
+                        <option value="직접 입력">직접 입력</option>
                       </select>
+                      {isStateOther && (
+                        <input
+                          type="text"
+                          value={customState}
+                          onChange={(e) => setCustomState(e.target.value)}
+                          placeholder="상태 직접 입력"
+                          disabled={!isEditing}
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group full-width">
@@ -897,6 +1171,24 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         onFocus={handleInputFocus}
                       />
                     </div>
+
+                    {/* 유급 여부 체크박스 (조교만 보이게) */}
+                    {isSupp && !isAdding && (
+                      <div className="form-group">
+                        <label>유급 여부</label>
+                        <div className="checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            checked={isRetained}
+                            onChange={(e) => handleRetainedChange(e.target.checked)}
+                            id="retained-checkbox"
+                          />
+                          <label htmlFor="retained-checkbox" className="checkbox-label">
+                            유급으로 표시
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -923,34 +1215,66 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 <div className="form-group">
                   <label>유형</label>
                   <select
-                    value={newIssue.type_issue}
-                    onChange={(e) => handleIssueInputChange('type_issue', e.target.value)}
+                    value={isTypeOther ? '직접 입력' : newIssue.type_issue}
+                    onChange={(e) => {
+                      if (e.target.value === '직접 입력') {
+                        setIsTypeOther(true);
+                        handleIssueInputChange('type_issue', '');
+                      } else {
+                        setIsTypeOther(false);
+                        handleIssueInputChange('type_issue', e.target.value);
+                      }
+                    }}
                     onFocus={handleInputFocus}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseUp={(e) => e.preventDefault()}
                   >
                     <option value="">선택하세요</option>
                     <option value="학업">학업</option>
                     <option value="출석">출석</option>
                     <option value="행동">행동</option>
                     <option value="기타">기타</option>
+                    <option value="직접 입력">직접 입력</option>
                   </select>
+                  {isTypeOther && (
+                    <input
+                      type="text"
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      placeholder="유형 직접 입력"
+                      style={{ marginTop: '8px' }}
+                    />
+                  )}
                 </div>
                 <div className="form-group">
-                  <label>심각도</label>
+                  <label>주의도</label>
                   <select
-                    value={newIssue.level_issue}
-                    onChange={(e) => handleIssueInputChange('level_issue', e.target.value)}
+                    value={isLevelOther ? '직접 입력' : newIssue.level_issue}
+                    onChange={(e) => {
+                      if (e.target.value === '직접 입력') {
+                        setIsLevelOther(true);
+                        handleIssueInputChange('level_issue', '');
+                      } else {
+                        setIsLevelOther(false);
+                        handleIssueInputChange('level_issue', e.target.value);
+                      }
+                    }}
                     onFocus={handleInputFocus}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseUp={(e) => e.preventDefault()}
                   >
                     <option value="">선택하세요</option>
                     <option value="낮음">낮음</option>
                     <option value="보통">보통</option>
                     <option value="높음">높음</option>
                     <option value="심각">심각</option>
+                    <option value="직접 입력">직접 입력</option>
                   </select>
+                  {isLevelOther && (
+                    <input
+                      type="text"
+                      value={customLevel}
+                      onChange={(e) => setCustomLevel(e.target.value)}
+                      placeholder="주의도 직접 입력"
+                      style={{ marginTop: '8px' }}
+                    />
+                  )}
                 </div>
                 </div>
                 <div className="form-group">
@@ -961,8 +1285,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     placeholder="특이사항 내용을 입력하세요..."
                     rows={3}
                     onFocus={handleInputFocus}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseUp={(e) => e.preventDefault()}
                   />
                 </div>
                 <div className="form-actions">

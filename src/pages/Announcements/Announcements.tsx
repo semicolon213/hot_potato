@@ -79,8 +79,16 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
     return false;
   });
 
-  // 클라이언트 측에서 역순 정렬 (최신순)
-  const sortedFilteredPosts = [...filteredPosts].sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  // 고정 공지와 일반 공지를 분리하여 각각 정렬
+  const pinnedPosts = filteredPosts.filter(p => p.isPinned);
+  const normalPosts = filteredPosts.filter(p => !p.isPinned);
+
+  // 각 그룹을 ID 역순으로 정렬 (최신순)
+  pinnedPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  normalPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+
+  // 고정 공지를 최상단에 위치시켜 최종 목록 생성
+  const sortedFilteredPosts = [...pinnedPosts, ...normalPosts];
 
   // Pagination logic
   const totalPages = Math.ceil(sortedFilteredPosts.length / postsPerPage);
@@ -94,7 +102,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
     }
   };
 
-  const paginationNumbers = totalPages >= 1 ? getPaginationNumbers(currentPage, totalPages) : [];
+  const paginationNumbers = totalPages > 1 ? getPaginationNumbers(currentPage, totalPages) : [];
 
   return (
     <div className="announcements-container">
@@ -110,7 +118,6 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                 value={searchCriteria} 
                 onChange={(e) => setSearchCriteria(e.target.value)} 
                 className="search-criteria-select"
-                title="검색 기준 선택"
               >
                 <option value="title">제목</option>
                 <option value="author">작성자</option>
@@ -145,13 +152,6 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
         ) : filteredPosts.length > 0 ? (
           <>
             <table className="post-table">
-              <colgroup>
-                <col className="col-number-width" />
-                <col className="col-title-width" />
-                <col className="col-author-width" />
-                <col className="col-views-width" />
-                <col className="col-date-width" />
-              </colgroup>
               <thead>
                 <tr>
                   <th className="col-number">번호</th>
@@ -167,19 +167,24 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                     key={post.id} 
                     onClick={() => onSelectAnnouncement(post)}
                     className={post.isPinned ? 'pinned-announcement-row' : ''}
+                    style={post.isPinned ? { 
+                      backgroundColor: '#fff5f5', 
+                      borderLeft: '4px solid #ff6b6b',
+                      fontWeight: '500'
+                    } : {}}
                   >
                     <td className="col-number">
                       {post.isPinned ? (
-                        <span className="pinned-icon">📌</span>
+                        <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>📌</span>
                       ) : (
                         post.id
                       )}
                     </td>
                     <td className="col-title">
-                      <div className="title-cell-inner">
-                        <span className="title-text">
-                          {post.isPinned && <span className="pinned-label">[고정]</span>}
-                          <span className="title-ellipsis">{post.title}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ flex: 1 }}>
+                          {post.isPinned && <span style={{ color: '#ff6b6b', marginRight: '5px', fontWeight: 'bold' }}>[고정]</span>}
+                          {post.title}
                         </span>
                         {post.isPinned && user && onUnpinAnnouncement && (
                           (String(user.studentId) === post.writer_id || user.isAdmin) && (
@@ -190,7 +195,24 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                                   onUnpinAnnouncement(post.id);
                                 }
                               }}
-                              className="unpin-button"
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                backgroundColor: '#fff',
+                                color: '#ff6b6b',
+                                border: '1px solid #ff6b6b',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ff6b6b';
+                                e.currentTarget.style.color = '#fff';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#fff';
+                                e.currentTarget.style.color = '#ff6b6b';
+                              }}
                             >
                               해제
                             </button>
@@ -205,39 +227,38 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="page-arrow-link">
+                  <img src={RightArrowIcon} alt="Previous" className="arrow-icon arrow-left" />
+                  <span>이전</span>
+                </button>
+
+                {paginationNumbers.map((page, index) => {
+                  if (typeof page === 'string') {
+                    return <span key={`ellipsis-${index}`} className="page-ellipsis">...</span>;
+                  }
+                  return (
+                    <button 
+                      key={page} 
+                      onClick={() => paginate(page)} 
+                      className={`page-link ${currentPage === page ? 'active' : ''}`}>
+                      {page}
+                    </button>
+                  );
+                })}
+
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="page-arrow-link">
+                  <span>다음</span>
+                  <img src={RightArrowIcon} alt="Next" className="arrow-icon" />
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <p className="no-results">{isAuthenticated ? '공지사항이 없습니다.' : '데이터를 불러오는 중입니다. 잠시만 기다려주세요...'}</p>
         )}
       </div>
-
-      {filteredPosts.length > 0 && totalPages >= 1 && (
-        <div className="pagination">
-          <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="page-arrow-link">
-            <img src={RightArrowIcon} alt="Previous" className="arrow-icon arrow-left" />
-            <span>이전</span>
-          </button>
-
-          {paginationNumbers.map((page, index) => {
-            if (typeof page === 'string') {
-              return <span key={`ellipsis-${index}`} className="page-ellipsis">...</span>;
-            }
-            return (
-              <button 
-                key={page} 
-                onClick={() => paginate(page)} 
-                className={`page-link ${currentPage === page ? 'active' : ''}`}>
-                {page}
-              </button>
-            );
-          })}
-
-          <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="page-arrow-link">
-            <span>다음</span>
-            <img src={RightArrowIcon} alt="Next" className="arrow-icon" />
-          </button>
-        </div>
-      )}
     </div>
   );
 };

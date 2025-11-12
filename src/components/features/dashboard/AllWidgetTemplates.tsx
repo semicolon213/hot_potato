@@ -1,4 +1,5 @@
 import React from 'react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 /**
  * 과제 목록을 표시하는 위젯 컴포넌트입니다.
@@ -54,9 +55,27 @@ export const CampusMapWidget = ({ message, image }: { message: string, image: st
  * @param {object} props - 컴포넌트 props
  * @param {string} props.message - 표시할 메시지
  */
-export const DefaultMessage = ({ message }: { message: string }) => (
+export const DefaultMessage = ({ message, onButtonClick }: { message: string, onButtonClick?: () => void }) => (
     <div className="widget-content">
         <p>{message}</p>
+        {onButtonClick && (
+          <button
+              onClick={onButtonClick}
+              style={{
+                  marginTop: '10px',
+                  padding: '8px 12px',
+                  backgroundColor: '#1a1a1a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  fontSize: '14px'
+              }}
+          >
+              장부 선택
+          </button>
+        )}
     </div>
 );
 
@@ -136,13 +155,67 @@ export const KeyValueListComponent = ({ items }: { items: { icon: string; key: s
  * @param {object} props - 컴포넌트 props
  * @param {string[]} props.items - 텍스트 항목 배열
  */
-export const ListComponent = ({ items }: { items: string[] }) => (
-  <div className="widget-content">
-    {items.map((item, index) => (
-      <p key={index}>{item}</p>
-    ))}
-  </div>
-);
+export const ListComponent = ({ items, onButtonClick, spreadsheetId, widgetType }: { items: string[], onButtonClick?: () => void, spreadsheetId?: string, widgetType?: string }) => {
+  // 장부 관련 위젯(tuition)인 경우에만 장부 선택 메시지 표시
+  const isAccountingWidget = widgetType === 'tuition';
+  
+  // 장부 관련 위젯이고, spreadsheetId가 없고, items가 비어있거나 "장부를 선택해주세요" 메시지인 경우에만 버튼 표시
+  const shouldShowButton = isAccountingWidget && !spreadsheetId && (!items || items.length === 0 || (items.length === 1 && items[0] === '장부를 선택해주세요'));
+  
+  if (shouldShowButton) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666', marginBottom: '10px' }}>장부를 선택해주세요</p>
+        {onButtonClick && (
+          <button
+            onClick={onButtonClick}
+            style={{
+              marginTop: '10px',
+              padding: '8px 12px',
+              backgroundColor: '#1a1a1a',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              width: '100%',
+              fontSize: '14px'
+            }}
+          >
+            장부 선택
+          </button>
+        )}
+      </div>
+    );
+  }
+  
+  // 데이터가 없지만 장부가 선택된 경우 로딩 중 표시 (장부 관련 위젯만)
+  if (isAccountingWidget && spreadsheetId && (!items || items.length === 0)) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666' }}>데이터를 불러오는 중...</p>
+      </div>
+    );
+  }
+  
+  // 일반 위젯(공지사항 등)에서 데이터가 없는 경우
+  if (!isAccountingWidget && (!items || items.length === 0)) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666' }}>데이터를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="widget-content">
+      {items.map((item, index) => (
+        <p key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+          {item}
+        </p>
+      ))}
+    </div>
+  );
+};
 
 /**
  * 교수님 연락처 위젯 컴포넌트입니다.
@@ -173,14 +246,33 @@ export const ProfessorContactWidget: React.FC = () => {
  * @param {object} props - 컴포넌트 props
  * @param {{ name: string; status: string; icon: string; color: string }[]} props.items - 상태 항목 배열 (이름, 상태, 아이콘, 색상 포함)
  */
-export const StatusListComponent = ({ items }: { items: { name: string; status: string; icon: string; color: string }[] }) => (
+export const StatusListComponent = ({ items, onButtonClick }: { items: { name: string; status: string; icon: string; color: string }[], onButtonClick?: () => void }) => (
     <div className="widget-content">
-        {items.map((item, index) => (
-            <p key={index}>
-                <i className={item.icon} style={{ color: item.color, marginRight: '8px' }}></i>
-                {item.name} ({item.status})
-            </p>
-        ))}
+        {items.length > 0 ? (
+            items.map((item, index) => (
+                <p key={index}>
+                    <i className={item.icon} style={{ color: item.color, marginRight: '8px' }}></i>
+                    {item.name} ({item.status})
+                </p>
+            ))
+        ) : (
+            <p>표시할 데이터가 없습니다.</p>
+        )}
+        <button
+            onClick={onButtonClick}
+            style={{
+                marginTop: '10px',
+                padding: '8px 12px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%'
+            }}
+        >
+            장부 선택
+        </button>
     </div>
 );
 
@@ -230,6 +322,670 @@ export const WeatherWidget = ({ today, forecast }: {
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+/**
+ * 원형 그래프를 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ category: string; amount: number }[]} props.data - 그래프에 표시할 데이터 배열
+ */
+export const PieChartComponent = ({ data, onButtonClick, spreadsheetId }: { data: { category: string; amount: number }[], onButtonClick?: () => void, spreadsheetId?: string }) => {
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
+
+  // 장부가 선택되지 않은 경우 장부 선택 버튼 표시
+  if (!spreadsheetId) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666', marginBottom: '10px' }}>장부를 선택해주세요</p>
+        {onButtonClick && (
+          <button
+            onClick={onButtonClick}
+            style={{
+              marginTop: '10px',
+              padding: '8px 12px',
+              backgroundColor: '#1a1a1a',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              width: '100%',
+              fontSize: '14px'
+            }}
+          >
+            장부 선택
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666' }}>데이터를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="widget-content" style={{ width: '100%', height: '300px', minHeight: '300px', position: 'relative' }}>
+      <ResponsiveContainer width="100%" height={300} minHeight={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="amount"
+            nameKey="category"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value: number) => `${value.toLocaleString()}원`} />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+/**
+ * 예산 계획 결재 대기 항목을 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ budget_id: string; title: string; total_amount: number; status: string; action_required: string }[]} props.items - 결재 대기 항목 배열
+ * @param {() => void} props.onButtonClick - 장부 선택 버튼 클릭 핸들러
+ */
+export const BudgetPlanComponent = ({ items, onButtonClick, spreadsheetId }: { items: { budget_id: string; title: string; total_amount: number; status: string; action_required: string }[], onButtonClick?: () => void, spreadsheetId?: string }) => {
+  if (!spreadsheetId) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666', marginBottom: '10px' }}>장부를 선택해주세요</p>
+        {onButtonClick && (
+          <button
+            onClick={onButtonClick}
+            style={{
+              marginTop: '10px',
+              padding: '8px 12px',
+              backgroundColor: '#1a1a1a',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              width: '100%',
+              fontSize: '14px'
+            }}
+          >
+            장부 선택
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <div className="widget-content">
+        <p style={{ color: '#666666' }}>결재 대기 중인 예산 계획이 없습니다.</p>
+      </div>
+    );
+  }
+
+  const getActionLabel = (action: string) => {
+    switch (action) {
+      case 'review': return '검토';
+      case 'approve': return '승인';
+      case 'execute': return '집행';
+      default: return '기타';
+    }
+  };
+
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case 'review': return { bg: '#fff3cd', color: '#856404' };
+      case 'approve': return { bg: '#d1ecf1', color: '#0c5460' };
+      case 'execute': return { bg: '#d4edda', color: '#155724' };
+      default: return { bg: '#f8fafc', color: '#666666' };
+    }
+  };
+
+  return (
+    <div className="widget-content">
+      {items.map((item, index) => {
+        const actionColors = getActionColor(item.action_required);
+        return (
+          <div key={index} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontWeight: '500', fontSize: '14px', flex: 1 }}>{item.title}</span>
+              <span style={{ 
+                fontSize: '12px', 
+                padding: '2px 8px', 
+                borderRadius: '4px',
+                backgroundColor: actionColors.bg,
+                color: actionColors.color,
+                marginLeft: '8px'
+              }}>
+                {getActionLabel(item.action_required)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+              <span style={{ fontSize: '12px', color: '#666666' }}>{item.budget_id}</span>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a' }}>
+                {item.total_amount.toLocaleString()}원
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/**
+ * 워크플로우 현황을 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ title: string; status: string; date: string }[]} props.items - 워크플로우 항목 배열
+ */
+export const WorkflowStatusComponent = ({ items }: { items: { title: string; status: string; date: string }[] }) => (
+  <div className="widget-content">
+    {items.length > 0 ? (
+      items.map((item, index) => (
+        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontWeight: '500', fontSize: '14px' }}>{item.title}</span>
+            <span style={{ 
+              fontSize: '12px', 
+              padding: '2px 8px', 
+              borderRadius: '4px',
+              backgroundColor: item.status === '검토중' ? '#fff3cd' : item.status === '결재중' ? '#d1ecf1' : '#d4edda',
+              color: item.status === '검토중' ? '#856404' : item.status === '결재중' ? '#0c5460' : '#155724'
+            }}>
+              {item.status}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#666666' }}>{item.date}</div>
+        </div>
+      ))
+    ) : (
+      <p style={{ color: '#666666' }}>대기 중인 결재가 없습니다.</p>
+    )}
+  </div>
+);
+
+/**
+ * 학생 관리 요약을 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ label: string; value: string }[]} props.items - 통계 항목 배열
+ * @param {string} props.selectedStatus - 선택된 학생 상태 (재학, 휴학, 유급)
+ * @param {(status: string) => void} props.onStatusChange - 상태 변경 핸들러
+ */
+export const StudentSummaryComponent = ({ items, selectedStatus, onStatusChange, rawData }: { items: { label: string; value: string }[], selectedStatus?: string, onStatusChange?: (status: string) => void, rawData?: { status: string; grade: string; count: number }[] }) => {
+  const [currentStatus, setCurrentStatus] = React.useState<string>(selectedStatus || '재학');
+  
+  // selectedStatus prop이 변경되면 state 업데이트
+  React.useEffect(() => {
+    if (selectedStatus) {
+      setCurrentStatus(selectedStatus);
+    }
+  }, [selectedStatus]);
+  
+  const statusOptions = ['재학', '휴학', '유급'];
+  
+  const handleStatusChange = (status: string) => {
+    setCurrentStatus(status);
+    onStatusChange?.(status);
+  };
+  
+  // rawData가 있으면 선택된 상태에 따라 필터링된 데이터 표시
+  const filteredData = rawData && rawData.length > 0
+    ? rawData.filter(item => item.status === currentStatus)
+    : [];
+  
+  const displayItems = filteredData.length > 0
+    ? filteredData
+        .sort((a, b) => parseInt(a.grade) - parseInt(b.grade)) // 학년 순서대로 정렬
+        .map(item => ({
+          label: `${item.grade}학년`,
+          value: `${item.count}명`
+        }))
+    : items;
+  
+  // 선택된 상태의 총원 계산
+  const totalCount = filteredData.length > 0
+    ? filteredData.reduce((sum, item) => sum + item.count, 0)
+    : 0;
+  
+  return (
+    <div className="widget-content">
+      {/* 상태 선택 토글 버튼 */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', justifyContent: 'flex-end' }}>
+        {statusOptions.map((status) => (
+          <button
+            key={status}
+            onClick={() => handleStatusChange(status)}
+            style={{
+              padding: '3px 10px',
+              fontSize: '11px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              backgroundColor: currentStatus === status ? '#1a1a1a' : 'white',
+              color: currentStatus === status ? 'white' : '#1a1a1a',
+              transition: 'all 0.2s'
+            }}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
+      
+      {/* 선택된 상태의 학년별 학생 수 표시 */}
+      {displayItems.length > 0 ? (
+        <>
+          {displayItems.map((item, index) => (
+            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '8px', borderBottom: index < displayItems.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+              <span><i className="fas fa-user-graduate" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
+              <span style={{ fontWeight: '600' }}>{item.value}</span>
+            </div>
+          ))}
+          {/* 총원 표시 */}
+          {totalCount > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              marginTop: '12px', 
+              paddingTop: '12px', 
+              borderTop: '2px solid #a0aec0',
+              fontWeight: '700',
+              fontSize: '15px'
+            }}>
+              <span><i className="fas fa-users" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>총원</span>
+              <span style={{ fontWeight: '700', color: '#1a1a1a' }}>{totalCount}명</span>
+            </div>
+          )}
+        </>
+      ) : (
+        <p style={{ color: '#666666' }}>데이터가 없습니다.</p>
+      )}
+    </div>
+  );
+};
+
+/**
+ * 교직원 관리 요약을 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ label: string; value: string }[]} props.items - 통계 항목 배열
+ */
+export const StaffSummaryComponent = ({ items }: { items: { label: string; value: string }[] }) => (
+  <div className="widget-content">
+    {items.map((item, index) => (
+      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+        <span><i className="fas fa-user-tie" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
+        <span style={{ fontWeight: '600' }}>{item.value}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/**
+ * 사용자 승인 대기를 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ name: string; email: string; userType: string }[]} props.items - 승인 대기 사용자 배열
+ */
+export const UserApprovalComponent = ({ items }: { items: { name: string; email: string; userType: string }[] }) => (
+  <div className="widget-content">
+    {items.length > 0 ? (
+      items.map((item, index) => (
+        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontWeight: '500', fontSize: '14px' }}>{item.name}</span>
+            <span style={{ fontSize: '12px', color: '#666666', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f8fafc' }}>
+              {item.userType === 'student' ? '학생' : 
+               item.userType === 'std_council' ? '집행부' :
+               item.userType === 'supp' ? '조교' :
+               item.userType === 'professor' ? '교수' :
+               item.userType === 'ad_professor' ? '겸임교원' : item.userType}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#666666' }}>{item.email}</div>
+        </div>
+      ))
+    ) : (
+      <p style={{ color: '#666666' }}>승인 대기 사용자가 없습니다.</p>
+    )}
+  </div>
+);
+
+/**
+ * 시스템 통계를 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ label: string; value: string }[]} props.items - 통계 항목 배열
+ */
+export const SystemStatsComponent = ({ items }: { items: { label: string; value: string }[] }) => (
+  <div className="widget-content">
+    {items.map((item, index) => (
+      <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+        <span><i className="fas fa-chart-bar" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
+        <span style={{ fontWeight: '600' }}>{item.value}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/**
+ * 문서 관리를 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ title: string; date: string; type: string }[]} props.items - 문서 항목 배열
+ */
+export const DocumentManagementComponent = ({ items }: { items: { title: string; date: string; type: string }[] }) => (
+  <div className="widget-content">
+    {items.length > 0 ? (
+      items.map((item, index) => (
+        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontWeight: '500', fontSize: '14px' }}>{item.title}</span>
+            <span style={{ fontSize: '12px', color: '#666666', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f8fafc' }}>
+              {item.type === 'shared' ? '공용' : '개인'}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#666666' }}>{item.date}</div>
+        </div>
+      ))
+    ) : (
+      <p style={{ color: '#666666' }}>최근 문서가 없습니다.</p>
+    )}
+  </div>
+);
+
+/**
+ * 예산 집행 현황을 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ label: string; value: string; percentage: number }[]} props.items - 집행 현황 항목 배열
+ * @param {() => void} props.onButtonClick - 장부 선택 버튼 클릭 핸들러
+ */
+export const BudgetExecutionComponent = ({ items, onButtonClick }: { items: { label: string; value: string; percentage: number }[], onButtonClick?: () => void }) => (
+  <div className="widget-content">
+    {items.length > 0 && items[0].label === '장부를 선택해주세요' ? (
+      <div>
+        <p style={{ color: '#666666', marginBottom: '10px' }}>장부를 선택해주세요</p>
+        <button
+          onClick={onButtonClick}
+          style={{
+            marginTop: '10px',
+            padding: '8px 12px',
+            backgroundColor: '#1a1a1a',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            width: '100%',
+            fontSize: '14px'
+          }}
+        >
+          장부 선택
+        </button>
+      </div>
+    ) : (
+      items.map((item, index) => (
+        <div key={index} style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span><i className="fas fa-chart-pie" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
+            <span style={{ fontWeight: '600' }}>{item.value}</span>
+          </div>
+          <div style={{ height: '6px', backgroundColor: '#f8fafc', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ 
+              width: `${item.percentage}%`, 
+              height: '100%', 
+              backgroundColor: item.percentage > 100 ? '#ef4444' : item.percentage > 80 ? '#f59e0b' : '#10b981',
+              transition: 'width 0.3s ease'
+            }}></div>
+          </div>
+          <div style={{ fontSize: '12px', color: '#666666', marginTop: '2px' }}>{item.percentage.toFixed(1)}%</div>
+        </div>
+      ))
+    )}
+  </div>
+);
+
+/**
+ * 회계 통계를 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ label: string; income: string; expense: string; balance: string }[]} props.items - 통계 항목 배열
+ * @param {() => void} props.onButtonClick - 장부 선택 버튼 클릭 핸들러
+ */
+export const AccountingStatsComponent = ({ items, onButtonClick, spreadsheetId, rawData }: { items: { label: string; income: string; expense: string; balance: string; balanceValue?: number }[], onButtonClick?: () => void, spreadsheetId?: string, rawData?: { category: string; income: number; expense: number }[] }) => {
+  const [viewMode, setViewMode] = React.useState<'category' | 'summary' | 'chart'>('category');
+  const [loadedRawData, setLoadedRawData] = React.useState<{ category: string; income: number; expense: number }[] | null>(rawData || null);
+  
+  // rawData가 없고 spreadsheetId가 있으면 데이터 다시 로드
+  React.useEffect(() => {
+    if (!loadedRawData && spreadsheetId && items && items.length > 0 && items[0].label !== '장부를 선택해주세요') {
+      const loadRawData = async () => {
+        try {
+          const { getAccountingCategorySummary } = await import("../../../utils/google/googleSheetUtils");
+          const summary = await getAccountingCategorySummary(spreadsheetId);
+          if (summary && summary.length > 0) {
+            setLoadedRawData(summary);
+            console.log('📊 rawData 재로드 완료:', summary.length, '개 카테고리');
+          }
+        } catch (error) {
+          console.error('❌ rawData 재로드 실패:', error);
+        }
+      };
+      loadRawData();
+    } else if (rawData && rawData !== loadedRawData) {
+      setLoadedRawData(rawData);
+    }
+  }, [spreadsheetId, items, rawData, loadedRawData]);
+  
+  // 통합 보기를 위한 수입/지출 합계 계산
+  let totalIncome = 0;
+  let totalExpense = 0;
+  
+  const dataToUse = loadedRawData || rawData;
+  if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
+    // rawData에서 직접 계산
+    totalIncome = dataToUse.reduce((sum, item) => sum + (Number(item.income) || 0), 0);
+    totalExpense = dataToUse.reduce((sum, item) => sum + (Number(item.expense) || 0), 0);
+    console.log('📊 통합 보기 계산 (rawData 사용):', { 
+      totalIncome, 
+      totalExpense, 
+      rawDataLength: dataToUse.length,
+      rawDataSample: dataToUse.slice(0, 2)
+    });
+  } else {
+    // rawData가 없으면 경고 로그
+    console.warn('⚠️ rawData가 없습니다. rawData:', dataToUse, 'items:', items?.slice(0, 2), 'spreadsheetId:', spreadsheetId);
+  }
+  
+  const totalBalance = totalIncome - totalExpense;
+  const totalBalanceStr = totalBalance >= 0 
+    ? `+${totalBalance.toLocaleString()}원` 
+    : `${totalBalance.toLocaleString()}원`;
+  const totalBalanceColor = totalBalance >= 0 ? '#10b981' : '#ef4444';
+  
+  return (
+    <div className="widget-content">
+      {(!spreadsheetId || (items.length > 0 && items[0].label === '장부를 선택해주세요')) ? (
+        <div>
+          <p style={{ color: '#666666', marginBottom: '10px' }}>장부를 선택해주세요</p>
+          {onButtonClick && (
+            <button
+              onClick={onButtonClick}
+              style={{
+                marginTop: '10px',
+                padding: '8px 12px',
+                backgroundColor: '#1a1a1a',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%',
+                fontSize: '14px'
+              }}
+            >
+              장부 선택
+            </button>
+          )}
+        </div>
+      ) : items.length > 0 ? (
+        <>
+          {/* 보기 모드 토글 버튼 */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setViewMode('category')}
+              style={{
+                padding: '3px 10px',
+                fontSize: '11px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                backgroundColor: viewMode === 'category' ? '#1a1a1a' : 'white',
+                color: viewMode === 'category' ? 'white' : '#1a1a1a',
+                transition: 'all 0.2s'
+              }}
+            >
+              카테고리별
+            </button>
+            <button
+              onClick={() => setViewMode('chart')}
+              style={{
+                padding: '3px 10px',
+                fontSize: '11px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                backgroundColor: viewMode === 'chart' ? '#1a1a1a' : 'white',
+                color: viewMode === 'chart' ? 'white' : '#1a1a1a',
+                transition: 'all 0.2s'
+              }}
+            >
+              그래프
+            </button>
+            <button
+              onClick={() => setViewMode('summary')}
+              style={{
+                padding: '3px 10px',
+                fontSize: '11px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                backgroundColor: viewMode === 'summary' ? '#1a1a1a' : 'white',
+                color: viewMode === 'summary' ? 'white' : '#1a1a1a',
+                transition: 'all 0.2s'
+              }}
+            >
+              통합
+            </button>
+          </div>
+          
+          {/* 카테고리별 보기 */}
+          {viewMode === 'category' ? (
+            items.map((item, index) => {
+              const balanceValue = item.balanceValue !== undefined 
+                ? item.balanceValue 
+                : parseFloat(item.balance.replace(/[^-\d.]/g, '')) || 0;
+              const balanceColor = balanceValue >= 0 ? '#10b981' : '#ef4444';
+              
+              return (
+                <div key={index} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: '500', fontSize: '14px' }}>{item.label}</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: balanceColor }}>
+                      {item.balance}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : viewMode === 'chart' ? (
+            /* 그래프 보기 */
+            <div style={{ width: '100%', height: '220px', minHeight: '220px', position: 'relative', marginTop: '-4px', overflow: 'hidden' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={dataToUse?.map(item => ({
+                    name: item.category,
+                    수입: item.income,
+                    지출: item.expense
+                  })) || []} 
+                  margin={{ top: 5, right: 10, left: 0, bottom: 40 }}
+                  barCategoryGap="20%"
+                  barGap={4}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={60}
+                    tick={{ fontSize: 9 }}
+                    interval={0}
+                    width={60}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 9 }}
+                    width={45}
+                    tickFormatter={(value) => {
+                      if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                      if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                      return value.toString();
+                    }}
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => `${value.toLocaleString()}원`}
+                    contentStyle={{ 
+                      fontSize: '10px', 
+                      padding: '5px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid #e5e7eb'
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '10px', paddingTop: '6px' }}
+                    iconSize={8}
+                  />
+                  <Bar dataKey="수입" fill="#10b981" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="지출" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            /* 통합 보기 */
+            <div>
+              <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f8fafc' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: '500', fontSize: '14px' }}>수입</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#10b981' }}>
+                    +{totalIncome.toLocaleString()}원
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: '500', fontSize: '14px' }}>지출</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#ef4444' }}>
+                    -{totalExpense.toLocaleString()}원
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px' }}>
+                <div style={{ fontWeight: '600', fontSize: '15px' }}>요약</div>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: totalBalanceColor }}>
+                  {totalBalanceStr}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div>
+          <p style={{ color: '#666666', marginBottom: '10px' }}>데이터를 불러오는 중...</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -181,7 +181,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
 
                     <div className="form-group">
                         <label><BiPaperclip /> 파일 첨부</label>
-                        <div className="attachment-area">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                             <button onClick={triggerFileInput} className="attachment-button">
                                 파일 선택
                             </button>
@@ -200,7 +200,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                             multiple
                             ref={fileInputRef}
                             onChange={handleFileChange}
-                            className="file-input-hidden"
+                            style={{ display: 'none' }}
                         />
                         <div className="attachment-list">
                             {attachments.map((file, index) => (
@@ -213,26 +213,39 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                     </div>
 
                     <div className="form-group">
-                        <div className="permission-header">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                             <label>권한 설정</label>
                             <button 
                                 type="button"
                                 onClick={() => setShowPermissionSettings(!showPermissionSettings)}
-                                className={`permission-toggle-button ${showPermissionSettings ? 'active' : ''}`}
+                                style={{ 
+                                    padding: '5px 10px', 
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    background: showPermissionSettings ? '#f0f0f0' : 'white'
+                                }}
                             >
                                 {showPermissionSettings ? '접기' : '권한 설정'}
                             </button>
                         </div>
                         
                         {showPermissionSettings && (
-                            <div className="permission-settings-panel">
-                                <div className="permission-section">
-                                    <label className="permission-section-label">
+                            <div style={{ 
+                                border: '1px solid #ddd', 
+                                borderRadius: '8px', 
+                                padding: '15px', 
+                                marginTop: '10px',
+                                background: '#f9f9f9'
+                            }}>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
                                         그룹 권한
                                     </label>
-                                    <div className="permission-group-list">
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                                         {GROUP_TYPES.map(group => (
-                                            <label key={group.value} className="permission-group-item">
+                                            <label key={group.value} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedGroups.includes(group.value)}
@@ -243,7 +256,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                                             setSelectedGroups(selectedGroups.filter(g => g !== group.value));
                                                         }
                                                     }}
-                                                    className="permission-checkbox"
+                                                    style={{ marginRight: '5px' }}
                                                 />
                                                 {group.label}
                                             </label>
@@ -251,20 +264,32 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="permission-section">
-                                    <label className="permission-section-label">
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
                                         개별 사용자 권한
                                     </label>
-                                    <div className="permission-user-list">
+                                    <div style={{ 
+                                        maxHeight: '200px', 
+                                        overflowY: 'auto', 
+                                        border: '1px solid #ddd', 
+                                        borderRadius: '4px', 
+                                        padding: '10px',
+                                        background: 'white'
+                                    }}>
                                         {users.length === 0 ? (
-                                            <div className="permission-loading">
+                                            <div style={{ padding: '10px', textAlign: 'center', color: '#666' }}>
                                                 사용자 목록을 불러오는 중...
                                             </div>
                                         ) : (
                                             users.map(userItem => (
                                                 <label 
                                                     key={userItem.id} 
-                                                    className="permission-user-item"
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        padding: '5px',
+                                                        cursor: 'pointer'
+                                                    }}
                                                 >
                                                     <input
                                                         type="checkbox"
@@ -276,19 +301,19 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                                                                 setSelectedIndividualUsers(selectedIndividualUsers.filter(id => id !== userItem.id));
                                                             }
                                                         }}
-                                                        className="permission-checkbox"
+                                                        style={{ marginRight: '8px' }}
                                                     />
                                                     <span>{userItem.name} ({userItem.user_type})</span>
                                                 </label>
                                             ))
                                         )}
                                     </div>
-                                    <div className="permission-footer">
+                                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
                                         {selectedIndividualUsers.length > 0 && (
-                                            <div className="permission-selected-count">선택된 사용자: {selectedIndividualUsers.length}명</div>
+                                            <div>선택된 사용자: {selectedIndividualUsers.length}명</div>
                                         )}
                                         {selectedGroups.length === 0 && selectedIndividualUsers.length === 0 && (
-                                            <div className="permission-default-message">
+                                            <div style={{ color: '#999', fontStyle: 'italic' }}>
                                                 권한을 설정하지 않으면 모든 승인된 사용자에게 공개됩니다.
                                             </div>
                                         )}

@@ -209,7 +209,12 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
 
     // 구분 필터링
     if (filters.grade) {
-      filtered = filtered.filter(staff => staff.pos === filters.grade);
+      if (filters.grade === '기타') {
+        const mainClassifications = ['전임교수', '조교', '외부강사', '겸임교수', '시간강사'];
+        filtered = filtered.filter(staff => staff.pos && !mainClassifications.includes(staff.pos));
+      } else {
+        filtered = filtered.filter(staff => staff.pos === filters.grade);
+      }
     }
 
     return filtered;
@@ -241,7 +246,7 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
 
   // 필터 옵션들 (교직원 전용)
   const filterOptions = {
-    grades: ['전임교수', '조교', '외부강사', '겸임교수', '시간강사']
+    grades: ['전임교수', '조교', '외부강사', '겸임교수', '시간강사', '기타']
   };
 
   // CSV 내보내기

@@ -594,6 +594,86 @@ function doPost(e) {
       }
     }
     
+    // 장부 카테고리 조회
+    if (req.action === 'getAccountingCategories') {
+      console.log('📊 장부 카테고리 조회 요청:', req.spreadsheetId);
+      try {
+        const categories = getAccountingCategories(req.spreadsheetId);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: true,
+            data: categories
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 장부 카테고리 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '장부 카테고리 조회 중 오류가 발생했습니다: ' + error.message,
+            data: []
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 학생 유급 여부 조회
+    if (req.action === 'getStudentRetainedStatus') {
+      console.log('📚 학생 유급 여부 조회 요청:', req);
+      try {
+        const result = getStudentRetainedStatus(req.studentId, req.spreadsheetId);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 학생 유급 여부 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '유급 여부 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 학생 유급 여부 업데이트
+    if (req.action === 'updateStudentRetained') {
+      console.log('📚 학생 유급 여부 업데이트 요청:', req);
+      try {
+        const result = updateStudentRetained(req.studentId, req.spreadsheetId, req.isRetained);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 학생 유급 여부 업데이트 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '유급 여부 업데이트 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 학생 학년 업데이트 (매년 첫날 트리거용)
+    if (req.action === 'updateStudentGrades') {
+      console.log('📚 학생 학년 업데이트 요청:', req);
+      try {
+        const result = updateStudentGrades(req.spreadsheetId);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 학생 학년 업데이트 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '학년 업데이트 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     // UserManagement.gs의 doPostAuthInternal 함수 호출
     const result = callUserManagementPost(req);
     console.log('UserManagement.gs 응답:', result);

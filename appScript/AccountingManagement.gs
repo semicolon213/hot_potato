@@ -716,3 +716,81 @@ function updateAccountSubManagers(req) {
   }
 }
 
+/**
+ * 장부 스프레드시트에서 카테고리 목록 가져오기
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @returns {Array<string>} 카테고리 목록
+ */
+function getAccountingCategories(spreadsheetId) {
+  try {
+    console.log('📊 장부 카테고리 조회 시작:', spreadsheetId);
+    
+    if (!spreadsheetId) {
+      throw new Error('스프레드시트 ID가 필요합니다');
+    }
+    
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const sheets = spreadsheet.getSheets();
+    
+    if (sheets.length === 0) {
+      console.warn('시트가 없습니다.');
+      return [];
+    }
+    
+    // 첫 번째 시트 사용
+    const sheet = sheets[0];
+    const sheetName = sheet.getName();
+    console.log('시트 이름:', sheetName);
+    
+    // 데이터 범위 가져오기 (A열에서 카테고리 찾기)
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      console.warn('데이터가 없습니다.');
+      return [];
+    }
+    
+    // 헤더 행 확인 (일반적으로 1행)
+    const headerRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+    const headers = headerRange.getValues()[0];
+    
+    // 카테고리 열 찾기 (일반적으로 "카테고리", "분류", "항목" 등)
+    let categoryColumnIndex = -1;
+    for (let i = 0; i < headers.length; i++) {
+      const header = String(headers[i]).toLowerCase().trim();
+      if (header.includes('카테고리') || header.includes('분류') || header.includes('항목') || header.includes('category')) {
+        categoryColumnIndex = i + 1; // 1-based index
+        break;
+      }
+    }
+    
+    // 카테고리 열을 찾지 못한 경우 A열 사용
+    if (categoryColumnIndex === -1) {
+      categoryColumnIndex = 1;
+      console.log('카테고리 열을 찾지 못했습니다. A열을 사용합니다.');
+    }
+    
+    // 카테고리 데이터 가져오기 (2행부터, 헤더 제외)
+    const categoryRange = sheet.getRange(2, categoryColumnIndex, lastRow - 1, 1);
+    const categoryValues = categoryRange.getValues();
+    
+    // 중복 제거 및 빈 값 제거
+    const categories = [];
+    const seen = new Set();
+    
+    for (let i = 0; i < categoryValues.length; i++) {
+      const category = String(categoryValues[i][0]).trim();
+      if (category && category !== '' && !seen.has(category)) {
+        seen.add(category);
+        categories.push(category);
+      }
+    }
+    
+    console.log('✅ 장부 카테고리 조회 완료:', categories.length, '개');
+    return categories;
+    
+  } catch (error) {
+    console.error('❌ 장부 카테고리 조회 오류:', error);
+    return [];
+  }
+}
+

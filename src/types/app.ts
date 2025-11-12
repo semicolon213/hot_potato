@@ -137,3 +137,19 @@ export interface Staff {
   date: string;
   note: string;
 }
+
+export interface WidgetData {
+  id: string;
+  type: string;
+  title: string;
+  componentType: string;
+  props: Record<string, unknown>;
+}
+
+export interface WidgetOption {
+    id: string;
+    type: string;
+    icon: string;
+    title: string;
+    description: string;
+}

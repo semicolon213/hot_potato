@@ -802,54 +802,35 @@ export const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: s
 
 // 캘린더 관련 함수들
 export const fetchCalendarEvents = async (): Promise<Event[]> => {
-    const spreadsheetIds = [
-        calendarProfessorSpreadsheetId, 
-        calendarStudentSpreadsheetId, 
-        calendarCouncilSpreadsheetId, 
-        calendarADProfessorSpreadsheetId, 
-        calendarSuppSpreadsheetId
-    ].filter(Boolean) as string[];
-
-    if (spreadsheetIds.length === 0) {
-        console.log('No calendar spreadsheet IDs available');
+    if (!calendarProfessorSpreadsheetId) {
+        console.log('Professor calendar spreadsheet ID not available');
         return [];
     }
 
     try {
-        const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
-            try {
-                console.log(`Fetching calendar events from spreadsheet: ${spreadsheetId}`);
+        console.log(`Fetching calendar events from spreadsheet: ${calendarProfessorSpreadsheetId}`);
+        const data = await getSheetData(calendarProfessorSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
 
-                const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+        if (!data || !data.values || data.values.length <= 1) {
+            return [];
+        }
 
-                if (!data || !data.values || data.values.length <= 1) {
-                    return [];
-                }
+        const events = data.values.slice(1).map((row: string[], index: number) => ({
+            id: `${calendarProfessorSpreadsheetId}-${row[0] || index}`,
+            title: row[1] || '',
+            startDate: row[2] || '',
+            endDate: row[3] || '',
+            description: row[4] || '',
+            colorId: row[5] || '',
+            startDateTime: row[6] || '',
+            endDateTime: row[7] || '',
+            type: row[8] || '',
+            rrule: row[9] || '',
+            attendees: row[10] || '',
+        }));
 
-                return data.values.slice(1).map((row: string[], index: number) => ({
-                    id: `${spreadsheetId}-${row[0] || index}`,
-                    title: row[1] || '',
-                    startDate: row[2] || '',
-                    endDate: row[3] || '',
-                    description: row[4] || '',
-                    colorId: row[5] || '',
-                    startDateTime: row[6] || '',
-                    endDateTime: row[7] || '',
-                    type: row[8] || '',
-                    rrule: row[9] || '',
-                    attendees: row[10] || '',
-                }));
-            } catch (sheetError) {
-                console.error(`Error fetching from spreadsheet ${spreadsheetId}:`, sheetError);
-                return [];
-            }
-        });
-
-        const results = await Promise.all(allEventsPromises);
-        const allEvents = results.flat();
-
-        console.log('Loaded calendar events:', allEvents.length);
-        return allEvents;
+        console.log('Loaded calendar events:', events.length);
+        return events;
     } catch (error) {
         console.error('Error fetching calendar events from Google Sheet:', error);
         return [];
@@ -992,6 +973,7 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             grade: row[4] || '',
             state: row[5] || '',
             council: row[6] || '',
+            flunk: row[7] || '', // 유급 필드 (H열)
         }));
 
         console.log(`Loaded ${students.length} students`);
@@ -1012,6 +994,21 @@ export const deleteStudent = async (spreadsheetId: string, studentNo: string): P
         setupPapyrusAuth();
 
         const sheetName = ENV_CONFIG.STUDENT_SHEET_NAME;
+
+        // Get sheet metadata to find the correct sheetId
+        const spreadsheet = await window.gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: targetSpreadsheetId,
+        });
+
+        const sheet = spreadsheet.result.sheets.find(
+            (s) => s.properties.title === sheetName
+        );
+
+        if (!sheet || sheet.properties.sheetId === undefined) {
+            throw new Error(`시트 '${sheetName}'을(를) 찾을 수 없거나 sheetId가 없습니다.`);
+        }
+        const sheetId = sheet.properties.sheetId;
+
         const data = await getSheetData(targetSpreadsheetId, sheetName);
 
         if (!data || !data.values || data.values.length === 0) {
@@ -1024,24 +1021,6 @@ export const deleteStudent = async (spreadsheetId: string, studentNo: string): P
             throw new Error('Student not found in the sheet');
         }
 
-        // rowIndex is 0-based for the array, but sheet rows are 1-based.
-        // The deleteRow function from papyrus-db likely needs the 1-based index.
-        // The header is at rowIndex 0, so data starts at 1. The actual sheet row is rowIndex + 1.
-        // However, deleteTemplate uses rowIndex directly. Let's check the papyrus-db library.
-        // The deleteRow function in papyrus-db takes (spreadsheetId, sheetId, rowIndex).
-        // It seems sheetId is a number (0 for the first sheet). I'll assume that.
-        // Let's trust the existing deleteTemplate implementation and use the 0-based rowIndex from findIndex.
-        // The sheet data from getSheetData includes the header, so we need to adjust the index.
-        // The findIndex is on `data.values`, which includes the header. So if student is on row 5 in the sheet, it's at index 4 in `data.values`.
-        // The `deleteRow` in `papyrus-db` seems to take a 1-based row index. So we should pass `rowIndex + 1`.
-        // Let's re-examine `deleteTemplate`. It gets `rowIndex` and passes it directly. But that `rowIndex` comes from the UI and is already 1-based.
-        // Here, `rowIndex` is 0-based from an array. So we need to add 1.
-        // The `deleteRow` function from `papyrus-db` expects a 1-based index.
-        // The `data.values` array is 0-indexed. So, we need to pass `rowIndex + 1` to `deleteRow`.
-        // The `deleteTemplate` function receives `rowIndex` which is `index + 2`. This seems to be a 1-based index.
-        // So I will use `rowIndex` directly, as it seems to be what `deleteRow` expects.
-
-        const sheetId = 0; // Assuming the first sheet
         await deleteRow(targetSpreadsheetId, sheetId, rowIndex);
 
         console.log(`Student with number ${studentNo} deleted successfully.`);
