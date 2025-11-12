@@ -224,16 +224,24 @@ const App: React.FC = () => {
     const pageFromUrl = urlParams.get('page');
     const announcementId = urlParams.get('announcementId');
 
-    if (pageFromUrl === 'announcement-view' && announcementId && announcements.length > 0) {
-      // ID를 문자열로 통일하여 비교
-      const announcement = announcements.find(a => String(a.id) === String(announcementId));
-      if (announcement) {
-        setSelectedAnnouncement(announcement);
-      } else {
-        console.warn('URL의 announcementId와 일치하는 공지사항을 찾을 수 없습니다:', announcementId);
+    if (pageFromUrl === 'announcement-view' && announcementId) {
+      // announcements가 로드된 후, localStorage의 selectedAnnouncement와 비교하여 최신 정보로 업데이트
+      if (announcements.length > 0) {
+        const announcement = announcements.find(a => String(a.id) === String(announcementId));
+        if (announcement) {
+          setSelectedAnnouncement(announcement);
+          localStorage.setItem('selectedAnnouncement', JSON.stringify(announcement)); // 최신 정보로 업데이트
+        } else {
+          console.warn('URL/localStorage의 announcementId와 일치하는 공지사항을 찾을 수 없습니다:', announcementId);
+          setSelectedAnnouncement(null);
+          localStorage.removeItem('selectedAnnouncement');
+        }
       }
+    } else if (pageFromUrl !== 'announcement-view') {
+      setSelectedAnnouncement(null);
+      localStorage.removeItem('selectedAnnouncement');
     }
-  }, [announcements, currentPage]);
+  }, [announcements, currentPage, setSelectedAnnouncement]);
 
   // 페이지 전환 처리
   const handlePageChange = (pageName: string, params?: Record<string, string>) => {
@@ -322,39 +330,86 @@ const App: React.FC = () => {
   };
 
   // 공지사항 추가 핸들러
-  const handleAddAnnouncement = async (postData: { 
-    title: string; 
-    content: string; 
-    author: string; 
-    writer_id: string; 
-    attachments: File[]; 
+  const handleAddAnnouncement = async (postData: {
+    title: string;
+    content: string;
+    author: string;
+    writer_id: string;
+    attachments: File[];
     accessRights?: { individual?: string[]; groups?: string[] };
-    isPinned?: boolean; 
-    userType?: string; 
+    isPinned?: boolean;
+    userType?: string;
   }) => {
+    if (!announcementSpreadsheetId) {
+      alert("Announcement spreadsheet ID not found");
+      return;
+    }
+    if (!user || !user.email || !user.studentId || !user.userType) {
+      alert("User information is incomplete for adding announcement.");
+      return;
+    }
+
+    // 1. 다음에 생성될 ID 예측
+    const maxId = announcements.reduce((max, post) => {
+      const currentId = parseInt(post.id, 10);
+      return !isNaN(currentId) && currentId > max ? currentId : max;
+    }, 0);
+    const nextId = String(maxId + 1);
+
+    // 2. 낙관적 업데이트를 위한 새 공지사항 객체 생성
+    const filesForOptimisticUpdate = postData.attachments.map(file => ({
+      name: file.name,
+      url: '' // URL은 아직 알 수 없으므로 비워둠
+    }));
+    const fileNoticeForOptimisticUpdate = filesForOptimisticUpdate.length > 0
+      ? JSON.stringify(filesForOptimisticUpdate)
+      : '';
+
+    // 보기 모드에서 즉시 표시하기 위해 content에 첨부파일 HTML 추가
+    const attachmentHtmlString = filesForOptimisticUpdate.map(file =>
+      `<p>첨부파일: <a href="${file.url}" download="${file.name}">${file.name}</a></p>`
+    ).join('');
+    const contentForOptimisticUpdate = postData.content + attachmentHtmlString;
+
+    const newAnnouncement: Post = {
+      id: nextId, // 예측한 ID 사용
+      title: postData.title,
+      author: postData.author,
+      date: new Date().toISOString().split('T')[0], // 현재 날짜
+      views: 0,
+      likes: 0,
+      content: contentForOptimisticUpdate, // 첨부파일 HTML이 포함된 내용
+      writer_id: postData.writer_id,
+      writer_email: user.email,
+      file_notice: fileNoticeForOptimisticUpdate, // 수정 모드를 위한 데이터
+      access_rights: postData.accessRights ? JSON.stringify(postData.accessRights) : '',
+      fix_notice: postData.isPinned ? 'O' : '',
+      isPinned: postData.isPinned,
+    };
+
+    // 현재 공지사항 목록 백업 (롤백용)
+    const originalAnnouncements = announcements;
+
+    // 3. UI를 즉시 업데이트 (새 공지사항을 목록 맨 앞에 추가)
+    setAnnouncements([newAnnouncement, ...originalAnnouncements]);
+    handlePageChange('announcements'); // 공지사항 목록 페이지로 이동
+
     try {
-      if (!announcementSpreadsheetId) {
-        throw new Error("Announcement spreadsheet ID not found");
-      }
-      if (!user || !user.email) {
-        throw new Error("User email is required");
-      }
+      // 4. 실제 서버에 공지사항 추가 요청
       await addAnnouncement(announcementSpreadsheetId, {
         ...postData,
         writerEmail: user.email
       });
-      
-      // 공지사항 목록 새로고침
-      if (user.studentId && user.userType) {
-        const updatedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
-        setAnnouncements(updatedAnnouncements);
-      }
-      
-      // 성공 시 목록으로 이동
-      handlePageChange('announcements');
+
+      // 5. 서버 응답 성공 시, 전체 공지사항 목록을 다시 가져와서 UI 업데이트
+      const updatedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
+      setAnnouncements(updatedAnnouncements);
+
     } catch (error) {
       console.error('Error adding announcement:', error);
       alert('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      // 6. 오류 발생 시 UI를 이전 상태로 롤백
+      setAnnouncements(originalAnnouncements);
     }
   };
 
@@ -383,10 +438,10 @@ const App: React.FC = () => {
     });
   };
 
-  const handleUpdateAnnouncement = async (announcementId: string, postData: { 
-    title: string; 
-    content: string; 
-    attachments: File[]; 
+  const handleUpdateAnnouncement = async (announcementId: string, postData: {
+    title: string;
+    content: string;
+    attachments: File[];
     existingAttachments: { name: string, url: string }[];
     accessRights?: { individual?: string[]; groups?: string[] };
     isPinned?: boolean;
@@ -433,7 +488,7 @@ const App: React.FC = () => {
     }
 
     const originalAnnouncements = announcements;
-    
+
     // Optimistically update the UI
     const updatedAnnouncements = announcements.map(post => {
       if (post.id === announcementId) {
@@ -456,7 +511,7 @@ const App: React.FC = () => {
         existingAttachments: [],
         isPinned: false
       });
-      
+
       // 목록 새로고침
       if (user.userType) {
         const refreshedAnnouncements = await fetchAnnouncements(user.studentId, user.userType);
