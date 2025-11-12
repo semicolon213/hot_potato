@@ -156,10 +156,34 @@
     border-color: var(--sidebar-primary);
 }
 
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Add gap between items */
+  padding: 8px 12px;
+  border-radius: var(--sidebar-radius-sm);
+  background-color: #f8f9fa;
+}
+
 .attachment-name {
     font-size: clamp(13px, 1.5vh, 17px);
-    color: var(--sidebar-primary);
+    color: #4682B4; /* Changed to a darker blue */
     font-weight: var(--font-weight-medium);
+}
+
+.remove-attachment-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc3545; /* Set icon color to red */
+}
+
+.remove-attachment-button:hover {
+  color: #c82333; /* Slightly darker red on hover */
 }
 
 .image-preview {

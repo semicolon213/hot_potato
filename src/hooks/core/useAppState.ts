@@ -137,6 +137,17 @@ export const useAppState = () => {
                 setCurrentPage("dashboard");
             }
 
+            // 선택된 공지사항 상태 복원
+            const savedSelectedAnnouncement = localStorage.getItem('selectedAnnouncement');
+            if (savedSelectedAnnouncement) {
+                try {
+                    setSelectedAnnouncement(JSON.parse(savedSelectedAnnouncement));
+                } catch (e) {
+                    console.error("Failed to parse saved selected announcement:", e);
+                    localStorage.removeItem('selectedAnnouncement');
+                }
+            }
+
             // 검색어 상태 복원
             if (savedSearchTerm) {
                 // console.log('검색어 상태 복원:', savedSearchTerm);

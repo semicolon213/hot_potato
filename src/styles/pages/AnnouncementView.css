@@ -179,6 +179,14 @@
   color: var(--text-dark);
 }
 
+.post-view-attachment p {
+  margin-bottom: 4px; /* Reduced vertical space */
+}
+
+.post-view-attachment p:last-child {
+  margin-bottom: 0; /* Remove margin from the last paragraph */
+}
+
 .post-view-body {
   padding: clamp(32px, 3.7vh, 40px) clamp(28px, 3.24vw, 36px);
   min-height: 300px;
@@ -190,6 +198,11 @@
   border-radius: var(--sidebar-radius-sm);
   box-shadow: none;
   word-break: break-word;
+}
+
+.post-view-body img {
+  max-width: 100%;
+  height: auto;
 }
 
 .post-view-footer {

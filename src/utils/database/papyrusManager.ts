@@ -433,9 +433,10 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
         const uploadPromises = [];
 
         while ((match = imgRegex.exec(postData.content)) !== null) {
-            const base64Src = match[1];
+            const fullImgTag = match[0]; // The entire <img ...> tag
+            const base64Src = match[1]; // The base64 data URL
             const blob = dataURLtoBlob(base64Src);
-            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
+            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD'; // Assuming a fixed folder ID
 
             const fileMetadata = {
                 name: `announcement-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -455,6 +456,7 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
                 .then(async uploadedFile => {
                     if (uploadedFile.id) {
                         const fileId = uploadedFile.id;
+                        // Make the file publicly readable
                         await window.gapi.client.drive.permissions.create({
                             fileId: fileId,
                             resource: {
@@ -462,14 +464,27 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
                                 type: 'anyone'
                             }
                         });
+
+                        // Get the thumbnailLink for a potentially better-performing URL
                         const fileInfo = await window.gapi.client.drive.files.get({
                             fileId: fileId,
-                            fields: 'thumbnailLink'
+                            fields: 'thumbnailLink, webContentLink'
                         });
-                        return {base64Src, url: fileInfo.result.thumbnailLink};
+                        
+                        // Prioritize thumbnailLink, fallback to webContentLink
+                        const permanentUrl = fileInfo.result.thumbnailLink || fileInfo.result.webContentLink;
+
+                        if (permanentUrl) {
+                            // The thumbnailLink might be sized, remove the sizing parameter for flexibility
+                            const baseUrl = permanentUrl.split('=s')[0];
+                            return { oldTag: fullImgTag, newUrl: baseUrl };
+                        } else {
+                            console.error('webContentLink and thumbnailLink not found for file:', fileId);
+                            return { oldTag: fullImgTag, newUrl: null };
+                        }
                     } else {
                         console.error('File upload failed:', uploadedFile);
-                        return {base64Src, url: null};
+                        return { oldTag: fullImgTag, newUrl: null };
                     }
                 });
             uploadPromises.push(uploadPromise);
@@ -477,8 +492,10 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
 
         const uploadedImages = await Promise.all(uploadPromises);
         uploadedImages.forEach(image => {
-            if (image.url) {
-                processedContent = processedContent.replace(image.base64Src, image.url);
+            if (image.newUrl) {
+                // Replace the entire old <img> tag with a new one that only has the src
+                const newImgTag = `<img src="${image.newUrl}">`;
+                processedContent = processedContent.replace(image.oldTag, newImgTag);
             }
         });
 

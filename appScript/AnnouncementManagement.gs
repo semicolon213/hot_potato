@@ -173,10 +173,10 @@ function canReadAnnouncement(announcement, userId, userType) {
     return true;
   }
   
-  // 권한 설정이 없으면 작성자만 볼 수 있음 (이미 작성자 체크는 위에서 했으므로 false)
+  // 권한 설정이 없으면 전체 사용자 대상 공지 (모든 승인된 사용자가 볼 수 있음)
   if (!announcement.access_rights || announcement.access_rights === '' || announcement.access_rights.trim() === '') {
-    console.log(`DEBUG canReadAnnouncement: No access_rights and user is not writer - DENIED`);
-    return false;
+    console.log(`DEBUG canReadAnnouncement: No access_rights - ALLOWED (전체 사용자 대상)`);
+    return true;
   }
   
   try {
@@ -370,6 +370,50 @@ function getAnnouncements(req) {
 }
 
 /**
+ * 공지사항 본문의 Base64 인코딩 이미지를 Google Drive에 업로드하고 URL로 대체
+ * @param {string} content - HTML 콘텐츠
+ * @returns {string} 처리된 HTML 콘텐츠
+ */
+function processAndUploadImages_(content) {
+  const FOLDER_ID = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD'; // 이미지를 저장할 Google Drive 폴더 ID
+  const imgRegex = /<img src="(data:image\/([^;]+);base64,([^"]+))"[^>]*>/g;
+  
+  let processedContent = content;
+  let match;
+  
+  while ((match = imgRegex.exec(content)) !== null) {
+    const fullDataUrl = match[1];
+    const mimeType = `image/${match[2]}`;
+    const base64Data = match[3];
+    
+    try {
+      const decodedData = Utilities.base64Decode(base64Data, Utilities.Charset.UTF_8);
+      const blob = Utilities.newBlob(decodedData, mimeType, `announcement-image-${new Date().getTime()}.png`);
+      
+      const folder = DriveApp.getFolderById(FOLDER_ID);
+      const file = folder.createFile(blob);
+      
+      // 파일을 공개적으로 접근 가능하도록 설정
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      
+      // 안정적인 이미지 URL 생성
+      const fileId = file.getId();
+      const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      
+      // 원본 Base64 URL을 새로 생성된 URL로 교체
+      processedContent = processedContent.replace(fullDataUrl, imageUrl);
+      
+    } catch (e) {
+      console.error('이미지 처리 중 오류 발생:', e);
+      // 오류가 발생해도 계속 진행 (해당 이미지는 업로드되지 않음)
+    }
+  }
+  
+  return processedContent;
+}
+
+
+/**
  * 공지사항 작성
  * @param {Object} req - 요청 데이터
  * @returns {Object} 작성 결과
@@ -437,6 +481,9 @@ function createAnnouncement(req) {
       }
     }
     const newNoticeId = maxId + 1;
+
+    // 이미지 처리
+    const processedContent = processAndUploadImages_(content);
     
     // 이메일 암호화
     const encryptedEmail = applyEncryption(writerEmail, 'Base64', '');
@@ -454,7 +501,7 @@ function createAnnouncement(req) {
       encryptedEmail,           // C: writer_email
       accessRightsStr,          // D: access_rights
       title,                     // E: title_notice
-      content,                   // F: content_notice
+      processedContent,          // F: content_notice
       new Date().toISOString().slice(0, 10), // G: date
       0,                         // H: view_count
       fileNotice || '',          // I: file_notice
