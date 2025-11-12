@@ -178,7 +178,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       setTemplateSpreadsheetId(template.documentId);
 
       // 시트 목록 가져오기
-      const spreadsheetResponse = await gapi.client.sheets.spreadsheets.get({
+      const spreadsheetResponse = await (gapi.client as any).sheets.spreadsheets.get({
         spreadsheetId: template.documentId,
         fields: 'sheets.properties(title,sheetId)'
       });
@@ -205,12 +205,12 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     try {
       await initializeGoogleAPIOnce();
       const gapi = window.gapi;
-      if (!gapi?.client?.sheets) {
+      if (!(gapi?.client as any)?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
       }
 
       // 시트 ID 찾기
-      const spreadsheetResponse = await gapi.client.sheets.spreadsheets.get({
+      const spreadsheetResponse = await (gapi.client as any).sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         fields: 'sheets.properties(title,sheetId)'
       });
@@ -223,7 +223,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       const sheetId = sheet.properties.sheetId;
 
       // 병합 정보 가져오기
-      const mergeResponse = await gapi.client.sheets.spreadsheets.get({
+      const mergeResponse = await (gapi.client as any).sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         ranges: [`${sheetName}!A1:ZZ1000`],
         fields: 'sheets.merges'
@@ -258,7 +258,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       setMergeMap(mergeInfoMap);
 
       // 시트 데이터 가져오기 (값만, 스타일 제거하여 성능 최적화)
-      const dataResponse = await gapi.client.sheets.spreadsheets.get({
+      const dataResponse = await (gapi.client as any).sheets.spreadsheets.get({
         spreadsheetId: spreadsheetId,
         ranges: [`${sheetName}!A1:ZZ1000`], // 충분히 큰 범위
         includeGridData: true,
@@ -431,7 +431,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       setSheetHtml(table.outerHTML);
     } catch (err: unknown) {
       console.error('시트 데이터 로드 오류:', err);
-      setError(err.message || '시트 데이터를 불러올 수 없습니다.');
+      const errorMessage = err instanceof Error ? err.message : '시트 데이터를 불러올 수 없습니다.';
+      setError(errorMessage);
     }
   };
 
@@ -802,7 +803,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
   ) => {
     await initializeGoogleAPIOnce();
     const gapi = window.gapi;
-    if (!gapi?.client?.sheets) {
+    if (!(gapi?.client as any)?.sheets) {
       throw new Error('Google Sheets API가 초기화되지 않았습니다.');
     }
 
@@ -1363,7 +1364,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         데이터범위: data.map(d => d.range)
       });
       
-      await gapi.client.sheets.spreadsheets.values.batchUpdate({
+      await (gapi.client as any).sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: spreadsheetId,
         resource: {
           valueInputOption: 'USER_ENTERED',
@@ -1416,9 +1417,17 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       });
 
       // 템플릿을 복사하여 새 스프레드시트 생성 (원본 보존)
-      const token = gapi.client.getToken();
+      let token = (gapi.client as any).getToken();
+      // gapi client에 토큰이 없으면 tokenManager에서 가져오기
       if (!token || !token.access_token) {
-        throw new Error('Google 인증 토큰이 없습니다. 다시 로그인해주세요.');
+        const { tokenManager } = await import('../../../utils/auth/tokenManager');
+        const accessToken = tokenManager.get();
+        if (!accessToken) {
+          throw new Error('Google 인증 토큰이 없습니다. 다시 로그인해주세요.');
+        }
+        token = { access_token: accessToken };
+        // gapi client에도 토큰 설정
+        (gapi.client as any).setToken(token);
       }
 
       // 개인 문서 폴더 찾기
@@ -1582,7 +1591,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       }
     } catch (err: unknown) {
       console.error('내보내기 오류:', err);
-      setError(err.message || '내보내기 중 오류가 발생했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '내보내기 중 오류가 발생했습니다.';
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }

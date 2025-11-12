@@ -212,19 +212,32 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
 
       // creator가 이미 이름인 경우 그대로 사용, 이메일인 경우에만 변환
       let creatorName: string;
+      let creatorEmail: string = '';
+      
       if (metadataCreator) {
         // creator가 이메일 형식인지 확인
         if (metadataCreator.includes('@')) {
           // 이메일 형식이면 이름으로 변환 시도
+          creatorEmail = metadataCreator;
           creatorName = await convertEmailToName(metadataCreator);
         } else {
           // 이미 이름이면 그대로 사용
           creatorName = metadataCreator;
+          // properties에서 creatorEmail 찾기
+          creatorEmail = fileWithProperties.properties?.creatorEmail || '';
         }
       } else {
         // 메타데이터에 creator가 없으면 owners에서 가져와서 변환
         const rawCreator = fileWithProperties.owners?.[0]?.displayName || fileWithProperties.owners?.[0]?.emailAddress || '알 수 없음';
+        if (rawCreator.includes('@')) {
+          creatorEmail = rawCreator;
+        }
         creatorName = await convertEmailToName(rawCreator);
+      }
+
+      // creatorEmail이 없으면 owners에서 이메일 가져오기
+      if (!creatorEmail && fileWithProperties.owners?.[0]?.emailAddress) {
+        creatorEmail = fileWithProperties.owners[0].emailAddress;
       }
 
       documents.push({
@@ -232,6 +245,7 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
         documentNumber: generateDocumentNumber(fileWithProperties.mimeType || '', 'personal', fileWithProperties.id, fileWithProperties.createdTime),
         title: fileWithProperties.name || '',
         creator: creatorName,
+        creatorEmail: creatorEmail,
         lastModified: formatDateTime(fileWithProperties.modifiedTime || new Date().toISOString()),
         url: fileWithProperties.webViewLink || (fileWithProperties.id ? `https://docs.google.com/document/d/${fileWithProperties.id}/edit` : ''),
         documentType: 'personal',

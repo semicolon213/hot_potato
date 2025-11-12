@@ -10,10 +10,13 @@
   background-color: #ffffff;
   box-shadow: none;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .cards-row .document-container {
   margin-bottom: 0;
+  flex: 1;
 }
 
 .document-container * {
@@ -24,7 +27,11 @@
   overflow: hidden;
   border: none;
   box-shadow: none;
-  margin-bottom: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* 테이블 헤더 스타일 */
@@ -94,10 +101,14 @@
   border-right: none !important;
   border-bottom: 1px solid #e2e8f0 !important;
   padding: 0;
+  margin: 0;
+  height: clamp(56px, 6.48vh, 64px);
   min-height: clamp(56px, 6.48vh, 64px);
+  max-height: clamp(56px, 6.48vh, 64px);
   cursor: pointer;
   transition: all 0.2s ease;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .table-row:hover {
@@ -121,6 +132,11 @@
   border-bottom: none !important;
 }
 
+/* 빈 상태 행 스타일 */
+.table-row:has(.no-results-cell) {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
 .table-cell {
   font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-dark);
@@ -129,8 +145,14 @@
   align-items: center;
   line-height: 1.5;
   border: none !important;
-  height: 100%;
+  height: clamp(56px, 6.48vh, 64px);
   min-height: clamp(56px, 6.48vh, 64px);
+  max-height: clamp(56px, 6.48vh, 64px);
+}
+
+/* 최근 문서 리스트: 제목 셀 왼쪽 여백 강화 */
+.document-container.recent-docs .table-cell {
+  padding-left: clamp(28px, 2.9vw, 36px);
 }
 
 /* 테이블 셀 너비 및 정렬 클래스 */
@@ -207,6 +229,9 @@
   border-left: none !important;
   border-right: none !important;
   border-bottom: 1px solid #e2e8f0 !important;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .section-title-container {
@@ -297,9 +322,11 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  min-height: clamp(100px, 11.57vh, 120px);
+  height: clamp(56px, 6.48vh, 64px);
+  min-height: clamp(56px, 6.48vh, 64px);
+  max-height: clamp(56px, 6.48vh, 64px);
   color: var(--text-medium);
-  padding: clamp(20px, 2.31vh, 24px);
+  padding: 0 clamp(16px, 1.85vw, 20px);
   font-size: clamp(14px, 1.62vh, 16px);
 }
 

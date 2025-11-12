@@ -446,5 +446,8 @@
   text-align: center;
   color: var(--text-medium);
   font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
 }
 

@@ -179,3 +179,111 @@
     border-top: 1px solid var(--medium-gray);
 }
 
+.file-input-hidden {
+    display: none;
+}
+
+.permission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.permission-toggle-button {
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    transition: var(--transition-base);
+}
+
+.permission-toggle-button.active {
+    background: #f0f0f0;
+}
+
+.permission-toggle-button:hover {
+    background: #f5f5f5;
+}
+
+.permission-settings-panel {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    background: #f9f9f9;
+}
+
+.permission-section {
+    margin-bottom: 15px;
+}
+
+.permission-section:last-child {
+    margin-bottom: 0;
+}
+
+.permission-section-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.permission-group-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.permission-group-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.permission-checkbox {
+    margin-right: 5px;
+}
+
+.permission-user-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background: white;
+}
+
+.permission-user-item {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.permission-user-item .permission-checkbox {
+    margin-right: 8px;
+}
+
+.permission-loading {
+    padding: 10px;
+    text-align: center;
+    color: #666;
+}
+
+.permission-footer {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+}
+
+.permission-selected-count {
+    margin-bottom: 4px;
+}
+
+.permission-default-message {
+    color: #999;
+    font-style: italic;
+}
+

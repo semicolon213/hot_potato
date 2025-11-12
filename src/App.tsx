@@ -282,8 +282,8 @@ const App: React.FC = () => {
     const PAGE_SECTIONS: Record<string, string> = {
       // 문서 섹션
       document_management: '문서',
-      docbox: '문서',
       new_document: '문서',
+      workflow_management: '문서',
       // 일정 섹션
       calendar: '일정',
       timetable: '일정',
@@ -305,7 +305,35 @@ const App: React.FC = () => {
       admin: '관리자 패널',
       mypage: '마이페이지',
     };
-    return PAGE_SECTIONS[currentPage] || '';
+
+    const PAGE_TITLES: Record<string, string> = {
+      // 문서 하위 페이지
+      document_management: '문서관리',
+      new_document: '새 문서',
+      workflow_management: '결재 관리',
+      // 일정 하위 페이지
+      calendar: '캘린더',
+      timetable: '시간표',
+      // 학생 및 교직원 하위 페이지
+      students: '학생 관리',
+      staff: '교직원 관리',
+      // 나머지
+      dashboard: '대시보드',
+      announcements: '공지사항',
+      'announcement-view': '공지사항 상세',
+      board: '게시판',
+      chat: '채팅',
+      admin: '관리자',
+      mypage: '마이페이지',
+    };
+
+    const section = PAGE_SECTIONS[currentPage] || '';
+    const title = PAGE_TITLES[currentPage] || '';
+
+    if (section && title && section !== title) {
+      return `${section} | ${title}`;
+    }
+    return section || title || '';
   }, [currentPage]);
 
   const handleSearch = (term: string) => {
@@ -313,8 +341,8 @@ const App: React.FC = () => {
   };
 
   const handleSearchSubmit = () => {
-    if (currentPage !== 'docbox') {
-      handlePageChange('docbox');
+    if (currentPage !== 'document_management') {
+      handlePageChange('document_management');
     }
   };
 
@@ -905,6 +933,7 @@ const App: React.FC = () => {
               onSearchChange={handleSearch}
               onSearchSubmit={handleSearchSubmit}
               pageSectionLabel={pageSectionLabel}
+              currentPage={currentPage}
             />
           )}
           <div className="content" id="dynamicContent" data-oid="nn2e18p">

@@ -4,13 +4,14 @@
  * 탭 3개: 내가 올린 결재, 내가 결재해야 하는 것, 결재 완료된 리스트
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../utils/api/apiClient';
 import WorkflowRequestModal from '../components/features/workflow/WorkflowRequestModal';
 import WorkflowActionModal from '../components/features/workflow/WorkflowActionModal';
 import WorkflowDetailModal from '../components/features/workflow/WorkflowDetailModal';
 import WorkflowResubmitModal from '../components/features/workflow/WorkflowResubmitModal';
 import type { WorkflowInfoResponse, WorkflowListResponse, WorkflowRequestResponse } from '../types/api/apiResponses';
+import { FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
 import './WorkflowManagement.css';
 
 interface WorkflowManagementProps {
@@ -34,6 +35,9 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowInfoResponse | null>(null);
   const [actionType, setActionType] = useState<'review' | 'payment'>('review');
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filterStatus, setFilterStatus] = useState<string>('전체');
 
   useEffect(() => {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
@@ -89,6 +93,32 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
       default:
         return [];
     }
+  };
+
+  // 필터링된 워크플로우 목록
+  const filteredWorkflows = useMemo(() => {
+    const workflows = getCurrentWorkflows();
+    return workflows.filter((workflow) => {
+      const matchesSearch = searchTerm === '' || 
+        (workflow.workflowDocumentTitle || workflow.attachedDocumentTitle || workflow.documentTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (workflow.requesterName || workflow.requesterEmail || '').toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = filterStatus === '전체' || workflow.workflowStatus === filterStatus;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [activeTab, requestedWorkflows, pendingWorkflows, completedWorkflows, searchTerm, filterStatus]);
+
+  // 상태 옵션 생성
+  const statusOptions = useMemo(() => {
+    const workflows = getCurrentWorkflows();
+    const statuses = new Set(workflows.map(w => w.workflowStatus));
+    return ['전체', ...Array.from(statuses).sort()];
+  }, [activeTab, requestedWorkflows, pendingWorkflows, completedWorkflows]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setFilterStatus('전체');
   };
 
   const getStatusBadgeClass = (status: string): string => {
@@ -237,7 +267,7 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
   return (
     <div className="workflow-management-container">
       <div className="workflow-header">
-        <h1>결재 관리</h1>
+        <div />
         <button 
           className="btn-new-workflow"
           onClick={() => {
@@ -249,22 +279,95 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
         </button>
       </div>
 
+      <div className="search-filter-section">
+        <div className="search-controls">
+          <div className="search-input-group">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="제목, 요청자로 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button 
+                className="clear-search-btn"
+                onClick={() => setSearchTerm('')}
+                title="검색어 지우기"
+              >
+                <FaTimes />
+              </button>
+            )}
+          </div>
+          
+          <div className="filter-controls">
+            <button 
+              className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <FaFilter className="btn-icon" />
+              <span>필터 {showFilters ? '숨기기' : '보기'}</span>
+            </button>
+          </div>
+        </div>
+
+        {showFilters && (
+          <div className="filters-panel">
+            <div className="filter-row">
+              <div className="filter-group">
+                <label className="filter-label">상태</label>
+                <div className="select-container">
+                  <select
+                    className="filter-select"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    {statusOptions.map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="filter-actions">
+                <button className="btn-reset" onClick={handleResetFilters}>
+                  필터 초기화
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="workflow-tabs">
         <button
           className={`tab-btn ${activeTab === 'requested' ? 'active' : ''}`}
-          onClick={() => setActiveTab('requested')}
+          onClick={() => {
+            setActiveTab('requested');
+            setSearchTerm('');
+            setFilterStatus('전체');
+          }}
         >
           내가 올린 결재 ({requestedWorkflows.length})
         </button>
         <button
           className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pending')}
+          onClick={() => {
+            setActiveTab('pending');
+            setSearchTerm('');
+            setFilterStatus('전체');
+          }}
         >
           내가 결재해야 하는 것 ({pendingWorkflows.length})
         </button>
         <button
           className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('completed')}
+          onClick={() => {
+            setActiveTab('completed');
+            setSearchTerm('');
+            setFilterStatus('전체');
+          }}
         >
           결재 완료된 리스트 ({completedWorkflows.length})
         </button>
@@ -273,15 +376,17 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
       <div className="workflow-content">
         {isLoading ? (
           <div className="loading-message">로딩 중...</div>
-        ) : workflows.length === 0 ? (
+        ) : filteredWorkflows.length === 0 ? (
           <div className="empty-message">
-            {activeTab === 'requested' && '올린 결재가 없습니다.'}
-            {activeTab === 'pending' && '결재해야 할 문서가 없습니다.'}
-            {activeTab === 'completed' && '완료된 결재가 없습니다.'}
+            {searchTerm || filterStatus !== '전체' 
+              ? '검색 결과가 없습니다.' 
+              : activeTab === 'requested' && '올린 결재가 없습니다.'}
+            {!searchTerm && filterStatus === '전체' && activeTab === 'pending' && '결재해야 할 문서가 없습니다.'}
+            {!searchTerm && filterStatus === '전체' && activeTab === 'completed' && '완료된 결재가 없습니다.'}
           </div>
         ) : (
           <div className="workflow-list">
-            {workflows.map((workflow) => {
+            {filteredWorkflows.map((workflow) => {
               const myStep = activeTab === 'pending' ? getMyPendingStep(workflow) : null;
               const heldStep = activeTab === 'requested' && (workflow.workflowStatus === '검토보류' || workflow.workflowStatus === '결재보류') ? getHeldStep(workflow) : null;
               

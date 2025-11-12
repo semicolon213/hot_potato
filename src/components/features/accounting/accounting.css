@@ -880,9 +880,9 @@
   padding: 60px 20px;
   color: var(--accounting-gray-500);
   font-size: 16px;
-  background: var(--accounting-gray-50);
+  background: #ffffff;
   border-radius: var(--accounting-border-radius-lg);
-  border: 2px dashed var(--accounting-gray-300);
+  border: 1px solid #e2e8f0;
 }
 
 .loading-message {
