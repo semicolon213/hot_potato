@@ -427,61 +427,6 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
 
         let processedContent = postData.content;
 
-        // Base64 이미지 처리 (프론트엔드에서 처리)
-        const imgRegex = /<img src="(data:image\/[^;]+;base64,[^"]+)"[^>]*>/g;
-        let match;
-        const uploadPromises = [];
-
-        while ((match = imgRegex.exec(postData.content)) !== null) {
-            const base64Src = match[1];
-            const blob = dataURLtoBlob(base64Src);
-            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
-
-            const fileMetadata = {
-                name: `announcement-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                parents: [folderId]
-            };
-
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(fileMetadata)], {type: 'application/json'}));
-            form.append('file', blob);
-
-            const uploadPromise = fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST',
-                headers: new Headers({'Authorization': 'Bearer ' + token}),
-                body: form,
-            })
-                .then(response => response.json())
-                .then(async uploadedFile => {
-                    if (uploadedFile.id) {
-                        const fileId = uploadedFile.id;
-                        await window.gapi.client.drive.permissions.create({
-                            fileId: fileId,
-                            resource: {
-                                role: 'reader',
-                                type: 'anyone'
-                            }
-                        });
-                        const fileInfo = await window.gapi.client.drive.files.get({
-                            fileId: fileId,
-                            fields: 'thumbnailLink'
-                        });
-                        return {base64Src, url: fileInfo.result.thumbnailLink};
-                    } else {
-                        console.error('File upload failed:', uploadedFile);
-                        return {base64Src, url: null};
-                    }
-                });
-            uploadPromises.push(uploadPromise);
-        }
-
-        const uploadedImages = await Promise.all(uploadPromises);
-        uploadedImages.forEach(image => {
-            if (image.url) {
-                processedContent = processedContent.replace(image.base64Src, image.url);
-            }
-        });
-
         // 첨부파일 업로드 (프론트엔드에서 처리)
         let fileInfos: { name: string, url: string }[] = [];
         if (postData.attachments && postData.attachments.length > 0) {

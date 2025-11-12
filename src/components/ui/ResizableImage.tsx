@@ -53,8 +53,8 @@ const ResizableImageComponent = ({ node, updateAttributes, selected }) => {
       }
 
       updateAttributes({
-        width: `${Math.max(20, newWidth)}px`,
-        height: `${Math.max(20, newHeight)}px`,
+        width: `${Math.max(20, newWidth)}`,
+        height: `${Math.max(20, newHeight)}`,
       });
     };
 
@@ -73,8 +73,8 @@ const ResizableImageComponent = ({ node, updateAttributes, selected }) => {
         ref={imgRef}
         src={node.attrs.src}
         style={{
-          width: node.attrs.width,
-          height: node.attrs.height,
+          width: node.attrs.width ? `${node.attrs.width}px` : null,
+          height: node.attrs.height ? `${node.attrs.height}px` : null,
         }}
       />
       {selected && (
