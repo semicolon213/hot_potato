@@ -70,6 +70,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const [customState, setCustomState] = useState('');
   const [isLevelOther, setIsLevelOther] = useState(false);
   const [customLevel, setCustomLevel] = useState('');
+  const [isTypeOther, setIsTypeOther] = useState(false);
+  const [customType, setCustomType] = useState('');
   const isSupp = user?.userType === 'supp'; // 조교 여부
 
   const handleDelete = () => {
@@ -504,17 +506,22 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   const handleAddIssue = async () => {
-    if (!newIssue.type_issue) {
+    // Updated validation for type_issue
+    if (!isTypeOther && !newIssue.type_issue) {
       alert('유형을 선택해주세요.');
+      return;
+    }
+    if (isTypeOther && !customType.trim()) {
+      alert('유형을 직접 입력해주세요.');
       return;
     }
     // Updated validation for level_issue
     if (!isLevelOther && !newIssue.level_issue) {
-      alert('심각도를 선택해주세요.');
+      alert('주의도를 선택해주세요.');
       return;
     }
     if (isLevelOther && !customLevel.trim()) {
-      alert('심각도를 직접 입력해주세요.');
+      alert('주의도를 직접 입력해주세요.');
       return;
     }
     if (!newIssue.content_issue.trim()) {
@@ -526,7 +533,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       const issueData = {
         no_member: newIssue.no_member,
         date_issue: newIssue.date_issue || new Date().toISOString().split('T')[0],
-        type_issue: newIssue.type_issue,
+        type_issue: isTypeOther ? customType : newIssue.type_issue, // Use custom type if set
         level_issue: isLevelOther ? customLevel : newIssue.level_issue, // Use custom level if set
         content_issue: newIssue.content_issue
       };
@@ -539,7 +546,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       };
       setIssues(prev => [...prev, newIssueWithId]);
       
-      // Reset form including custom fields
+      // Reset form including all custom fields
       setNewIssue({
         no_member: student?.no_student || '',
         date_issue: new Date().toISOString().split('T')[0],
@@ -547,6 +554,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         level_issue: '',
         content_issue: ''
       });
+      setIsTypeOther(false);
+      setCustomType('');
       setIsLevelOther(false);
       setCustomLevel('');
       
@@ -1206,8 +1215,16 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 <div className="form-group">
                   <label>유형</label>
                   <select
-                    value={newIssue.type_issue}
-                    onChange={(e) => handleIssueInputChange('type_issue', e.target.value)}
+                    value={isTypeOther ? '직접 입력' : newIssue.type_issue}
+                    onChange={(e) => {
+                      if (e.target.value === '직접 입력') {
+                        setIsTypeOther(true);
+                        handleIssueInputChange('type_issue', '');
+                      } else {
+                        setIsTypeOther(false);
+                        handleIssueInputChange('type_issue', e.target.value);
+                      }
+                    }}
                     onFocus={handleInputFocus}
                   >
                     <option value="">선택하세요</option>
@@ -1215,10 +1232,20 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <option value="출석">출석</option>
                     <option value="행동">행동</option>
                     <option value="기타">기타</option>
+                    <option value="직접 입력">직접 입력</option>
                   </select>
+                  {isTypeOther && (
+                    <input
+                      type="text"
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      placeholder="유형 직접 입력"
+                      style={{ marginTop: '8px' }}
+                    />
+                  )}
                 </div>
                 <div className="form-group">
-                  <label>심각도</label>
+                  <label>주의도</label>
                   <select
                     value={isLevelOther ? '직접 입력' : newIssue.level_issue}
                     onChange={(e) => {
@@ -1244,7 +1271,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       type="text"
                       value={customLevel}
                       onChange={(e) => setCustomLevel(e.target.value)}
-                      placeholder="심각도 직접 입력"
+                      placeholder="주의도 직접 입력"
                       style={{ marginTop: '8px' }}
                     />
                   )}
