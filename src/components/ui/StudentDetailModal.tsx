@@ -417,13 +417,14 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         }
 
                       }    // 연락처와 이메일 유효성 검사
-    if (mode === 'staff' || mode === 'committee') {
+    if (mode === 'staff' || mode === 'committee' || mode === 'student') {
       const phone = studentToSave.phone_num;
       if (!/^\d{3}-\d{3,4}-\d{4}$/.test(phone)) {
         alert('연락처는 하이픈(-)을 포함한 12~13자리 숫자로 입력해야 합니다.');
         return;
       }
-      if (!studentToSave.email.includes('@')) {
+      // 이메일 유효성 검사는 교직원/위원회 모드에서만 적용
+      if ((mode === 'staff' || mode === 'committee') && !studentToSave.email.includes('@')) {
         alert('이메일 형식이 올바르지 않습니다. "@"를 포함해야 합니다.');
         return;
       }
@@ -506,7 +507,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       return;
     }
     if (!newIssue.level_issue) {
-      alert('심각도를 선택해주세요.');
+      alert('주의도를 선택해주세요.');
       return;
     }
     if (!newIssue.content_issue.trim()) {
@@ -550,6 +551,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     if (!editedStudent) return;
     setEditedStudent(prev => prev ? { ...prev, [field]: value } : null);
   };
+
+
 
   const handleIssueInputChange = (field: keyof Omit<StudentIssue, 'id'>, value: string) => {
     setNewIssue(prev => ({ ...prev, [field]: value }));
@@ -1030,10 +1033,23 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <input
                         type="text"
                         value={editedStudent.phone_num}
-                        onChange={(e) => handleInputChange('phone_num', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          let formattedValue = digitsOnly;
+
+                          if (digitsOnly.length > 3 && digitsOnly.length <= 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+                          } else if (digitsOnly.length > 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7, 11)}`;
+                          }
+                          
+                          handleInputChange('phone_num', formattedValue);
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
+                        maxLength={13}
                       />
                     </div>
 
@@ -1166,7 +1182,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>심각도</label>
+                  <label>주의도</label>
                   <select
                     value={newIssue.level_issue}
                     onChange={(e) => handleIssueInputChange('level_issue', e.target.value)}
