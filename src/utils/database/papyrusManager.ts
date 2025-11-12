@@ -973,6 +973,7 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             grade: row[4] || '',
             state: row[5] || '',
             council: row[6] || '',
+            flunk: row[7] || '', // 유급 필드 (H열)
         }));
 
         console.log(`Loaded ${students.length} students`);

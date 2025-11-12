@@ -58,19 +58,48 @@ export const getSheetsInFolder = async (folderId: string): Promise<{ id: string;
   }
 
   try {
+    console.log(`📁 폴더 내 스프레드시트 조회 시작: ${folderId}`);
+    
+    // 토큰 확인 및 설정
+    const { tokenManager } = await import('../../utils/auth/tokenManager');
+    const token = tokenManager.get();
+    if (token && window.gapi?.client) {
+      try {
+        window.gapi.client.setToken({ access_token: token });
+      } catch (tokenError) {
+        console.warn("토큰 설정 실패:", tokenError);
+      }
+    }
+
     const response = await window.gapi.client.drive.files.list({
       q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, mimeType)',
       orderBy: 'name',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
     });
 
     const files = response.result.files;
+    console.log(`📁 폴더 내 스프레드시트 조회 결과: ${files?.length || 0}개`);
+    
     if (files && files.length > 0) {
-      return files.map(file => ({ id: file.id!, name: file.name! }));
+      const sheets = files.map(file => {
+        console.log(`  - ${file.name} (${file.id}) [${file.mimeType}]`);
+        return { id: file.id!, name: file.name! };
+      });
+      return sheets;
     }
+    
+    console.warn(`⚠️ 폴더 ${folderId} 내에 스프레드시트 파일이 없습니다.`);
     return []; // 폴더는 있으나 시트가 없는 경우 빈 배열 반환
-  } catch (error) {
-    console.error('Error fetching sheets in folder:', error);
+  } catch (error: any) {
+    console.error('❌ 폴더 내 스프레드시트 조회 오류:', {
+      folderId,
+      error: error.message,
+      status: error.status,
+      code: error.code,
+      details: error
+    });
     return null;
   }
 };
