@@ -126,7 +126,7 @@ const Timetable: React.FC = () => {
                                                     style={getEventStyle(event)}
                                                 >
                                                     <div className="timetable-event-title">{event.title}</div>
-                                                    <div className="timetable-event-details">{event.startTime} - {event.endTime}</div>
+                                                    <div className="timetable-event-details">{event.description}</div>
                                                 </div>
                                             ))
                                         )}

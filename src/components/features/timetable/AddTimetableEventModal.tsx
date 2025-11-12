@@ -44,6 +44,20 @@ const AddTimetableEventModal: React.FC<AddTimetableEventModalProps> = ({ onClose
     }
   }, [isEditMode, eventToEdit]);
 
+  // 시작 시간이 종료 시간보다 늦어지면, 종료 시간을 시작 시간으로 설정
+  useEffect(() => {
+    if (startTime > endTime) {
+      setEndTime(startTime);
+    }
+  }, [startTime, endTime]);
+
+  // 종료 시간이 시작 시간보다 빨라지면, 시작 시간을 종료 시간으로 설정
+  useEffect(() => {
+    if (endTime < startTime) {
+      setStartTime(endTime);
+    }
+  }, [endTime, startTime]);
+
   const handleSave = () => {
     if (title.trim()) {
       onSave({
@@ -111,7 +125,7 @@ const AddTimetableEventModal: React.FC<AddTimetableEventModalProps> = ({ onClose
         </div>
 
         <textarea
-            placeholder="설명 (선택 사항)"
+            placeholder="예) 홍길동 7206"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="add-event-description"
