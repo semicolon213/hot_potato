@@ -1,4 +1,5 @@
 import React from 'react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 /**
  * 과제 목록을 표시하는 위젯 컴포넌트입니다.
@@ -54,9 +55,24 @@ export const CampusMapWidget = ({ message, image }: { message: string, image: st
  * @param {object} props - 컴포넌트 props
  * @param {string} props.message - 표시할 메시지
  */
-export const DefaultMessage = ({ message }: { message: string }) => (
+export const DefaultMessage = ({ message, onButtonClick }: { message: string, onButtonClick?: () => void }) => (
     <div className="widget-content">
         <p>{message}</p>
+        <button
+            onClick={onButtonClick}
+            style={{
+                marginTop: '10px',
+                padding: '8px 12px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%'
+            }}
+        >
+            장부 선택
+        </button>
     </div>
 );
 
@@ -173,14 +189,33 @@ export const ProfessorContactWidget: React.FC = () => {
  * @param {object} props - 컴포넌트 props
  * @param {{ name: string; status: string; icon: string; color: string }[]} props.items - 상태 항목 배열 (이름, 상태, 아이콘, 색상 포함)
  */
-export const StatusListComponent = ({ items }: { items: { name: string; status: string; icon: string; color: string }[] }) => (
+export const StatusListComponent = ({ items, onButtonClick }: { items: { name: string; status: string; icon: string; color: string }[], onButtonClick?: () => void }) => (
     <div className="widget-content">
-        {items.map((item, index) => (
-            <p key={index}>
-                <i className={item.icon} style={{ color: item.color, marginRight: '8px' }}></i>
-                {item.name} ({item.status})
-            </p>
-        ))}
+        {items.length > 0 ? (
+            items.map((item, index) => (
+                <p key={index}>
+                    <i className={item.icon} style={{ color: item.color, marginRight: '8px' }}></i>
+                    {item.name} ({item.status})
+                </p>
+            ))
+        ) : (
+            <p>표시할 데이터가 없습니다.</p>
+        )}
+        <button
+            onClick={onButtonClick}
+            style={{
+                marginTop: '10px',
+                padding: '8px 12px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%'
+            }}
+        >
+            장부 선택
+        </button>
     </div>
 );
 
@@ -230,6 +265,45 @@ export const WeatherWidget = ({ today, forecast }: {
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+/**
+ * 원형 그래프를 표시하는 위젯 컴포넌트입니다.
+ * @param {object} props - 컴포넌트 props
+ * @param {{ category: string; amount: number }[]} props.data - 그래프에 표시할 데이터 배열
+ */
+export const PieChartComponent = ({ data }: { data: { category: string; amount: number }[] }) => {
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
+
+  if (!data || data.length === 0) {
+    return <div className="widget-content"><p>표시할 데이터가 없습니다.</p></div>;
+  }
+
+  return (
+    <div className="widget-content" style={{ width: '100%', height: 300 }}>
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="amount"
+            nameKey="category"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value: number) => `${value.toLocaleString()}원`} />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   );
 };

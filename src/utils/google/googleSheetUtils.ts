@@ -544,6 +544,49 @@ export const deleteRowsByDocIds = async (
     });
   } catch (error) {
     console.error('Error deleting rows from sheet:', error);
-    throw error; // Re-throw the error to be caught by the caller
-  }
-};
+        throw error; // Re-throw the error to be caught by the caller
+      }
+    };
+    
+    /**
+     * @brief 회계 장부 데이터 가져오기
+     * @details 특정 스프레드시트의 첫 번째 시트에서 데이터를 가져와 파싱합니다.
+     * @param {string} spreadsheetId - 데이터를 가져올 스프레드시트의 ID
+     * @returns {Promise<string[] | null>} 파싱된 카테고리 이름 배열 또는 null
+     */
+    export const getAccountingData = async (spreadsheetId: string): Promise<string[] | null> => {
+      await initializeGoogleAPIOnce();
+      const gapi = window.gapi;
+    
+      try {
+        // 1. 스프레드시트의 메타데이터를 가져와 첫 번째 시트의 이름을 찾습니다.
+        const spreadsheetMeta = await gapi.client.sheets.spreadsheets.get({
+          spreadsheetId: spreadsheetId,
+        });
+        
+        const firstSheet = spreadsheetMeta.result.sheets?.[0];
+        if (!firstSheet || !firstSheet.properties?.title) {
+          console.error("No sheets found in the spreadsheet.");
+          return null;
+        }
+        const sheetName = firstSheet.properties.title;
+        console.log(`Reading data from the first sheet: ${sheetName}`);
+    
+        // 2. 첫 번째 시트의 A 범위에서 데이터를 가져옵니다. (category 칼럼만)
+        const sheetData = await getSheetData(spreadsheetId, sheetName, 'A:A');
+    
+        if (!sheetData || sheetData.length <= 1) {
+          console.log(`No data found in '${sheetName}' sheet or only header exists.`);
+          return [];
+        }
+    
+        // 3. 데이터를 파싱합니다. (첫 번째 행은 헤더로 간주하고 건너뜁니다.)
+        const categories = sheetData.slice(1).map(row => row[0]).filter(category => category); // 빈 값 필터링
+    
+        return categories;
+    
+      } catch (error) {
+        console.error("Error in getAccountingData:", error);
+        return null;
+      }
+    };
