@@ -358,33 +358,29 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSelectAnnouncement = async (post: Post) => {
+  const handleSelectAnnouncement = (post: Post) => {
     const postId = String(post.id);
 
-    // 1. Optimistic UI Update
+    // 1. Optimistic UI Update (즉시 UI에 반영)
     const updatedAnnouncements = announcements.map(p => {
       if (String(p.id) === postId) {
-        // 조회수를 로컬 상태에서 즉시 1 증가시킵니다.
         return { ...p, views: (p.views || 0) + 1 };
       }
       return p;
     });
     setAnnouncements(updatedAnnouncements);
 
-    // 2. Backend API Call
-    try {
-      // 실제 백엔드에 조회수 증가를 요청합니다.
-      await incrementViewCount(post.id);
-    } catch (error) {
-      console.error('조회수 증가 API 호출 실패:', error);
-      // 참고: 실패 시 UI를 원래대로 되돌릴 수도 있습니다.
-      // setAnnouncements(announcements); 
-    }
-
-    // 3. Navigate to Detail Page with updated data
+    // 2. Navigate Immediately (즉시 페이지 전환)
     const updatedSelectedPost = updatedAnnouncements.find(p => String(p.id) === postId);
     setSelectedAnnouncement(updatedSelectedPost || { ...post, views: (post.views || 0) + 1 });
     handlePageChange('announcement-view', { announcementId: postId });
+
+    // 3. Backend API Call (Fire-and-forget)
+    // await를 제거하여 백엔드 응답을 기다리지 않고 페이지 전환 후 백그라운드에서 처리합니다.
+    incrementViewCount(post.id).catch(error => {
+      console.error('조회수 증가 API 호출 실패:', error);
+      // 에러가 발생해도 이미 페이지는 전환되었으므로, UI를 되돌리는 대신 로그만 남깁니다.
+    });
   };
 
   const handleUpdateAnnouncement = async (announcementId: string, postData: { 
