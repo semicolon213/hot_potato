@@ -93,8 +93,7 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
               <div 
                 className={`table-row ${isLastRow ? 'last-row-no-header' : ''}`}
                 key={index}
-                onClick={() => onRowClick && onRowClick(row)}
-                onDoubleClick={() => onRowDoubleClick?.(row)}
+                onClick={() => onRowDoubleClick?.(row)}
                 style={{ cursor: (onRowClick || onRowDoubleClick) ? 'pointer' : 'default' }}
               >
                 {columns.map((col) => (
