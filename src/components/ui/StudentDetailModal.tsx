@@ -551,11 +551,9 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 </button>
               </>
             ) : (
-              <div className="edit-actions">
-                <button className="save-btn" onClick={handleSave}>
-                  저장
-                </button>
-              </div>
+              <button className="save-btn" onClick={handleSave}>
+                저장
+              </button>
             )}
             <button className="close-btn" onClick={handleCloseModal}>
               ✕
