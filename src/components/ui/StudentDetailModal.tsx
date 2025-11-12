@@ -246,28 +246,36 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           }
         }, [student, isOpen, isAdding, user]);
     
-        useEffect(() => {
-          if (editedStudent && mode === 'committee') {
-            const standardGrades = ["교과과정위원회", "학과운영위원회", "입학위원회", "졸업위원회"];
-            if (editedStudent.grade && !standardGrades.includes(editedStudent.grade)) {
-              setIsGradeOther(true);
-              setCustomGrade(editedStudent.grade);
-            } else {
-              setIsGradeOther(false);
-              setCustomGrade('');
-            }
-    
-            const standardStates = ["위원장", "위원", "간사", "자문위원"];
-            if (editedStudent.state && !standardStates.includes(editedStudent.state)) {
-              setIsStateOther(true);
-              setCustomState(editedStudent.state);
-            } else {
-              setIsStateOther(false);
-              setCustomState('');
-            }
-          }
-        }, [editedStudent, mode]);
-  const loadStudentIssues = async () => {
+            useEffect(() => {
+              if (editedStudent && mode === 'committee') {
+                const standardGrades = ["교과과정위원회", "학과운영위원회", "입학위원회", "졸업위원회"];
+                if (editedStudent.grade && !standardGrades.includes(editedStudent.grade)) {
+                  setIsGradeOther(true);
+                  setCustomGrade(editedStudent.grade);
+                } else {
+                  setIsGradeOther(false);
+                  setCustomGrade('');
+                }
+        
+                const standardStates = ["위원장", "위원", "간사", "자문위원"];
+                if (editedStudent.state && !standardStates.includes(editedStudent.state)) {
+                  setIsStateOther(true);
+                  setCustomState(editedStudent.state);
+                } else {
+                  setIsStateOther(false);
+                  setCustomState('');
+                }
+              } else if (editedStudent && mode === 'staff') {
+                const standardGrades = ["전임교수", "조교", "외부강사", "겸임교수", "시간강사"];
+                if (editedStudent.grade && !standardGrades.includes(editedStudent.grade)) {
+                  setIsGradeOther(true);
+                  setCustomGrade(editedStudent.grade);
+                } else {
+                  setIsGradeOther(false);
+                  setCustomGrade('');
+                }
+              }
+            }, [editedStudent, mode]);  const loadStudentIssues = async () => {
     if (!student) return;
 
     setIsLoading(true);
@@ -353,15 +361,12 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     // Create a mutable copy to hold the final values
     const studentToSave = { ...editedStudent };
 
-    if (mode === 'committee') {
-      if (isGradeOther) {
-        studentToSave.grade = customGrade;
-      }
-      if (isStateOther) {
-        studentToSave.state = customState;
-      }
-    }
-
+          if (isGradeOther) {
+            studentToSave.grade = customGrade;
+          }
+          if (isStateOther && mode === 'committee') {
+            studentToSave.state = customState;
+          }
     // 연락처와 이메일 유효성 검사
     if (mode === 'staff' || mode === 'committee') {
       const phone = studentToSave.phone_num;
@@ -604,8 +609,15 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <div className="form-group">
                       <label>구분<span style={{color: 'red'}}>*</span></label>
                       <select
-                        value={editedStudent.grade}
-                        onChange={(e) => handleInputChange('grade', e.target.value)}
+                        value={isGradeOther ? '직접 입력' : editedStudent.grade}
+                        onChange={(e) => {
+                          if (e.target.value === '직접 입력') {
+                            setIsGradeOther(true);
+                          } else {
+                            setIsGradeOther(false);
+                            handleInputChange('grade', e.target.value);
+                          }
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                       >
@@ -615,7 +627,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="외부강사">외부강사</option>
                         <option value="겸임교수">겸임교수</option>
                         <option value="시간강사">시간강사</option>
+                        <option value="직접 입력">직접 입력</option>
                       </select>
+                      {isGradeOther && (
+                        <input
+                          type="text"
+                          value={customGrade}
+                          onChange={(e) => setCustomGrade(e.target.value)}
+                          placeholder="구분 직접 입력"
+                          disabled={!isEditing}
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
