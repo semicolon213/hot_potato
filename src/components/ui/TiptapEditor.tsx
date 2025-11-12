@@ -1,10 +1,11 @@
 import React from 'react';
 import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
+
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import Image from '@tiptap/extension-image';
+import { Image } from '@tiptap/extension-image';
+
 import { FontSize } from './FontSize';
 import './TiptapEditor.css';
 import ResizableImageComponent from './ResizableImage';
@@ -28,13 +29,12 @@ const CustomImage = Image.extend({
   },
 });
 
-
 const MenuBar = ({ editor }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   if (!editor) {
     return null;
   }
-
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const addImage = (event) => {
     const files = Array.from(event.target.files);
@@ -83,15 +83,16 @@ const MenuBar = ({ editor }) => {
 
 const TiptapEditor = ({ content, onContentChange }) => {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextStyle,
-      Color,
-      CustomImage, // Use the custom image extension
-      FontSize,
-    ],
-    content: content,
+                    extensions: [
+                      StarterKit,
+                      TextStyle,
+                      Color,
+                      CustomImage.configure({
+                        inline: true,
+                        allowBase64: true,
+                      }),
+                      FontSize,
+                    ],    content: content,
     onUpdate: ({ editor }) => {
       onContentChange(editor.getHTML());
     },

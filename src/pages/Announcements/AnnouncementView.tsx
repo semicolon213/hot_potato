@@ -49,7 +49,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     const attachmentRegex = /<p>첨부파일:.*?<\/p>/gs;
     const contentWithoutAttachments = post.content.replace(attachmentRegex, '').trim();
     setMainContent(contentWithoutAttachments);
-    setEditedContent(contentWithoutAttachments);
+    setEditedContent(post.content); // Use the full, original content for the editor
 
     if (post.file_notice) {
         try {
