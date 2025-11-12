@@ -38,27 +38,27 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
     <div className={`document-container ${title === '최근 문서' ? 'recent-docs' : ''}`}>
       <div className="table-container">
         {title !== '문서함' && (
-          <div
-            className="section-header"
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px', margin: 0, paddingTop: 0, paddingBottom: 0 }}
-          >
-            <div className="section-title-container">
+        <div
+          className="section-header"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px', margin: 0, paddingTop: 0, paddingBottom: 0 }}
+        >
+          <div className="section-title-container">
               <div className="section-title no-line">
                 {title}
               </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {headerContent}
-              {showViewAll && (
-                <button
-                  className="view-all-button"
-                  onClick={() => onPageChange("document_management")}
-                >
-                  모두 보기
-                </button>
-              )}
-            </div>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+              {headerContent}
+            {showViewAll && (
+              <button
+                className="view-all-button"
+                  onClick={() => onPageChange("document_management")}
+              >
+                모두 보기
+              </button>
+            )}
+          </div>
+        </div>
         )}
 
         {showTableHeader && (

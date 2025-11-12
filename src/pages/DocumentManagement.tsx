@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import "../styles/pages/DocumentManagement.css";
 import InfoCard, { type Item as InfoCardItem } from "../components/features/documents/InfoCard";
 import DocumentList from "../components/features/documents/DocumentList";
 import StatCard from "../components/features/documents/StatCard";
 import { useDocumentTable, type Document } from "../hooks/features/documents/useDocumentTable";
-import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId } from "../utils/google/googleSheetUtils";
+import { getSheetIdByName, getSheetData, updateTitleInSheetByDocId, initializeGoogleAPIOnce } from "../utils/google/googleSheetUtils";
 import { getRecentDocuments, addRecentDocument } from "../utils/helpers/localStorageUtils";
 import { generateDocumentNumber } from "../utils/helpers/documentNumberGenerator";
 import { loadAllDocuments } from "../utils/helpers/loadDocumentsFromDrive";
@@ -22,6 +22,7 @@ import type { DocumentInfo } from "../types/documents";
 import type { WorkflowRequestResponse } from "../types/api/apiResponses";
 import RightArrowIcon from "../assets/Icons/right_black.svg";
 import TableColumnFilter, { type SortDirection, type FilterOption } from "../components/ui/common/TableColumnFilter";
+import { FaFilter, FaTimes } from "react-icons/fa";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -42,6 +43,7 @@ interface FetchedDocument {
   originalIndex: number;
   documentType?: 'shared' | 'personal'; // 문서 유형 추가
   creator?: string; // 생성자 추가
+  creatorEmail?: string; // 생성자 이메일 추가
   tag?: string; // 문서 태그 추가
 }
 
@@ -115,6 +117,26 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [personalTags, setPersonalTags] = useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  
+  // 컨텍스트 메뉴 상태
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // 컨텍스트 메뉴 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [contextMenu]);
 
   // 결재 관련 통계 상태
   const [receivedCount, setReceivedCount] = useState<number>(0); // 수신 문서함 (내가 결재해야 하는 것)
@@ -223,6 +245,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           originalIndex: index,
           documentType: doc.documentType || 'shared',
           creator: doc.creator,
+          creatorEmail: doc.creatorEmail,
           tag: doc.tag
         }));
         setDocuments(convertedDocs);
@@ -248,6 +271,134 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       navigator.clipboard.writeText(docToShare.url)
         .then(() => alert("문서 링크가 클립보드에 복사되었습니다."))
         .catch(() => alert("링크 복사에 실패했습니다."));
+    }
+  };
+
+  // 문서 선택 핸들러
+  const handleDocSelect = (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 행 클릭 이벤트 방지
+    setSelectedDocs(prev => {
+      if (prev.includes(docId)) {
+        return prev.filter(id => id !== docId);
+      } else {
+        return [...prev, docId];
+      }
+    });
+  };
+
+  // 전체 선택/해제 핸들러
+  const handleSelectAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedDocs.length === currentDocuments.length) {
+      setSelectedDocs([]);
+    } else {
+      setSelectedDocs(currentDocuments.map(doc => doc.id || doc.documentNumber));
+    }
+  };
+
+  // 문서 삭제 핸들러
+  const handleDelete = async () => {
+    if (selectedDocs.length === 0) {
+      alert('삭제할 문서를 선택하세요.');
+      return;
+    }
+
+    const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    const userEmail = userInfo.email;
+
+    if (!userEmail) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    // 삭제 확인
+    if (!confirm(`선택한 ${selectedDocs.length}개의 문서를 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    // 선택된 문서 정보 가져오기
+    const docsToDelete = documents.filter(doc => 
+      selectedDocs.includes(doc.id || doc.documentNumber)
+    );
+
+    // 권한 확인: 생성자만 삭제 가능
+    const unauthorizedDocs = docsToDelete.filter(doc => {
+      const creatorEmail = doc.creatorEmail || (doc.creator && doc.creator.includes('@') ? doc.creator : '');
+      // creatorEmail이 없거나, userEmail과 일치하지 않으면 권한 없음
+      if (!creatorEmail) {
+        return true; // creatorEmail이 없으면 삭제 불가
+      }
+      return creatorEmail !== userEmail && !creatorEmail.includes(userEmail) && !userEmail.includes(creatorEmail);
+    });
+
+    if (unauthorizedDocs.length > 0) {
+      const docTitles = unauthorizedDocs.map(doc => doc.title).join(', ');
+      alert(`본인이 생성한 문서만 삭제할 수 있습니다.\n삭제할 수 없는 문서: ${docTitles}`);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const gapi = window.gapi;
+
+      // 공유 문서와 개인 문서 분리
+      const sharedDocs = docsToDelete.filter(doc => doc.documentType === 'shared');
+      const personalDocs = docsToDelete.filter(doc => doc.documentType === 'personal');
+
+      // 공유 문서 삭제
+      if (sharedDocs.length > 0) {
+        const sharedDocIds = sharedDocs.map(doc => doc.id).filter(Boolean);
+        if (sharedDocIds.length > 0) {
+          const result = await apiClient.deleteDocuments(sharedDocIds, 'shared');
+          if (!result.success) {
+            throw new Error(result.message || '공유 문서 삭제 실패');
+          }
+        }
+      }
+
+      // 개인 문서 삭제 (Google Drive API 직접 사용)
+      if (personalDocs.length > 0 && gapi?.client?.drive) {
+        await initializeGoogleAPIOnce();
+        for (const doc of personalDocs) {
+          if (doc.id) {
+            try {
+              await gapi.client.drive.files.delete({
+                fileId: doc.id
+              });
+            } catch (error) {
+              console.error(`개인 문서 삭제 실패 (${doc.title}):`, error);
+              // 개별 문서 삭제 실패해도 계속 진행
+            }
+          }
+        }
+      }
+
+      alert(`${selectedDocs.length}개의 문서가 삭제되었습니다.`);
+      setSelectedDocs([]);
+
+      // 문서 목록 새로고침
+      const allDocs = await loadAllDocuments();
+      const convertedDocs: FetchedDocument[] = allDocs.map((doc, index) => ({
+        id: doc.id,
+        title: doc.title,
+        author: doc.creator || '알 수 없음',
+        lastModified: doc.lastModified,
+        url: doc.url,
+        documentNumber: doc.documentNumber,
+        approvalDate: '',
+        status: 'active',
+        originalIndex: index,
+        documentType: doc.documentType || 'shared',
+        creator: doc.creator,
+        creatorEmail: doc.creatorEmail,
+        tag: doc.tag
+      }));
+      setDocuments(convertedDocs);
+    } catch (error) {
+      console.error('문서 삭제 오류:', error);
+      alert(`문서 삭제 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -782,18 +933,23 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     }));
   };
 
-  // 필터 초기화 핸들러
-  const handleClearFilters = (columnKey: string) => {
+  // 필터/정렬 초기화 핸들러
+  const handleClearFilters = (columnKey: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // 헤더 클릭 이벤트 방지
+    }
     setFilterConfigs(prev => {
       const newConfigs = { ...prev };
       if (newConfigs[columnKey]) {
         newConfigs[columnKey] = {
-          ...newConfigs[columnKey],
+          sortDirection: null,
           selectedFilters: []
         };
       }
       return newConfigs;
     });
+    // sortConfig도 초기화
+    setSortConfig(null);
   };
 
   return (
@@ -804,19 +960,26 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
             <button className="btn-print" onClick={openUploadModal}>
               업로드
             </button>
-            <button className="btn-print" onClick={handleShare}>
-              공유
-            </button>
           </div>
         </div>
 
-        <div className="post-list">
+        <div 
+          className="post-list"
+          onContextMenu={(e) => {
+            if (selectedDocs.length > 0) {
+              e.preventDefault();
+              setContextMenu({ x: e.clientX, y: e.clientY });
+            }
+          }}
+          onClick={() => setContextMenu(null)}
+        >
           {isLoading ? (
             <p className="loading-message">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</p>
           ) : filteredDocuments.length > 0 ? (
             <>
               <table className="document-table">
                 <colgroup>
+                  <col className="col-checkbox-width" />
                   <col className="col-number-width" />
                   <col className="col-title-width" />
                   <col className="col-author-width" />
@@ -826,14 +989,30 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                 </colgroup>
                 <thead>
                   <tr>
+                    <th className="col-checkbox" onClick={handleSelectAll}>
+                      <input
+                        type="checkbox"
+                        checked={currentDocuments.length > 0 && selectedDocs.length === currentDocuments.length}
+                        onChange={() => {}}
+                        onClick={handleSelectAll}
+                        className="select-all-checkbox"
+                      />
+                    </th>
                     <th 
                       className={`col-number sortable ${filterConfigs['documentNumber']?.sortDirection ? 'sorted' : ''} ${filterConfigs['documentNumber']?.selectedFilters.length ? 'filtered' : ''}`}
                       onClick={(e) => handleHeaderClick(e, 'documentNumber')}
                     >
                       <div className="th-content">
                         <span>문서번호</span>
-                        {(filterConfigs['documentNumber']?.selectedFilters.length || 0) > 0 && (
-                          <span className="filter-indicator">🔽</span>
+                        {(filterConfigs['documentNumber']?.sortDirection || filterConfigs['documentNumber']?.selectedFilters.length > 0) && (
+                          <button
+                            className="filter-clear-icon"
+                            onClick={(e) => handleClearFilters('documentNumber', e)}
+                            title="필터/정렬 초기화"
+                          >
+                            <FaFilter className="filter-icon" />
+                            <FaTimes className="clear-icon" />
+                          </button>
                         )}
                       </div>
                     </th>
@@ -843,8 +1022,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                     >
                       <div className="th-content">
                         <span>문서이름</span>
-                        {(filterConfigs['title']?.selectedFilters.length || 0) > 0 && (
-                          <span className="filter-indicator">🔽</span>
+                        {(filterConfigs['title']?.sortDirection || filterConfigs['title']?.selectedFilters.length > 0) && (
+                          <button
+                            className="filter-clear-icon"
+                            onClick={(e) => handleClearFilters('title', e)}
+                            title="필터/정렬 초기화"
+                          >
+                            <FaFilter className="filter-icon" />
+                            <FaTimes className="clear-icon" />
+                          </button>
                         )}
                       </div>
                     </th>
@@ -854,8 +1040,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                     >
                       <div className="th-content">
                         <span>생성자</span>
-                        {(filterConfigs['creator']?.selectedFilters.length || 0) > 0 && (
-                          <span className="filter-indicator">🔽</span>
+                        {(filterConfigs['creator']?.sortDirection || filterConfigs['creator']?.selectedFilters.length > 0) && (
+                          <button
+                            className="filter-clear-icon"
+                            onClick={(e) => handleClearFilters('creator', e)}
+                            title="필터/정렬 초기화"
+                          >
+                            <FaFilter className="filter-icon" />
+                            <FaTimes className="clear-icon" />
+                          </button>
                         )}
                       </div>
                     </th>
@@ -865,8 +1058,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                     >
                       <div className="th-content">
                         <span>수정시간</span>
-                        {(filterConfigs['lastModified']?.selectedFilters.length || 0) > 0 && (
-                          <span className="filter-indicator">🔽</span>
+                        {(filterConfigs['lastModified']?.sortDirection || filterConfigs['lastModified']?.selectedFilters.length > 0) && (
+                          <button
+                            className="filter-clear-icon"
+                            onClick={(e) => handleClearFilters('lastModified', e)}
+                            title="필터/정렬 초기화"
+                          >
+                            <FaFilter className="filter-icon" />
+                            <FaTimes className="clear-icon" />
+                          </button>
                         )}
                       </div>
                     </th>
@@ -876,8 +1076,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                     >
                       <div className="th-content">
                         <span>태그</span>
-                        {(filterConfigs['tag']?.selectedFilters.length || 0) > 0 && (
-                          <span className="filter-indicator">🔽</span>
+                        {(filterConfigs['tag']?.sortDirection || filterConfigs['tag']?.selectedFilters.length > 0) && (
+                          <button
+                            className="filter-clear-icon"
+                            onClick={(e) => handleClearFilters('tag', e)}
+                            title="필터/정렬 초기화"
+                          >
+                            <FaFilter className="filter-icon" />
+                            <FaTimes className="clear-icon" />
+                          </button>
                         )}
                       </div>
                     </th>
@@ -887,21 +1094,40 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                     >
                       <div className="th-content">
                         <span>유형</span>
-                        {(filterConfigs['documentType']?.selectedFilters.length || 0) > 0 && (
-                          <span className="filter-indicator">🔽</span>
+                        {(filterConfigs['documentType']?.sortDirection || filterConfigs['documentType']?.selectedFilters.length > 0) && (
+                          <button
+                            className="filter-clear-icon"
+                            onClick={(e) => handleClearFilters('documentType', e)}
+                            title="필터/정렬 초기화"
+                          >
+                            <FaFilter className="filter-icon" />
+                            <FaTimes className="clear-icon" />
+                          </button>
                         )}
                       </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {currentDocuments.map((doc) => (
-                    <tr 
-                      key={doc.id || doc.documentNumber} 
-                      onClick={() => handleDocClick({ url: doc.url })}
-                      className="document-row"
-                    >
-                      <td className="col-number">{doc.documentNumber}</td>
+                  {currentDocuments.map((doc) => {
+                    const docId = doc.id || doc.documentNumber;
+                    const isSelected = selectedDocs.includes(docId);
+                    return (
+                      <tr 
+                        key={docId} 
+                        onClick={() => handleDocClick({ url: doc.url })}
+                        className="document-row"
+                      >
+                        <td className="col-checkbox" onClick={(e) => handleDocSelect(docId, e)}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            onClick={(e) => handleDocSelect(docId, e)}
+                            className="doc-checkbox"
+                          />
+                        </td>
+                        <td className="col-number">{doc.documentNumber}</td>
                       <td className="col-title">
                         <div className="title-cell-inner">
                           <span className="title-ellipsis">{doc.title}</span>
@@ -936,7 +1162,8 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </>
@@ -967,6 +1194,41 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
             onFilterChange={(filters) => handleFilterChange(openFilterColumn, filters)}
             onClearFilters={() => handleClearFilters(openFilterColumn)}
           />
+        )}
+
+        {/* 컨텍스트 메뉴 */}
+        {contextMenu && selectedDocs.length > 0 && (
+          <div
+            ref={contextMenuRef}
+            className="context-menu"
+            style={{
+              position: 'fixed',
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`,
+              zIndex: 10000,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="context-menu-item"
+              onClick={() => {
+                handleShare();
+                setContextMenu(null);
+              }}
+              disabled={selectedDocs.length !== 1}
+            >
+              공유
+            </button>
+            <button
+              className="context-menu-item context-menu-item-danger"
+              onClick={() => {
+                handleDelete();
+                setContextMenu(null);
+              }}
+            >
+              삭제
+            </button>
+          </div>
         )}
 
         {filteredDocuments.length > 0 && totalPages >= 1 && (

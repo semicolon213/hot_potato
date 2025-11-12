@@ -133,7 +133,7 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
       <div className="header" data-oid="klo-qi-">
         {subMenuTabs ? (
           <div className="header-navigation-group">
-            {renderBreadcrumb()}
+        {renderBreadcrumb()}
             <div className="submenu-tabs">
               {subMenuTabs.map((tab) => (
                 <button

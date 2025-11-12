@@ -30,9 +30,20 @@ npm install
 ```
 
 ### 4. 개발 서버 실행
+
+#### 웹 브라우저에서 실행 (일반 웹 앱)
 ```bash
 npm run dev
+# 또는
+npm run dev:web
 ```
+브라우저에서 `http://localhost:5173` 접속
+
+#### 일렉트론 앱으로 실행 (데스크톱 앱)
+```bash
+npm run dev:electron
+```
+일렉트론 창이 자동으로 열립니다.
 
 ## 로그인 시스템
 
