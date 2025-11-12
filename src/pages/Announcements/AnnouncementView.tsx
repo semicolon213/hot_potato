@@ -87,16 +87,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     }
   }, [post]);
 
-  // 조회수 증가는 별도의 useEffect로 분리 (한 번만 실행)
-  useEffect(() => {
-    if (hasIncrementedViewRef.current !== post.id && !isEditing && post.id) {
-      hasIncrementedViewRef.current = post.id;
-      incrementViewCount(post.id).catch(error => {
-        console.error('조회수 증가 실패:', error);
-        hasIncrementedViewRef.current = null; // 실패 시 다시 시도할 수 있도록
-      });
-    }
-  }, [post.id, isEditing]); // post.id와 isEditing만 dependency로 사용
+
 
   // 사용자 목록 로드
   useEffect(() => {
