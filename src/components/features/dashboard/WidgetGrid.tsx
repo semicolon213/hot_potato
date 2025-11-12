@@ -31,6 +31,7 @@ interface WidgetGridProps {
   handleDragEnter: (index: number) => void;
   handleDrop: () => void;
   handleRemoveWidget: (id: string) => void;
+  onWidgetButtonClick?: () => void;
 }
 
 /**
@@ -44,12 +45,18 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
   handleDragEnter,
   handleDrop,
   handleRemoveWidget,
+  onWidgetButtonClick,
 }) => {
   return (
     <div className="widget-grid">
       {widgets.map((widget, index) => {
         // 위젯의 componentType에 해당하는 컴포넌트를 동적으로 찾아오거나, 없을 경우 DefaultMessage 컴포넌트를 사용합니다.
         const WidgetContentComponent = WidgetComponents[widget.componentType] || DefaultMessage;
+        
+        const buttonProps = (widget.type === 'tuition' || widget.type === 'budget-plan')
+          ? { onButtonClick: onWidgetButtonClick }
+          : {};
+
         return (
           <div
             key={widget.id} // Key를 고유한 ID로 변경
@@ -73,7 +80,7 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
               </div>
             </div>
             {/* 동적으로 로드된 위젯 컴포넌트에 해당 props를 전달하여 렌더링합니다. */}
-            <WidgetContentComponent {...widget.props} />
+            <WidgetContentComponent {...widget.props} {...buttonProps} />
           </div>
         );
       })}

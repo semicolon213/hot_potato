@@ -1,36 +1,46 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/pages/Dashboard.css";
 import WidgetGrid from "../components/features/dashboard/WidgetGrid";
 import AddWidgetModal from "../components/features/dashboard/AddWidgetModal";
-import type { User, WidgetData, WidgetOption } from '../../types/app';
+import SheetSelectionModal from "../components/ui/SheetSelectionModal";
+import type { User } from '../../types/app';
+import { useWidgetManagement } from "../hooks/features/dashboard/useWidgetManagement";
 
 interface DashboardProps {
   user: User | null;
-  isModalOpen: boolean;
-  setIsModalOpen: (isOpen: boolean) => void;
-  widgets: WidgetData[];
-  handleAddWidget: (type: string) => void;
-  handleRemoveWidget: (id: string) => void;
-  handleDragStart: (index: number) => void;
-  handleDragEnter: (index: number) => void;
-  handleDrop: () => void;
-  widgetOptions: WidgetOption[];
+  hotPotatoDBSpreadsheetId: string | null;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({
-  user,
-  isModalOpen,
-  setIsModalOpen,
-  widgets,
-  handleAddWidget,
-  handleRemoveWidget,
-  handleDragStart,
-  handleDragEnter,
-  handleDrop,
-  widgetOptions,
-}) => {
-  // The loading state is now implicitly handled by the parent component.
-  // The dashboard will render the empty state until the `widgets` array is populated.
+const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const {
+    isModalOpen,
+    setIsModalOpen,
+    widgets,
+    handleAddWidget,
+    handleRemoveWidget,
+    handleDragStart,
+    handleDragEnter,
+    handleDrop,
+    widgetOptions,
+    isSheetModalOpen,
+    setIsSheetModalOpen,
+    accountingSheets,
+    openSheetSelectionModal,
+    handleSheetSelect,
+  } = useWidgetManagement(hotPotatoDBSpreadsheetId, user);
+
+  useEffect(() => {
+    console.log("Dashboard 컴포넌트가 마운트되었습니다.");
+    console.log("현재 위젯 개수:", widgets.length);
+    
+    if (widgets.length > 0 || !hotPotatoDBSpreadsheetId) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [widgets, hotPotatoDBSpreadsheetId]);
 
   return (
     <div className="main-content">
@@ -61,6 +71,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           handleDragEnter={handleDragEnter}
           handleDrop={handleDrop}
           handleRemoveWidget={handleRemoveWidget}
+          onWidgetButtonClick={openSheetSelectionModal}
         />
       )}
 
@@ -70,6 +81,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         widgetOptions={widgetOptions}
         widgets={widgets}
         handleAddWidget={handleAddWidget}
+      />
+
+      <SheetSelectionModal
+        isOpen={isSheetModalOpen}
+        sheets={accountingSheets}
+        onClose={() => setIsSheetModalOpen(false)}
+        onSelect={handleSheetSelect}
       />
     </div>
   );

@@ -802,54 +802,35 @@ export const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: s
 
 // 캘린더 관련 함수들
 export const fetchCalendarEvents = async (): Promise<Event[]> => {
-    const spreadsheetIds = [
-        calendarProfessorSpreadsheetId, 
-        calendarStudentSpreadsheetId, 
-        calendarCouncilSpreadsheetId, 
-        calendarADProfessorSpreadsheetId, 
-        calendarSuppSpreadsheetId
-    ].filter(Boolean) as string[];
-
-    if (spreadsheetIds.length === 0) {
-        console.log('No calendar spreadsheet IDs available');
+    if (!calendarProfessorSpreadsheetId) {
+        console.log('Professor calendar spreadsheet ID not available');
         return [];
     }
 
     try {
-        const allEventsPromises = spreadsheetIds.map(async (spreadsheetId) => {
-            try {
-                console.log(`Fetching calendar events from spreadsheet: ${spreadsheetId}`);
+        console.log(`Fetching calendar events from spreadsheet: ${calendarProfessorSpreadsheetId}`);
+        const data = await getSheetData(calendarProfessorSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
 
-                const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+        if (!data || !data.values || data.values.length <= 1) {
+            return [];
+        }
 
-                if (!data || !data.values || data.values.length <= 1) {
-                    return [];
-                }
+        const events = data.values.slice(1).map((row: string[], index: number) => ({
+            id: `${calendarProfessorSpreadsheetId}-${row[0] || index}`,
+            title: row[1] || '',
+            startDate: row[2] || '',
+            endDate: row[3] || '',
+            description: row[4] || '',
+            colorId: row[5] || '',
+            startDateTime: row[6] || '',
+            endDateTime: row[7] || '',
+            type: row[8] || '',
+            rrule: row[9] || '',
+            attendees: row[10] || '',
+        }));
 
-                return data.values.slice(1).map((row: string[], index: number) => ({
-                    id: `${spreadsheetId}-${row[0] || index}`,
-                    title: row[1] || '',
-                    startDate: row[2] || '',
-                    endDate: row[3] || '',
-                    description: row[4] || '',
-                    colorId: row[5] || '',
-                    startDateTime: row[6] || '',
-                    endDateTime: row[7] || '',
-                    type: row[8] || '',
-                    rrule: row[9] || '',
-                    attendees: row[10] || '',
-                }));
-            } catch (sheetError) {
-                console.error(`Error fetching from spreadsheet ${spreadsheetId}:`, sheetError);
-                return [];
-            }
-        });
-
-        const results = await Promise.all(allEventsPromises);
-        const allEvents = results.flat();
-
-        console.log('Loaded calendar events:', allEvents.length);
-        return allEvents;
+        console.log('Loaded calendar events:', events.length);
+        return events;
     } catch (error) {
         console.error('Error fetching calendar events from Google Sheet:', error);
         return [];

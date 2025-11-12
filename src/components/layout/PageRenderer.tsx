@@ -76,16 +76,6 @@ interface PageRendererProps {
   onAddTemplate: (newDocData: { title: string; description: string; tag: string; }) => Promise<void>;
   onUpdateTemplate: (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => Promise<void>;
   onUpdateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => Promise<void>;
-  // Widget props
-  isModalOpen: boolean;
-  setIsModalOpen: (isOpen: boolean) => void;
-  widgets: WidgetData[];
-  handleAddWidget: (type: string) => void;
-  handleRemoveWidget: (id: string) => void;
-  handleDragStart: (index: number) => void;
-  handleDragEnter: (index: number) => void;
-  handleDrop: () => void;
-  widgetOptions: WidgetOption[];
 }
 
 const PageRenderer: React.FC<PageRendererProps> = ({
@@ -137,16 +127,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onAddTemplate,
   onUpdateTemplate,
   onUpdateTemplateFavorite,
-  // Widget props
-  isModalOpen,
-  setIsModalOpen,
-  widgets,
-  handleAddWidget,
-  handleRemoveWidget,
-  handleDragStart,
-  handleDragEnter,
-  handleDrop,
-  widgetOptions,
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -268,15 +248,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'dashboard':
         return <Dashboard 
           user={user} 
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-          widgets={widgets}
-          handleAddWidget={handleAddWidget}
-          handleRemoveWidget={handleRemoveWidget}
-          handleDragStart={handleDragStart}
-          handleDragEnter={handleDragEnter}
-          handleDrop={handleDrop}
-          widgetOptions={widgetOptions}
+          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
         />;
       case 'accounting':
         return <Accounting />;
@@ -314,15 +286,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       default:
         return <Dashboard 
           user={user}
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-          widgets={widgets}
-          handleAddWidget={handleAddWidget}
-          handleRemoveWidget={handleRemoveWidget}
-          handleDragStart={handleDragStart}
-          handleDragEnter={handleDragEnter}
-          handleDrop={handleDrop}
-          widgetOptions={widgetOptions}
+          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
         />;
     }
   };
