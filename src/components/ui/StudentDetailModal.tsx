@@ -1146,8 +1146,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     value={newIssue.type_issue}
                     onChange={(e) => handleIssueInputChange('type_issue', e.target.value)}
                     onFocus={handleInputFocus}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseUp={(e) => e.preventDefault()}
                   >
                     <option value="">선택하세요</option>
                     <option value="학업">학업</option>
@@ -1162,8 +1160,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     value={newIssue.level_issue}
                     onChange={(e) => handleIssueInputChange('level_issue', e.target.value)}
                     onFocus={handleInputFocus}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseUp={(e) => e.preventDefault()}
                   >
                     <option value="">선택하세요</option>
                     <option value="낮음">낮음</option>
