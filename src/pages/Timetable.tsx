@@ -6,14 +6,12 @@ import { getScheduleEvents, addScheduleEvent } from '../utils/database/personalC
 const Timetable: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [events, setEvents] = useState<TimetableEvent[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
 
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const hours = Array.from({ length: 13 }, (_, i) => `${(i + 9).toString().padStart(2, '0')}:00`); // 9 AM to 9 PM
 
     useEffect(() => {
         const fetchEvents = async () => {
-            setIsLoading(true);
             const fetchedEvents = await getScheduleEvents();
             const formattedEvents: TimetableEvent[] = fetchedEvents.map(e => ({
                 no: e.no,
@@ -25,7 +23,6 @@ const Timetable: React.FC = () => {
                 color: e.color,
             })).filter(e => e.title); // 제목이 없는 빈 행은 필터링
             setEvents(formattedEvents);
-            setIsLoading(false);
         };
         fetchEvents();
     }, []);
