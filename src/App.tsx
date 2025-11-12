@@ -359,19 +359,31 @@ const App: React.FC = () => {
   };
 
   const handleSelectAnnouncement = async (post: Post) => {
-    // ID를 문자열로 통일하여 비교
     const postId = String(post.id);
-    console.log('공지사항 선택:', { postId, postTitle: post.title, allIds: announcements.map(a => String(a.id)) });
-    
-    // 선택된 공지사항 찾기 (ID로 정확히 매칭)
-    const selectedPost = announcements.find(a => String(a.id) === postId);
-    if (!selectedPost) {
-      console.error('선택한 공지사항을 찾을 수 없습니다:', postId);
-      return;
+
+    // 1. Optimistic UI Update
+    const updatedAnnouncements = announcements.map(p => {
+      if (String(p.id) === postId) {
+        // 조회수를 로컬 상태에서 즉시 1 증가시킵니다.
+        return { ...p, views: (p.views || 0) + 1 };
+      }
+      return p;
+    });
+    setAnnouncements(updatedAnnouncements);
+
+    // 2. Backend API Call
+    try {
+      // 실제 백엔드에 조회수 증가를 요청합니다.
+      await incrementViewCount(post.id);
+    } catch (error) {
+      console.error('조회수 증가 API 호출 실패:', error);
+      // 참고: 실패 시 UI를 원래대로 되돌릴 수도 있습니다.
+      // setAnnouncements(announcements); 
     }
-    
-    // 조회수 증가는 AnnouncementView 컴포넌트에서 처리하므로 여기서는 제거
-    setSelectedAnnouncement(selectedPost);
+
+    // 3. Navigate to Detail Page with updated data
+    const updatedSelectedPost = updatedAnnouncements.find(p => String(p.id) === postId);
+    setSelectedAnnouncement(updatedSelectedPost || { ...post, views: (post.views || 0) + 1 });
     handlePageChange('announcement-view', { announcementId: postId });
   };
 
