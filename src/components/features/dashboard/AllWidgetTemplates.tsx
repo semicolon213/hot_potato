@@ -85,31 +85,63 @@ export const DefaultMessage = ({ message, onButtonClick }: { message: string, on
  * @param {{ date: string; event: string }[]} props.items - 이벤트 항목 배열 (날짜, 이벤트 내용 포함)
  */
 export const EventListComponent = ({ items, onItemClick }: { items: { date: string; event: string }[], onItemClick?: () => void }) => (
-    <div className="widget-content">
+    <div className="widget-content" style={{ padding: '6px 0' }}>
         {items.map((item, index) => (
             <div 
                 key={index} 
                 onClick={onItemClick}
                 style={{ 
-                    marginBottom: '8px',
+                    marginBottom: index < items.length - 1 ? '6px' : '0',
                     cursor: onItemClick ? 'pointer' : 'default',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    transition: 'background-color 0.2s'
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    fontSize: '13px',
+                    borderLeft: '3px solid transparent'
                 }}
                 onMouseEnter={(e) => {
                     if (onItemClick) {
-                        e.currentTarget.style.backgroundColor = '#f8fafc';
+                        e.currentTarget.style.backgroundColor = '#f5f7fa';
+                        e.currentTarget.style.borderLeftColor = 'var(--sidebar-primary)';
+                        e.currentTarget.style.transform = 'translateX(2px)';
                     }
                 }}
                 onMouseLeave={(e) => {
                     if (onItemClick) {
                         e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.borderLeftColor = 'transparent';
+                        e.currentTarget.style.transform = 'translateX(0)';
                     }
                 }}
             >
-                <div className="calendar-day">{item.date}</div>
-                <div className="calendar-event">{item.event}</div>
+                <span 
+                    className="calendar-day" 
+                    style={{ 
+                        minWidth: '75px', 
+                        fontSize: '11px', 
+                        fontWeight: '600', 
+                        color: '#888',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
+                        paddingTop: '2px'
+                    }}
+                >
+                    {item.date}
+                </span>
+                <span 
+                    className="calendar-event" 
+                    style={{ 
+                        flex: 1, 
+                        fontSize: '13px',
+                        color: '#1a1a1a',
+                        lineHeight: '1.5'
+                    }}
+                >
+                    {item.event}
+                </span>
             </div>
         ))}
     </div>
