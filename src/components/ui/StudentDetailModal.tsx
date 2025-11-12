@@ -851,10 +851,23 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <input
                         type="text"
                         value={editedStudent.phone_num} // phone_num 직접 사용
-                        onChange={(e) => handleInputChange('phone_num', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          let formattedValue = digitsOnly;
+
+                          if (digitsOnly.length > 3 && digitsOnly.length <= 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+                          } else if (digitsOnly.length > 7) {
+                            formattedValue = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}-${digitsOnly.slice(7, 11)}`;
+                          }
+                          
+                          handleInputChange('phone_num', formattedValue);
+                        }}
                         disabled={!isEditing}
                         onFocus={handleInputFocus}
                         placeholder="010-1234-5678"
+                        maxLength={13}
                       />
                     </div>
 
