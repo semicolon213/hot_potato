@@ -96,9 +96,9 @@ transition: background-color 0.2s;
 
 /* 태그 관리 레이아웃 개선 */
 .category-tabs-wrapper {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding-left: 30px;
+    margin-top: 0;
+    margin-bottom: clamp(16px, 1.85vh, 24px);
+    padding-left: 0;
 }
 
 .tabs-header {
@@ -141,37 +141,43 @@ transition: background-color 0.2s;
 .new-tabs-container {
 display: flex;
 flex-wrap: wrap; /* Allow tags to wrap to the next line */
-margin-top: 20px;
-margin-bottom: 20px;
-padding-bottom: 8px;
-padding-left: 30px;
+margin-top: 0;
+margin-bottom: 0;
+padding-bottom: clamp(8px, 0.93vh, 12px);
+padding-left: 0;
 position: relative;
+gap: clamp(8px, 1.04vw, 12px);
 }
 
 
 
 .new-tab {
 position: relative;
-margin-right: 20px;
-padding: 6px 0;
-font-size: 14px;
-color: #6b7280;
+margin-right: 0;
+padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+font-size: clamp(14px, 1.62vh, 16px);
+color: var(--text-medium);
 cursor: pointer;
-transition: color 0.2s;
+transition: var(--transition-base);
 display: flex;
 align-items: center;
 gap: 4px;
+border-radius: var(--sidebar-radius-sm);
+background-color: transparent;
+border: 1px solid transparent;
+font-weight: var(--font-weight-medium);
 }
 
 .new-tab.new-active {
-font-weight: bold;
-color: #212529;
+font-weight: var(--font-weight-semibold);
+color: var(--sidebar-primary);
+background-color: #f8f9fa;
+border-color: #e2e8f0;
 }
 
-
-
 .new-tab:hover:not(.new-active) {
-color: #4b5563;
+color: var(--sidebar-primary);
+background-color: #f8f9fa;
 }
 
 /* 템플릿 카드 영역  */

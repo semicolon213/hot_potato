@@ -85,7 +85,20 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
 
   // 각 그룹을 ID 역순으로 정렬 (최신순)
   pinnedPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
-  normalPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  normalPosts.sort((a, b) => {
+    const isATemp = String(a.id).startsWith('temp-');
+    const isBTemp = String(b.id).startsWith('temp-');
+
+    if (isATemp && !isBTemp) return -1; // a가 임시면 a를 위로
+    if (!isATemp && isBTemp) return 1;  // b가 임시면 b를 위로
+
+    // 둘 다 임시이거나 둘 다 임시가 아닐 경우 ID로 정렬
+    const idA = parseInt(String(a.id).replace('temp-', ''), 10);
+    const idB = parseInt(String(b.id).replace('temp-', ''), 10);
+
+    if (isNaN(idA) || isNaN(idB)) return 0;
+    return idB - idA;
+  });
 
   // 고정 공지를 최상단에 위치시켜 최종 목록 생성
   const sortedFilteredPosts = [...pinnedPosts, ...normalPosts];
@@ -176,6 +189,8 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
                     <td className="col-number">
                       {post.isPinned ? (
                         <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>📌</span>
+                      ) : String(post.id).startsWith('temp-') ? (
+                        <span style={{ color: '#999' }}>-</span>
                       ) : (
                         post.id
                       )}

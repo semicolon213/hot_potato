@@ -1,12 +1,21 @@
+// 페이지 렌더링 로직을 분리한 컴포넌트
+
+/**
+ * @file PageRenderer.tsx
+ * @brief 페이지 렌더링 컴포넌트
+ * @details 현재 페이지 상태에 따라 적절한 페이지 컴포넌트를 렌더링합니다.
+ * @author Hot Potato Team
+ * @date 2024
+ */
+
 import React from 'react';
-import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff as StaffType, WidgetData, WidgetOption } from '../../types/app';
+import type { PageType, User, Post, Event, DateRange, CustomPeriod, Student, Staff as StaffType } from '../../types/app';
 import type { Template } from '../../hooks/features/templates/useTemplateUI';
 import Admin from '../../pages/Admin';
 import Students from '../../pages/Students';
 import Staff from '../../pages/Staff';
 import MyCalendarPage from '../../pages/Calendar';
 import Dashboard from '../../pages/Dashboard';
-import Docbox from '../../pages/Docbox';
 import DocumentManagement from '../../pages/DocumentManagement';
 import EmptyDocument from '../../pages/EmptyDocument';
 import Mypage from '../../pages/Mypage';
@@ -127,7 +136,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onUpdateTag,
   onAddTemplate,
   onUpdateTemplate,
-  onUpdateTemplateFavorite,
+  onUpdateTemplateFavorite
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -199,7 +208,13 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           />
         );
       case "docbox":
-        return <Docbox data-oid="t94yibd" searchTerm={searchTerm} />;
+        return (
+          <DocumentManagement
+            onPageChange={onPageChange}
+            customTemplates={customTemplates}
+            searchTerm={searchTerm}
+          />
+        );
       case "new_document":
         return (
           <NewDocument 
@@ -249,10 +264,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard 
-          user={user} 
-          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
-        />;
+        return <Dashboard user={user} hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'accounting':
         return <Accounting />;
       case 'admin':
@@ -260,8 +272,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'students':
         return <Students 
           onPageChange={onPageChange} 
-          studentSpreadsheetId={studentSpreadsheetId}
-          user={user} />;
+          studentSpreadsheetId={studentSpreadsheetId} />;
       case 'staff':
         return <Staff 
           onPageChange={onPageChange} 
@@ -287,10 +298,7 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'google_chat':
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       default:
-        return <Dashboard 
-          user={user}
-          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
-        />;
+        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
     }
   };
 

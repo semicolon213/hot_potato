@@ -19,6 +19,7 @@ export const generateWidgetContent = (type: string) => {
     return {
         title: data.title,
         componentType: data.component,
-        props: data.props
+        props: data.props,
+        defaultProps: data.props // 별칭으로 제공 (하위 호환성)
     };
 };

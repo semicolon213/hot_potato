@@ -53,7 +53,7 @@ export const widgetData = {
         }
     },
     tuition: {
-        title: '<i class="fas fa-money-bill-wave"></i> 회계 장부',
+        title: '<i class="fas fa-money-bill-wave"></i> 장부 잔액',
         component: 'ListComponent',
         props: {
             items: []
@@ -61,13 +61,69 @@ export const widgetData = {
     },
     'budget-plan': {
         title: '<i class="fas fa-money-bill-alt"></i> 예산 계획',
-        component: 'DefaultMessage',
+        component: 'BudgetPlanComponent',
         props: {
-            message: '예산 계획 위젯이 곧 제공될 예정입니다.'
+            items: []
+        }
+    },
+    'workflow-status': {
+        title: '<i class="fas fa-tasks"></i> 워크플로우 현황',
+        component: 'WorkflowStatusComponent',
+        props: {
+            items: []
+        }
+    },
+    'student-summary': {
+        title: '<i class="fas fa-user-graduate"></i> 학생 관리',
+        component: 'StudentSummaryComponent',
+        props: {
+            items: []
+        }
+    },
+    'staff-summary': {
+        title: '<i class="fas fa-user-tie"></i> 교직원 관리',
+        component: 'StaffSummaryComponent',
+        props: {
+            items: []
+        }
+    },
+    'user-approval': {
+        title: '<i class="fas fa-user-clock"></i> 사용자 승인 대기',
+        component: 'UserApprovalComponent',
+        props: {
+            items: []
+        }
+    },
+    'system-stats': {
+        title: '<i class="fas fa-chart-line"></i> 시스템 통계',
+        component: 'SystemStatsComponent',
+        props: {
+            items: []
+        }
+    },
+    'document-management': {
+        title: '<i class="fas fa-file-alt"></i> 문서 관리',
+        component: 'DocumentManagementComponent',
+        props: {
+            items: []
+        }
+    },
+    'budget-execution': {
+        title: '<i class="fas fa-chart-pie"></i> 예산 집행 현황',
+        component: 'BudgetExecutionComponent',
+        props: {
+            items: []
+        }
+    },
+    'accounting-stats': {
+        title: '<i class="fas fa-chart-bar"></i> 회계 통계',
+        component: 'AccountingStatsComponent',
+        props: {
+            items: []
         }
     },
     default: {
-        title: '<i class="fas fa-plus"></i> 예산 계획',
+        title: '<i class="fas fa-plus"></i> 기본 위젯',
         component: 'DefaultMessage',
         props: {
             message: ''

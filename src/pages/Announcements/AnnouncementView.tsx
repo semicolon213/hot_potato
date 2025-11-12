@@ -9,6 +9,7 @@ import type { UsersListResponse } from '../../types/api/apiResponses';
 import { API_ACTIONS } from '../../config/api';
 import { ENV_CONFIG } from '../../config/environment';
 import { incrementViewCount } from '../../utils/database/papyrusManager';
+import { formatDateToYYYYMMDD } from '../../utils/helpers/timeUtils';
 
 const GROUP_TYPES = [
   { value: 'student', label: '학생' },
@@ -48,7 +49,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     const attachmentRegex = /<p>첨부파일:.*?<\/p>/gs;
     const contentWithoutAttachments = post.content.replace(attachmentRegex, '').trim();
     setMainContent(contentWithoutAttachments);
-    setEditedContent(contentWithoutAttachments);
+    setEditedContent(post.content); // Use the full, original content for the editor
 
     if (post.file_notice) {
         try {
@@ -87,16 +88,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
     }
   }, [post]);
 
-  // 조회수 증가는 별도의 useEffect로 분리 (한 번만 실행)
-  useEffect(() => {
-    if (hasIncrementedViewRef.current !== post.id && !isEditing && post.id) {
-      hasIncrementedViewRef.current = post.id;
-      incrementViewCount(post.id).catch(error => {
-        console.error('조회수 증가 실패:', error);
-        hasIncrementedViewRef.current = null; // 실패 시 다시 시도할 수 있도록
-      });
-    }
-  }, [post.id, isEditing]); // post.id와 isEditing만 dependency로 사용
+
 
   // 사용자 목록 로드
   useEffect(() => {
@@ -458,7 +450,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
       </div>
       <div className="post-view-meta-details">
         <span>작성자: {post.author}</span>
-        <span>작성일: {post.date}</span>
+        <span>작성일: {formatDateToYYYYMMDD(post.date)}</span>
         <span>조회수: {post.views}</span>
         {post.fix_notice === 'X' && isAuthor && (
           <span style={{ color: '#ff6b6b', marginLeft: '10px' }}>

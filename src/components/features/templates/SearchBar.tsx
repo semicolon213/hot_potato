@@ -1,5 +1,5 @@
-// React import (React 17+에서는 JSX만 쓸 때는 생략 가능)
-
+import React from 'react';
+import { FaSearch, FaTimes } from 'react-icons/fa';
 
 // SearchBar 컴포넌트의 props 타입 정의
 interface Props {
@@ -13,21 +13,27 @@ export function SearchBar({
                               setSearchTerm,
                           }: Props) {
     return (
-        <div className="new-search-bar-container">
-            {/* 검색 입력 영역 */}
-            <div className="new-search-input-wrapper">
-                {/* 검색 아이콘 (SVG 등) */}
-                <div className="new-search-icon-circle">
-                    {/* ...SVG 생략... */}
+        <div className="search-filter-section">
+            <div className="search-controls">
+                <div className="search-input-group">
+                    <FaSearch className="search-icon" />
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="템플릿 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button 
+                            className="clear-search-btn"
+                            onClick={() => setSearchTerm('')}
+                            title="검색어 지우기"
+                        >
+                            <FaTimes />
+                        </button>
+                    )}
                 </div>
-                {/* 검색어 입력 필드 */}
-                <input
-                    type="text"
-                    className="new-search-input"
-                    placeholder="템플릿 검색..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)} // 입력 변화 시 상태 업데이트
-                />
             </div>
         </div>
     );

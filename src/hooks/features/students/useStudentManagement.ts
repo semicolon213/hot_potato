@@ -417,6 +417,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
           newStudent.no_student,
           newStudent.name,
           newStudent.address,
+          newStudent.phone_num,
           newStudent.grade,
           newStudent.state,
           newStudent.council

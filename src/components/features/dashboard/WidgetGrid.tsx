@@ -31,7 +31,8 @@ interface WidgetGridProps {
   handleDragEnter: (index: number) => void;
   handleDrop: () => void;
   handleRemoveWidget: (id: string) => void;
-  onWidgetButtonClick?: () => void;
+  onWidgetButtonClick?: (widgetId: string) => void;
+  onStudentStatusChange?: (widgetId: string, status: string) => void;
 }
 
 /**
@@ -46,6 +47,7 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
   handleDrop,
   handleRemoveWidget,
   onWidgetButtonClick,
+  onStudentStatusChange,
 }) => {
   return (
     <div className="widget-grid">
@@ -53,9 +55,28 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
         // 위젯의 componentType에 해당하는 컴포넌트를 동적으로 찾아오거나, 없을 경우 DefaultMessage 컴포넌트를 사용합니다.
         const WidgetContentComponent = WidgetComponents[widget.componentType] || DefaultMessage;
         
-        const buttonProps = (widget.type === 'tuition' || widget.type === 'budget-plan')
-          ? { onButtonClick: onWidgetButtonClick }
+        // 회계 장부(tuition)는 장부 선택 불필요, 나머지는 장부 선택 필요
+        const buttonProps = (widget.type === 'budget-plan' || widget.type === 'budget-execution' || widget.type === 'accounting-stats')
+          ? { onButtonClick: () => onWidgetButtonClick?.(widget.id) }
           : {};
+        
+        // spreadsheetId와 widgetType을 props에 추가 (ListComponent, AccountingStatsComponent에서 버튼 표시 여부 판단용)
+        const widgetProps = {
+          ...widget.props,
+          ...buttonProps,
+          spreadsheetId: widget.props.spreadsheetId || undefined, // 항상 전달 (없으면 undefined)
+          widgetType: widget.type, // 위젯 타입 전달
+          // 회계 통계 위젯의 경우 rawData 전달 (통합 보기용)
+          ...(widget.type === 'accounting-stats' && { rawData: widget.props.rawData || undefined }),
+          // 학생 관리 위젯의 경우 rawData와 selectedStatus 전달
+          ...(widget.type === 'student-summary' && { 
+            rawData: widget.props.rawData || undefined,
+            selectedStatus: widget.props.selectedStatus || '재학',
+            onStatusChange: (status: string) => {
+              onStudentStatusChange?.(widget.id, status);
+            }
+          })
+        };
 
         return (
           <div
@@ -72,15 +93,31 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
               <h3 dangerouslySetInnerHTML={{ __html: widget.title }}></h3>
               <div className="widget-actions">
                 <button
-                  className="widget-btn"
-                  onClick={() => handleRemoveWidget(widget.id)} // widget.type 대신 widget.id를 전달
+                  className="widget-btn widget-delete-btn"
+                  onClick={() => handleRemoveWidget(widget.id)}
+                  title="위젯 삭제"
                 >
-                  <i className="fas fa-trash"></i>
+                  <svg 
+                    width="14" 
+                    height="14" 
+                    viewBox="0 0 14 14" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="delete-icon"
+                  >
+                    <path 
+                      d="M11 3.5L10.5 11.5C10.5 12.05 10.05 12.5 9.5 12.5H4.5C3.95 12.5 3.5 12.05 3.5 11.5L3 3.5M5.5 3.5V2.5C5.5 1.95 5.95 1.5 6.5 1.5H7.5C8.05 1.5 8.5 1.95 8.5 2.5V3.5M1.5 3.5H12.5" 
+                      stroke="currentColor" 
+                      strokeWidth="1.2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
             {/* 동적으로 로드된 위젯 컴포넌트에 해당 props를 전달하여 렌더링합니다. */}
-            <WidgetContentComponent {...widget.props} {...buttonProps} />
+            <WidgetContentComponent {...widgetProps} />
           </div>
         );
       })}

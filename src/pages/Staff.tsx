@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FaListUl, FaUsers } from 'react-icons/fa';
 import { useStaffOnly } from '../hooks/features/staff/useStaffOnly';
 import { useCommitteeOnly } from '../hooks/features/staff/useCommitteeOnly';
@@ -109,6 +109,13 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   // Tab and data conversion logic
   const [activeTab, setActiveTab] = useState<'staff' | 'committee'>('staff');
   const currentHook = activeTab === 'staff' ? staffHook : committeeHook;
+
+  const mainClassifications = useMemo(() => ["전임교수", "조교", "외부강사", "겸임교수", "시간강사"], []);
+  const otherClassifications = useMemo(() => {
+    if (!staffHook.staff) return [];
+    const allPos = [...new Set(staffHook.staff.map(s => s.pos))];
+    return allPos.filter(pos => pos && !mainClassifications.includes(pos));
+  }, [staffHook.staff, mainClassifications]);
 
   const convertedStaff = staffHook.filteredStaff.map(staff => ({
     no_student: staff.no,
@@ -411,6 +418,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         onDelete={handleModalDelete}
         studentSpreadsheetId={staffSpreadsheetId}
         mode={selectedStaff ? 'staff' : selectedCommittee ? 'committee' : 'student'}
+        mainClassifications={mainClassifications}
+        otherClassifications={otherClassifications}
       />
 
       <StudentDetailModal
@@ -421,6 +430,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         studentSpreadsheetId={staffSpreadsheetId}
         mode='staff'
         isAdding={true}
+        mainClassifications={mainClassifications}
+        otherClassifications={otherClassifications}
       />
 
       <StudentDetailModal
@@ -431,6 +442,8 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
         studentSpreadsheetId={staffSpreadsheetId}
         mode='committee'
         isAdding={true}
+        mainClassifications={mainClassifications}
+        otherClassifications={otherClassifications}
       />
     </div>
   );

@@ -28,34 +28,38 @@ interface DocumentListProps<T extends object> {
   isLoading?: boolean;
   onRowDoubleClick?: (row: T) => void;
   headerContent?: React.ReactNode;
+  rightHeaderContent?: React.ReactNode;
   showTableHeader?: boolean;
+  emptyMessage?: string;
 }
 
-const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick, headerContent, showTableHeader = true }: DocumentListProps<T>) => {
+const DocumentList = <T extends object>({ columns, data, onPageChange, title, onRowClick, sortConfig, onSort, showViewAll = true, isLoading, onRowDoubleClick, headerContent, rightHeaderContent, showTableHeader = true, emptyMessage }: DocumentListProps<T>) => {
   return (
-    <div className="document-container">
+    <div className={`document-container ${title === '최근 문서' ? 'recent-docs' : ''}`}>
       <div className="table-container">
+        {title !== '문서함' && (
         <div
           className="section-header"
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px' }}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '20px', margin: 0, paddingTop: 0, paddingBottom: 0 }}
         >
           <div className="section-title-container">
-            <div className="section-title no-line">
-              {title}
-            </div>
+              <div className="section-title no-line">
+                {title}
+              </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            {headerContent}
+              {headerContent}
             {showViewAll && (
               <button
                 className="view-all-button"
-                onClick={() => onPageChange("docbox")}
+                  onClick={() => onPageChange("document_management")}
               >
                 모두 보기
               </button>
             )}
           </div>
         </div>
+        )}
 
         {showTableHeader && (
           <div className="table-header">
@@ -86,32 +90,36 @@ const DocumentList = <T extends object>({ columns, data, onPageChange, title, on
               <span>문서를 불러오는 중입니다...</span>
             </div>
           </div>
-        ) : data.length > 0 ? (
-          data.map((row, index) => {
-            const isLastRow = index === data.length - 1;
-            return (
-              <div 
-                className={`table-row ${isLastRow ? 'last-row-no-header' : ''}`}
-                key={index}
-                onClick={() => onRowClick && onRowClick(row)}
-                onDoubleClick={() => onRowDoubleClick?.(row)}
-                style={{ cursor: (onRowClick || onRowDoubleClick) ? 'pointer' : 'default' }}
-              >
-                {columns.map((col) => (
-                  <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
-                    {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '') as React.ReactNode}
+        ) : (
+          <>
+            {data.length > 0 ? (
+              data.map((row, index) => {
+                const isLastRow = index === data.length - 1;
+                return (
+                  <div 
+                    className={`table-row ${isLastRow ? 'last-row-no-header' : ''}`}
+                    key={index}
+                    onClick={() => onRowClick && onRowClick(row)}
+                    onDoubleClick={() => onRowDoubleClick?.(row)}
+                    style={{ cursor: (onRowClick || onRowDoubleClick) ? 'pointer' : 'default' }}
+                  >
+                    {columns.map((col) => (
+                      <div key={String(col.key)} className={`table-cell ${col.cellClassName || ''}`} style={{ width: col.width, flex: col.width ? 'none' : 1 }}>
+                        {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '') as React.ReactNode}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                );
+              })
+            ) : (
+              <div className="table-row last-row-no-header">
+                <div className="table-cell no-results-cell" style={{ width: '100%' }}>
+                  {emptyMessage || '문서가 없습니다.'}
+                </div>
               </div>
-            );
-          })
-        ) : showTableHeader ? (
-          <div className="table-row">
-            <div className="table-cell no-results-cell" style={{ width: '100%' }}>
-              문서가 없습니다.
-            </div>
-          </div>
-        ) : null}
+            )}
+          </>
+        )}
       </div>
     </div>
   );

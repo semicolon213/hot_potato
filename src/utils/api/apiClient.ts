@@ -357,6 +357,18 @@ export class ApiClient {
     return this.request<{ success: boolean; data: { accountingFolderId: string } }>('getAccountingFolderId', {});
   }
 
+  async getAccountingCategories(spreadsheetId: string) {
+    return this.request<string[]>('getAccountingCategories', { spreadsheetId });
+  }
+
+  async getAccountingCategorySummary(spreadsheetId: string) {
+    return this.request<{ category: string; income: number; expense: number }[]>('getAccountingCategorySummary', { spreadsheetId });
+  }
+
+  async getPendingBudgetPlans(spreadsheetId: string, userEmail: string) {
+    return this.request<{ budget_id: string; title: string; total_amount: number; status: string; action_required: string }[]>('getPendingBudgetPlans', { spreadsheetId, userEmail });
+  }
+
   // 기본 태그 목록 조회
   async getStaticTags() {
     return this.request<StaticTagsResponse>('getStaticTags');

@@ -11,6 +11,7 @@
   border-bottom: 1px solid #e2e8f0; /* 하단 실선 추가 */
   margin: 0;
   grid-row: 1;
+  flex-wrap: wrap;
 }
 .top-submenu {
   display: flex;
@@ -28,21 +29,48 @@
   text-overflow: ellipsis;
 }
 
+/* 헤더 네비게이션 그룹 - 상위 제목과 탭을 하나로 묶음 */
+.header-navigation-group {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 2.6vw, 28px);
+  height: 100%;
+}
+
 .page-section-label {
   color: var(--text-dark);
-  font-size: clamp(22px, 3.2vh, 32px); /* 상단바 높이에 맞춘 크기 증가 */
-  font-weight: var(--font-weight-bold);
+  font-size: clamp(18px, 2.22vh, 24px);
+  font-weight: var(--font-weight-semibold);
   margin: 0;
-  margin-right: clamp(6px, 0.83vw, 12px);
   padding: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: clamp(56px, 6.5vh, 84px); /* 헤더 높이와 동일하게 설정하여 수직 중앙 정렬 */
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  height: 100%; /* 상단바 높이 전체 활용 */
+  height: 100%;
+  gap: clamp(8px, 1.04vw, 12px);
+}
+
+.breadcrumb-parent {
+  color: var(--text-dark);
+  font-weight: var(--font-weight-semibold);
+  font-size: clamp(18px, 2.22vh, 24px);
+}
+
+.breadcrumb-separator {
+  color: var(--text-medium);
+  font-weight: var(--font-weight-normal);
+  font-size: clamp(16px, 2.2vh, 20px);
+  opacity: 0.6;
+  margin: 0 clamp(4px, 0.52vw, 6px);
+}
+
+.breadcrumb-child {
+  color: var(--text-dark);
+  font-weight: var(--font-weight-bold);
+  font-size: clamp(22px, 3.2vh, 32px);
 }
 
 .top-submenu-item {
@@ -79,7 +107,7 @@
   padding: clamp(6px, 0.74vh, 10px) clamp(6px, 0.83vw, 12px);
   height: auto;
   min-height: clamp(32px, 3.7vh, 48px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-light);
   position: relative;
   transition: var(--transition-base);
 }
@@ -135,11 +163,133 @@
   }
 }
 
+/* 하위 메뉴 탭 스타일 */
+.submenu-tabs {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 0.52vw, 8px);
+  background-color: var(--lightgrey);
+  padding: clamp(4px, 0.46vh, 6px);
+  border-radius: var(--sidebar-radius-sm);
+  height: fit-content;
+}
+
+.submenu-tab {
+  background: transparent;
+  border: none;
+  border-radius: var(--sidebar-radius-sm);
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submenu-tab:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+  color: var(--text-dark);
+}
+
+.submenu-tab.active {
+  background-color: #ffffff;
+  color: var(--sidebar-primary);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.submenu-tab.active:hover {
+  background-color: #ffffff;
+  color: var(--sidebar-primary);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
-  flex: 1 1 auto; /* 왼쪽 영역이 남는 공간을 차지하여 검색창을 우측으로 밀어냄 */
+  justify-content: flex-end;
+  flex: 1 1 auto;
   gap: 12px;
+  margin-left: auto;
+}
+
+/* 헤더 검색창 */
+.header-search-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 clamp(280px, 29.17vw, 360px);
+  max-width: clamp(280px, 29.17vw, 360px);
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  padding: 0 clamp(12px, 1.56vw, 16px);
+  transition: var(--transition-base);
+  height: clamp(40px, 4.63vh, 48px);
+  box-sizing: border-box;
+}
+
+.header-search-group:hover {
+  border-color: #cbd5e0;
+}
+
+.header-search-group:focus-within {
+  border-color: var(--sidebar-primary);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+}
+
+.header-search-icon {
+  color: #999999;
+  font-size: clamp(14px, 1.62vh, 16px);
+  margin-right: clamp(8px, 1.04vw, 12px);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.header-search-group:hover .header-search-icon,
+.header-search-group:focus-within .header-search-icon {
+  color: var(--text-dark);
+}
+
+.header-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-dark);
+  background: transparent;
+  height: 100%;
+}
+
+.header-search-input::placeholder {
+  color: #999999;
+}
+
+.header-clear-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #999999;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: clamp(8px, 1.04vw, 12px);
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+  width: clamp(20px, 2.6vh, 24px);
+  height: clamp(20px, 2.6vh, 24px);
+}
+
+.header-clear-search-btn:hover {
+  color: var(--text-dark);
 }
 
 .page-breadcrumb {

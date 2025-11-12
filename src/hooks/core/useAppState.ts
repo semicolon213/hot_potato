@@ -32,7 +32,7 @@ interface WidgetData {
 }
 
 const WIDGET_SHEET_NAME = ENV_CONFIG.DASHBOARD_SHEET_NAME;
-const WIDGET_RANGE = `${WIDGET_SHEET_NAME}!B2`;
+const WIDGET_RANGE = `${WIDGET_SHEET_NAME}!A2:D`; // widget_id, widget_type, widget_order, widget_config
 
 const widgetOptions = [
   { id: "1", type: "notice", icon: "fas fa-bullhorn", title: "공지사항", description: "학교 및 학과 공지사항 확인" },
@@ -135,6 +135,17 @@ export const useAppState = () => {
             } else {
                 // URL에 페이지 파라미터가 없으면 기본값 사용
                 setCurrentPage("dashboard");
+            }
+
+            // 선택된 공지사항 상태 복원
+            const savedSelectedAnnouncement = localStorage.getItem('selectedAnnouncement');
+            if (savedSelectedAnnouncement) {
+                try {
+                    setSelectedAnnouncement(JSON.parse(savedSelectedAnnouncement));
+                } catch (e) {
+                    console.error("Failed to parse saved selected announcement:", e);
+                    localStorage.removeItem('selectedAnnouncement');
+                }
             }
 
             // 검색어 상태 복원
@@ -267,7 +278,8 @@ export const useAppState = () => {
                 case 'ADprofessor':
                     targetId = calendarADProfessorSpreadsheetId;
                     break;
-                case 'support':
+                case 'supp':
+                case 'support': // 호환성을 위해 둘 다 지원
                     targetId = calendarSuppSpreadsheetId;
                     break;
                 default:
@@ -376,17 +388,79 @@ export const useAppState = () => {
                 majorDimension: 'ROWS'
             });
 
-            const cellContent = response.result.values?.[0]?.[0];
-            if (cellContent) {
-                const savedIds: string[] = JSON.parse(cellContent);
-                const loadedWidgets = savedIds.map(id => {
-                    const option = widgetOptions.find(opt => opt.id === id);
-                    if (!option) return null;
-                    const { type } = option;
-                    const { title, componentType, props } = generateWidgetContent(type);
+            // 새 형식: widget_id, widget_type, widget_order, widget_config
+            const rows = response.result.values || [];
+            if (rows.length > 0) {
+                const loadedWidgets: WidgetData[] = [];
+                
+                // 헤더 행 건너뛰기 (첫 번째 행이 헤더일 수 있음)
+                const dataRows = rows[0]?.[0]?.startsWith('widget_id') ? rows.slice(1) : rows;
+                
+                for (const row of dataRows) {
+                    if (!row || row.length < 1) continue;
                     
-                    return { id, type, title, componentType, props };
-                }).filter((w): w is WidgetData => w !== null);
+                    // 구버전 형식 (단순 ID 배열)인지 확인
+                    const firstCell = row[0]?.toString() || '';
+                    if (firstCell.startsWith('[') || firstCell.startsWith('{')) {
+                        // 구버전 형식: JSON 배열
+                        try {
+                            const savedIds: string[] = JSON.parse(firstCell);
+                            const parsedWidgets = savedIds.map(id => {
+                                const option = widgetOptions.find(opt => opt.id === id);
+                                if (!option) return null;
+                                const { type } = option;
+                                const { title, componentType, props } = generateWidgetContent(type);
+                                return { id, type, title, componentType, props };
+                            }).filter((w): w is WidgetData => w !== null);
+                            loadedWidgets.push(...parsedWidgets);
+                        } catch (e) {
+                            console.warn('구버전 위젯 데이터 파싱 실패:', e);
+                        }
+                    } else if (row.length >= 3) {
+                        // 새 형식: widget_id, widget_type, widget_order, widget_config
+                        const widgetId = row[0]?.toString() || '';
+                        const widgetType = row[1]?.toString() || '';
+                        const widgetConfigStr = row[3]?.toString() || '{}';
+                        
+                        if (!widgetId) continue;
+                        
+                        const option = widgetOptions.find(opt => opt.id === widgetId);
+                        if (!option) continue;
+                        
+                        let widgetConfig = {};
+                        try {
+                            widgetConfig = widgetConfigStr ? JSON.parse(widgetConfigStr) : {};
+                        } catch (e) {
+                            console.warn(`위젯 ${widgetId}의 config 파싱 실패:`, e);
+                        }
+                        
+                        const { type } = option;
+                        const { title, componentType, props: defaultProps } = generateWidgetContent(type);
+                        
+                        // 장부 관련 위젯의 경우 제목 업데이트
+                        let widgetTitle = title;
+                        if (widgetConfig.ledgerName) {
+                            if (type === 'tuition') {
+                                widgetTitle = `<i class="fas fa-money-bill-wave"></i> 장부 잔액`;
+                            } else if (type === 'budget-plan') {
+                                widgetTitle = `<i class="fas fa-money-bill-alt"></i> 예산 계획 (${widgetConfig.ledgerName})`;
+                            } else if (type === 'budget-execution') {
+                                widgetTitle = `<i class="fas fa-chart-pie"></i> 예산 집행 현황 (${widgetConfig.ledgerName})`;
+                            } else if (type === 'accounting-stats') {
+                                widgetTitle = `<i class="fas fa-chart-bar"></i> 회계 통계 (${widgetConfig.ledgerName})`;
+                            }
+                        }
+                        
+                        loadedWidgets.push({
+                            id: widgetId,
+                            type,
+                            title: widgetTitle,
+                            componentType,
+                            props: { ...defaultProps, ...widgetConfig }
+                        });
+                    }
+                }
+                
                 setWidgets(loadedWidgets);
             } else {
                 setWidgets([]);
@@ -404,6 +478,8 @@ export const useAppState = () => {
         }
     }, [hotPotatoDBSpreadsheetId, syncWidgetsWithGoogleSheets]);
 
+    const prevWidgetConfigRef = useRef<string>(''); // 이전 위젯 설정 저장
+    
     useEffect(() => {
         if (!initialLoadComplete) return;
         const saveWidgetsToGoogleSheets = async () => {
@@ -411,12 +487,43 @@ export const useAppState = () => {
             try {
                 const gapi = window.gapi;
                 if (gapi && gapi.client && gapi.client.sheets) {
-                    const dataToSave = widgets.map(({ id }) => id);
+                    // 새 형식으로 저장: widget_id, widget_type, widget_order, widget_config
+                    // 설정만 저장 (데이터 props는 제외)
+                    const dataToSave = widgets.map((widget, index) => {
+                        // 설정 관련 props만 저장 (데이터 props는 제외)
+                        const config: Record<string, any> = {};
+                        
+                        // 장부 관련 설정만 저장
+                        if (widget.props.ledgerId) config.ledgerId = widget.props.ledgerId;
+                        if (widget.props.ledgerName) config.ledgerName = widget.props.ledgerName;
+                        if (widget.props.spreadsheetId) config.spreadsheetId = widget.props.spreadsheetId;
+                        
+                        // 데이터 props는 저장하지 않음 (items, data, rawData 등)
+                        
+                        return [
+                            widget.id,
+                            widget.type,
+                            index + 1, // widget_order
+                            JSON.stringify(config) // widget_config
+                        ];
+                    });
+                    
+                    // 현재 설정을 문자열로 변환하여 이전 설정과 비교
+                    const currentConfig = JSON.stringify(dataToSave);
+                    
+                    // 설정이 변경되지 않았으면 저장하지 않음
+                    if (currentConfig === prevWidgetConfigRef.current) {
+                        return;
+                    }
+                    
+                    // 설정이 변경되었으면 저장
+                    prevWidgetConfigRef.current = currentConfig;
+                    
                     await gapi.client.sheets.spreadsheets.values.update({
                         spreadsheetId: hotPotatoDBSpreadsheetId,
                         range: WIDGET_RANGE,
                         valueInputOption: 'RAW',
-                        resource: { values: [[JSON.stringify(dataToSave)]] },
+                        resource: { values: dataToSave },
                     });
                 }
             } catch (error) {
