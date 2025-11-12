@@ -541,7 +541,7 @@ const App: React.FC = () => {
         return 'ADprofessor';
       }
       if (staffMember.pos === '조교') {
-        return 'support';
+        return 'supp';
       }
       if (staffMember.pos === '교수') {
         return 'professor';
@@ -550,7 +550,7 @@ const App: React.FC = () => {
     return null;
   };
 
-  const permissionHierarchy = ['student', 'council', 'support', 'ADprofessor', 'professor'];
+  const permissionHierarchy = ['student', 'council', 'supp', 'ADprofessor', 'professor'];
 
   // 캘린더 이벤트 추가 핸들러
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
@@ -578,7 +578,8 @@ const App: React.FC = () => {
             case 'council':
               targetSpreadsheetId = calendarCouncilSpreadsheetId;
               break;
-            case 'support':
+            case 'supp':
+            case 'support': // 호환성을 위해 둘 다 지원
               targetSpreadsheetId = calendarSuppSpreadsheetId;
               break;
             case 'ADprofessor':

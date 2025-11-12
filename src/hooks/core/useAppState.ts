@@ -267,7 +267,8 @@ export const useAppState = () => {
                 case 'ADprofessor':
                     targetId = calendarADProfessorSpreadsheetId;
                     break;
-                case 'support':
+                case 'supp':
+                case 'support': // 호환성을 위해 둘 다 지원
                     targetId = calendarSuppSpreadsheetId;
                     break;
                 default:

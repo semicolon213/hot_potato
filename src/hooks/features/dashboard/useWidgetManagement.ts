@@ -154,16 +154,24 @@ const getWidgetOptions = (userType?: string, isAdmin?: boolean): typeof allWidge
   // 기본적으로 사용자 역할에 해당하는 위젯 필터링
   const userRoleWidgets = allWidgetOptions.filter(w => w.allowedRoles.includes(userType));
   
+  console.log(`🔍 getWidgetOptions: userType=${userType}, isAdmin=${isAdmin}`);
+  console.log(`📊 사용자 역할 위젯: ${userRoleWidgets.length}개`, userRoleWidgets.map(w => w.type));
+  
   // 관리자인 경우 admin 역할 위젯도 추가
   if (isAdmin) {
     const adminWidgets = allWidgetOptions.filter(w => w.allowedRoles.includes('admin'));
+    console.log(`👑 관리자 위젯: ${adminWidgets.length}개`, adminWidgets.map(w => w.type));
+    
     // 중복 제거 (같은 위젯이 여러 역할에 포함될 수 있음)
     const allWidgets = [...userRoleWidgets];
     adminWidgets.forEach(adminWidget => {
       if (!allWidgets.find(w => w.id === adminWidget.id)) {
         allWidgets.push(adminWidget);
+        console.log(`➕ 관리자 위젯 추가: ${adminWidget.type}`);
       }
     });
+    
+    console.log(`✅ 최종 위젯: ${allWidgets.length}개`, allWidgets.map(w => w.type));
     return allWidgets;
   }
   
@@ -194,8 +202,30 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
 
   // 사용자 역할에 따라 위젯 옵션 필터링
   const userType = user?.userType || user?.user_type;
-  const isAdmin = user?.isAdmin || false;
+  // isAdmin 체크: isAdmin 또는 is_admin이 'O'이거나 true인 경우
+  const isAdmin = user?.isAdmin || 
+                  (user as any)?.is_admin === 'O' || 
+                  (user as any)?.is_admin === true ||
+                  (user as any)?.is_admin === 'true';
+  
+  // 디버깅: 사용자 정보 로그
+  if (user) {
+    console.log('🔍 위젯 옵션 필터링:', {
+      userType,
+      isAdmin,
+      userIsAdmin: user.isAdmin,
+      userIs_admin: (user as any)?.is_admin,
+      email: user.email
+    });
+  }
+  
   const baseWidgetOptions = getWidgetOptions(userType, isAdmin);
+  
+  // 디버깅: 필터링된 위젯 옵션 로그
+  console.log('📋 필터링된 위젯 옵션:', {
+    total: baseWidgetOptions.length,
+    widgetTypes: baseWidgetOptions.map(w => w.type)
+  });
   
   // 장부 접근 권한이 필요한 위젯 필터링
   const widgetOptions = baseWidgetOptions.filter(widget => {
@@ -364,18 +394,44 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
               }
             }
             
+            // widgetOrder가 0이거나 없으면 배열 인덱스로 설정
+            const finalOrder = widgetOrder > 0 ? widgetOrder : loadedWidgets.length + 1;
+            
             loadedWidgets.push({
               id: widgetId,
               type,
               title: widgetTitle,
               componentType,
               props: finalProps,
-              order: widgetOrder
+              order: finalOrder
             });
           }
           
           // order 기준으로 정렬
-          loadedWidgets.sort((a, b) => (a.order || 0) - (b.order || 0));
+          // order가 없거나 0인 경우를 위해 원본 인덱스도 함께 저장
+          const widgetsWithIndex = loadedWidgets.map((widget, index) => ({
+            widget,
+            originalIndex: index,
+            order: widget.order || 0
+          }));
+          
+          widgetsWithIndex.sort((a, b) => {
+            // order가 같으면 원본 인덱스로 정렬
+            if (a.order === b.order) {
+              return a.originalIndex - b.originalIndex;
+            }
+            // order가 0이면 뒤로
+            if (a.order === 0) return 1;
+            if (b.order === 0) return -1;
+            return a.order - b.order;
+          });
+          
+          // 정렬된 위젯으로 교체하고 order 재설정 (1부터 시작)
+          loadedWidgets.length = 0;
+          widgetsWithIndex.forEach((item, index) => {
+            item.widget.order = index + 1;
+            loadedWidgets.push(item.widget);
+          });
           
           // 초기 로드된 위젯 설정을 prevWidgetConfigRef에 저장 (초기 로드 시 저장 방지)
           const initialConfig = loadedWidgets.map((widget, index) => {
@@ -530,11 +586,11 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
             });
             
             // 헤더 설정
-            await gapi.client.sheets.spreadsheets.values.update({
-              spreadsheetId: hotPotatoDBSpreadsheetId,
+          await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: hotPotatoDBSpreadsheetId,
               range: `${SHEET_NAME}!A1:D1`,
-              valueInputOption: 'RAW',
-              resource: {
+            valueInputOption: 'RAW',
+            resource: {
                 values: [['widget_id', 'widget_type', 'widget_order', 'widget_config']]
               }
             });
@@ -551,8 +607,10 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
         }
         
         // 새로운 데이터 저장 (설정만 저장, 데이터 props는 제외)
-        // 기존 데이터 삭제 없이 덮어쓰기 방식 사용 (더 안전함)
-        const rowsToSave = widgets.map((widget, index) => {
+        // 위젯을 order 기준으로 정렬하여 저장
+        const sortedWidgets = [...widgets].sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        const rowsToSave = sortedWidgets.map((widget, index) => {
           // 설정 관련 props만 저장 (데이터 props는 제외)
           const config: Record<string, any> = {};
           
@@ -566,7 +624,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
           return [
             widget.id,
             widget.type,
-            index, // widget_order
+            index + 1, // widget_order (1부터 시작)
             JSON.stringify(config)
           ];
         });
@@ -585,38 +643,50 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
         
         // 저장 실행
         if (rowsToSave.length > 0) {
-          // 기존 데이터를 덮어쓰기 (더 안전함)
+          // 1. 먼저 기존 데이터 범위 확인
+          let existingRowCount = 0;
+          try {
+            const existingData = await gapi.client.sheets.spreadsheets.values.get({
+              spreadsheetId: hotPotatoDBSpreadsheetId,
+              range: `${SHEET_NAME}!A2:D1000` // 충분히 큰 범위
+            });
+            
+            if (existingData.result.values) {
+              existingRowCount = existingData.result.values.length;
+            }
+          } catch (getError) {
+            console.warn("기존 데이터 확인 중 오류 (무시됨):", getError);
+          }
+          
+          // 2. 새로운 데이터 저장 (정확한 범위 지정)
+          const saveRange = `${SHEET_NAME}!A2:D${rowsToSave.length + 1}`;
           await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: hotPotatoDBSpreadsheetId,
-            range: `${SHEET_NAME}!A2`,
+            range: saveRange,
             valueInputOption: 'RAW',
             resource: {
               values: rowsToSave
             },
           });
           
-          // 저장 후 남은 행이 있으면 삭제 (선택적)
-          try {
-            const existingData = await gapi.client.sheets.spreadsheets.values.get({
-              spreadsheetId: hotPotatoDBSpreadsheetId,
-              range: `${SHEET_NAME}!A${rowsToSave.length + 2}:D`
-            });
-            
-            if (existingData.result.values && existingData.result.values.length > 0) {
-              // 남은 행 삭제
+          // 3. 저장한 행보다 많은 기존 행이 있으면 삭제
+          if (existingRowCount > rowsToSave.length) {
+            const clearStartRow = rowsToSave.length + 2;
+            const clearRange = `${SHEET_NAME}!A${clearStartRow}:D${existingRowCount + 1}`;
+            try {
               await gapi.client.sheets.spreadsheets.values.clear({
                 spreadsheetId: hotPotatoDBSpreadsheetId,
-                range: `${SHEET_NAME}!A${rowsToSave.length + 2}:D`
+                range: clearRange
               });
+              console.log(`🗑️ 남은 행 삭제 완료: ${clearRange} (${existingRowCount - rowsToSave.length}개 행)`);
+            } catch (clearError) {
+              console.warn("남은 행 삭제 중 오류 (무시됨):", clearError);
             }
-          } catch (clearError) {
-            // 남은 행 삭제 실패는 무시 (중요하지 않음)
-            console.warn("남은 행 삭제 중 오류 (무시됨):", clearError);
           }
           
           console.log('✅ 위젯 설정 저장 완료:', rowsToSave.length, '개');
         } else {
-          // 위젯이 없으면 A2부터 D2까지만 비우기 (나머지 데이터는 유지)
+          // 위젯이 없으면 A2부터 D2까지만 비우기
           await gapi.client.sheets.spreadsheets.values.clear({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             range: `${SHEET_NAME}!A2:D2`
@@ -685,7 +755,8 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
     };
 
     // 위젯이 있고 데이터가 없고, 로딩 중이 아니고, 에러 재시도 가능한 경우에만 로드
-    const shouldLoadNotice = noticeWidget && user && 
+    // 조교(supp)는 studentId가 없을 수 있으므로 userType만 체크
+    const shouldLoadNotice = noticeWidget && user && user.userType && 
       !loadingWidgetsRef.current.has('notice') && 
       canRetry('notice') &&
       (!noticeWidget.props.items || noticeWidget.props.items.length === 0);
@@ -765,232 +836,279 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       let accountingStatsItems: { label: string; income: string; expense: string; balance: string; balanceValue?: number }[] | null = null;
       let accountingStatsRawData: { category: string; income: number; expense: number }[] | null = null;
       let tuitionItems: string[] | null = null;
-      if (shouldLoadNotice && user?.studentId && user?.userType) {
-        loadingWidgetsRef.current.add('notice');
-        try {
-          const announcements = await fetchAnnouncements(user.studentId, user.userType);
-          noticeItems = announcements.slice(0, 4).map(a => a.title);
-          delete errorWidgetsRef.current['notice'];
-        } catch (error: any) {
-          console.error("Error loading notice data:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['notice'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('notice');
+
+      // 독립적인 위젯들을 병렬로 로드
+      const loadPromises: Promise<void>[] = [];
+
+      // 공지사항 로드
+      // 조교(supp)는 studentId가 없을 수 있으므로 email이나 다른 식별자 사용
+      if (shouldLoadNotice && user?.userType) {
+        const userId = user.studentId || user.email || user.id || '';
+        if (userId) {
+          loadingWidgetsRef.current.add('notice');
+          loadPromises.push(
+            (async () => {
+              try {
+                const announcements = await fetchAnnouncements(userId, user.userType!);
+                noticeItems = announcements.slice(0, 4).map(a => a.title);
+                delete errorWidgetsRef.current['notice'];
+              } catch (error: any) {
+                console.error("Error loading notice data:", error);
+                if (error?.code === 429 || error?.status === 429) {
+                  errorWidgetsRef.current['notice'] = Date.now();
+                }
+              } finally {
+                loadingWidgetsRef.current.delete('notice');
+              }
+            })()
+          );
         }
       }
 
+      // 캘린더 로드
       if (shouldLoadCalendar) {
         loadingWidgetsRef.current.add('calendar');
+        loadPromises.push(
+          (async () => {
         try {
           const events = await fetchCalendarEvents();
           calendarItems = events.slice(0, 4).map(e => ({ date: e.startDate, event: e.title }));
-          delete errorWidgetsRef.current['calendar'];
-        } catch (error: any) {
+              delete errorWidgetsRef.current['calendar'];
+            } catch (error: any) {
           console.error("Error loading calendar data:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['calendar'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('calendar');
-        }
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['calendar'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('calendar');
+            }
+          })()
+        );
       }
 
+      // 워크플로우 로드
       if (shouldLoadWorkflow && user?.email) {
         loadingWidgetsRef.current.add('workflow-status');
-        try {
-          const response = await apiClient.getMyPendingWorkflows({ userEmail: user.email });
-          if (response.success && response.data) {
-            workflowItems = response.data.slice(0, 5).map((w: any) => ({
-              title: w.documentTitle || w.title || '제목 없음',
-              status: w.status || '대기',
-              date: w.requestedDate || w.createdDate || ''
-            }));
-          }
-          delete errorWidgetsRef.current['workflow-status'];
-        } catch (error: any) {
-          console.error("Error loading workflow data:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['workflow-status'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('workflow-status');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              const response = await apiClient.getMyPendingWorkflows({ userEmail: user.email! });
+              if (response.success && response.data) {
+                workflowItems = response.data.slice(0, 5).map((w: any) => ({
+                  title: w.documentTitle || w.title || '제목 없음',
+                  status: w.status || '대기',
+                  date: w.requestedDate || w.createdDate || ''
+                }));
+              }
+              delete errorWidgetsRef.current['workflow-status'];
+            } catch (error: any) {
+              console.error("Error loading workflow data:", error);
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['workflow-status'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('workflow-status');
+            }
+          })()
+        );
       }
 
+      // 학생 관리 로드
       if (shouldLoadStudentSummary) {
         loadingWidgetsRef.current.add('student-summary');
-        try {
-          const { initializeSpreadsheetIds } = await import("../../../utils/database/papyrusManager");
-          const ids = await initializeSpreadsheetIds();
-          if (ids.studentSpreadsheetId) {
-            const students = await fetchStudents(ids.studentSpreadsheetId);
-            
-            // 상태별, 학년별로 그룹화
-            // 유급은 flunk 필드로 확인 (flunk가 'O'이면 유급, 빈칸이면 유급 아님)
-            const statusGradeMap: Record<string, Record<string, number>> = {};
-            students.forEach(s => {
-              const grade = s.grade || '1';
-              
-              // 유급 여부 확인 (flunk 필드가 'O'이면 유급)
-              const isFlunk = s.flunk && s.flunk.toString().trim().toUpperCase() === 'O';
-              
-              // 상태 결정: 유급이면 '유급', 아니면 state 필드 값 사용 (기본값: '재학')
-              let status = s.state || '재학';
-              if (isFlunk) {
-                status = '유급';
-              } else if (!s.state || s.state.trim() === '') {
-                status = '재학';
-              }
-              
-              if (!statusGradeMap[status]) {
-                statusGradeMap[status] = {};
-              }
-              statusGradeMap[status][grade] = (statusGradeMap[status][grade] || 0) + 1;
-            });
-            
-            // rawData 생성 (상태별, 학년별 학생 수)
-            const studentSummaryRawData: { status: string; grade: string; count: number }[] = [];
-            Object.keys(statusGradeMap).forEach(status => {
-              Object.keys(statusGradeMap[status]).forEach(grade => {
-                studentSummaryRawData.push({
-                  status,
-                  grade,
-                  count: statusGradeMap[status][grade]
+        loadPromises.push(
+          (async () => {
+            try {
+              const { initializeSpreadsheetIds } = await import("../../../utils/database/papyrusManager");
+              const ids = await initializeSpreadsheetIds();
+              if (ids.studentSpreadsheetId) {
+                const students = await fetchStudents(ids.studentSpreadsheetId);
+                
+                // 상태별, 학년별로 그룹화
+                // 유급은 flunk 필드로 확인 (flunk가 'O'이면 유급, 빈칸이면 유급 아님)
+                const statusGradeMap: Record<string, Record<string, number>> = {};
+                students.forEach(s => {
+                  const grade = s.grade || '1';
+                  
+                  // 유급 여부 확인 (flunk 필드가 'O'이면 유급)
+                  const isFlunk = s.flunk && s.flunk.toString().trim().toUpperCase() === 'O';
+                  
+                  // 상태 결정: 유급이면 '유급', 아니면 state 필드 값 사용 (기본값: '재학')
+                  let status = s.state || '재학';
+                  if (isFlunk) {
+                    status = '유급';
+                  } else if (!s.state || s.state.trim() === '') {
+                    status = '재학';
+                  }
+                  
+                  if (!statusGradeMap[status]) {
+                    statusGradeMap[status] = {};
+                  }
+                  statusGradeMap[status][grade] = (statusGradeMap[status][grade] || 0) + 1;
                 });
-              });
-            });
-            
-            // 기본 표시용 (재학생 기준)
-            const enrolledByGrade = statusGradeMap['재학'] || {};
-            studentSummaryItems = [
-              { label: '1학년', value: `${enrolledByGrade['1'] || 0}명` },
-              { label: '2학년', value: `${enrolledByGrade['2'] || 0}명` },
-              { label: '3학년', value: `${enrolledByGrade['3'] || 0}명` },
-              { label: '4학년', value: `${enrolledByGrade['4'] || 0}명` },
-            ];
-            
-            // rawData를 위젯에 저장하기 위해 별도로 처리
-            if (studentSummaryWidget) {
-              setWidgets(prevWidgets => prevWidgets.map(w => 
-                w.id === studentSummaryWidget.id 
-                  ? { ...w, props: { ...w.props, items: studentSummaryItems, rawData: studentSummaryRawData, selectedStatus: w.props.selectedStatus || '재학' } }
-                  : w
-              ));
-              // studentSummaryItems는 null로 설정하여 중복 업데이트 방지
-              studentSummaryItems = null;
+                
+                // rawData 생성 (상태별, 학년별 학생 수)
+                const studentSummaryRawData: { status: string; grade: string; count: number }[] = [];
+                Object.keys(statusGradeMap).forEach(status => {
+                  Object.keys(statusGradeMap[status]).forEach(grade => {
+                    studentSummaryRawData.push({
+                      status,
+                      grade,
+                      count: statusGradeMap[status][grade]
+                    });
+                  });
+                });
+                
+                // 기본 표시용 (재학생 기준)
+                const enrolledByGrade = statusGradeMap['재학'] || {};
+                studentSummaryItems = [
+                  { label: '1학년', value: `${enrolledByGrade['1'] || 0}명` },
+                  { label: '2학년', value: `${enrolledByGrade['2'] || 0}명` },
+                  { label: '3학년', value: `${enrolledByGrade['3'] || 0}명` },
+                  { label: '4학년', value: `${enrolledByGrade['4'] || 0}명` },
+                ];
+                
+                // rawData를 위젯에 저장하기 위해 별도로 처리
+                if (studentSummaryWidget) {
+                  setWidgets(prevWidgets => prevWidgets.map(w => 
+                    w.id === studentSummaryWidget.id 
+                      ? { ...w, props: { ...w.props, items: studentSummaryItems, rawData: studentSummaryRawData, selectedStatus: w.props.selectedStatus || '재학' } }
+                      : w
+                  ));
+                  // studentSummaryItems는 null로 설정하여 중복 업데이트 방지
+                  studentSummaryItems = null;
+                }
+              }
+              delete errorWidgetsRef.current['student-summary'];
+            } catch (error: any) {
+              console.error("Error loading student summary:", error);
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['student-summary'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('student-summary');
             }
-          }
-          delete errorWidgetsRef.current['student-summary'];
-        } catch (error: any) {
-          console.error("Error loading student summary:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['student-summary'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('student-summary');
-        }
+          })()
+        );
       }
 
+      // 교직원 관리 로드
       if (shouldLoadStaffSummary) {
         loadingWidgetsRef.current.add('staff-summary');
-        try {
-          const { initializeSpreadsheetIds } = await import("../../../utils/database/papyrusManager");
-          const ids = await initializeSpreadsheetIds();
-          if (ids.staffSpreadsheetId) {
-            const staff = await fetchStaffFromPapyrus(ids.staffSpreadsheetId);
-            const totalStaff = staff.length;
-            staffSummaryItems = [
-              { label: '전체 교직원', value: `${totalStaff}명` },
-            ];
-          }
-          delete errorWidgetsRef.current['staff-summary'];
-        } catch (error: any) {
-          console.error("Error loading staff summary:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['staff-summary'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('staff-summary');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              const { initializeSpreadsheetIds } = await import("../../../utils/database/papyrusManager");
+              const ids = await initializeSpreadsheetIds();
+              if (ids.staffSpreadsheetId) {
+                const staff = await fetchStaffFromPapyrus(ids.staffSpreadsheetId);
+                const totalStaff = staff.length;
+                staffSummaryItems = [
+                  { label: '전체 교직원', value: `${totalStaff}명` },
+                ];
+              }
+              delete errorWidgetsRef.current['staff-summary'];
+            } catch (error: any) {
+              console.error("Error loading staff summary:", error);
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['staff-summary'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('staff-summary');
+            }
+          })()
+        );
       }
 
+      // 사용자 승인 대기 로드
       if (shouldLoadUserApproval) {
         loadingWidgetsRef.current.add('user-approval');
-        try {
-          const response = await apiClient.getPendingUsers();
-          if (response.success && response.users) {
-            userApprovalItems = response.users.slice(0, 5).map((u: any) => ({
-              name: u.name_member || u.name || '이름 없음',
-              email: u.google_member || u.email || '',
-              userType: u.user_type || u.userType || 'student'
-            }));
-          }
-          delete errorWidgetsRef.current['user-approval'];
-        } catch (error: any) {
-          console.error("Error loading user approval data:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['user-approval'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('user-approval');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              const response = await apiClient.getPendingUsers();
+              if (response.success && response.users) {
+                userApprovalItems = response.users.slice(0, 5).map((u: any) => ({
+                  name: u.name_member || u.name || '이름 없음',
+                  email: u.google_member || u.email || '',
+                  userType: u.user_type || u.userType || 'student'
+                }));
+              }
+              delete errorWidgetsRef.current['user-approval'];
+            } catch (error: any) {
+              console.error("Error loading user approval data:", error);
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['user-approval'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('user-approval');
+            }
+          })()
+        );
       }
 
+      // 시스템 통계 로드
       if (shouldLoadSystemStats) {
         loadingWidgetsRef.current.add('system-stats');
-        try {
-          const [allUsersResponse, pendingUsersResponse] = await Promise.all([
-            apiClient.getAllUsers(),
-            apiClient.getPendingUsers()
-          ]);
-          
-          const totalUsers = allUsersResponse.success && allUsersResponse.users ? allUsersResponse.users.length : 0;
-          const pendingUsers = pendingUsersResponse.success && pendingUsersResponse.users ? pendingUsersResponse.users.length : 0;
-          const approvedUsers = totalUsers - pendingUsers;
+        loadPromises.push(
+          (async () => {
+            try {
+              const [allUsersResponse, pendingUsersResponse] = await Promise.all([
+                apiClient.getAllUsers(),
+                apiClient.getPendingUsers()
+              ]);
+              
+              const totalUsers = allUsersResponse.success && allUsersResponse.users ? allUsersResponse.users.length : 0;
+              const pendingUsers = pendingUsersResponse.success && pendingUsersResponse.users ? pendingUsersResponse.users.length : 0;
+              const approvedUsers = totalUsers - pendingUsers;
 
-          systemStatsItems = [
-            { label: '전체 사용자', value: `${totalUsers}명` },
-            { label: '승인된 사용자', value: `${approvedUsers}명` },
-            { label: '승인 대기', value: `${pendingUsers}명` },
-          ];
-          delete errorWidgetsRef.current['system-stats'];
-        } catch (error: any) {
-          console.error("Error loading system stats:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['system-stats'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('system-stats');
-        }
+              systemStatsItems = [
+                { label: '전체 사용자', value: `${totalUsers}명` },
+                { label: '승인된 사용자', value: `${approvedUsers}명` },
+                { label: '승인 대기', value: `${pendingUsers}명` },
+              ];
+              delete errorWidgetsRef.current['system-stats'];
+            } catch (error: any) {
+              console.error("Error loading system stats:", error);
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['system-stats'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('system-stats');
+            }
+          })()
+        );
       }
 
+      // 문서 관리 로드
       if (shouldLoadDocumentManagement) {
         loadingWidgetsRef.current.add('document-management');
-        try {
-          const { getRecentDocuments } = await import("../../../utils/helpers/localStorageUtils");
-          const recentDocs = getRecentDocuments();
-          documentManagementItems = recentDocs.slice(0, 5).map((doc: any) => ({
-            title: doc.title || doc.name || '제목 없음',
-            date: doc.lastModified || doc.date || '',
-            type: doc.documentType || (doc.isPersonal ? 'personal' : 'shared')
-          }));
-          delete errorWidgetsRef.current['document-management'];
-        } catch (error: any) {
-          console.error("Error loading document management data:", error);
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['document-management'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('document-management');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              const { getRecentDocuments } = await import("../../../utils/helpers/localStorageUtils");
+              const recentDocs = getRecentDocuments();
+              documentManagementItems = recentDocs.slice(0, 5).map((doc: any) => ({
+                title: doc.title || doc.name || '제목 없음',
+                date: doc.lastModified || doc.date || '',
+                type: doc.documentType || (doc.isPersonal ? 'personal' : 'shared')
+              }));
+              delete errorWidgetsRef.current['document-management'];
+            } catch (error: any) {
+              console.error("Error loading document management data:", error);
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['document-management'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('document-management');
+            }
+          })()
+        );
       }
 
+      // 예산 집행 현황 (동기 처리 - 간단한 메시지만)
       if (shouldLoadBudgetExecution) {
         try {
-          // 예산 집행 현황은 장부 선택이 필요하므로 기본 메시지만 표시
-          // 실제 데이터는 장부 선택 후 props에서 가져와야 함
           budgetExecutionItems = [
             { label: '장부를 선택해주세요', value: '-', percentage: 0 }
           ];
@@ -999,10 +1117,9 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
         }
       }
 
+      // 회계 통계 기본 메시지 (동기 처리)
       if (shouldLoadAccountingStats) {
         try {
-          // 회계 통계는 장부 선택이 필요하므로 기본 메시지만 표시
-          // 실제 데이터는 장부 선택 후 props에서 가져와야 함
           accountingStatsItems = [
             { label: '장부를 선택해주세요', income: '-', expense: '-', balance: '-' }
           ];
@@ -1012,123 +1129,148 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       }
 
       // 장부가 선택된 회계 통계 위젯 데이터 로드 (카테고리별 수입/지출 집계)
-      if (accountingStatsWidgetWithLedger && user && !loadingWidgetsRef.current.has('accounting-stats') && canRetry('accounting-stats') && (!accountingStatsWidgetWithLedger.props.items || accountingStatsWidgetWithLedger.props.items.length === 0 || (accountingStatsWidgetWithLedger.props.items.length === 1 && accountingStatsWidgetWithLedger.props.items[0].label === '장부를 선택해주세요'))) {
+      // items가 없거나, rawData가 없는 경우 로드
+      const needsAccountingStatsData = accountingStatsWidgetWithLedger && user && 
+        !loadingWidgetsRef.current.has('accounting-stats') && 
+        canRetry('accounting-stats') && 
+        (!accountingStatsWidgetWithLedger.props.items || 
+         accountingStatsWidgetWithLedger.props.items.length === 0 || 
+         (accountingStatsWidgetWithLedger.props.items.length === 1 && accountingStatsWidgetWithLedger.props.items[0].label === '장부를 선택해주세요') ||
+         !accountingStatsWidgetWithLedger.props.rawData); // rawData가 없으면 다시 로드
+      
+      if (needsAccountingStatsData) {
         loadingWidgetsRef.current.add('accounting-stats');
-        try {
-          const { getAccountingCategorySummary } = await import("../../../utils/google/googleSheetUtils");
-          const summary = await getAccountingCategorySummary(accountingStatsWidgetWithLedger.props.spreadsheetId);
-          if (summary && summary.length > 0) {
-            // 원본 데이터 저장 (통합 보기용)
-            accountingStatsRawData = summary;
-            // 카테고리별 잔액만 표시 (수입 - 지출)
-            accountingStatsItems = summary.map((item) => {
-              const balance = item.income - item.expense;
-              const balanceStr = balance >= 0 
-                ? `+${balance.toLocaleString()}원` 
-                : `${balance.toLocaleString()}원`;
-              return {
-                label: item.category,
-                income: '', // 사용하지 않음
-                expense: '', // 사용하지 않음
-                balance: balanceStr,
-                balanceValue: balance // 색상 구분용
-              };
-            });
-          } else {
-            accountingStatsRawData = [];
-          }
-          setLoadedData(prev => ({ ...prev, 'accounting-stats': true }));
-          delete errorWidgetsRef.current['accounting-stats'];
-        } catch (error: any) {
-          console.error("Error loading accounting stats data:", error);
-          if (error?.code === 429 || error?.status === 429 || (error?.message && error.message.includes('Quota exceeded'))) {
-            errorWidgetsRef.current['accounting-stats'] = Date.now();
-            console.warn('⚠️ 회계 통계 데이터 로드 실패 (할당량 초과). 5분 후 재시도됩니다.');
-          }
-          setLoadedData(prev => ({ ...prev, 'accounting-stats': true }));
-        } finally {
-          loadingWidgetsRef.current.delete('accounting-stats');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              const { getAccountingCategorySummary } = await import("../../../utils/google/googleSheetUtils");
+              const summary = await getAccountingCategorySummary(accountingStatsWidgetWithLedger.props.spreadsheetId);
+              if (summary && summary.length > 0) {
+                // 원본 데이터 저장 (통합 보기용)
+                accountingStatsRawData = summary;
+                // 카테고리별 잔액만 표시 (수입 - 지출)
+                accountingStatsItems = summary.map((item) => {
+                  const balance = item.income - item.expense;
+                  const balanceStr = balance >= 0 
+                    ? `+${balance.toLocaleString()}원` 
+                    : `${balance.toLocaleString()}원`;
+                  return {
+                    label: item.category,
+                    income: '', // 사용하지 않음
+                    expense: '', // 사용하지 않음
+                    balance: balanceStr,
+                    balanceValue: balance // 색상 구분용
+                  };
+                });
+              } else {
+                accountingStatsRawData = [];
+                accountingStatsItems = [];
+              }
+              setLoadedData(prev => ({ ...prev, 'accounting-stats': true }));
+              delete errorWidgetsRef.current['accounting-stats'];
+            } catch (error: any) {
+              console.error("Error loading accounting stats data:", error);
+              if (error?.code === 429 || error?.status === 429 || (error?.message && error.message.includes('Quota exceeded'))) {
+                errorWidgetsRef.current['accounting-stats'] = Date.now();
+                console.warn('⚠️ 회계 통계 데이터 로드 실패 (할당량 초과). 5분 후 재시도됩니다.');
+              }
+              setLoadedData(prev => ({ ...prev, 'accounting-stats': true }));
+            } finally {
+              loadingWidgetsRef.current.delete('accounting-stats');
+            }
+          })()
+        );
       }
 
       // 회계 장부 위젯 데이터 로드 (권한이 있는 모든 장부의 잔액 표시)
       if (shouldLoadTuition && tuitionWidget) {
         loadingWidgetsRef.current.add('tuition');
-        try {
-          // 권한이 있는 모든 장부 목록 가져오기
-          const ledgersResponse = await apiClient.getLedgerList();
-          if (ledgersResponse.success && ledgersResponse.data && ledgersResponse.data.length > 0) {
-            const { getLedgerBalance } = await import("../../../utils/google/googleSheetUtils");
-            
-            // 각 장부의 잔액 계산
-            const ledgerBalances = await Promise.all(
-              ledgersResponse.data.map(async (ledger: any) => {
-                try {
-                  const balance = await getLedgerBalance(ledger.spreadsheetId);
-                  return {
-                    name: ledger.folderName || ledger.name || '알 수 없음',
-                    balance: balance
-                  };
-                } catch (error) {
-                  console.error(`장부 ${ledger.folderName} 잔액 계산 오류:`, error);
-                  return {
-                    name: ledger.folderName || ledger.name || '알 수 없음',
-                    balance: 0
-                  };
-                }
-              })
-            );
-            
-            // 장부명: 잔액 형태로 변환
-            tuitionItems = ledgerBalances.map((item) => 
-              `${item.name}: ${item.balance.toLocaleString()}원`
-            );
-          } else {
-            tuitionItems = ['권한이 있는 장부가 없습니다.'];
-          }
-          delete errorWidgetsRef.current['tuition'];
-        } catch (error: any) {
-          console.error("Error loading tuition data:", error);
-          tuitionItems = ['데이터를 불러오는 중 오류가 발생했습니다.'];
-          if (error?.code === 429 || error?.status === 429) {
-            errorWidgetsRef.current['tuition'] = Date.now();
-          }
-        } finally {
-          loadingWidgetsRef.current.delete('tuition');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              // 권한이 있는 모든 장부 목록 가져오기
+              const ledgersResponse = await apiClient.getLedgerList();
+              if (ledgersResponse.success && ledgersResponse.data && ledgersResponse.data.length > 0) {
+                const { getLedgerBalance } = await import("../../../utils/google/googleSheetUtils");
+                
+                // 각 장부의 잔액 계산
+                const ledgerBalances = await Promise.all(
+                  ledgersResponse.data.map(async (ledger: any) => {
+                    try {
+                      const balance = await getLedgerBalance(ledger.spreadsheetId);
+                      return {
+                        name: ledger.folderName || ledger.name || '알 수 없음',
+                        balance: balance
+                      };
+                    } catch (error) {
+                      console.error(`장부 ${ledger.folderName} 잔액 계산 오류:`, error);
+                      return {
+                        name: ledger.folderName || ledger.name || '알 수 없음',
+                        balance: 0
+                      };
+                    }
+                  })
+                );
+                
+                // 장부명: 잔액 형태로 변환
+                tuitionItems = ledgerBalances.map((item) => 
+                  `${item.name}: ${item.balance.toLocaleString()}원`
+                );
+              } else {
+                tuitionItems = ['권한이 있는 장부가 없습니다.'];
+              }
+              delete errorWidgetsRef.current['tuition'];
+            } catch (error: any) {
+              console.error("Error loading tuition data:", error);
+              tuitionItems = ['데이터를 불러오는 중 오류가 발생했습니다.'];
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['tuition'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('tuition');
+            }
+          })()
+        );
       }
 
       // 장부가 선택된 예산계획 위젯 데이터 로드 (검토/승인/집행 대기 항목)
       let budgetPlanItems: { budget_id: string; title: string; total_amount: number; status: string; action_required: string }[] | null = null;
       if (shouldLoadBudgetPlan && budgetPlanWidget?.props.spreadsheetId && user?.email) {
         loadingWidgetsRef.current.add('budget-plan');
-        try {
-          const { getPendingBudgetPlans } = await import("../../../utils/google/googleSheetUtils");
-          const pendingItems = await getPendingBudgetPlans(budgetPlanWidget.props.spreadsheetId, user.email);
-          if (pendingItems && pendingItems.length > 0) {
-            budgetPlanItems = pendingItems;
-          } else {
-            budgetPlanItems = [];
-          }
-          // 성공 시 loadedData 플래그 설정 (spreadsheetId를 키로 사용)
-          const budgetPlanKey = budgetPlanWidget.props.spreadsheetId ? `budget-plan-${budgetPlanWidget.props.spreadsheetId}` : 'budget-plan';
-          setLoadedData(prev => ({ ...prev, [budgetPlanKey]: true }));
-          // 에러 기록 제거
-          delete errorWidgetsRef.current['budget-plan'];
-        } catch (error: any) {
-          console.error("Error loading budget plan data:", error);
-          // 429 에러 등 API 할당량 초과 시 재시도 방지
-          if (error?.code === 429 || error?.status === 429 || (error?.message && error.message.includes('Quota exceeded'))) {
-            errorWidgetsRef.current['budget-plan'] = Date.now();
-            console.warn('⚠️ 예산 계획 데이터 로드 실패 (할당량 초과). 5분 후 재시도됩니다.');
-          }
-          // 에러 발생 시에도 loadedData 플래그 설정하여 무한 재시도 방지
-          const budgetPlanKey = budgetPlanWidget.props.spreadsheetId ? `budget-plan-${budgetPlanWidget.props.spreadsheetId}` : 'budget-plan';
-          setLoadedData(prev => ({ ...prev, [budgetPlanKey]: true }));
-        } finally {
-          loadingWidgetsRef.current.delete('budget-plan');
-        }
+        loadPromises.push(
+          (async () => {
+            try {
+              const { getPendingBudgetPlans } = await import("../../../utils/google/googleSheetUtils");
+              const pendingItems = await getPendingBudgetPlans(budgetPlanWidget.props.spreadsheetId, user.email);
+              if (pendingItems && pendingItems.length > 0) {
+                budgetPlanItems = pendingItems;
+              } else {
+                budgetPlanItems = [];
+              }
+              // 성공 시 loadedData 플래그 설정 (spreadsheetId를 키로 사용)
+              const budgetPlanKey = budgetPlanWidget.props.spreadsheetId ? `budget-plan-${budgetPlanWidget.props.spreadsheetId}` : 'budget-plan';
+              setLoadedData(prev => ({ ...prev, [budgetPlanKey]: true }));
+              // 에러 기록 제거
+              delete errorWidgetsRef.current['budget-plan'];
+            } catch (error: any) {
+              console.error("Error loading budget plan data:", error);
+              // 429 에러 등 API 할당량 초과 시 재시도 방지
+              if (error?.code === 429 || error?.status === 429 || (error?.message && error.message.includes('Quota exceeded'))) {
+                errorWidgetsRef.current['budget-plan'] = Date.now();
+                console.warn('⚠️ 예산 계획 데이터 로드 실패 (할당량 초과). 5분 후 재시도됩니다.');
+              }
+              // 에러 발생 시에도 loadedData 플래그 설정하여 무한 재시도 방지
+              const budgetPlanKey = budgetPlanWidget.props.spreadsheetId ? `budget-plan-${budgetPlanWidget.props.spreadsheetId}` : 'budget-plan';
+              setLoadedData(prev => ({ ...prev, [budgetPlanKey]: true }));
+            } finally {
+              loadingWidgetsRef.current.delete('budget-plan');
+            }
+          })()
+        );
       }
+
+      // 모든 독립적인 위젯들을 병렬로 로드
+      await Promise.all(loadPromises);
 
       // Perform a single state update for widgets
       // 데이터 로딩 시에는 설정이 변경되지 않으므로 prevWidgetConfigRef 업데이트 불필요
@@ -1270,6 +1412,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       id: widgetId,
       type,
       ...newWidgetData,
+      order: widgets.length + 1, // 새 위젯은 마지막 순서
     };
     setWidgets((prevWidgets) => [...prevWidgets, newWidget]);
     // 새로 추가된 위젯의 loadedData 플래그 리셋하여 즉시 데이터 로드
@@ -1297,14 +1440,23 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
 
   const handleDrop = () => {
     if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+      dragItem.current = null;
+      dragOverItem.current = null;
       return;
     }
     const newWidgets = [...widgets];
     const draggedWidget = newWidgets.splice(dragItem.current, 1)[0];
     newWidgets.splice(dragOverItem.current, 0, draggedWidget);
+    
+    // 순서 변경 후 order 속성 업데이트 (1부터 시작)
+    const widgetsWithOrder = newWidgets.map((widget, index) => ({
+      ...widget,
+      order: index + 1
+    }));
+    
     dragItem.current = null;
     dragOverItem.current = null;
-    setWidgets(newWidgets);
+    setWidgets(widgetsWithOrder);
   };
 
   const openSheetSelectionModal = async (widgetId: string) => {
@@ -1345,7 +1497,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       
       for (const folder of driveResponse.result.files) {
         const sheets = await getSheetsInFolder(folder.id!);
-        if (sheets && sheets.length > 0) {
+      if (sheets && sheets.length > 0) {
           sheets.forEach(sheet => {
             allSheets.push({
               id: sheet.id, // 스프레드시트 파일 ID (폴더 ID가 아님)
@@ -1513,8 +1665,8 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       // 장부 선택 후 즉시 데이터를 로드했지만, useEffect에서도 다시 확인하도록 함
 
       // 데이터가 빈 배열이어도 위젯 업데이트 (빈 장부일 수 있음)
-      setWidgets(prevWidgets => {
-        const newWidgets = prevWidgets.map(widget => {
+        setWidgets(prevWidgets => {
+          const newWidgets = prevWidgets.map(widget => {
           if (widget.id === selectedWidgetId) {
             if (widget.type === 'tuition') {
               return {
@@ -1565,12 +1717,12 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
                 },
               };
             }
-          }
-          return widget;
+            }
+            return widget;
+          });
+          console.log("New widgets state after update:", newWidgets);
+          return newWidgets;
         });
-        console.log("New widgets state after update:", newWidgets);
-        return newWidgets;
-      });
       
       setIsSheetModalOpen(false);
       setSelectedWidgetId(null);
