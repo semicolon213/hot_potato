@@ -52,10 +52,11 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
                 'https://sheets.googleapis.com/$discovery/rest?version=v4',
                 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
               ],
+              scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive'
             });
             const token = localStorage.getItem('googleAccessToken');
             if (token) {
-              gapi.client.setToken({ access_token: token });
+              (gapi.client as any).setToken({ access_token: token });
             }
             isGoogleAPIInitialized = true;
             resolve();

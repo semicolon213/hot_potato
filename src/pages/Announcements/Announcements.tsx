@@ -79,8 +79,16 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
     return false;
   });
 
-  // 클라이언트 측에서 역순 정렬 (최신순)
-  const sortedFilteredPosts = [...filteredPosts].sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  // 고정 공지와 일반 공지를 분리하여 각각 정렬
+  const pinnedPosts = filteredPosts.filter(p => p.isPinned);
+  const normalPosts = filteredPosts.filter(p => !p.isPinned);
+
+  // 각 그룹을 ID 역순으로 정렬 (최신순)
+  pinnedPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  normalPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+
+  // 고정 공지를 최상단에 위치시켜 최종 목록 생성
+  const sortedFilteredPosts = [...pinnedPosts, ...normalPosts];
 
   // Pagination logic
   const totalPages = Math.ceil(sortedFilteredPosts.length / postsPerPage);
