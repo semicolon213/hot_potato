@@ -138,6 +138,8 @@
 .post-list {
   width: 100%;
   flex: 1;                     /* 본문이 남는 공간 차지 */
+  display: flex;
+  flex-direction: column;
 }
 
 .post-table {
