@@ -791,7 +791,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                       <select
                         value={isStateOther ? '기타' : editedStudent.state}
                         onChange={(e) => {
-                          if (e.target.value === '기타') {
+                          if (e.target.value === '직접 입력') {
                             setIsStateOther(true);
                           } else {
                             setIsStateOther(false);
@@ -806,7 +806,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                         <option value="위원">위원</option>
                         <option value="간사">간사</option>
                         <option value="자문위원">자문위원</option>
-                        <option value="기타">기타</option>
+                        <option value="직접 입력">직접 입력</option>
                       </select>
                       {isStateOther && (
                         <input
