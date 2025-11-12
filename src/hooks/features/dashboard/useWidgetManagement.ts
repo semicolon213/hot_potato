@@ -652,14 +652,24 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
             });
             
             if (existingData.result.values) {
-              existingRowCount = existingData.result.values.length;
+              // 빈 행 제외하고 실제 데이터 행 수 계산
+              existingRowCount = existingData.result.values.filter((row: any[]) => 
+                row && row.length > 0 && row[0] && row[0].toString().trim() !== ''
+              ).length;
             }
           } catch (getError) {
             console.warn("기존 데이터 확인 중 오류 (무시됨):", getError);
           }
           
-          // 2. 새로운 데이터 저장 (정확한 범위 지정)
-          const saveRange = `${SHEET_NAME}!A2:D${rowsToSave.length + 1}`;
+          // 2. 새로운 데이터 저장
+          // A2부터 시작하므로, rowsToSave.length가 7이면 A2~A8까지 (7개 행)
+          // 범위는 A2:D8이 되어야 함 (A2 + rowsToSave.length - 1 = A8)
+          const startRow = 2; // A2부터 시작
+          const endRow = startRow + rowsToSave.length - 1; // 마지막 행 번호
+          const saveRange = `${SHEET_NAME}!A${startRow}:D${endRow}`;
+          
+          console.log(`💾 저장 범위: ${saveRange}, 저장할 행 수: ${rowsToSave.length}, 기존 행 수: ${existingRowCount}`);
+          
           await gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: hotPotatoDBSpreadsheetId,
             range: saveRange,
@@ -670,9 +680,11 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
           });
           
           // 3. 저장한 행보다 많은 기존 행이 있으면 삭제
+          // endRow 다음 행부터 삭제 시작 (endRow + 1)
           if (existingRowCount > rowsToSave.length) {
-            const clearStartRow = rowsToSave.length + 2;
-            const clearRange = `${SHEET_NAME}!A${clearStartRow}:D${existingRowCount + 1}`;
+            const clearStartRow = endRow + 1; // 저장한 마지막 행 다음 행
+            const clearEndRow = startRow + existingRowCount - 1; // 기존 데이터의 마지막 행
+            const clearRange = `${SHEET_NAME}!A${clearStartRow}:D${clearEndRow}`;
             try {
               await gapi.client.sheets.spreadsheets.values.clear({
                 spreadsheetId: hotPotatoDBSpreadsheetId,
@@ -832,7 +844,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       let userApprovalItems: { name: string; email: string; userType: string }[] | null = null;
       let systemStatsItems: { label: string; value: string }[] | null = null;
       let documentManagementItems: { title: string; date: string; type: string }[] | null = null;
-      let budgetExecutionItems: { label: string; value: string; percentage: number }[] | null = null;
+      let budgetExecutionItems: { label: string; reviewerCount: string; reviewProgress: number; approvalProgress: number; executionProgress: number }[] | null = null;
       let accountingStatsItems: { label: string; income: string; expense: string; balance: string; balanceValue?: number }[] | null = null;
       let accountingStatsRawData: { category: string; income: number; expense: number }[] | null = null;
       let tuitionItems: string[] | null = null;
@@ -1091,7 +1103,8 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
               documentManagementItems = recentDocs.slice(0, 5).map((doc: any) => ({
                 title: doc.title || doc.name || '제목 없음',
                 date: doc.lastModified || doc.date || '',
-                type: doc.documentType || (doc.isPersonal ? 'personal' : 'shared')
+                type: doc.documentType || (doc.isPersonal ? 'personal' : 'shared'),
+                url: doc.url || undefined
               }));
               delete errorWidgetsRef.current['document-management'];
             } catch (error: any) {
@@ -1107,14 +1120,109 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       }
 
       // 예산 집행 현황 (동기 처리 - 간단한 메시지만)
-      if (shouldLoadBudgetExecution) {
-        try {
-          budgetExecutionItems = [
-            { label: '장부를 선택해주세요', value: '-', percentage: 0 }
-          ];
-        } catch (error) {
-          console.error("Error loading budget execution data:", error);
-        }
+      // 예산 집행 현황 데이터 로드
+      if (shouldLoadBudgetExecution && budgetExecutionWidget?.props.spreadsheetId) {
+        loadingWidgetsRef.current.add('budget-execution');
+        loadPromises.push(
+          (async () => {
+            try {
+              const spreadsheetId = budgetExecutionWidget.props.spreadsheetId as string;
+              const { getBudgetPlans } = await import("../../../utils/database/accountingBudgetManager");
+              const { getLedgerEntries } = await import("../../../utils/database/accountingManager");
+              
+              // 모든 예산 계획 가져오기 (대기, 검토, 승인, 집행 모두 포함)
+              const budgetPlans = await getBudgetPlans(spreadsheetId);
+              // 모든 상태의 예산안 포함 (pending, reviewed, approved, executed)
+              const allPlans = budgetPlans.filter(plan => 
+                plan.status === 'pending' || 
+                plan.status === 'reviewed' || 
+                plan.status === 'approved' || 
+                plan.status === 'executed'
+              );
+              
+              if (allPlans.length === 0) {
+                budgetExecutionItems = [
+                  { label: '예산 계획이 없습니다', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+                ];
+                delete errorWidgetsRef.current['budget-execution'];
+                return;
+              }
+              
+              // 통장 정보 가져오기 (검토자 수 계산용)
+              const { getAccounts } = await import("../../../utils/database/accountingManager");
+              const accounts = await getAccounts(spreadsheetId);
+              
+              // 각 예산안의 집행 현황 계산
+              const executionData: { label: string; reviewerCount: string; reviewProgress: number; approvalProgress: number; executionProgress: number }[] = [];
+              
+              for (const plan of allPlans.slice(0, 5)) { // 최대 5개만 표시
+                // 통장 정보 가져오기
+                const account = accounts.find(acc => acc.accountId === plan.accountId);
+                const totalReviewers = account?.subManagerIds?.length || 0;
+                const reviewedCount = plan.subManagerReviews?.length || 0;
+                
+                // 집행 완료된 예산안인지 확인
+                const isExecuted = plan.status === 'executed' || (plan.executedDate && plan.executedDate.trim() !== '');
+                
+                // 집행 완료된 경우: 검토, 승인, 집행 모두 완료로 표시
+                if (isExecuted) {
+                  executionData.push({
+                    label: plan.title.length > 20 ? plan.title.substring(0, 20) + '...' : plan.title,
+                    reviewerCount: totalReviewers > 0 ? `${totalReviewers}/${totalReviewers}` : '0/0',
+                    reviewProgress: 1, // 집행 완료 = 검토 완료
+                    approvalProgress: 1, // 집행 완료 = 승인 완료
+                    executionProgress: 1 // 집행 완료
+                  });
+                  continue;
+                }
+                
+                // 집행 미완료인 경우: 실제 상태 반영
+                // 검토자 수 표시
+                const reviewerCount = totalReviewers > 0 ? `${reviewedCount}/${totalReviewers}` : '0/0';
+                
+                // 검토 진척도 (검토 완료 수 / 전체 검토자 수)
+                const reviewProgress = (totalReviewers > 0 && !isNaN(reviewedCount) && !isNaN(totalReviewers)) 
+                  ? Math.min(reviewedCount / totalReviewers, 1) 
+                  : 0;
+                
+                // 승인 진척도 (승인 완료 = 1, 미승인 = 0)
+                const approvalProgress = plan.mainManagerApproved ? 1 : 0;
+                
+                // 집행 진척도 (집행 완료 = 1, 미집행 = 0)
+                const executionProgress = 0;
+                
+                executionData.push({
+                  label: plan.title.length > 20 ? plan.title.substring(0, 20) + '...' : plan.title,
+                  reviewerCount,
+                  reviewProgress: isNaN(reviewProgress) ? 0 : Math.min(reviewProgress, 1),
+                  approvalProgress: isNaN(approvalProgress) ? 0 : approvalProgress,
+                  executionProgress: isNaN(executionProgress) ? 0 : executionProgress
+                });
+              }
+              
+              budgetExecutionItems = executionData.length > 0 ? executionData : [
+                { label: '예산 계획이 없습니다', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+              ];
+              
+              delete errorWidgetsRef.current['budget-execution'];
+            } catch (error: any) {
+              console.error("Error loading budget execution data:", error);
+              budgetExecutionItems = [
+                { label: '데이터를 불러오는 중 오류가 발생했습니다', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+              ];
+              if (error?.code === 429 || error?.status === 429) {
+                errorWidgetsRef.current['budget-execution'] = Date.now();
+              }
+            } finally {
+              loadingWidgetsRef.current.delete('budget-execution');
+            }
+          })()
+        );
+      } else if (shouldLoadBudgetExecution) {
+        // 장부가 선택되지 않은 경우
+        budgetExecutionItems = [
+          { label: '장부를 선택해주세요', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+        ];
       }
 
       // 회계 통계 기본 메시지 (동기 처리)
@@ -1314,7 +1422,13 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
               return { ...widget, props: { ...widget.props, items: documentManagementItems } };
             }
             if (widget.type === 'budget-execution' && budgetExecutionItems) {
-              return { ...widget, props: { ...widget.props, items: budgetExecutionItems } };
+              // 장부가 선택된 위젯인지 확인
+              if (widget.props.spreadsheetId && budgetExecutionItems.length > 0 && budgetExecutionItems[0].label !== '장부를 선택해주세요') {
+                return { ...widget, props: { ...widget.props, items: budgetExecutionItems } };
+              } else if (!widget.props.spreadsheetId) {
+                // 장부가 선택되지 않은 경우에만 초기 메시지 설정
+                return { ...widget, props: { ...widget.props, items: budgetExecutionItems } };
+              }
             }
             if (widget.type === 'accounting-stats' && accountingStatsItems) {
               // 장부가 선택된 위젯인지 확인
@@ -1605,7 +1719,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       // 장부 선택 후 위젯별 데이터 즉시 로드
       let accountingStatsItems: { label: string; income: string; expense: string; balance: string; balanceValue?: number }[] | null = null;
       let accountingStatsRawData: { category: string; income: number; expense: number }[] | null = null;
-      let budgetExecutionItems: { label: string; value: string; percentage: number }[] | null = null;
+      let budgetExecutionItems: { label: string; reviewerCount: string; reviewProgress: number; approvalProgress: number; executionProgress: number }[] | null = null;
       
       const selectedWidget = widgets.find(w => w.id === selectedWidgetId);
       
@@ -1654,11 +1768,89 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
         }
       }
       
-      // 예산 집행 현황 위젯 데이터 로드 (필요시 추가)
-      if (selectedWidget?.type === 'budget-execution' && user) {
-        // 예산 집행 데이터 로드 로직 추가 필요
-        // 현재는 빈 배열로 설정
-        budgetExecutionItems = [];
+      // 예산 집행 현황 위젯 데이터 로드
+      if (selectedWidget?.type === 'budget-execution' && user && spreadsheetId) {
+        try {
+          const { getBudgetPlans } = await import("../../../utils/database/accountingBudgetManager");
+          const { getLedgerEntries } = await import("../../../utils/database/accountingManager");
+          
+          // 모든 예산 계획 가져오기 (대기, 검토, 승인, 집행 모두 포함)
+          const budgetPlans = await getBudgetPlans(spreadsheetId);
+          // 모든 상태의 예산안 포함 (pending, reviewed, approved, executed)
+          const allPlans = budgetPlans.filter(plan => 
+            plan.status === 'pending' || 
+            plan.status === 'reviewed' || 
+            plan.status === 'approved' || 
+            plan.status === 'executed'
+          );
+          
+          if (allPlans.length === 0) {
+            budgetExecutionItems = [
+              { label: '예산 계획이 없습니다', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+            ];
+          } else {
+            // 통장 정보 가져오기 (검토자 수 계산용)
+            const { getAccounts } = await import("../../../utils/database/accountingManager");
+            const accounts = await getAccounts(spreadsheetId);
+            
+            // 각 예산안의 집행 현황 계산
+            const executionData: { label: string; reviewerCount: string; reviewProgress: number; approvalProgress: number; executionProgress: number }[] = [];
+            
+            for (const plan of allPlans.slice(0, 5)) { // 최대 5개만 표시
+              // 통장 정보 가져오기
+              const account = accounts.find(acc => acc.accountId === plan.accountId);
+              const totalReviewers = account?.subManagerIds?.length || 0;
+              const reviewedCount = plan.subManagerReviews?.length || 0;
+              
+              // 집행 완료된 예산안인지 확인
+              const isExecuted = plan.status === 'executed' || (plan.executedDate && plan.executedDate.trim() !== '');
+              
+              // 집행 완료된 경우: 검토, 승인, 집행 모두 완료로 표시
+              if (isExecuted) {
+                executionData.push({
+                  label: plan.title.length > 20 ? plan.title.substring(0, 20) + '...' : plan.title,
+                  reviewerCount: totalReviewers > 0 ? `${totalReviewers}/${totalReviewers}` : '0/0',
+                  reviewProgress: 1, // 집행 완료 = 검토 완료
+                  approvalProgress: 1, // 집행 완료 = 승인 완료
+                  executionProgress: 1 // 집행 완료
+                });
+                continue;
+              }
+              
+              // 집행 미완료인 경우: 실제 상태 반영
+              // 검토자 수 표시
+              const reviewerCount = totalReviewers > 0 ? `${reviewedCount}/${totalReviewers}` : '0/0';
+              
+              // 검토 진척도 (검토 완료 수 / 전체 검토자 수)
+              const reviewProgress = (totalReviewers > 0 && !isNaN(reviewedCount) && !isNaN(totalReviewers)) 
+                ? Math.min(reviewedCount / totalReviewers, 1) 
+                : 0;
+              
+              // 승인 진척도 (승인 완료 = 1, 미승인 = 0)
+              const approvalProgress = plan.mainManagerApproved ? 1 : 0;
+              
+              // 집행 진척도 (집행 완료 = 1, 미집행 = 0)
+              const executionProgress = 0;
+              
+              executionData.push({
+                label: plan.title.length > 20 ? plan.title.substring(0, 20) + '...' : plan.title,
+                reviewerCount,
+                reviewProgress: isNaN(reviewProgress) ? 0 : Math.min(reviewProgress, 1),
+                approvalProgress: isNaN(approvalProgress) ? 0 : approvalProgress,
+                executionProgress: isNaN(executionProgress) ? 0 : executionProgress
+              });
+            }
+            
+            budgetExecutionItems = executionData.length > 0 ? executionData : [
+              { label: '예산 계획이 없습니다', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+            ];
+          }
+        } catch (error) {
+          console.error("Error loading budget execution data immediately:", error);
+          budgetExecutionItems = [
+            { label: '데이터를 불러오는 중 오류가 발생했습니다', reviewerCount: '-', reviewProgress: 0, approvalProgress: 0, executionProgress: 0 }
+          ];
+        }
       }
       
       // loadedData 플래그는 설정하지 않음 (useEffect에서 다시 로드하도록)

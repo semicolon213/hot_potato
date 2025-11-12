@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FaListUl, FaUsers } from 'react-icons/fa';
 import { useStudentManagement } from '../hooks/features/students/useStudentManagement';
 import StudentDetailModal from '../components/ui/StudentDetailModal';
@@ -52,6 +52,23 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
   const [selectedStudent, setSelectedStudent] = useState<StudentWithCouncil | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); // 학생 추가 모달 상태
+
+  // URL 파라미터에서 필터 읽기
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const stateParam = urlParams.get('state');
+    const gradeParam = urlParams.get('grade');
+    
+    if (stateParam || gradeParam) {
+      setFilters(prev => ({
+        ...prev,
+        ...(stateParam && { state: stateParam }),
+        ...(gradeParam && { grade: gradeParam })
+      }));
+      // 필터가 있으면 필터 패널 열기
+      setShowFilters(true);
+    }
+  }, [setFilters]);
 
   const years = getAllYears();
   // 모든 학생회 데이터를 평탄화하여 가져오기
