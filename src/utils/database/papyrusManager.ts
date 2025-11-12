@@ -993,6 +993,21 @@ export const deleteStudent = async (spreadsheetId: string, studentNo: string): P
         setupPapyrusAuth();
 
         const sheetName = ENV_CONFIG.STUDENT_SHEET_NAME;
+
+        // Get sheet metadata to find the correct sheetId
+        const spreadsheet = await window.gapi.client.sheets.spreadsheets.get({
+            spreadsheetId: targetSpreadsheetId,
+        });
+
+        const sheet = spreadsheet.result.sheets.find(
+            (s) => s.properties.title === sheetName
+        );
+
+        if (!sheet || sheet.properties.sheetId === undefined) {
+            throw new Error(`시트 '${sheetName}'을(를) 찾을 수 없거나 sheetId가 없습니다.`);
+        }
+        const sheetId = sheet.properties.sheetId;
+
         const data = await getSheetData(targetSpreadsheetId, sheetName);
 
         if (!data || !data.values || data.values.length === 0) {
@@ -1005,24 +1020,6 @@ export const deleteStudent = async (spreadsheetId: string, studentNo: string): P
             throw new Error('Student not found in the sheet');
         }
 
-        // rowIndex is 0-based for the array, but sheet rows are 1-based.
-        // The deleteRow function from papyrus-db likely needs the 1-based index.
-        // The header is at rowIndex 0, so data starts at 1. The actual sheet row is rowIndex + 1.
-        // However, deleteTemplate uses rowIndex directly. Let's check the papyrus-db library.
-        // The deleteRow function in papyrus-db takes (spreadsheetId, sheetId, rowIndex).
-        // It seems sheetId is a number (0 for the first sheet). I'll assume that.
-        // Let's trust the existing deleteTemplate implementation and use the 0-based rowIndex from findIndex.
-        // The sheet data from getSheetData includes the header, so we need to adjust the index.
-        // The findIndex is on `data.values`, which includes the header. So if student is on row 5 in the sheet, it's at index 4 in `data.values`.
-        // The `deleteRow` in `papyrus-db` seems to take a 1-based row index. So we should pass `rowIndex + 1`.
-        // Let's re-examine `deleteTemplate`. It gets `rowIndex` and passes it directly. But that `rowIndex` comes from the UI and is already 1-based.
-        // Here, `rowIndex` is 0-based from an array. So we need to add 1.
-        // The `deleteRow` function from `papyrus-db` expects a 1-based index.
-        // The `data.values` array is 0-indexed. So, we need to pass `rowIndex + 1` to `deleteRow`.
-        // The `deleteTemplate` function receives `rowIndex` which is `index + 2`. This seems to be a 1-based index.
-        // So I will use `rowIndex` directly, as it seems to be what `deleteRow` expects.
-
-        const sheetId = 0; // Assuming the first sheet
         await deleteRow(targetSpreadsheetId, sheetId, rowIndex);
 
         console.log(`Student with number ${studentNo} deleted successfully.`);

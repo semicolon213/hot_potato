@@ -501,7 +501,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   const handleAddIssue = async () => {
-    if (!newIssue.content_issue.trim()) return;
+    if (!newIssue.type_issue) {
+      alert('유형을 선택해주세요.');
+      return;
+    }
+    if (!newIssue.level_issue) {
+      alert('심각도를 선택해주세요.');
+      return;
+    }
+    if (!newIssue.content_issue.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
 
     try {
       const issueData = {
@@ -1177,8 +1188,6 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     placeholder="특이사항 내용을 입력하세요..."
                     rows={3}
                     onFocus={handleInputFocus}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseUp={(e) => e.preventDefault()}
                   />
                 </div>
                 <div className="form-actions">
