@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
 
 const ResizableImageComponent = ({ node, updateAttributes, selected }) => {
@@ -10,23 +10,51 @@ const ResizableImageComponent = ({ node, updateAttributes, selected }) => {
     e.preventDefault();
     const handle = e.currentTarget;
     const startX = e.clientX;
+    const startY = e.clientY;
     const startWidth = imgRef.current.offsetWidth;
+    const startHeight = imgRef.current.offsetHeight;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const currentX = e.clientX;
-      const diffX = currentX - startX;
+      const direction = handle.dataset.direction;
+      const ratio = startWidth / startHeight;
 
       let newWidth = startWidth;
+      let newHeight = startHeight;
 
-      if (handle.dataset.direction?.includes('right')) {
-        newWidth = startWidth + diffX;
+      switch (direction) {
+        case 'left':
+          newWidth = startWidth - (e.clientX - startX);
+          break;
+        case 'right':
+          newWidth = startWidth + (e.clientX - startX);
+          break;
+        case 'top':
+          newHeight = startHeight - (e.clientY - startY);
+          break;
+        case 'bottom':
+          newHeight = startHeight + (e.clientY - startY);
+          break;
+        case 'top-left':
+          newWidth = startWidth - (e.clientX - startX);
+          newHeight = newWidth / ratio;
+          break;
+        case 'top-right':
+          newWidth = startWidth + (e.clientX - startX);
+          newHeight = newWidth / ratio;
+          break;
+        case 'bottom-left':
+          newWidth = startWidth - (e.clientX - startX);
+          newHeight = newWidth / ratio;
+          break;
+        case 'bottom-right':
+          newWidth = startWidth + (e.clientX - startX);
+          newHeight = newWidth / ratio;
+          break;
       }
-      if (handle.dataset.direction?.includes('left')) {
-        newWidth = startWidth - diffX;
-      }
-      
+
       updateAttributes({
-        width: `${Math.max(20, newWidth)}px`, // min width 20px
+        width: `${Math.max(20, newWidth)}px`,
+        height: `${Math.max(20, newHeight)}px`,
       });
     };
 
@@ -46,6 +74,7 @@ const ResizableImageComponent = ({ node, updateAttributes, selected }) => {
         src={node.attrs.src}
         style={{
           width: node.attrs.width,
+          height: node.attrs.height,
         }}
       />
       {selected && (
