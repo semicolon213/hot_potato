@@ -94,26 +94,21 @@ export const EventListComponent = ({ items, onItemClick }: { items: { date: stri
                     marginBottom: index < items.length - 1 ? '6px' : '0',
                     cursor: onItemClick ? 'pointer' : 'default',
                     padding: '6px 8px',
-                    borderRadius: '6px',
-                    transition: 'all 0.2s ease',
+                    borderRadius: '4px',
+                    transition: 'background-color 0.2s',
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '10px',
-                    fontSize: '13px',
-                    borderLeft: '3px solid transparent'
+                    fontSize: '13px'
                 }}
                 onMouseEnter={(e) => {
                     if (onItemClick) {
-                        e.currentTarget.style.backgroundColor = '#f5f7fa';
-                        e.currentTarget.style.borderLeftColor = 'var(--sidebar-primary)';
-                        e.currentTarget.style.transform = 'translateX(2px)';
+                        e.currentTarget.style.backgroundColor = '#f8fafc';
                     }
                 }}
                 onMouseLeave={(e) => {
                     if (onItemClick) {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.borderLeftColor = 'transparent';
-                        e.currentTarget.style.transform = 'translateX(0)';
                     }
                 }}
             >
