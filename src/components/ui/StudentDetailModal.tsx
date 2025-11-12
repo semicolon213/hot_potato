@@ -68,6 +68,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   const [customGrade, setCustomGrade] = useState('');
   const [isStateOther, setIsStateOther] = useState(false);
   const [customState, setCustomState] = useState('');
+  const [isLevelOther, setIsLevelOther] = useState(false);
+  const [customLevel, setCustomLevel] = useState('');
   const isSupp = user?.userType === 'supp'; // 조교 여부
 
   const handleDelete = () => {
@@ -506,8 +508,13 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       alert('유형을 선택해주세요.');
       return;
     }
-    if (!newIssue.level_issue) {
-      alert('주의도를 선택해주세요.');
+    // Updated validation for level_issue
+    if (!isLevelOther && !newIssue.level_issue) {
+      alert('심각도를 선택해주세요.');
+      return;
+    }
+    if (isLevelOther && !customLevel.trim()) {
+      alert('심각도를 직접 입력해주세요.');
       return;
     }
     if (!newIssue.content_issue.trim()) {
@@ -520,7 +527,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         no_member: newIssue.no_member,
         date_issue: newIssue.date_issue || new Date().toISOString().split('T')[0],
         type_issue: newIssue.type_issue,
-        level_issue: newIssue.level_issue,
+        level_issue: isLevelOther ? customLevel : newIssue.level_issue, // Use custom level if set
         content_issue: newIssue.content_issue
       };
 
@@ -532,6 +539,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       };
       setIssues(prev => [...prev, newIssueWithId]);
       
+      // Reset form including custom fields
       setNewIssue({
         no_member: student?.no_student || '',
         date_issue: new Date().toISOString().split('T')[0],
@@ -539,6 +547,8 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         level_issue: '',
         content_issue: ''
       });
+      setIsLevelOther(false);
+      setCustomLevel('');
       
       alert('특이사항이 성공적으로 추가되었습니다.');
     } catch (error) {
@@ -1208,10 +1218,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>주의도</label>
+                  <label>심각도</label>
                   <select
-                    value={newIssue.level_issue}
-                    onChange={(e) => handleIssueInputChange('level_issue', e.target.value)}
+                    value={isLevelOther ? '직접 입력' : newIssue.level_issue}
+                    onChange={(e) => {
+                      if (e.target.value === '직접 입력') {
+                        setIsLevelOther(true);
+                        handleIssueInputChange('level_issue', '');
+                      } else {
+                        setIsLevelOther(false);
+                        handleIssueInputChange('level_issue', e.target.value);
+                      }
+                    }}
                     onFocus={handleInputFocus}
                   >
                     <option value="">선택하세요</option>
@@ -1219,7 +1237,17 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                     <option value="보통">보통</option>
                     <option value="높음">높음</option>
                     <option value="심각">심각</option>
+                    <option value="직접 입력">직접 입력</option>
                   </select>
+                  {isLevelOther && (
+                    <input
+                      type="text"
+                      value={customLevel}
+                      onChange={(e) => setCustomLevel(e.target.value)}
+                      placeholder="심각도 직접 입력"
+                      style={{ marginTop: '8px' }}
+                    />
+                  )}
                 </div>
                 </div>
                 <div className="form-group">
