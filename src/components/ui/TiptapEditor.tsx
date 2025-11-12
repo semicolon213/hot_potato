@@ -37,13 +37,15 @@ const MenuBar = ({ editor }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const addImage = (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const src = e.target.result as string;
-      editor.chain().focus().setImage({ src }).run();
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(event.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const src = e.target.result as string;
+        editor.chain().focus().setImage({ src }).run();
+      };
+      reader.readAsDataURL(file);
+    });
     event.target.value = ''; // Reset the input value
   };
 
