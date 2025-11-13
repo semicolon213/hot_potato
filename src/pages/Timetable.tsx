@@ -6,23 +6,31 @@ import { getScheduleEvents, addScheduleEvent } from '../utils/database/personalC
 const Timetable: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [events, setEvents] = useState<TimetableEvent[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
     const hours = Array.from({ length: 13 }, (_, i) => `${(i + 9).toString().padStart(2, '0')}:00`); // 9 AM to 9 PM
 
     useEffect(() => {
         const fetchEvents = async () => {
-            const fetchedEvents = await getScheduleEvents();
-            const formattedEvents: TimetableEvent[] = fetchedEvents.map(e => ({
-                no: e.no,
-                title: e.title,
-                day: e.date ? (e.date.charAt(0) as TimetableEvent['day']) : '월', // 'day'가 아닌 'date' 속성 사용
-                startTime: e.startTime,
-                endTime: e.endTime,
-                description: e.description,
-                color: e.color,
-            })).filter(e => e.title); // 제목이 없는 빈 행은 필터링
-            setEvents(formattedEvents);
+            setIsLoading(true);
+            try {
+                const fetchedEvents = await getScheduleEvents();
+                const formattedEvents: TimetableEvent[] = fetchedEvents.map(e => ({
+                    no: e.no,
+                    title: e.title,
+                    day: e.date ? (e.date.charAt(0) as TimetableEvent['day']) : '월', // 'day'가 아닌 'date' 속성 사용
+                    startTime: e.startTime,
+                    endTime: e.endTime,
+                    description: e.description,
+                    color: e.color,
+                })).filter(e => e.title); // 제목이 없는 빈 행은 필터링
+                setEvents(formattedEvents);
+            } catch (error) {
+                console.error("Failed to fetch events:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchEvents();
     }, []);
