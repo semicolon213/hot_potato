@@ -534,4 +534,116 @@ export const addScheduleEvent = async (event: any): Promise<void> => {
   }
 };
 
+/**
+ * @brief 시트 이름으로 시트 ID 조회
+ * @param {string} spreadsheetId - 스프레드시트 ID
+ * @param {string} sheetName - 시트 이름
+ * @returns {Promise<number | null>} 시트 ID 또는 null
+ */
+const getSheetIdByName = async (spreadsheetId: string, sheetName: string): Promise<number | null> => {
+  try {
+    const sheetsClient = window.gapi.client.sheets;
+    const response = await sheetsClient.spreadsheets.get({
+      spreadsheetId: spreadsheetId,
+      fields: 'sheets.properties(title,sheetId)'
+    });
+
+    const sheet = response.result.sheets?.find(s => s.properties?.title === sheetName);
+    
+    if (sheet && sheet.properties && typeof sheet.properties.sheetId === 'number') {
+      return sheet.properties.sheetId;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`❌ 시트 ID를 가져오는 중 오류 발생 (시트 이름: ${sheetName}):`, error);
+    return null;
+  }
+};
+
+/**
+ * @brief 시간표 일정 삭제
+ * @param {number} eventNo - 삭제할 시간표 일정의 고유 번호 (no)
+ */
+export const deleteScheduleEvent = async (eventNo: number): Promise<void> => {
+  try {
+    if (!personalConfigSpreadsheetId) {
+      console.warn('⚠️ 개인 설정 파일 ID가 없습니다. 초기화를 먼저 시도합니다.');
+      await initializePersonalConfigFile();
+      if (!personalConfigSpreadsheetId) {
+        throw new Error('개인 설정 파일을 찾거나 생성할 수 없습니다.');
+      }
+    }
+    
+    setupPapyrusAuth();
+
+    // 시트 이름으로 시트 ID 조회
+    const sheetId = await getSheetIdByName(personalConfigSpreadsheetId, 'schedule');
+    if (sheetId === null) {
+      throw new Error("'schedule' 시트의 ID를 찾을 수 없습니다.");
+    }
+
+    const existingEvents = await getScheduleEvents();
+    const rowIndexToDelete = existingEvents.findIndex(event => parseInt(event.no, 10) === eventNo);
+
+    if (rowIndexToDelete !== -1) {
+      // deleteRow 함수에 시트 이름 대신 시트 ID를 전달
+      // Google Sheets API는 0-based 인덱스를 사용하므로, 데이터 행의 인덱스에 헤더 행 1개를 더해줌
+      await deleteRow(personalConfigSpreadsheetId, sheetId, rowIndexToDelete + 1);
+      console.log(`✅ 시간표 일정 (no: ${eventNo}) 삭제 완료`);
+    } else {
+      console.warn(`⚠️ 시간표 일정 (no: ${eventNo})을 찾을 수 없어 삭제하지 못했습니다.`);
+    }
+
+  } catch (error) {
+    console.error('❌ 시간표 일정 삭제 오류:', error);
+    throw error;
+  }
+};
+
+/**
+ * @brief 시간표 일정 업데이트
+ * @param {TimetableEvent} event - 업데이트할 시간표 일정 데이터 (no 포함)
+ */
+export const updateScheduleEvent = async (event: TimetableEvent): Promise<void> => {
+  try {
+    if (!personalConfigSpreadsheetId) {
+      console.warn('⚠️ 개인 설정 파일 ID가 없습니다. 초기화를 먼저 시도합니다.');
+      await initializePersonalConfigFile();
+      if (!personalConfigSpreadsheetId) {
+        throw new Error('개인 설정 파일을 찾거나 생성할 수 없습니다.');
+      }
+    }
+    
+    setupPapyrusAuth();
+
+    const existingEvents = await getScheduleEvents();
+    // getScheduleEvents는 헤더를 제외한 데이터만 반환하므로, 실제 시트의 행 인덱스를 계산할 때 헤더를 고려해야 함
+    const rowIndexToUpdate = existingEvents.findIndex(e => parseInt(e.no, 10) === parseInt(event.no!, 10));
+
+    if (rowIndexToUpdate !== -1) {
+      const updatedRow = [
+        event.no!.toString(), // 'no'는 항상 문자열이어야 함
+        event.title,
+        event.day,
+        event.startTime,
+        event.endTime,
+        event.description,
+        event.color
+      ];
+      
+      // papyrus-db의 update는 1-based 인덱스를 기대하며, 헤더 행(1행)을 고려하여 +2
+      const range = `A${rowIndexToUpdate + 2}:G${rowIndexToUpdate + 2}`;
+      await update(personalConfigSpreadsheetId, 'schedule', range, [updatedRow]);
+      console.log(`✅ 시간표 일정 (no: ${event.no}) 업데이트 완료`);
+    } else {
+      console.warn(`⚠️ 시간표 일정 (no: ${event.no})을 찾을 수 없어 업데이트하지 못했습니다.`);
+    }
+
+  } catch (error) {
+    console.error('❌ 시간표 일정 업데이트 오류:', error);
+    throw error;
+  }
+};
+
 

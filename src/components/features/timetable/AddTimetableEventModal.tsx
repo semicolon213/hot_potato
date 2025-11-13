@@ -15,7 +15,7 @@ export interface TimetableEvent {
 
 interface AddTimetableEventModalProps {
   onClose: () => void;
-  onSave: (event: Omit<TimetableEvent, 'no'>) => void;
+  onSave: (event: TimetableEvent) => void;
   eventToEdit?: TimetableEvent | null;
 }
 
@@ -60,14 +60,18 @@ const AddTimetableEventModal: React.FC<AddTimetableEventModalProps> = ({ onClose
 
   const handleSave = () => {
     if (title.trim()) {
-      onSave({
+      const eventToSave: TimetableEvent = {
         title: title.trim(),
         day,
         startTime,
         endTime,
         description: description.trim(),
         color,
-      });
+      };
+      if (isEditMode && eventToEdit?.no) {
+        eventToSave.no = eventToEdit.no;
+      }
+      onSave(eventToSave);
       onClose();
     }
   };

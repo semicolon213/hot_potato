@@ -184,3 +184,33 @@
   font-size: 11px;
   opacity: 0.9;
 }
+
+.timetable-event-actions {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    display: flex;
+    gap: 4px;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease-in-out;
+}
+
+.timetable-event-item:hover .timetable-event-actions {
+    opacity: 1; /* Show on hover */
+}
+
+.timetable-event-action-btn {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius-sm);
+    padding: 2px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    color: var(--text-dark);
+    transition: background-color 0.2s ease-in-out;
+}
+
+.timetable-event-action-btn:hover {
+    background-color: rgba(255, 255, 255, 1);
+    border-color: var(--primary);
+}
