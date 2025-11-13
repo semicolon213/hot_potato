@@ -276,6 +276,55 @@ export const StatusListComponent = ({ items, onButtonClick }: { items: { name: s
     </div>
 );
 
+import { getScheduleEvents } from '../../../utils/database/personalConfigManager';
+
+
+/**
+ * 시간표 데이터를 동적으로 불러와 표시하는 컨테이너 위젯 컴포넌트입니다.
+ */
+export const TimetableWidget: React.FC = () => {
+    const [items, setItems] = React.useState<{ time: string; course: string }[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchTimetableData = async () => {
+            try {
+                const events = await getScheduleEvents();
+                const today = new Date();
+                const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][today.getDay()];
+
+                const formattedItems = events
+                    .filter(event => event.date === dayOfWeek)
+                    .map(event => ({
+                        time: `${event.startTime} - ${event.endTime}`,
+                        course: `${event.title} (${event.description})`
+                    }))
+                    .sort((a, b) => a.time.localeCompare(b.time));
+                
+                setItems(formattedItems);
+            } catch (error) {
+                console.error("Failed to fetch timetable for widget:", error);
+                // 에러 발생 시 빈 배열로 설정하거나 에러 메시지를 표시할 수 있습니다.
+                setItems([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTimetableData();
+    }, []);
+
+    if (isLoading) {
+        return <div className="widget-content"><p>시간표를 불러오는 중...</p></div>;
+    }
+
+    if (items.length === 0) {
+        return <div className="widget-content"><p>오늘의 일정이 없습니다.</p></div>;
+    }
+
+    return <TimetableComponent items={items} />;
+};
+
 /**
  * 시간표를 표시하는 위젯 컴포넌트입니다.
  * @param {object} props - 컴포넌트 props
