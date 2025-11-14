@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaCheck, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './UserList.css';
 import { formatDateToYYYYMMDD } from '../../../utils/helpers/timeUtils';
 
@@ -26,6 +26,15 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
   onApprove,
   onReject
 }) => {
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+  
+  // 페이지네이션
+  const startIndex = (page - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const displayedRequests = requests.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(requests.length / ITEMS_PER_PAGE);
+  
   console.log('📌 PinnedAnnouncementList 렌더링:', { requestsCount: requests.length, requests });
   
   return (
@@ -42,7 +51,7 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
             <div className="user-list-cell">작업</div>
           </div>
           <div className="user-list-body">
-            {requests.map(request => (
+            {displayedRequests.map(request => (
               <div key={request.id} className="user-list-row" style={{ gridTemplateColumns: '2fr 1.5fr 1fr 1.5fr' }}>
                 <div className="user-list-cell">{request.title}</div>
                 <div className="user-list-cell">
@@ -75,6 +84,27 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
               </div>
             ))}
           </div>
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                disabled={page === 1}
+                className="pagination-btn"
+              >
+                <FaChevronLeft />
+              </button>
+              <span className="pagination-info">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={page === totalPages}
+                className="pagination-btn"
+              >
+                <FaChevronRight />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

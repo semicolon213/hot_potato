@@ -25,13 +25,11 @@
   background: white;
   border-radius: var(--sidebar-radius-sm);
   box-shadow: var(--shadow-base);
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #e9ecef;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
 }
 
 .user-list-header {
@@ -49,10 +47,9 @@
 }
 
 .user-list-body {
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
-  min-height: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 .user-list-row {
@@ -214,6 +211,48 @@
   transform: none;
   box-shadow: none;
   opacity: 0.6;
+}
+
+/* 페이지네이션 스타일 */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pagination-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: center;
 }
 
 /* 반응형 디자인 */

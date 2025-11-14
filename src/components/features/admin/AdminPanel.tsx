@@ -11,6 +11,7 @@ const AdminPanel: React.FC = () => {
     users,
     pendingUsers,
     approvedUsers,
+    unusedUsers,
     pinnedAnnouncementRequests,
     emailToSend,
     setEmailToSend,
@@ -65,6 +66,7 @@ const AdminPanel: React.FC = () => {
         users={users}
         pendingUsers={pendingUsers}
         approvedUsers={approvedUsers}
+        unusedUsers={unusedUsers}
         isLoading={isLoading}
         onApproveUser={handleApproveUser}
         onRejectUser={handleRejectUser}
