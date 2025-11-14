@@ -242,6 +242,15 @@ export const createPersonalConfigFile = async (): Promise<string | null> => {
                 columnCount: 7
               }
             }
+          },
+          {
+            properties: {
+              title: ENV_CONFIG.DASHBOARD_SHEET_NAME,
+              gridProperties: {
+                rowCount: 1000,
+                columnCount: 4
+              }
+            }
           }
         ]
       }
@@ -320,6 +329,16 @@ export const setupPersonalConfigHeaders = async (spreadsheetId: string): Promise
       }
     });
 
+    // dashboard 시트 헤더 설정
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId,
+      range: `${ENV_CONFIG.DASHBOARD_SHEET_NAME}!A1:D1`,
+      valueInputOption: 'RAW',
+      resource: {
+        values: [['widget_id', 'widget_type', 'widget_order', 'widget_config']]
+      }
+    });
+
     console.log('✅ 개인 설정 파일 헤더 설정 완료');
   } catch (error) {
     console.error('❌ 헤더 설정 오류:', error);
@@ -352,13 +371,24 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
         const existingSheets = spreadsheet.result.sheets?.map(sheet => sheet.properties?.title) || [];
         console.log('📄 기존 시트 목록:', existingSheets);
         
-        const requiredSheets = ['favorite', 'tag', 'user_custom', 'schedule'];
+        const requiredSheets = ['favorite', 'tag', 'user_custom', 'schedule', ENV_CONFIG.DASHBOARD_SHEET_NAME];
         const missingSheets = requiredSheets.filter(sheetName => !existingSheets.includes(sheetName));
         
         if (missingSheets.length > 0) {
           console.log('📄 누락된 시트 생성:', missingSheets);
           
           for (const sheetName of missingSheets) {
+            let columnCount = 1;
+            if (sheetName === 'user_custom') {
+              columnCount = 10;
+            } else if (sheetName === 'favorite') {
+              columnCount = 2;
+            } else if (sheetName === 'schedule') {
+              columnCount = 7;
+            } else if (sheetName === ENV_CONFIG.DASHBOARD_SHEET_NAME) {
+              columnCount = 4;
+            }
+            
             await sheetsClient.spreadsheets.batchUpdate({
               spreadsheetId: spreadsheetId,
               resource: {
@@ -368,7 +398,7 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
                       title: sheetName,
                       gridProperties: {
                         rowCount: 1000,
-                        columnCount: sheetName === 'user_custom' ? 10 : (sheetName === 'schedule' ? 7 : (sheetName === 'favorite' ? 2 : 1))
+                        columnCount: columnCount
                       }
                     }
                   }
@@ -392,6 +422,9 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
             } else if (sheetName === 'schedule') {
               range = 'schedule!A1:G1';
               values = [['no', 'title', 'date', 'startTime', 'endTime', 'description', 'color']];
+            } else if (sheetName === ENV_CONFIG.DASHBOARD_SHEET_NAME) {
+              range = `${ENV_CONFIG.DASHBOARD_SHEET_NAME}!A1:D1`;
+              values = [['widget_id', 'widget_type', 'widget_order', 'widget_config']];
             }
 
             if (range && values.length > 0) {

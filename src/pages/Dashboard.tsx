@@ -9,9 +9,12 @@ import { useWidgetManagement } from "../hooks/features/dashboard/useWidgetManage
 interface DashboardProps {
   user: User | null;
   hotPotatoDBSpreadsheetId: string | null;
+  onPageChange?: (pageName: string, params?: Record<string, string>) => void;
+  onSelectAnnouncement?: (post: { id: string; title: string }) => void;
+  announcements?: Array<{ id: string; title: string }>;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId, onPageChange, onSelectAnnouncement, announcements }) => {
   const [isLoading, setIsLoading] = useState(true);
   const {
     isModalOpen,
@@ -74,6 +77,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId })
           handleRemoveWidget={handleRemoveWidget}
           onWidgetButtonClick={(widgetId) => openSheetSelectionModal(widgetId)}
           onStudentStatusChange={handleStudentStatusChange}
+          onPageChange={onPageChange}
+          onSelectAnnouncement={onSelectAnnouncement}
+          announcements={announcements}
         />
       )}
 

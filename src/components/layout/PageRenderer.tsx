@@ -264,7 +264,13 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard user={user} hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+        return <Dashboard 
+          user={user} 
+          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
+          onPageChange={onPageChange}
+          onSelectAnnouncement={onSelectAnnouncement}
+          announcements={announcements}
+        />;
       case 'accounting':
         return <Accounting />;
       case 'admin':
