@@ -712,6 +712,166 @@ function deleteUserInfo(email) {
   }
 }
 
+/**
+ * 사용자 일괄 추가
+ * @param {Object} req - 요청 데이터
+ * @param {Array} req.users - 사용자 배열 [{no_member: string, name_member: string}, ...]
+ * @returns {Object} 추가 결과
+ */
+function addUsersToSpreadsheet(req) {
+  const debugInfo = {
+    step: 'addUsersToSpreadsheet 시작',
+    users: req.users,
+    spreadsheet: null,
+    data: null,
+    existingUsers: null,
+    added: 0,
+    skipped: 0,
+    errors: []
+  };
+  
+  try {
+    console.log('📊 사용자 일괄 추가 시작:', req.users?.length || 0, '명');
+    
+    if (!req.users || !Array.isArray(req.users) || req.users.length === 0) {
+      return {
+        success: false,
+        message: '추가할 사용자 정보가 없습니다.'
+      };
+    }
+    
+    // 연결된 스프레드시트 사용
+    const spreadsheet = getHpMemberSpreadsheet();
+    if (!spreadsheet) {
+      debugInfo.step = '스프레드시트 연결 실패';
+      return {
+        success: false,
+        message: '스프레드시트를 찾을 수 없습니다.',
+        debug: debugInfo
+      };
+    }
+    const spreadsheetId = spreadsheet.getId();
+    debugInfo.spreadsheet = { id: spreadsheetId, name: spreadsheet.getName() };
+    
+    const sheetName = 'user';
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    if (!sheet) {
+      return {
+        success: false,
+        message: 'user 시트를 찾을 수 없습니다.'
+      };
+    }
+    
+    // 기존 데이터 읽기 (중복 체크용)
+    const data = getSheetData(spreadsheetId, sheetName, 'A:G');
+    debugInfo.data = { sheetName, rowCount: data ? data.length : 0, headers: data ? data[0] : null };
+    
+    const existingNoMembers = new Set();
+    if (data && data.length > 1) {
+      const header = data[0];
+      const noMemberIndex = header.findIndex(h => h === 'no_member' || h.includes('학번') || h.includes('교번'));
+      
+      if (noMemberIndex !== -1) {
+        for (let i = 1; i < data.length; i++) {
+          const noMember = String(data[i][noMemberIndex] || '').trim();
+          if (noMember) {
+            existingNoMembers.add(noMember);
+          }
+        }
+      }
+    }
+    debugInfo.existingUsers = { count: existingNoMembers.size };
+    
+    // 새로 추가할 데이터 준비
+    const rowsToAdd = [];
+    let addedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+    
+    req.users.forEach((user, index) => {
+      const noMember = String(user.no_member || '').trim();
+      const nameMember = String(user.name_member || '').trim();
+      
+      // 유효성 검사
+      if (!noMember || !nameMember) {
+        errors.push({
+          index: index,
+          no_member: noMember,
+          name_member: nameMember,
+          error: '학번과 이름은 필수 입력 항목입니다.'
+        });
+        skippedCount++;
+        return;
+      }
+      
+      // 학번 형식 검증
+      if (!isValidStudentId(noMember)) {
+        errors.push({
+          index: index,
+          no_member: noMember,
+          name_member: nameMember,
+          error: '학번은 8-15자리 숫자여야 합니다.'
+        });
+        skippedCount++;
+        return;
+      }
+      
+      // 중복 체크
+      if (existingNoMembers.has(noMember)) {
+        errors.push({
+          index: index,
+          no_member: noMember,
+          name_member: nameMember,
+          error: '이미 존재하는 학번입니다.'
+        });
+        skippedCount++;
+        return;
+      }
+      
+      // 추가할 행 데이터 (A열: no_member, C열: name_member, 나머지는 빈 값)
+      rowsToAdd.push([noMember, '', nameMember, '', '', '', '']);
+      existingNoMembers.add(noMember); // 같은 요청 내 중복 방지
+      addedCount++;
+    });
+    
+    debugInfo.added = addedCount;
+    debugInfo.skipped = skippedCount;
+    debugInfo.errors = errors;
+    
+    // 시트에 데이터 추가
+    if (rowsToAdd.length > 0) {
+      const lastRow = sheet.getLastRow();
+      const range = sheet.getRange(lastRow + 1, 1, rowsToAdd.length, 7);
+      range.setValues(rowsToAdd);
+      console.log('📊 시트에', rowsToAdd.length, '개 행 추가 완료');
+    }
+    
+    debugInfo.step = '추가 완료';
+    console.log('📊 사용자 일괄 추가 완료:', addedCount, '명 추가,', skippedCount, '명 건너뜀');
+    
+    return {
+      success: true,
+      message: `${addedCount}명의 사용자가 추가되었습니다.${skippedCount > 0 ? ` (${skippedCount}명 건너뜀)` : ''}`,
+      data: {
+        added: addedCount,
+        skipped: skippedCount,
+        errors: errors
+      },
+      debug: debugInfo
+    };
+    
+  } catch (error) {
+    debugInfo.step = '오류 발생';
+    debugInfo.error = error.message;
+    console.error('📊 사용자 일괄 추가 오류:', error);
+    return {
+      success: false,
+      message: '사용자 추가 중 오류가 발생했습니다: ' + error.message,
+      debug: debugInfo
+    };
+  }
+}
+
 // ===== 배포 정보 =====
 function getUserRegistrationInfo() {
   return {
@@ -723,6 +883,7 @@ function getUserRegistrationInfo() {
       'isValidStudentId',
       'checkExistingUser',
       'addUserToSpreadsheet',
+      'addUsersToSpreadsheet',
       'updateUserInfo',
       'deleteUserInfo'
     ],

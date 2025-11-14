@@ -37,6 +37,7 @@ export const API_ACTIONS = {
   APPROVE_USER: 'approveUser',
   APPROVE_USER_WITH_GROUP: 'approveUserWithGroup',
   REJECT_USER: 'rejectUser',
+  ADD_USERS_TO_SPREADSHEET: 'addUsersToSpreadsheet',
   REQUEST_PINNED_ANNOUNCEMENT_APPROVAL: 'requestPinnedAnnouncementApproval',
   
   // 공지사항 관리

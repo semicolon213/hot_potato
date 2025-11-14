@@ -201,6 +201,10 @@ export class ApiClient {
     return this.request(API_ACTIONS.REJECT_USER, { studentId });
   }
 
+  async addUsersToSpreadsheet(users: Array<{ no_member: string; name_member: string }>) {
+    return this.request(API_ACTIONS.ADD_USERS_TO_SPREADSHEET, { users });
+  }
+
   async requestPinnedAnnouncementApproval(postData: { title: string; author: string; writer_id: string; userType: string; }) {
     return this.request(API_ACTIONS.REQUEST_PINNED_ANNOUNCEMENT_APPROVAL, postData);
   }

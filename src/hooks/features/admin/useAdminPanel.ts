@@ -336,6 +336,44 @@ export const useAdminPanel = () => {
     }
   };
 
+  // 사용자 일괄 추가
+  const handleAddUsers = async (usersToAdd: Array<{ no_member: string; name_member: string }>) => {
+    try {
+      setIsLoading(true);
+      setMessage('');
+      
+      console.log('=== 사용자 일괄 추가 요청 ===');
+      console.log('추가할 사용자 수:', usersToAdd.length);
+      
+      const result = await apiClient.addUsersToSpreadsheet(usersToAdd);
+      
+      if (result.success) {
+        const addedCount = (result.data as { added?: number })?.added || usersToAdd.length;
+        const skippedCount = (result.data as { skipped?: number })?.skipped || 0;
+        
+        setMessage(`${addedCount}명의 사용자가 추가되었습니다.${skippedCount > 0 ? ` (${skippedCount}명 중복으로 건너뜀)` : ''}`);
+        
+        // 캐시 무효화 후 목록 새로고침
+        console.log('캐시 무효화 시작...');
+        await clearUserCache();
+        console.log('캐시 무효화 완료, 사용자 목록 새로고침 시작...');
+        await loadUsers();
+        console.log('사용자 목록 새로고침 완료');
+      } else {
+        setMessage(result.message || result.error || '사용자 추가에 실패했습니다.');
+        throw new Error(result.message || result.error || '사용자 추가에 실패했습니다.');
+      }
+      
+    } catch (error) {
+      console.error('사용자 추가 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '사용자 추가에 실패했습니다.';
+      setMessage(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 관리자 키 이메일 전송
   const handleSendAdminKey = async () => {
     try {
@@ -487,6 +525,7 @@ export const useAdminPanel = () => {
     debugInfo,
     handleApproveUser,
     handleRejectUser,
+    handleAddUsers,
     handleSendAdminKey,
     handleApprovePinnedAnnouncement,
     handleRejectPinnedAnnouncement,
