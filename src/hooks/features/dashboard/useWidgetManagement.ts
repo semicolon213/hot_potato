@@ -295,9 +295,15 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
           spreadsheetId: hotPotatoDBSpreadsheetId
         });
         
+        const allSheetNames = spreadsheet.result.sheets?.map((sheet: any) => sheet.properties.title) || [];
+        console.log(`📄 스프레드시트의 모든 시트:`, allSheetNames);
+        console.log(`🔍 찾는 시트 이름: "${SHEET_NAME}"`);
+        
         sheetExists = spreadsheet.result.sheets?.some(
           (sheet: any) => sheet.properties.title === SHEET_NAME
         ) || false;
+        
+        console.log(`✅ 시트 존재 여부: ${sheetExists}`);
       } catch (checkError: any) {
         // 401 오류인 경우 특별 처리
         if (checkError?.status === 401 || checkError?.result?.error?.code === 401) {
@@ -323,34 +329,51 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       });
 
       const rows = response.result.values || [];
+      console.log(`📊 대시보드 시트에서 읽은 데이터: ${rows.length}개 행`);
+      console.log('📊 읽은 데이터 샘플:', rows.slice(0, 3));
+      
       if (rows.length > 0) {
         try {
           const loadedWidgets: WidgetData[] = [];
           
           for (const row of rows) {
-            if (!row || row.length < 3) continue;
+            if (!row || row.length < 3) {
+              console.warn('⚠️ 행 데이터가 부족합니다:', row);
+              continue;
+            }
             
             const widgetId = row[0]?.toString() || '';
             const widgetType = row[1]?.toString() || '';
             const widgetOrder = parseInt(row[2]?.toString() || '0', 10);
             const widgetConfigStr = row[3]?.toString() || '{}';
             
-            if (!widgetId) continue;
+            console.log(`🔍 위젯 처리 중: ID=${widgetId}, Type=${widgetType}, Order=${widgetOrder}`);
+            
+            if (!widgetId) {
+              console.warn('⚠️ 위젯 ID가 없습니다:', row);
+              continue;
+            }
             
             // 위젯 ID에서 기본 ID 추출 (예: "17-1" -> "17", "25-1" -> "25")
             const baseWidgetId = widgetId.split('-')[0];
+            console.log(`🔍 기본 위젯 ID: ${baseWidgetId} (원본: ${widgetId})`);
             
             const option = allWidgetOptions.find(opt => opt.id === baseWidgetId);
             if (!option) {
-              console.warn(`위젯 ID ${widgetId} (기본 ID: ${baseWidgetId})를 찾을 수 없습니다.`);
+              console.warn(`❌ 위젯 ID ${widgetId} (기본 ID: ${baseWidgetId})를 찾을 수 없습니다.`);
+              console.log('📋 사용 가능한 위젯 옵션 ID:', allWidgetOptions.map(opt => opt.id));
               continue;
             }
             
+            console.log(`✅ 위젯 옵션 찾음: ${option.type}, 허용된 역할:`, option.allowedRoles);
+            
             // 권한 체크: 사용자가 해당 위젯을 볼 수 있는지 확인
             if (userType && !option.allowedRoles.includes(userType)) {
-              console.warn(`사용자 ${userType}는 위젯 ${widgetId}에 접근할 수 없습니다.`);
+              console.warn(`❌ 사용자 ${userType}는 위젯 ${widgetId}에 접근할 수 없습니다. (허용된 역할: ${option.allowedRoles.join(', ')})`);
               continue;
             }
+            
+            console.log(`✅ 권한 체크 통과: ${widgetId}`);
 
             let widgetConfig = {};
             try {
@@ -433,6 +456,9 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
             loadedWidgets.push(item.widget);
           });
           
+          console.log(`✅ 최종 로드된 위젯 개수: ${loadedWidgets.length}`);
+          console.log('📋 로드된 위젯 목록:', loadedWidgets.map(w => ({ id: w.id, type: w.type, order: w.order })));
+          
           // 초기 로드된 위젯 설정을 prevWidgetConfigRef에 저장 (초기 로드 시 저장 방지)
           const initialConfig = loadedWidgets.map((widget, index) => {
             const config: Record<string, any> = {};
@@ -444,6 +470,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
           prevWidgetConfigRef.current = JSON.stringify(initialConfig);
           
           setWidgets(loadedWidgets);
+          console.log('✅ 위젯 상태 업데이트 완료');
         } catch (parseError) {
           console.error("위젯 데이터 파싱 오류:", parseError);
           setWidgets([]);
@@ -500,8 +527,12 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
   }, [user, userType]);
 
   useEffect(() => {
+    console.log('🔄 useEffect 트리거: hotPotatoDBSpreadsheetId =', hotPotatoDBSpreadsheetId);
     if (hotPotatoDBSpreadsheetId) {
+      console.log('📞 syncWidgetsWithGoogleSheets 호출');
       syncWidgetsWithGoogleSheets();
+    } else {
+      console.warn('⚠️ hotPotatoDBSpreadsheetId가 없어서 위젯 동기화를 건너뜁니다.');
     }
   }, [hotPotatoDBSpreadsheetId]);
 

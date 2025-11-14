@@ -301,6 +301,16 @@ export const setupPersonalConfigHeaders = async (spreadsheetId: string): Promise
       }
     });
 
+    // dashboard 시트 헤더 설정
+    await sheetsClient.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId,
+      range: `${ENV_CONFIG.DASHBOARD_SHEET_NAME}!A1:D1`,
+      valueInputOption: 'RAW',
+      resource: {
+        values: [['widget_id', 'widget_type', 'widget_order', 'widget_config']]
+      }
+    });
+
     console.log('✅ 개인 설정 파일 헤더 설정 완료');
   } catch (error) {
     console.error('❌ 헤더 설정 오류:', error);
@@ -333,13 +343,22 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
         const existingSheets = spreadsheet.result.sheets?.map(sheet => sheet.properties?.title) || [];
         console.log('📄 기존 시트 목록:', existingSheets);
         
-        const requiredSheets = ['favorite', 'tag', 'user_custom'];
+        const requiredSheets = ['favorite', 'tag', 'user_custom', ENV_CONFIG.DASHBOARD_SHEET_NAME];
         const missingSheets = requiredSheets.filter(sheetName => !existingSheets.includes(sheetName));
         
         if (missingSheets.length > 0) {
           console.log('📄 누락된 시트 생성:', missingSheets);
           
           for (const sheetName of missingSheets) {
+            let columnCount = 1;
+            if (sheetName === 'user_custom') {
+              columnCount = 10;
+            } else if (sheetName === 'favorite') {
+              columnCount = 2;
+            } else if (sheetName === ENV_CONFIG.DASHBOARD_SHEET_NAME) {
+              columnCount = 4;
+            }
+            
             await sheetsClient.spreadsheets.batchUpdate({
               spreadsheetId: spreadsheetId,
               resource: {
@@ -349,7 +368,7 @@ export const initializePersonalConfigFile = async (): Promise<string | null> => 
                       title: sheetName,
                       gridProperties: {
                         rowCount: 1000,
-                        columnCount: sheetName === 'user_custom' ? 10 : (sheetName === 'favorite' ? 2 : 1)
+                        columnCount: columnCount
                       }
                     }
                   }
