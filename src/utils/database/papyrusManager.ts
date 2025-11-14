@@ -137,6 +137,10 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
     }
 };
 
+// 초기화 중복 방지
+let isInitializing = false;
+let initializationPromise: Promise<any> | null = null;
+
 /**
  * @brief 스프레드시트 ID들 초기화 (Apps Script를 통한 일괄 조회)
  */
@@ -152,9 +156,17 @@ export const initializeSpreadsheetIds = async (): Promise<{
     staffSpreadsheetId: string | null;
     accountingFolderId: string | null;
 }> => {
+    // 이미 초기화 중이면 기존 Promise 반환
+    if (isInitializing && initializationPromise) {
+        console.log('📊 스프레드시트 ID 초기화가 이미 진행 중입니다. 기존 요청을 재사용합니다.');
+        return initializationPromise;
+    }
+
+    isInitializing = true;
     console.log('📊 스프레드시트 ID 초기화 시작 (Apps Script 방식)...');
 
-    try {
+    initializationPromise = (async () => {
+        try {
         // 환경변수에서 스프레드시트 이름 목록 가져오기 (hp_potato_DB는 개인 설정 파일로 분리)
         const spreadsheetNames = [
             ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
@@ -269,7 +281,13 @@ export const initializeSpreadsheetIds = async (): Promise<{
             staffSpreadsheetId: null,
             accountingFolderId: null
         };
-    }
+        } finally {
+            isInitializing = false;
+            initializationPromise = null;
+        }
+    })();
+
+    return initializationPromise;
 };
 
 // 공지사항 관련 함수들 (앱스크립트 API 사용)

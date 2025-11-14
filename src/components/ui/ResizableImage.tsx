@@ -67,26 +67,81 @@ const ResizableImageComponent = ({ node, updateAttributes, selected }) => {
     window.addEventListener('mouseup', handleMouseUp);
   };
 
+  // 이미지 로드 후 초기 크기 설정
+  useEffect(() => {
+    if (imgRef.current && !node.attrs.width && !node.attrs.height) {
+      const img = imgRef.current;
+      
+      // 이미 로드된 이미지인 경우
+      if (img.complete && img.naturalWidth > 0) {
+        const maxWidth = 800;
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+        
+        if (width > maxWidth) {
+          const ratio = maxWidth / width;
+          width = maxWidth;
+          height = height * ratio;
+        }
+        
+        updateAttributes({
+          width: `${width}`,
+          height: `${height}`
+        });
+      } else {
+        // 아직 로드되지 않은 이미지인 경우
+        img.onload = () => {
+          const maxWidth = 800;
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+          
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height = height * ratio;
+          }
+          
+          updateAttributes({
+            width: `${width}`,
+            height: `${height}`
+          });
+        };
+      }
+    }
+  }, [node.attrs.src, node.attrs.width, node.attrs.height, updateAttributes]);
+
   return (
-    <NodeViewWrapper className={`resizable-image-wrapper ${selected ? 'selected' : ''}`}>
+    <NodeViewWrapper 
+      className={`resizable-image-wrapper ${selected ? 'selected' : ''}`}
+      style={{
+        display: 'inline-block',
+        position: 'relative',
+      }}
+    >
       <img
         ref={imgRef}
         src={node.attrs.src}
+        alt=""
         style={{
-          width: node.attrs.width ? `${node.attrs.width}px` : null,
-          height: node.attrs.height ? `${node.attrs.height}px` : null,
+          width: node.attrs.width ? `${node.attrs.width}px` : 'auto',
+          height: node.attrs.height ? `${node.attrs.height}px` : 'auto',
+          display: 'block',
+          userSelect: 'none',
+          margin: 0,
+          padding: 0,
         }}
+        draggable={false}
       />
       {selected && (
         <>
-          <div className="resize-handle" data-direction="top-left" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="top" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="top-right" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="left" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="right" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="bottom-left" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="bottom" onMouseDown={handleMouseDown}></div>
-          <div className="resize-handle" data-direction="bottom-right" onMouseDown={handleMouseDown}></div>
+          <div className="resize-handle" data-direction="top-left" onMouseDown={handleMouseDown} style={{ top: '-6px', left: '-6px' }}></div>
+          <div className="resize-handle" data-direction="top" onMouseDown={handleMouseDown} style={{ top: '-6px', left: '50%', transform: 'translateX(-50%)' }}></div>
+          <div className="resize-handle" data-direction="top-right" onMouseDown={handleMouseDown} style={{ top: '-6px', right: '-6px' }}></div>
+          <div className="resize-handle" data-direction="left" onMouseDown={handleMouseDown} style={{ top: '50%', left: '-6px', transform: 'translateY(-50%)' }}></div>
+          <div className="resize-handle" data-direction="right" onMouseDown={handleMouseDown} style={{ top: '50%', right: '-6px', transform: 'translateY(-50%)' }}></div>
+          <div className="resize-handle" data-direction="bottom-left" onMouseDown={handleMouseDown} style={{ bottom: '-6px', left: '-6px' }}></div>
+          <div className="resize-handle" data-direction="bottom" onMouseDown={handleMouseDown} style={{ bottom: '-6px', left: '50%', transform: 'translateX(-50%)' }}></div>
+          <div className="resize-handle" data-direction="bottom-right" onMouseDown={handleMouseDown} style={{ bottom: '-6px', right: '-6px' }}></div>
         </>
       )}
     </NodeViewWrapper>

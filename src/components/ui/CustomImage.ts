@@ -7,9 +7,26 @@ export const CustomImage = Image.extend({
       width: {
         default: null,
         parseHTML: element => element.getAttribute('width'),
-        renderHTML: attributes => ({
-          width: attributes.width,
-        }),
+        renderHTML: attributes => {
+          if (!attributes.width) {
+            return {};
+          }
+          return {
+            width: attributes.width,
+          };
+        },
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('height'),
+        renderHTML: attributes => {
+          if (!attributes.height) {
+            return {};
+          }
+          return {
+            height: attributes.height,
+          };
+        },
       },
     };
   },

@@ -149,6 +149,20 @@ export class ApiClient {
         const response = await fetch(this.baseUrl, requestOptions);
         clearTimeout(timeoutId);
 
+        // 429 (Too Many Requests) 에러 처리
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt + 2) * 1000;
+          
+          if (attempt < retries) {
+            console.warn(`⚠️ API 호출 제한 초과 (429). ${waitTime}ms 후 재시도...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue; // 재시도
+          } else {
+            throw new Error(`HTTP 429: API 호출 제한 초과. 잠시 후 다시 시도해주세요.`);
+          }
+        }
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }

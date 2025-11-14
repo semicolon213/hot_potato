@@ -9,21 +9,10 @@ import { Image } from '@tiptap/extension-image';
 import { FontSize } from './FontSize';
 import './TiptapEditor.css';
 import ResizableImageComponent from './ResizableImage';
+import { CustomImage } from './CustomImage';
 
-// Create the custom Tiptap extension
-const CustomImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      width: {
-        default: null,
-      },
-      height: {
-        default: null,
-      },
-    };
-  },
-
+// CustomImage에 NodeView 추가
+const CustomImageWithResize = CustomImage.extend({
   addNodeView() {
     return ReactNodeViewRenderer(ResizableImageComponent);
   },
@@ -42,7 +31,27 @@ const MenuBar = ({ editor }) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const src = e.target.result as string;
-        editor.chain().focus().setImage({ src }).run();
+        // 이미지 로드 후 원본 크기 가져오기
+        const img = document.createElement('img');
+        img.onload = () => {
+          // 원본 크기로 이미지 삽입 (최대 너비 800px로 제한)
+          const maxWidth = 800;
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+          
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height = height * ratio;
+          }
+          
+          editor.chain().focus().setImage({ 
+            src,
+            width: `${width}`,
+            height: `${height}`
+          }).run();
+        };
+        img.src = src;
       };
       reader.readAsDataURL(file);
     });
@@ -87,8 +96,8 @@ const TiptapEditor = ({ content, onContentChange }) => {
                       StarterKit,
                       TextStyle,
                       Color,
-                      CustomImage.configure({
-                        inline: true,
+                      CustomImageWithResize.configure({
+                        inline: false,
                         allowBase64: true,
                       }),
                       FontSize,
