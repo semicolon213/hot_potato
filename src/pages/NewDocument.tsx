@@ -35,7 +35,6 @@ import type { TemplateData } from '../types/documents';
 
 // UI Components
 import {
-    SearchBar,
     CategoryTabs,
     TemplateList,
   } from "../components/features/templates";
@@ -1312,83 +1311,75 @@ function NewDocument({
                 onShowConfirm={showConfirm}
             />
 
-            <SearchBar
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-            />
-
             {/* Side-by-Side Layout */}
             <div className="new-document-layout">
                 {/* Left Sidebar: Default Templates */}
                 <div className="layout-sidebar">
                     <div className="template-section">
-                        <div className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div className="section-title section-title-with-action">
                             <span>기본 템플릿</span>
                             {isAdminUser && (
                               <button
                                 type="button"
+                                className="section-action-btn"
                                 onClick={() => setShowSharedUploadModal(true)}
-                                style={{
-                                  background: 'transparent',
-                                  border: '1px solid var(--primary)',
-                                  color: 'var(--primary)',
-                                  borderRadius: 6,
-                                  padding: '6px 10px',
-                                  fontSize: 12,
-                                  cursor: 'pointer'
-                                }}
                                 title="기본 템플릿 업로드"
                               >
                                 + 기본 템플릿 업로드
                               </button>
                             )}
                         </div>
-                        {templateError && (
-                            <div style={{ color: 'red', fontSize: '12px', marginBottom: '10px' }}>
-                                {templateError}
-                                <button 
-                                    onClick={loadDynamicTemplates}
-                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px' }}
-                                >
-                                    다시 시도
-                                </button>
-                                <button 
-                                    onClick={async () => {
-                                        const result = await testDriveApi();
-                                        alert(result.message);
-                                    }}
-                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '3px' }}
-                                >
-                                    Drive API 테스트
-                                </button>
-                                <button 
-                                    onClick={async () => {
-                                        const result = await testTemplateFolderDebug();
-                                        if (result.success && result.data) {
-                                            const debugInfo = result.data.debugInfo || [];
-                                            alert(`디버깅 결과:\n${debugInfo.join('\n')}`);
-                                        } else {
+                        {templateError && !templateError.includes('개인 템플릿') && (
+                            <div className="template-error-message">
+                                <div className="error-content">
+                                    <span className="error-icon">⚠️</span>
+                                    <span className="error-text">{templateError}</span>
+                                </div>
+                                <div className="error-actions">
+                                    <button 
+                                        className="error-action-btn retry-btn"
+                                        onClick={loadDynamicTemplates}
+                                    >
+                                        다시 시도
+                                    </button>
+                                    <button 
+                                        className="error-action-btn debug-btn"
+                                        onClick={async () => {
+                                            const result = await testDriveApi();
                                             alert(result.message);
-                                        }
-                                    }}
-                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '3px' }}
-                                >
-                                    폴더 디버깅
-                                </button>
-                                <button 
-                                    onClick={async () => {
-                                        const result = await testSpecificFolder();
-                                        if (result.success && result.data) {
-                                            const debugInfo = result.data.debugInfo || [];
-                                            alert(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`);
-                                        } else {
-                                            alert(result.message);
-                                        }
-                                    }}
-                                    style={{ marginLeft: '8px', padding: '2px 6px', fontSize: '10px', backgroundColor: '#ffc107', color: 'black', border: 'none', borderRadius: '3px' }}
-                                >
-                                    특정 폴더 테스트
-                                </button>
+                                        }}
+                                    >
+                                        Drive API 테스트
+                                    </button>
+                                    <button 
+                                        className="error-action-btn debug-btn"
+                                        onClick={async () => {
+                                            const result = await testTemplateFolderDebug();
+                                            if (result.success && result.data) {
+                                                const debugInfo = result.data.debugInfo || [];
+                                                alert(`디버깅 결과:\n${debugInfo.join('\n')}`);
+                                            } else {
+                                                alert(result.message);
+                                            }
+                                        }}
+                                    >
+                                        폴더 디버깅
+                                    </button>
+                                    <button 
+                                        className="error-action-btn debug-btn"
+                                        onClick={async () => {
+                                            const result = await testSpecificFolder();
+                                            if (result.success && result.data) {
+                                                const debugInfo = result.data.debugInfo || [];
+                                                alert(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`);
+                                            } else {
+                                                alert(result.message);
+                                            }
+                                        }}
+                                    >
+                                        특정 폴더 테스트
+                                    </button>
+                                </div>
                             </div>
                         )}
                         <DndContext
@@ -1408,21 +1399,6 @@ function NewDocument({
                                         </div>
                                     ) : (
                                         <>
-                                            {/* 개인 템플릿 정보 표시 (개발용) */}
-                                            {personalTemplateError && (
-                                                <div style={{ 
-                                                    padding: '10px', 
-                                                    margin: '10px 0', 
-                                                    backgroundColor: '#fee2e2', 
-                                                    border: '1px solid #fca5a5', 
-                                                    borderRadius: '8px',
-                                                    color: '#dc2626',
-                                                    gridColumn: '1 / -1'
-                                                }}>
-                                                    <strong>개인 템플릿 오류:</strong> {personalTemplateError}
-                                                </div>
-                                            )}
-                                            
                                             {filteredDefaultTemplates.map(template => (
                                                 <SortableTemplateCard
                                                     key={template.type}
@@ -1455,23 +1431,74 @@ function NewDocument({
                 {/* Right Main Area: Personal Templates */}
                 <div className="layout-main">
                     <div className="template-section">
-                        <h2 className="section-title" style={{ position: 'relative' }}>
-                            개인 템플릿
-                            <span
-                                className="new-tab add-tag-button"
+                        <h2 className="section-title section-title-with-action">
+                            <span>개인 템플릿</span>
+                            <button
+                                type="button"
+                                className="section-action-btn"
                                 onClick={() => setShowNewDocModal(true)}
-                                style={{
-                                    position: 'absolute',
-                                    right: 0,
-                                    top: 0,
-                                    fontWeight: 'normal',
-                                    fontSize: '14px',
-                                    color: '#007bff'
-                                }}
                             >
                                 + 새 템플릿
-                            </span>
+                            </button>
                         </h2>
+                        {(personalTemplateError || (templateError && templateError.includes('개인 템플릿'))) && (
+                            <div className="template-error-message personal-template-error">
+                                <div className="error-content">
+                                    <span className="error-icon">⚠️</span>
+                                    <div className="error-text-group">
+                                        <strong>개인 템플릿 오류:</strong>
+                                        <span className="error-text">{personalTemplateError || templateError}</span>
+                                    </div>
+                                </div>
+                                {templateError && templateError.includes('개인 템플릿') && (
+                                    <div className="error-actions">
+                                        <button 
+                                            className="error-action-btn retry-btn"
+                                            onClick={loadDynamicTemplates}
+                                        >
+                                            다시 시도
+                                        </button>
+                                        <button 
+                                            className="error-action-btn debug-btn"
+                                            onClick={async () => {
+                                                const result = await testDriveApi();
+                                                alert(result.message);
+                                            }}
+                                        >
+                                            Drive API 테스트
+                                        </button>
+                                        <button 
+                                            className="error-action-btn debug-btn"
+                                            onClick={async () => {
+                                                const result = await testTemplateFolderDebug();
+                                                if (result.success && result.data) {
+                                                    const debugInfo = result.data.debugInfo || [];
+                                                    alert(`디버깅 결과:\n${debugInfo.join('\n')}`);
+                                                } else {
+                                                    alert(result.message);
+                                                }
+                                            }}
+                                        >
+                                            폴더 디버깅
+                                        </button>
+                                        <button 
+                                            className="error-action-btn debug-btn"
+                                            onClick={async () => {
+                                                const result = await testSpecificFolder();
+                                                if (result.success && result.data) {
+                                                    const debugInfo = result.data.debugInfo || [];
+                                                    alert(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`);
+                                                } else {
+                                                    alert(result.message);
+                                                }
+                                            }}
+                                        >
+                                            특정 폴더 테스트
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCorners}

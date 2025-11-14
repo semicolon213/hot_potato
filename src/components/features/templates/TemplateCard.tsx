@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { Template } from "../../../hooks/features/templates/useTemplateUI";
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
-import { BiTrash, BiDotsVerticalRounded, BiEdit } from "react-icons/bi";
+import { BiTrash, BiDotsVerticalRounded, BiEdit, BiTable, BiFileBlank, BiStar } from "react-icons/bi";
 
 interface Props {
     template: Template;
@@ -43,7 +43,10 @@ function getCustomTagColorClass(tagName: string): string {
 export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
     ({ template, onUse, onDelete, onDeleteTemplate, onEdit, onEditPersonal, isFixed, defaultTags, style, attributes, listeners, onToggleFavorite, isFavorite, allowFormEdit = true, isAdmin = false }, ref) => {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
+        const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+        const [isSelected, setIsSelected] = useState(false);
         const menuRef = useRef<HTMLDivElement>(null);
+        const contextMenuRef = useRef<HTMLDivElement>(null);
 
         const isDefaultTag = defaultTags.includes(template.tag);
         const tagClassName = isDefaultTag
@@ -75,26 +78,126 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                 if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                     setIsMenuOpen(false);
                 }
+                if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+                    setContextMenu(null);
+                }
             };
-            document.addEventListener("mousedown", handleClickOutside);
+            if (isMenuOpen || contextMenu) {
+                document.addEventListener("mousedown", handleClickOutside);
+            }
             return () => {
                 document.removeEventListener("mousedown", handleClickOutside);
             };
-        }, [menuRef]);
+        }, [isMenuOpen, contextMenu]);
+
+        const handleContextMenu = (e: React.MouseEvent) => {
+            e.preventDefault();
+            setContextMenu({ x: e.clientX, y: e.clientY });
+        };
+
+        const handleToggleFavorite = (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setContextMenu(null);
+            if (onToggleFavorite) {
+                onToggleFavorite(template);
+            }
+        };
+
+        const handleEditTemplate = (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setContextMenu(null);
+            if (template.isPersonal && onEditPersonal) {
+                onEditPersonal(template);
+            } else if (!template.isPersonal && onEdit) {
+                onEdit(template);
+            }
+        };
+
+        const handleDeleteTemplate = (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setContextMenu(null);
+            if (onDeleteTemplate) {
+                if (window.confirm(
+                    template.isPersonal 
+                        ? `"${template.title}" 개인 템플릿을 삭제하시겠습니까?`
+                        : `"${template.title}" 기본 템플릿을 삭제하시겠습니까?`
+                )) {
+                    onDeleteTemplate(template);
+                }
+            }
+        };
+
+        const handleCardClick = (e: React.MouseEvent) => {
+            // 컨텍스트 메뉴가 열려있거나, 컨텍스트 메뉴 영역을 클릭한 경우 무시
+            if (contextMenu || contextMenuRef.current?.contains(e.target as Node)) {
+                return;
+            }
+            // 액션 버튼이나 메뉴를 클릭한 경우 무시
+            if (menuRef.current?.contains(e.target as Node) || 
+                (e.target as HTMLElement).closest('.card-action-button, .delete-template-button, .options-menu')) {
+                return;
+            }
+            // 파일 타입 배지나 즐겨찾기 버튼을 클릭한 경우 무시
+            if ((e.target as HTMLElement).closest('.file-type-badge, .favorite-badge-button')) {
+                return;
+            }
+            
+            // 선택 효과 표시
+            setIsSelected(true);
+            setTimeout(() => {
+                setIsSelected(false);
+            }, 300);
+            
+            // 템플릿 사용
+            onUse(template.type, template.title);
+        };
 
         return (
-            <div ref={ref} style={style} className="new-template-card">
+            <div 
+                ref={ref} 
+                style={style} 
+                className={`new-template-card ${contextMenu ? 'context-menu-open' : ''} ${isSelected ? 'selected' : ''}`}
+                onContextMenu={handleContextMenu}
+                onClick={handleCardClick}
+                onMouseEnter={(e) => {
+                    // 컨텍스트 메뉴가 열려있을 때는 호버 효과로 인한 이벤트 무시
+                    if (contextMenu) {
+                        e.stopPropagation();
+                    }
+                }}
+            >
                 {/* 파일 타입 표시 (기본 템플릿 및 개인 템플릿 모두) */}
                 {template.mimeType && (
-                    <div className="file-type-badge" title={
-                        template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
-                            ? '스프레드시트' 
-                            : '문서'
-                    }>
-                        {template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
-                            ? '📊' 
-                            : '📄'}
-                    </div>
+                    <>
+                        {/* 즐겨찾기 버튼 */}
+                        {onToggleFavorite && (
+                            <button
+                                className={`favorite-badge-button ${isFavorite ? 'favorited' : ''}`}
+                                title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (onToggleFavorite) {
+                                        onToggleFavorite(template);
+                                    }
+                                }}
+                            >
+                                <BiStar />
+                            </button>
+                        )}
+                        <div className="file-type-badge" title={
+                            template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
+                                ? '스프레드시트' 
+                                : '문서'
+                        }>
+                            {template.mimeType?.includes('spreadsheet') || template.mimeType?.includes('sheet') 
+                                ? <BiTable /> 
+                                : <BiFileBlank />}
+                        </div>
+                    </>
                 )}
                 
                 {!isFixed && template.rowIndex && (
@@ -123,75 +226,55 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                     <div className="new-card-tag-container">
                         <div className={`new-card-tag new-${tagClassName}`}>{template.tag}</div>
                     </div>
-                    <h3 className="new-card-title">{template.title}</h3>
+                    <h3 className="new-card-title">
+                        {template.title}
+                    </h3>
                     <p className="new-card-description">{template.partTitle || template.description}</p>
                 </div>
-                <div className="new-card-footer">
-                    {/* 기본 템플릿 삭제 버튼 (관리자 전용, 왼쪽 하단, 빈 문서 제외) */}
-                    {!template.isPersonal && !isFixed && onDeleteTemplate && isAdmin && 
-                     template.type !== 'empty' && template.title !== '빈 문서' && (
-                        <button
-                            className="delete-template-button-footer"
-                            onClick={() => {
-                                if (window.confirm(`"${template.title}" 기본 템플릿을 삭제하시겠습니까?`)) {
-                                    onDeleteTemplate(template);
-                                }
-                            }}
-                            title="기본 템플릿 삭제 (관리자)"
-                        >
-                            <BiTrash />
-                        </button>
-                    )}
-                    {/* 개인 템플릿 삭제 버튼 (일반 사용자, 왼쪽 하단) */}
-                    {template.isPersonal && onDeleteTemplate && (
-                        <button
-                            className="delete-template-button-footer"
-                            onClick={() => {
-                                if (window.confirm(`"${template.title}" 개인 템플릿을 삭제하시겠습니까?`)) {
-                                    onDeleteTemplate(template);
-                                }
-                            }}
-                            title="개인 템플릿 삭제"
-                        >
-                            <BiTrash />
-                        </button>
-                    )}
-                    {onToggleFavorite && (
-                        <button
-                            className={`favorite-button ${isFavorite ? 'favorited' : ''}`}
-                            onClick={() => onToggleFavorite(template)}
-                            title={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                        </button>
-                    )}
-                    {/* 개인 템플릿 수정 버튼 */}
-                    {template.isPersonal && onEditPersonal && (
-                        <button
-                            className="edit-personal-button"
-                            onClick={() => onEditPersonal(template)}
-                            title="개인 템플릿 수정"
-                        >
-                            <BiEdit />
-                        </button>
-                    )}
-                    {/* 기본 템플릿 수정 버튼 (관리자 전용) */}
-                    {!template.isPersonal && !isFixed && onEdit && (
-                        <button
-                            className="edit-personal-button"
-                            onClick={() => onEdit(template)}
-                            title="기본 템플릿 수정 (관리자)"
-                        >
-                            <BiEdit />
-                        </button>
-                    )}
-                    <button
-                        className="new-use-button"
-                        onClick={() => onUse(template.type, template.title)}
+
+                {/* 컨텍스트 메뉴 */}
+                {contextMenu && (
+                    <div
+                        ref={contextMenuRef}
+                        className="template-context-menu"
+                        style={{
+                            position: 'fixed',
+                            top: contextMenu.y,
+                            left: contextMenu.x,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseEnter={(e) => e.stopPropagation()}
+                        onMouseLeave={(e) => e.stopPropagation()}
                     >
-                        사용하기
-                    </button>
-                </div>
+                        {(template.isPersonal && onEditPersonal) || (!template.isPersonal && !isFixed && onEdit) ? (
+                            <button
+                                type="button"
+                                className="template-context-menu-item"
+                                onClick={handleEditTemplate}
+                            >
+                                <BiEdit />
+                                수정
+                            </button>
+                        ) : null}
+                        {onDeleteTemplate && 
+                         ((template.isPersonal) || 
+                          (!template.isPersonal && !isFixed && isAdmin && template.type !== 'empty' && template.title !== '빈 문서')) ? (
+                            <>
+                                {((template.isPersonal && onEditPersonal) || (!template.isPersonal && !isFixed && onEdit)) && (
+                                    <div className="template-context-menu-divider"></div>
+                                )}
+                                <button
+                                    type="button"
+                                    className="template-context-menu-item template-context-menu-item-danger"
+                                    onClick={handleDeleteTemplate}
+                                >
+                                    <BiTrash />
+                                    삭제
+                                </button>
+                            </>
+                        ) : null}
+                    </div>
+                )}
             </div>
         );
     }

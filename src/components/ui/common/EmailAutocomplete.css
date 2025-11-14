@@ -1,21 +1,27 @@
 .email-autocomplete-wrapper {
   position: relative;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .email-autocomplete-input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.2s;
+  padding: clamp(10px, 1.16vh, 14px) clamp(12px, 1.56vw, 16px);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  transition: var(--transition-base);
+  background-color: #ffffff;
+  color: #000000;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .email-autocomplete-input:focus {
   outline: none;
-  border-color: var(--primary, #007bff);
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
 .email-autocomplete-input:disabled {

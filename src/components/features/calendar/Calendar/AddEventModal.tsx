@@ -17,6 +17,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles, formatDate, students, staff } = useCalendarContext();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const endDateInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -84,9 +86,11 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       }
 
       if (eventToEdit.startDateTime && eventToEdit.endDateTime) {
-        setShowTime(true);
         setStartTime(eventToEdit.startDateTime.split('T')[1].substring(0, 5));
         setEndTime(eventToEdit.endDateTime.split('T')[1].substring(0, 5));
+      } else {
+        setStartTime('00:00');
+        setEndTime('00:00');
       }
 
       if (eventToEdit.rrule) {
@@ -118,8 +122,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setStartDate(formatDate(initialDate));
       setEndDate(formatDate(initialDate));
 
-      // Always default to all-day event when adding a new event
-      setShowTime(false);
+      // Default time values
       setStartTime('00:00');
       setEndTime('00:00');
 
@@ -142,13 +145,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
 
   useEffect(() => {
-    if (showTime) {
-      setEndDate(startDate);
-    }
-  }, [showTime, startDate]);
-
-  useEffect(() => {
-    if (!showTime && startDate && endDate) {
+    if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       if (start > end) {
@@ -158,7 +155,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     } else {
       setDateError(false);
     }
-  }, [startDate, endDate, showTime]);
+  }, [startDate, endDate]);
 
   const filteredAttendees = useMemo(() => {
     const allPeople = [
@@ -242,15 +239,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           eventData.colorId = '9';
       }
 
-      if (showTime) {
-        eventData.startDateTime = `${startDate}T${startTime}:00`;
-        eventData.endDateTime = `${startDate}T${endTime}:00`;
-        eventData.startDate = startDate;
-        eventData.endDate = startDate;
-      } else {
-        eventData.startDate = startDate;
-        eventData.endDate = endDate;
-      }
+      eventData.startDateTime = `${startDate}T${startTime}:00`;
+      eventData.endDateTime = `${endDate}T${endTime}:00`;
+      eventData.startDate = startDate;
+      eventData.endDate = endDate;
 
       if (saveTarget === 'sheet' && recurrenceFreq !== 'NONE') {
         const ruleOptions: {
@@ -308,149 +300,171 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
         
         <div className="modal-body-two-column">
           <div className="modal-form-content">
-            <input
-              ref={titleInputRef}
-              type="text"
-              placeholder="제목"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="title-input"
-            />
-            <textarea
-                ref={descriptionRef}
-                placeholder="설명"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="add-event-description"
-                rows={1}
-            />
+            <div className="modal-form-section">
+              <input
+                ref={titleInputRef}
+                type="text"
+                placeholder="제목"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="title-input"
+              />
+            </div>
+
+            <div className="modal-form-section">
+              <textarea
+                  ref={descriptionRef}
+                  placeholder="설명"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="add-event-description"
+                  rows={1}
+              />
+            </div>
 
             {!isEditMode && (
-                <div className="save-target-group">
-                  {!isAttendeeSearchVisible && (
-                    <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
-                  )}
-                  <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => {
-                    setSaveTarget('sheet');
-                    if (user && user.userType !== 'admin' && (students.length > 0 || staff.length > 0)) {
-                        const allPeople = [...students, ...staff];
-                        const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === String(user.studentId));
-                        if (loggedInUserObject) {
-                            setSelectedAttendees(prev => {
-                                const userExists = prev.some(a => ('no_student' in a ? a.no_student : a.no) === String(user.studentId));
-                                if (!userExists) {
-                                    return [...prev, loggedInUserObject];
-                                }
-                                return prev;
-                            });
-                        }
-                    }
-                  }}>공유</button>
+                <div className="modal-form-section">
+                  <div className="save-target-group">
+                    {!isAttendeeSearchVisible && (
+                      <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
+                    )}
+                    <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => {
+                      setSaveTarget('sheet');
+                      if (user && user.userType !== 'admin' && (students.length > 0 || staff.length > 0)) {
+                          const allPeople = [...students, ...staff];
+                          const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === String(user.studentId));
+                          if (loggedInUserObject) {
+                              setSelectedAttendees(prev => {
+                                  const userExists = prev.some(a => ('no_student' in a ? a.no_student : a.no) === String(user.studentId));
+                                  if (!userExists) {
+                                      return [...prev, loggedInUserObject];
+                                  }
+                                  return prev;
+                              });
+                          }
+                      }
+                    }}>공유</button>
+                  </div>
                 </div>
             )}
 
             {saveTarget === 'sheet' && (
                 <>
-                    <div className="tag-selection-group">
-                        {eventTypes
-                            .map(type => (
-                            <button
-                                key={type}
-                                type="button"
-                                className={`target-button ${!isCustomTag && tag === type ? 'active' : ''}`}
-                                onClick={() => { setTag(type); setIsCustomTag(false); }}
-                                style={!isCustomTag && tag === type ? { backgroundColor: eventTypeStyles[type]?.color || '#343a40', color: 'white', borderColor: eventTypeStyles[type]?.color || '#343a40' } : {}}
-                            >
-                                {tagLabels[type] || type}
-                            </button>
-                        ))}
-                            <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                    <div className="modal-form-section">
+                      <div className="tag-selection-group">
+                          {eventTypes
+                              .map(type => (
+                              <button
+                                  key={type}
+                                  type="button"
+                                  className={`target-button ${!isCustomTag && tag === type ? 'active' : ''}`}
+                                  onClick={() => { setTag(type); setIsCustomTag(false); }}
+                                  style={!isCustomTag && tag === type ? { backgroundColor: eventTypeStyles[type]?.color || '#343a40', color: 'white', borderColor: eventTypeStyles[type]?.color || '#343a40' } : {}}
+                              >
+                                  {tagLabels[type] || type}
+                              </button>
+                          ))}
+                              <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
+                      </div>
+                      {isCustomTag && (
+                          <div className="custom-tag-container">
+                              <input type="text" placeholder="태그 이름 입력" value={customTag} onChange={(e) => setCustomTag(e.target.value)} className="custom-tag-input" />
+                              <div className="custom-color-picker">
+                                  <button type="button" className="color-display" style={{ backgroundColor: customColor }} onClick={() => setShowColorPicker(!showColorPicker)}></button>
+                                  {showColorPicker && (
+                                      <div className="color-palette-popup">
+                                          {tenColors.map(c => (
+                                              <div key={c} className="color-swatch-popup" style={{ backgroundColor: c }} onClick={() => { setCustomColor(c); setShowColorPicker(false); }}></div>
+                                          ))}
+                                      </div>
+                                  )}
+                              </div>
+                          </div>
+                      )}
                     </div>
-                    {isCustomTag && (
-                        <div className="custom-tag-container">
-                            <input type="text" placeholder="태그 이름 입력" value={customTag} onChange={(e) => setCustomTag(e.target.value)} className="custom-tag-input" />
-                            <div className="custom-color-picker">
-                                <button type="button" className="color-display" style={{ backgroundColor: customColor }} onClick={() => setShowColorPicker(!showColorPicker)}></button>
-                                {showColorPicker && (
-                                    <div className="color-palette-popup">
-                                        {tenColors.map(c => (
-                                            <div key={c} className="color-swatch-popup" style={{ backgroundColor: c }} onClick={() => { setCustomColor(c); setShowColorPicker(false); }}></div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </>
             )}
 
-            <div className="date-time-container">
-                <div className="date-row">
-                    <label>시작일: <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label>
-                    {!showTime && (<label>종료일: <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ backgroundColor: dateError ? '#ffebee' : '' }} /></label>)}
-                    <button type="button" className="time-add-button-inline" onClick={() => setShowTime(!showTime)}>{showTime ? '시간 제거' : '시간 추가'}</button>
-                </div>
-                {showTime && (
-                    <div className="time-row">
-                        <label>시작 시간: <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></label>
-                        <label>종료 시간: <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></label>
-                    </div>
-                )}
+            <div className="modal-form-section">
+              <div className="date-time-container">
+                  <div className="date-row" onClick={(e) => {
+                      if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'LABEL') {
+                          startDateInputRef.current?.showPicker?.() || startDateInputRef.current?.focus();
+                      }
+                  }}>
+                      <label htmlFor="start-date">시작일:</label>
+                      <input id="start-date" ref={startDateInputRef} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} onClick={(e) => e.stopPropagation()} />
+                      <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} onClick={(e) => e.stopPropagation()} />
+                  </div>
+                  <div className="date-row" onClick={(e) => {
+                      if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'LABEL') {
+                          endDateInputRef.current?.showPicker?.() || endDateInputRef.current?.focus();
+                      }
+                  }}>
+                      <label htmlFor="end-date">종료일:</label>
+                      <input id="end-date" ref={endDateInputRef} type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ backgroundColor: dateError ? '#ffebee' : '' }} onClick={(e) => e.stopPropagation()} />
+                      <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} onClick={(e) => e.stopPropagation()} />
+                  </div>
+              </div>
             </div>
 
             {saveTarget === 'sheet' && (
-              <div className="recurrence-section">
-                <label>
-                  <select
-                    value={recurrenceFreq}
-                    onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
-                    className="recurrence-select"
-                  >
-                    <option value="NONE">반복 안 함</option>
-                    <option value="DAILY">매일</option>
-                    <option value="WEEKLY">매주</option>
-                    <option value="MONTHLY">매월</option>
-                  </select>
-                </label>
+              <div className="modal-form-section">
+                <div className="recurrence-section">
+                  <label>
+                    <select
+                      value={recurrenceFreq}
+                      onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
+                      className="recurrence-select"
+                    >
+                      <option value="NONE">반복 안 함</option>
+                      <option value="DAILY">매일</option>
+                      <option value="WEEKLY">매주</option>
+                      <option value="MONTHLY">매월</option>
+                    </select>
+                  </label>
 
-                {recurrenceFreq !== 'NONE' && (
-                  <div className="recurrence-details">
-                    <input
-                      type="number"
-                      min="1"
-                      value={recurrenceDetails.interval}
-                      onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
-                    />
-                    <span>{recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}</span>
-                    <label>
-                      종료일:
+                  {recurrenceFreq !== 'NONE' && (
+                    <div className="recurrence-details">
                       <input
-                        type="date"
-                        value={recurrenceDetails.until}
-                        onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
-                        min={startDate}
+                        type="number"
+                        min="1"
+                        value={recurrenceDetails.interval}
+                        onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
                       />
-                    </label>
-                  </div>
-                )}
+                      <span>{recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}</span>
+                      <label>
+                        종료일:
+                        <input
+                          type="date"
+                          value={recurrenceDetails.until}
+                          onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
+                          min={startDate}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
             {saveTarget === 'sheet' && (
-              <div className="attendees-section">
-                <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
-                  {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
-                </button>
-                <div className="selected-attendees-list">
-                  {selectedAttendees.map(person => (
-                    <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
-                      <span>{person.name}</span>
-                      <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
-                    </div>
-                  ))}
-                </div>
-                <div className="selected-attendees-count">
-                  선택된 참석자: {selectedAttendees.length}명
+              <div className="modal-form-section">
+                <div className="attendees-section">
+                  <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
+                    {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
+                  </button>
+                  <div className="selected-attendees-list">
+                    {selectedAttendees.map(person => (
+                      <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
+                        <span>{person.name}</span>
+                        <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="selected-attendees-count">
+                    선택된 참석자: {selectedAttendees.length}명
+                  </div>
                 </div>
               </div>
             )}

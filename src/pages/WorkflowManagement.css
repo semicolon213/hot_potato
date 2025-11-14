@@ -5,43 +5,11 @@
   min-height: 100%;
   box-sizing: border-box;
   background: transparent;
-}
-
-.workflow-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: clamp(24px, 2.78vh, 32px);
+  flex-direction: column;
+  gap: clamp(16px, 1.85vh, 24px);
 }
 
-.workflow-header h1 {
-  font-size: 28px;
-  font-weight: bold;
-  color: var(--text-dark);
-  margin: 0;
-}
-
-.btn-new-workflow {
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
-  background-color: var(--sidebar-primary);
-  color: #f8f8f7;
-  border: none;
-  border-radius: var(--sidebar-radius-sm);
-  font-size: clamp(14px, 1.62vh, 16px);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  height: clamp(44px, 5.09vh, 48px);
-  box-sizing: border-box;
-  white-space: nowrap;
-}
-
-.btn-new-workflow:hover {
-  background-color: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
-}
 
 /* 검색 및 필터 영역 스타일 */
 .search-filter-section {
@@ -310,57 +278,192 @@
 .loading-message,
 .empty-message {
   text-align: center;
-  padding: 60px 20px;
+  padding: clamp(40px, 4.63vh, 48px);
+  font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-medium);
-  font-size: 16px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--sidebar-radius-sm);
 }
 
-.workflow-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 20px;
+.workflow-list-section {
+  width: 100%;
+  overflow-x: auto;
 }
 
-.workflow-card {
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--card-shadow);
-}
-
-.workflow-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.workflow-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.workflow-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-dark);
+.workflow-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
   margin: 0;
-  flex: 1;
-  margin-right: 12px;
+  table-layout: fixed;
+}
+
+.workflow-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #ffffff;
+  color: var(--text-dark);
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+  font-size: clamp(14px, 1.62vh, 16px);
+  letter-spacing: 0.2px;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: clamp(52px, 6.02vh, 60px);
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
+  box-sizing: border-box;
+}
+
+.workflow-table th, .workflow-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: clamp(52px, 6.02vh, 60px);
+  vertical-align: middle;
+  box-sizing: border-box;
+  font-size: clamp(14px, 1.62vh, 16px);
+}
+
+.workflow-table td {
+  color: #000000;
+  font-weight: var(--font-weight-normal);
+  transition: background-color 0.2s ease;
+}
+
+/* 결재 테이블 컬럼 너비 */
+.workflow-table col.col-number-width {
+  width: 18%;
+}
+
+.workflow-table col.col-title-width {
+  width: 26%;
+}
+
+.workflow-table col.col-author-width {
+  width: 12%;
+}
+
+.workflow-table col.col-date-width {
+  width: 18%;
+}
+
+.workflow-table col.col-status-width {
+  width: 12%;
+}
+
+.workflow-table col.col-progress-width {
+  width: 14%;
+}
+
+/* 결재 테이블 컬럼 스타일 */
+.workflow-table .col-number {
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.workflow-table .col-title {
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.workflow-table .col-title .title-cell-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.workflow-table .col-title .title-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-table .col-author {
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.workflow-table .col-date {
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.workflow-table .col-status {
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+}
+
+.workflow-table .col-progress {
+  text-align: left;
+  padding-left: clamp(12px, 1.56vw, 16px);
+  white-space: normal;
+  vertical-align: top;
+}
+
+.workflow-table tbody tr.workflow-row .col-progress {
+  height: auto;
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: none;
+  padding-top: clamp(8px, 0.93vh, 10px);
+  padding-bottom: clamp(8px, 0.93vh, 10px);
+}
+
+.workflow-table tbody tr.workflow-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  height: auto;
+  min-height: clamp(52px, 6.02vh, 60px);
+}
+
+.workflow-table tbody tr.workflow-row td:not(.col-progress) {
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: clamp(52px, 6.02vh, 60px);
+}
+
+.workflow-table tbody tr.workflow-row:hover {
+  background-color: #f8f9fa;
+}
+
+.workflow-table tbody tr.workflow-row:last-child td {
+  border-bottom: none;
+}
+
+.progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.46vh, 6px);
+  margin-bottom: clamp(4px, 0.46vh, 6px);
+}
+
+.progress-info .progress-item {
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+
+.workflow-row-actions {
+  display: flex;
+  gap: clamp(6px, 0.74vw, 8px);
+  margin-top: clamp(4px, 0.46vh, 6px);
+  flex-wrap: wrap;
 }
 
 .status-badge {
-  padding: 4px 12px;
-  border-radius: var(--border-radius-sm);
-  font-size: 12px;
-  font-weight: 500;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(12px, 1.39vh, 14px);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
+  display: inline-block;
 }
 
 .status-waiting {
@@ -477,13 +580,14 @@
 }
 
 .btn-action {
-  padding: 8px 16px;
+  padding: clamp(6px, 0.69vh, 8px) clamp(12px, 1.56vw, 16px);
   border: none;
-  border-radius: var(--border-radius-md);
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(12px, 1.39vh, 14px);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-action.btn-approve {

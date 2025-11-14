@@ -563,7 +563,7 @@ filter: brightness(1.1);
   margin: 0;
   width: 100%;
   box-sizing: border-box;
-  background: #ffffff; /* 내부 페이지 배경 흰색 통일 */
+  background: #f5f5f5; /* 내부 페이지 배경 회색 */
 }
 
 .main-panel.no-header .content {

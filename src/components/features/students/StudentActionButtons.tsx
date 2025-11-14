@@ -37,7 +37,7 @@ const StudentActionButtons: React.FC<StudentActionButtonsProps> = ({
   };
 
   return (
-    <>
+    <div className="student-action-buttons-container">
       <button className="export-btn" onClick={onExportCSV}>
         <FaDownload className="btn-icon" />
         <span className="btn-text">CSV 다운로드</span>
@@ -63,7 +63,7 @@ const StudentActionButtons: React.FC<StudentActionButtonsProps> = ({
         onChange={handleFileUpload}
         style={{ display: 'none' }}
       />
-    </>
+    </div>
   );
 };
 

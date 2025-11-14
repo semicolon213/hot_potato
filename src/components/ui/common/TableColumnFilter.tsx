@@ -64,22 +64,24 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
   }, [isOpen, onClose]);
 
   // 검색어로 필터링된 옵션
-  const filteredOptions = availableOptions.filter(option =>
+  const filteredOptions = (availableOptions || []).filter(option =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 필터 토글
   const handleFilterToggle = (value: FilterValue) => {
-    if (selectedFilters.includes(value)) {
-      onFilterChange(selectedFilters.filter(f => f !== value));
+    const currentFilters = selectedFilters || [];
+    if (currentFilters.includes(value)) {
+      onFilterChange(currentFilters.filter(f => f !== value));
     } else {
-      onFilterChange([...selectedFilters, value]);
+      onFilterChange([...currentFilters, value]);
     }
   };
 
   // 전체 선택/해제
   const handleSelectAll = () => {
-    if (selectedFilters.length === filteredOptions.length) {
+    const currentFilters = selectedFilters || [];
+    if (currentFilters.length === filteredOptions.length) {
       onFilterChange([]);
     } else {
       onFilterChange(filteredOptions.map(opt => opt.value));
@@ -144,7 +146,7 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
                   <label className="filter-checkbox-label">
                     <input
                       type="checkbox"
-                      checked={selectedFilters.length === filteredOptions.length && filteredOptions.length > 0}
+                      checked={(selectedFilters || []).length === filteredOptions.length && filteredOptions.length > 0}
                       onChange={handleSelectAll}
                       className="filter-checkbox"
                     />
@@ -156,7 +158,7 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
                     <label key={String(option.value)} className="filter-checkbox-label">
                       <input
                         type="checkbox"
-                        checked={selectedFilters.includes(option.value)}
+                        checked={(selectedFilters || []).includes(option.value)}
                         onChange={() => handleFilterToggle(option.value)}
                         className="filter-checkbox"
                       />
