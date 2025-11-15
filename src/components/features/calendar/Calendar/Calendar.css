@@ -56,7 +56,7 @@
   padding: clamp(4px, 0.46vh, 8px);
   flex-shrink: 0;
   transition: var(--transition-base);
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: clamp(4px, 0.46vh, 6px);
   width: clamp(32px, 3.7vh, 40px);
   height: clamp(32px, 3.7vh, 40px);
   display: flex;
@@ -67,12 +67,106 @@
 .arrow-button:hover {
   color: var(--text-dark);
   background-color: rgba(0, 0, 0, 0.03);
+  border-radius: clamp(4px, 0.46vh, 6px);
 }
 
 .calendar-month-year {
     min-width: clamp(150px, 19.53vw, 200px);
     text-align: center;
     flex-grow: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition-base);
+    padding: clamp(4px, 0.46vh, 8px);
+    border-radius: clamp(4px, 0.46vh, 6px);
+}
+
+.calendar-month-year:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.calendar-month-year input[type="date"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* 날짜 선택 창 스타일링 (브라우저 네이티브 피커) */
+input[type="date"] {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: clamp(4px, 0.46vh, 6px);
+    padding: clamp(6px, 0.69vh, 8px) clamp(8px, 1.04vw, 12px);
+    font-size: clamp(14px, 1.62vh, 16px);
+    color: var(--text-dark);
+    font-family: inherit;
+    transition: var(--transition-base);
+    cursor: pointer;
+}
+
+input[type="date"]:hover {
+    border-color: var(--sidebar-primary);
+    background-color: #ffffff;
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: var(--sidebar-primary);
+    box-shadow: 0 0 0 2px rgba(121, 134, 203, 0.1);
+    background-color: #ffffff;
+}
+
+/* 웹킷 브라우저용 날짜 피커 아이콘 스타일 */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    filter: brightness(0) saturate(100%) invert(0%);
+    transition: opacity 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* 날짜 피커 팝업 내부 스타일 (제한적) */
+input[type="date"]::-webkit-datetime-edit {
+    color: var(--text-dark);
+    background-color: #ffffff;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    background-color: #ffffff;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+    color: var(--text-dark);
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+    color: var(--text-dark);
+    background-color: #ffffff;
+}
+
+input[type="date"]::-webkit-inner-spin-button {
+    display: none;
+}
+
+input[type="date"]::-webkit-clear-button {
+    display: none;
+}
+
+/* 모질라 브라우저용 스타일 */
+input[type="date"]::-moz-focus-inner {
+    border: 0;
+}
+
+input[type="date"]::-moz-focusring {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(121, 134, 203, 0.1);
 }
 
 .calendar-body-container {

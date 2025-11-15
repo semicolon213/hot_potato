@@ -138,6 +138,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const datePickerRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isSearchVisible) {
@@ -634,9 +635,30 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         <>
                             <div className={`calendar-title ${calendarViewMode === 'calendar' ? 'visible' : 'hidden'}`}>
                                 <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                                <h2 className="calendar-month-year">
+                                <h2 
+                                    className="calendar-month-year"
+                                    onClick={() => {
+                                        if (viewMode === 'monthly' && datePickerRef.current) {
+                                            datePickerRef.current.showPicker?.() || datePickerRef.current.focus();
+                                        }
+                                    }}
+                                >
                                     {viewMode === 'monthly' ? (
-                                        `${currentDate.year}년 ${currentDate.month}월`
+                                        <>
+                                            {`${currentDate.year}년 ${currentDate.month}월`}
+                                            <input
+                                                ref={datePickerRef}
+                                                type="date"
+                                                value={`${currentDate.year}-${String(currentDate.month).padStart(2, '0')}-01`}
+                                                onChange={(e) => {
+                                                    const selectedDate = new Date(e.target.value);
+                                                    if (goToDate) {
+                                                        goToDate(selectedDate);
+                                                    }
+                                                }}
+                                                style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+                                            />
+                                        </>
                                     ) : (
                                         <>
                                             {`${selectedWeek}주차`}
