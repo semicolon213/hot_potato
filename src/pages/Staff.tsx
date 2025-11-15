@@ -14,7 +14,6 @@ import StudentDetailModal from '../components/ui/StudentDetailModal';
 import type { Committee, StaffMember } from '../types/features/staff';
 import {
   StudentHeader,
-  StudentSearchFilter,
   StudentActionButtons,
   StudentList,
   CouncilSection
@@ -60,7 +59,6 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [selectedCommittee, setSelectedCommittee] = useState<Committee | null>(null);
-  const [showFilters, setShowFilters] = useState(true);
 
   // Hooks
   const staffHook = useStaffOnly(staffSpreadsheetId);
@@ -232,24 +230,16 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
     handleModalClose();
   };
 
-  if (currentHook.isLoading) {
-    return (
-      <div className="staff-management-page">
-        <div className="loading">교직원 데이터를 불러오는 중...</div>
-      </div>
-    );
-  }
-
   if (currentHook.error) {
     return (
-      <div className="staff-management-page">
+      <div className="students-container">
         <div className="error">오류: {currentHook.error}</div>
       </div>
     );
   }
 
   return (
-    <div className="staff-management-page">
+    <div className="students-container">
       <StudentHeader
         totalStudents={activeTab === 'staff' ? staffHook.totalStaff : committeeHook.totalCommittee}
         filteredStudents={activeTab === 'staff' ? staffHook.filteredStaffCount : committeeHook.filteredCommitteeCount}
@@ -260,7 +250,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
 
       {activeTab === 'staff' && (
         <div className="students-list">
-          <div className="action-buttons">
+          <div className="action-buttons-container">
             <div className="action-left">
               <StudentActionButtons
                 onExportCSV={staffHook.exportToCSV}
@@ -273,38 +263,22 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
             <div className="action-right">
               <div className="tab-buttons">
                 <button 
-                  className={`tab-button ${activeTab === 'staff' ? 'active' : ''}`}
+                  className={`tab-button tab-button-staff ${activeTab === 'staff' ? 'active' : ''}`}
                   onClick={() => setActiveTab('staff')}
                 >
                   <FaListUl className="tab-icon" />
-                  <span>교직원 목록</span>
+                  <span className="btn-text">교직원 목록</span>
                 </button>
                 <button 
-                  className={`tab-button ${activeTab === 'committee' ? 'active' : ''}`}
+                  className={`tab-button tab-button-committee ${activeTab === 'committee' ? 'active' : ''}`}
                   onClick={() => setActiveTab('committee')}
                 >
                   <FaUsers className="tab-icon" />
-                  <span>학과 위원회</span>
+                  <span className="btn-text">학과 위원회</span>
                 </button>
               </div>
             </div>
           </div>
-
-          <StudentSearchFilter
-            searchTerm={staffHook.searchTerm}
-            onSearchChange={staffHook.setSearchTerm}
-            showFilters={showFilters}
-            onToggleFilters={() => setShowFilters(!showFilters)}
-            filters={staffHook.filters}
-            onFiltersChange={staffHook.setFilters}
-            filterOptions={{
-              grades: staffHook.filterOptions.grades,
-              states: [],
-              councilPositions: []
-            }}
-            isStaffMode={true}
-            activeTab={activeTab}
-          />
 
           <StudentList
             students={convertedStaff}
@@ -321,7 +295,7 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
 
       {activeTab === 'committee' && (
         <div className="students-list">
-          <div className="action-buttons">
+          <div className="action-buttons-container">
             <div className="action-left">
               <StudentActionButtons
                 onExportCSV={committeeHook.exportToCSV}
@@ -334,47 +308,22 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
             <div className="action-right">
               <div className="tab-buttons">
                 <button 
-                  className={`tab-button ${activeTab === 'staff' ? 'active' : ''}`}
+                  className={`tab-button tab-button-staff ${activeTab === 'staff' ? 'active' : ''}`}
                   onClick={() => setActiveTab('staff')}
                 >
                   <FaListUl className="tab-icon" />
-                  <span>교직원 목록</span>
+                  <span className="btn-text">교직원 목록</span>
                 </button>
                 <button 
-                  className={`tab-button ${activeTab === 'committee' ? 'active' : ''}`}
+                  className={`tab-button tab-button-committee ${activeTab === 'committee' ? 'active' : ''}`}
                   onClick={() => setActiveTab('committee')}
                 >
                   <FaUsers className="tab-icon" />
-                  <span>학과 위원회</span>
+                  <span className="btn-text">학과 위원회</span>
                 </button>
               </div>
             </div>
           </div>
-
-          <StudentSearchFilter
-            searchTerm={committeeHook.searchTerm}
-            onSearchChange={committeeHook.setSearchTerm}
-            showFilters={showFilters}
-            onToggleFilters={() => setShowFilters(!showFilters)}
-            filters={{
-              grade: '',
-              state: committeeHook.filters.sortation,
-              council: committeeHook.filters.position,
-            }}
-            onFiltersChange={(newFilters) => {
-              committeeHook.setFilters({
-                sortation: newFilters.state,
-                position: newFilters.council,
-              });
-            }}
-            filterOptions={{
-              grades: [],
-              states: committeeHook.filterOptions.sortations,
-              councilPositions: committeeHook.filterOptions.positions
-            }}
-            isStaffMode={true}
-            activeTab={activeTab}
-          />
 
           <StudentList
             students={convertedCommittee}

@@ -1,15 +1,19 @@
 .weekly-calendar-container {
     display: flex;
     flex-direction: column;
-    border: 1px solid #e0e0e0;
-    border-radius: var(--border-radius-md);
+    border: 1px solid #e2e8f0;
+    border-radius: var(--sidebar-radius-sm);
     overflow: hidden;
-    background-color: #fff;
+    background-color: #ffffff;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .weekly-header {
     display: flex;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #ffffff;
 }
 
 .time-column-header {
@@ -20,29 +24,34 @@
 .day-header {
     flex: 1;
     text-align: center;
-    padding: 8px 0;
-    border-left: 1px solid #e0e0e0;
+    padding: clamp(8px, 0.93vh, 12px) 0;
+    border-left: 1px solid #e2e8f0;
+    background-color: #ffffff;
 }
 
 .day-name {
-    font-size: 12px;
-    color: #5f6368;
+    font-size: clamp(12px, 1.39vh, 14px);
+    color: var(--text-medium);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: -0.01em;
 }
 
 .day-number {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: clamp(14px, 1.62vh, 16px);
+    font-weight: var(--font-weight-semibold);
     display: block;
+    color: var(--text-dark);
+    margin-top: clamp(4px, 0.46vh, 6px);
 }
 
 .day-header.sunday .day-name,
 .day-header.sunday .day-number {
-    color: var(--error);
+    color: #dc3545;
 }
 
 .day-header.saturday .day-name,
 .day-header.saturday .day-number {
-    color: var(--primary);
+    color: #dc3545;
 }
 
 .day-column.sunday,
@@ -52,15 +61,19 @@
 
 .weekly-all-day-section {
     display: flex;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #ffffff;
 }
 
 .all-day-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    color: #5f6368;
+    font-size: clamp(12px, 1.39vh, 14px);
+    color: var(--text-medium);
+    font-weight: var(--font-weight-medium);
+    padding: clamp(8px, 0.93vh, 12px);
+    letter-spacing: -0.01em;
 }
 
 .all-day-events-canvas {
@@ -71,7 +84,8 @@
 
 .all-day-column {
     flex: 1;
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid #e2e8f0;
+    background-color: #ffffff;
 }
 
 .all-day-event-item {
@@ -133,17 +147,20 @@
 .time-slot-label {
     flex: 1;
     text-align: center;
-    font-size: 12px;
-    color: #5f6368;
+    font-size: clamp(12px, 1.39vh, 14px);
+    color: var(--text-medium);
     position: relative;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: -0.01em;
 }
 
 .day-column {
     flex: 1;
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
+    background-color: #ffffff;
 }
 
 .timed-events-grid {
@@ -153,7 +170,7 @@
 
 .time-grid-line {
     height: 41.66px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .timed-event-item {

@@ -17,12 +17,14 @@
     border-radius: 8px;
     width: 570px;
     max-width: 90%;
+    color: var(--text-dark);
     position: relative;
 }
 
 .help-modal-content h2 {
     margin-top: 0;
     text-align: center;
+    color: var(--text-dark);
 }
 
 .help-modal-content button {

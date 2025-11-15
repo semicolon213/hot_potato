@@ -37,6 +37,12 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                     documentId: template.documentId || storedDocId || undefined
                 };
 
+                // 즐겨찾기 상태 확인 (디버깅용)
+                const favoriteStatus = !!template.favoritesTag;
+                if (favoriteStatus) {
+                    console.log('⭐ TemplateList 즐겨찾기 템플릿:', template.title, 'favoritesTag:', template.favoritesTag);
+                }
+
                 return (
                     <SortableTemplateCard
                         key={id}
@@ -50,7 +56,7 @@ export function TemplateList({ templates, onUseTemplate, onDeleteTemplate, onEdi
                         isFixed={isFixed || isPersonal} // 개인 템플릿도 고정 템플릿으로 처리
                         defaultTags={defaultTags}
                         onToggleFavorite={onToggleFavorite}
-                        isFavorite={!!template.favoritesTag || (template.isPersonal && template.favoritesTag)}
+                        isFavorite={favoriteStatus}
                         isAdmin={isAdmin}
                     />
                 )

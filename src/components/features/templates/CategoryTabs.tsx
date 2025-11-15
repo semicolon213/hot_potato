@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { BiEdit, BiTrash } from 'react-icons/bi';
 import { NotificationModal, ConfirmModal } from '../../ui/NotificationModal';
 
 interface Props {
@@ -40,19 +41,36 @@ export function CategoryTabs({
     const [newTag, setNewTag] = useState("");
     const [isAddingStatic, setIsAddingStatic] = useState(false); // 기본 태그 추가 모드
     const [newStaticTag, setNewStaticTag] = useState("");
-    const [isEditMode, setIsEditMode] = useState(false);
     const [editingTag, setEditingTag] = useState<string | null>(null);
     const [editingText, setEditingText] = useState("");
+    const [showCreateMenu, setShowCreateMenu] = useState(false);
+    const [contextMenu, setContextMenu] = useState<{ tag: string; x: number; y: number } | null>(null);
     
     // 입력 필드 ref (포커스 복원용)
     const staticTagInputRef = useRef<HTMLInputElement>(null);
     const personalTagInputRef = useRef<HTMLInputElement>(null);
+    const createMenuRef = useRef<HTMLDivElement>(null);
+    const contextMenuRef = useRef<HTMLDivElement>(null);
 
+    // 외부 클릭 시 생성 메뉴 닫기
     useEffect(() => {
-        if (!isEditMode) {
-            setEditingTag(null);
+        const handleClickOutside = (event: MouseEvent) => {
+            if (createMenuRef.current && !createMenuRef.current.contains(event.target as Node)) {
+                setShowCreateMenu(false);
+            }
+            if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+                setContextMenu(null);
+            }
+        };
+
+        if (showCreateMenu || contextMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
         }
-    }, [isEditMode]);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showCreateMenu, contextMenu]);
 
     // 개인 태그 추가
     const handleAddTag = () => {
@@ -191,206 +209,280 @@ export function CategoryTabs({
         setEditingText(tag);
     };
 
+    // 태그를 기본 태그와 개인 태그로 분리
+    const staticTagSet = new Set(staticTags);
+    const staticTagList = tags.filter(tag => staticTagSet.has(tag));
+    const personalTagList = tags.filter(tag => !staticTagSet.has(tag));
+
+    const renderTag = (tab: string) => (
+        <div
+            key={tab}
+            className={`new-tab ${activeTab === tab ? "new-active" : ""}`}
+            onClick={() => !editingTag && setActiveTab(tab)}
+            onContextMenu={(e) => {
+                if (tab !== '전체') {
+                    e.preventDefault();
+                    setContextMenu({ tag: tab, x: e.clientX, y: e.clientY });
+                }
+            }}
+        >
+            {editingTag === tab ? (
+                <input 
+                    type="text"
+                    className="tag-edit-input"
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUpdateTag()}
+                    onBlur={handleUpdateTag}
+                    autoFocus
+                />
+            ) : (
+                <span>{tab}</span>
+            )}
+        </div>
+    );
+
     return (
         <div className="category-tabs-wrapper">
             <div className="tabs-header">
                 <div className="new-tabs-container">
-                    {["전체", ...tags].map((tab) => (
-                        <div
-                            key={tab}
-                            className={`new-tab ${activeTab === tab ? "new-active" : ""}`}
-                            onClick={() => !isEditMode && !editingTag && setActiveTab(tab)}
-                        >
-                            {editingTag === tab ? (
-                                <input 
-                                    type="text"
-                                    value={editingText}
-                                    onChange={(e) => setEditingText(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleUpdateTag()}
-                                    onBlur={handleUpdateTag}
-                                    autoFocus
-                                />
-                            ) : (
-                                <>{tab}</>
-                            )}
-
-                            {isEditMode && tab !== '전체' && (
-                                <>
-                                    {/* 기본 태그 관리 (관리자 전용) */}
-                                    {staticTags.includes(tab) ? (
-                                        isAdmin && updateStaticTag && deleteStaticTag ? (
-                                            <>
-                                                <button 
-                                                    onClick={() => startEditing(tab)} 
-                                                    className="edit-tag-button"
-                                                    title="기본 태그 수정 (관리자)"
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        if (onShowConfirm) {
-                                                            onShowConfirm(
-                                                                `기본 태그 "${tab}"를 삭제하시겠습니까?`,
-                                                                () => deleteStaticTag(tab),
-                                                                { type: 'warning' }
-                                                            );
-                                                        } else if (window.confirm(`기본 태그 "${tab}"를 삭제하시겠습니까?`)) {
-                                                            deleteStaticTag(tab);
-                                                        }
-                                                    }} 
-                                                    className="delete-tag-button"
-                                                    title="기본 태그 삭제 (관리자)"
-                                                >
-                                                    🗑️
-                                                </button>
-                                                <span className="tag-badge static" title="기본 태그">기본</span>
-                                            </>
-                                        ) : (
-                                            <span className="tag-badge static" title="기본 태그">기본</span>
-                                        )
-                                    ) : (
-                                        /* 개인 태그 관리 */
-                                        managedTags?.includes(tab) && (
-                                            <>
-                                                <button 
-                                                    onClick={() => startEditing(tab)} 
-                                                    className="edit-tag-button"
-                                                    title="개인 태그 수정"
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        if (onShowConfirm) {
-                                                            onShowConfirm(
-                                                                `개인 태그 "${tab}"를 삭제하시겠습니까?`,
-                                                                () => deleteTag(tab),
-                                                                { type: 'warning' }
-                                                            );
-                                                        } else if (window.confirm(`개인 태그 "${tab}"를 삭제하시겠습니까?`)) {
-                                                            deleteTag(tab);
-                                                        }
-                                                    }} 
-                                                    className="delete-tag-button"
-                                                    title="개인 태그 삭제"
-                                                >
-                                                    🗑️
-                                                </button>
-                                                <span className="tag-badge personal" title="개인 태그">개인</span>
-                                            </>
-                                        )
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    ))}
+                    {/* 전체 태그 */}
+                    {renderTag("전체")}
                     
-                    {!isEditMode && (
-                        <>
-                            {/* 기본 태그 추가 버튼 (관리자 전용) */}
-                            {isAdmin && addStaticTag && (
-                                isAddingStatic ? (
-                                    <div className="new-tag-input-container">
-                                        <input
-                                            ref={staticTagInputRef}
-                                            type="text"
-                                            value={newStaticTag}
-                                            onChange={(e) => {
-                                                if (e.target.value.length <= 8) {
-                                                    setNewStaticTag(e.target.value);
-                                                }
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    handleAddStaticTag();
-                                                } else if (e.key === 'Escape') {
-                                                    setIsAddingStatic(false);
-                                                    setNewStaticTag("");
-                                                }
-                                            }}
-                                            placeholder="기본 태그명"
-                                            className="new-tag-input static"
-                                            autoFocus
-                                        />
-                                        <button onClick={handleAddStaticTag} className="new-tag-button">추가</button>
-                                        <button onClick={() => {
-                                            setIsAddingStatic(false);
-                                            setNewStaticTag("");
-                                        }} className="new-tag-button cancel">취소</button>
-                                    </div>
-                                ) : (
-                                    <div 
-                                        className="new-tab add-tag-button static" 
-                                        onClick={() => {
-                                            setIsAdding(false); // 개인 태그 추가 모드 끄기
-                                            setIsAddingStatic(true);
-                                        }}
-                                        title="기본 태그 추가 (관리자)"
-                                    >
-                                        + 기본 태그
-                                    </div>
-                                )
-                            )}
-                            
-                            {/* 개인 태그 추가 버튼 */}
-                            {managedTags && managedTags.length < 10 ? (
-                                isAdding ? (
-                                    <div className="new-tag-input-container">
-                                        <input
-                                            ref={personalTagInputRef}
-                                            type="text"
-                                            value={newTag}
-                                            onChange={(e) => {
-                                                if (e.target.value.length <= 8) {
-                                                    setNewTag(e.target.value);
-                                                }
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    handleAddTag();
-                                                } else if (e.key === 'Escape') {
-                                                    setIsAdding(false);
-                                                    setNewTag("");
-                                                }
-                                            }}
-                                            placeholder="개인 태그명"
-                                            className="new-tag-input personal"
-                                            autoFocus
-                                        />
-                                        <button onClick={handleAddTag} className="new-tag-button">추가</button>
-                                        <button onClick={() => {
-                                            setIsAdding(false);
-                                            setNewTag("");
-                                        }} className="new-tag-button cancel">취소</button>
-                                    </div>
-                                ) : (
-                                    <div 
-                                        className="new-tab add-tag-button personal" 
-                                        onClick={() => {
-                                            setIsAddingStatic(false); // 기본 태그 추가 모드 끄기
-                                            setIsAdding(true);
-                                        }}
-                                    >
-                                        + 새 태그
-                                    </div>
-                                )
-                            ) : (
-                                <div className="new-tab add-tag-button disabled" title="최대 10개의 개인 태그만 추가할 수 있습니다.">
-                                    최대 태그 수 도달
-                                </div>
-                            )}
-                        </>
+                    {/* 기본 태그들 */}
+                    {staticTagList.map(tab => renderTag(tab))}
+                    
+                    {/* 기본 태그와 개인 태그 사이 구분선 */}
+                    {staticTagList.length > 0 && personalTagList.length > 0 && (
+                        <div className="tag-divider"></div>
+                    )}
+                    
+                    {/* 개인 태그들 */}
+                    {personalTagList.map(tab => renderTag(tab))}
+                    
+                    {/* 기본 태그 추가 입력 (관리자 전용) */}
+                    {isAdmin && addStaticTag && isAddingStatic && (
+                        <div className="new-tag-input-container">
+                            <input
+                                ref={staticTagInputRef}
+                                type="text"
+                                value={newStaticTag}
+                                onChange={(e) => {
+                                    if (e.target.value.length <= 8) {
+                                        setNewStaticTag(e.target.value);
+                                    }
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddStaticTag();
+                                    } else if (e.key === 'Escape') {
+                                        setIsAddingStatic(false);
+                                        setNewStaticTag("");
+                                        setShowCreateMenu(false);
+                                    }
+                                }}
+                                placeholder="기본 태그명"
+                                className="new-tag-input static"
+                                autoFocus
+                            />
+                            <button onClick={handleAddStaticTag} className="new-tag-button">추가</button>
+                            <button onClick={() => {
+                                setIsAddingStatic(false);
+                                setNewStaticTag("");
+                                setShowCreateMenu(false);
+                            }} className="new-tag-button cancel">취소</button>
+                        </div>
+                    )}
+                    
+                    {/* 개인 태그 추가 입력 */}
+                    {managedTags && managedTags.length < 10 && isAdding && (
+                        <div className="new-tag-input-container">
+                            <input
+                                ref={personalTagInputRef}
+                                type="text"
+                                value={newTag}
+                                onChange={(e) => {
+                                    if (e.target.value.length <= 8) {
+                                        setNewTag(e.target.value);
+                                    }
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleAddTag();
+                                    } else if (e.key === 'Escape') {
+                                        setIsAdding(false);
+                                        setNewTag("");
+                                        setShowCreateMenu(false);
+                                    }
+                                }}
+                                placeholder="개인 태그명"
+                                className="new-tag-input personal"
+                                autoFocus
+                            />
+                            <button onClick={handleAddTag} className="new-tag-button">추가</button>
+                            <button onClick={() => {
+                                setIsAdding(false);
+                                setNewTag("");
+                                setShowCreateMenu(false);
+                            }} className="new-tag-button cancel">취소</button>
+                        </div>
                     )}
                 </div>
 
-                <button 
-                    className={`tag-management-toggle ${isEditMode ? 'active' : ''}`}
-                    onClick={() => setIsEditMode(!isEditMode)}
-                >
-                    {isEditMode ? '완료' : '태그 관리'}
-                </button>
+                {!isAdding && !isAddingStatic && (
+                    <div className="tag-create-wrapper" ref={createMenuRef}>
+                        <button 
+                            className="tag-create-toggle"
+                            onClick={() => setShowCreateMenu(!showCreateMenu)}
+                            disabled={managedTags && managedTags.length >= 10 && !isAdmin}
+                        >
+                            태그 생성
+                        </button>
+                        {showCreateMenu && (
+                            <div className="tag-create-menu">
+                                {isAdmin && addStaticTag && (
+                                    <button
+                                        className="tag-create-menu-item"
+                                        onClick={() => {
+                                            setIsAddingStatic(true);
+                                            setIsAdding(false);
+                                            setShowCreateMenu(false);
+                                        }}
+                                    >
+                                        기본 태그
+                                    </button>
+                                )}
+                                {managedTags && managedTags.length < 10 && (
+                                    <button
+                                        className="tag-create-menu-item"
+                                        onClick={() => {
+                                            setIsAdding(true);
+                                            setIsAddingStatic(false);
+                                            setShowCreateMenu(false);
+                                        }}
+                                    >
+                                        개인 태그
+                                    </button>
+                                )}
+                                {managedTags && managedTags.length >= 10 && !isAdmin && (
+                                    <div className="tag-create-menu-item disabled">
+                                        최대 태그 수 도달
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* 컨텍스트 메뉴 */}
+            {contextMenu && (
+                <div
+                    ref={contextMenuRef}
+                    className="tag-context-menu"
+                    style={{
+                        position: 'fixed',
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                    }}
+                >
+                    {(() => {
+                        const tag = contextMenu.tag;
+                        const isStaticTag = staticTags.includes(tag);
+                        const isPersonalTag = managedTags?.includes(tag);
+                        
+                        // 기본 태그는 관리자만 수정/삭제 가능
+                        if (isStaticTag && isAdmin && updateStaticTag && deleteStaticTag) {
+                            return (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="tag-context-menu-item"
+                                        onClick={() => {
+                                            startEditing(tag);
+                                            setContextMenu(null);
+                                        }}
+                                    >
+                                        <BiEdit />
+                                        수정
+                                    </button>
+                                    <div className="tag-context-menu-divider"></div>
+                                    <button
+                                        type="button"
+                                        className="tag-context-menu-item tag-context-menu-item-danger"
+                                        onClick={() => {
+                                            if (onShowConfirm) {
+                                                onShowConfirm(
+                                                    `기본 태그 "${tag}"를 삭제하시겠습니까?`,
+                                                    () => {
+                                                        deleteStaticTag(tag);
+                                                        setContextMenu(null);
+                                                    },
+                                                    { type: 'warning' }
+                                                );
+                                            } else if (window.confirm(`기본 태그 "${tag}"를 삭제하시겠습니까?`)) {
+                                                deleteStaticTag(tag);
+                                                setContextMenu(null);
+                                            } else {
+                                                setContextMenu(null);
+                                            }
+                                        }}
+                                    >
+                                        <BiTrash />
+                                        삭제
+                                    </button>
+                                </>
+                            );
+                        }
+                        
+                        // 개인 태그는 모두 수정/삭제 가능
+                        if (isPersonalTag) {
+                            return (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="tag-context-menu-item"
+                                        onClick={() => {
+                                            startEditing(tag);
+                                            setContextMenu(null);
+                                        }}
+                                    >
+                                        <BiEdit />
+                                        수정
+                                    </button>
+                                    <div className="tag-context-menu-divider"></div>
+                                    <button
+                                        type="button"
+                                        className="tag-context-menu-item tag-context-menu-item-danger"
+                                        onClick={() => {
+                                            if (onShowConfirm) {
+                                                onShowConfirm(
+                                                    `개인 태그 "${tag}"를 삭제하시겠습니까?`,
+                                                    () => {
+                                                        deleteTag(tag);
+                                                        setContextMenu(null);
+                                                    },
+                                                    { type: 'warning' }
+                                                );
+                                            } else if (window.confirm(`개인 태그 "${tag}"를 삭제하시겠습니까?`)) {
+                                                deleteTag(tag);
+                                                setContextMenu(null);
+                                            } else {
+                                                setContextMenu(null);
+                                            }
+                                        }}
+                                    >
+                                        <BiTrash />
+                                        삭제
+                                    </button>
+                                </>
+                            );
+                        }
+                        
+                        return null;
+                    })()}
+                </div>
+            )}
         </div>
     );
 }

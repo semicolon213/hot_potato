@@ -121,7 +121,7 @@ const EmailAutocomplete: React.FC<EmailAutocompleteProps> = ({
   };
 
   return (
-    <div className={`email-autocomplete-wrapper ${className}`}>
+    <div className="email-autocomplete-wrapper">
       <input
         ref={inputRef}
         type="text"
@@ -130,7 +130,7 @@ const EmailAutocomplete: React.FC<EmailAutocompleteProps> = ({
         onFocus={handleInputFocus}
         placeholder={placeholder}
         disabled={disabled}
-        className="email-autocomplete-input"
+        className={`email-autocomplete-input ${className}`}
         autoComplete="off"
       />
       {showSuggestions && suggestions.length > 0 && (

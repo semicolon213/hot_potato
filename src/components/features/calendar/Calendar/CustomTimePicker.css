@@ -1,0 +1,95 @@
+.custom-time-picker {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: clamp(6px, 0.69vh, 8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: clamp(8px, 0.93vh, 10px);
+  z-index: 1001;
+  min-width: clamp(160px, 20.83vw, 180px);
+  font-family: inherit;
+}
+
+.time-picker-header {
+  font-size: clamp(12px, 1.39vh, 14px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  margin-bottom: clamp(8px, 0.93vh, 10px);
+  text-align: center;
+  padding-bottom: clamp(6px, 0.69vh, 8px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.time-picker-content {
+  display: flex;
+  gap: clamp(6px, 0.78vw, 8px);
+}
+
+.time-picker-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.time-picker-label {
+  font-size: clamp(11px, 1.27vh, 12px);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-light);
+  text-align: center;
+  margin-bottom: clamp(6px, 0.69vh, 8px);
+}
+
+.time-picker-scroll {
+  max-height: clamp(160px, 18.52vh, 180px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1px, 0.12vh, 2px);
+}
+
+.time-picker-item {
+  padding: clamp(6px, 0.69vh, 8px);
+  text-align: center;
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: var(--text-dark);
+  cursor: pointer;
+  border-radius: clamp(4px, 0.46vh, 6px);
+  transition: var(--transition-base);
+}
+
+.time-picker-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.time-picker-item.selected {
+  background-color: var(--sidebar-primary);
+  color: #ffffff;
+  font-weight: var(--font-weight-semibold);
+}
+
+.time-picker-item.selected:hover {
+  background-color: var(--sidebar-primary);
+  opacity: 0.9;
+}
+
+/* 스크롤바 스타일링 */
+.time-picker-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.time-picker-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.time-picker-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 2px;
+}
+
+.time-picker-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+

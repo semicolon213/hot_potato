@@ -149,9 +149,10 @@ export function usePersonalTemplates() {
                 const metadataTag = file.properties?.tag;
                 const metadataDescription = file.properties?.description;
                 
-                // 즐겨찾기 상태 확인
+                // 즐겨찾기 상태 확인 (⭐ 제거한 파일명으로 비교)
+                const fileNameWithoutStar = file.name.replace(/^⭐\s*/, '');
                 const isFavorite = favorites.some(
-                    fav => fav.type === '개인' && fav.favorite === file.name
+                    fav => fav.type === '개인' && (fav.favorite === file.name || fav.favorite === fileNameWithoutStar)
                 );
 
                 return {
@@ -197,6 +198,11 @@ export function usePersonalTemplates() {
      * 기본 템플릿과 동일한 구조로 변환하여 일관성을 유지합니다.
      */
     const convertToTemplate = useCallback((personalTemplate: PersonalTemplateData): Template => {
+        // 즐겨찾기 상태 확인 (디버깅용)
+        if (personalTemplate.isFavorite) {
+            console.log('⭐ 즐겨찾기 템플릿 변환:', personalTemplate.name, 'isFavorite:', personalTemplate.isFavorite);
+        }
+        
         return {
             type: personalTemplate.id, // documentId를 type으로 사용 (기본 템플릿과 동일)
             title: personalTemplate.name,
@@ -232,21 +238,35 @@ export function usePersonalTemplates() {
         try {
             console.log('⭐ 개인 템플릿 즐겨찾기 토글:', template);
             
+            // ⭐ 제거한 파일명으로 즐겨찾기 관리 (일관성 유지)
+            const fileNameWithoutStar = template.name.replace(/^⭐\s*/, '');
+            
             // 개인 설정 파일을 사용한 즐겨찾기 관리
             const favoriteData = {
                 type: '개인' as const,
-                favorite: template.name
+                favorite: fileNameWithoutStar
             };
 
-            // 현재 즐겨찾기 상태 확인
+            // 현재 즐겨찾기 상태 확인 (⭐ 제거한 파일명으로 비교)
             const existingFavorites = await fetchFavorites();
             const isCurrentlyFavorite = existingFavorites.some(
-                fav => fav.type === '개인' && fav.favorite === template.name
+                fav => fav.type === '개인' && (
+                    fav.favorite === template.name || 
+                    fav.favorite === fileNameWithoutStar ||
+                    template.name === `⭐ ${fav.favorite}` ||
+                    template.name.replace(/^⭐\s*/, '') === fav.favorite
+                )
             );
 
             if (isCurrentlyFavorite) {
-                // 즐겨찾기 해제
-                const success = await removeFavorite(favoriteData);
+                // 즐겨찾기 해제 (모든 가능한 파일명 형식으로 시도)
+                const removePromises = [
+                    removeFavorite({ type: '개인', favorite: template.name }),
+                    removeFavorite({ type: '개인', favorite: fileNameWithoutStar })
+                ];
+                const results = await Promise.all(removePromises);
+                const success = results.some(r => r);
+                
                 if (success) {
                     console.log('✅ 개인 템플릿 즐겨찾기 해제 완료');
                     // 개인 템플릿 목록 다시 로드하여 UI 업데이트
@@ -268,9 +288,9 @@ export function usePersonalTemplates() {
             
         } catch (error) {
             console.error('❌ 개인 템플릿 즐겨찾기 토글 실패:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' };
         }
-    }, []);
+    }, [loadPersonalTemplates]);
 
     return {
         personalTemplates,

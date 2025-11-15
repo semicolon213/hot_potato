@@ -16,6 +16,7 @@
   margin: 0;
   font-size: 14px; /* 헤더 글자 크기 축소 */
   font-weight: 600;
+  color: var(--text-dark);
 }
 
 .mini-calendar-header button {
@@ -53,8 +54,9 @@
 .mini-calendar-day {
   cursor: pointer;
   border-radius: 50%;
+  color: var(--text-dark);
 }
 
 .mini-calendar-day.not-current-month {
-  color: var(--text-disabled);
+  color: var(--text-light);
 }

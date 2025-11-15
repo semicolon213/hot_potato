@@ -8,35 +8,99 @@
 
 .stat-card {
   flex: 1;
-  padding: clamp(24px, 2.78vh, 32px) clamp(20px, 2.31vw, 28px);
-  border-radius: var(--sidebar-radius);
+  padding: clamp(20px, 2.31vh, 24px) clamp(16px, 1.85vw, 20px);
+  border-radius: var(--sidebar-radius-sm);
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: space-between;
   transition: all 0.2s ease;
   border: none;
   background-color: #ffffff;
+  min-height: clamp(100px, 11.57vh, 120px);
+  cursor: pointer;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.stat-count {
-  font-size: clamp(28px, 3.24vh, 36px);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: clamp(8px, 0.93vh, 12px);
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.93vw, 12px);
+  margin-bottom: clamp(12px, 1.39vh, 16px);
+  position: relative;
+}
+
+.stat-upload-icon-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(24px, 2.78vh, 28px);
+  height: clamp(24px, 2.78vh, 28px);
+  padding: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.stat-upload-icon-btn:hover {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.15);
+  color: rgba(0, 0, 0, 0.8);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-upload-icon-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-upload-icon-btn svg {
+  font-size: clamp(12px, 1.39vh, 14px);
+  width: auto;
+  height: auto;
+  font-weight: 500;
+  stroke-width: 2;
+}
+
+.stat-icon {
+  font-size: clamp(20px, 2.31vh, 24px);
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon svg {
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  fill: currentColor;
 }
 
 .stat-title {
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   line-height: 1.4;
+  color: #666666;
+}
+
+.stat-count {
+  font-size: clamp(32px, 3.7vh, 40px);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  margin-top: auto;
 }
 
 /* 파스텔 톤 색상 적용 (인라인 스타일로 전달되지만 기본값 설정) */

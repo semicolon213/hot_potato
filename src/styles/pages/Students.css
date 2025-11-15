@@ -7,11 +7,207 @@
   background: transparent;
 }
 
+.student-list-section {
+  width: 100%;
+  margin-top: clamp(16px, 1.85vh, 24px);
+}
+
+.student-table-container {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: var(--sidebar-radius-sm);
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+  overflow-y: visible;
+  box-shadow: none;
+}
+
+.student-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  table-layout: fixed;
+}
+
+.student-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #ffffff;
+  color: var(--text-dark);
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+  font-size: clamp(14px, 1.62vh, 16px);
+  letter-spacing: 0.2px;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: clamp(52px, 6.02vh, 60px);
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
+  box-sizing: border-box;
+}
+
+.student-table th, .student-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: clamp(52px, 6.02vh, 60px);
+  vertical-align: middle;
+  box-sizing: border-box;
+  font-size: clamp(14px, 1.62vh, 16px);
+}
+
+.student-table td {
+  color: #000000;
+  font-weight: var(--font-weight-normal);
+  transition: background-color 0.2s ease;
+}
+
+.student-table tbody tr.student-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  height: clamp(52px, 6.02vh, 60px);
+  min-height: clamp(52px, 6.02vh, 60px);
+  max-height: clamp(52px, 6.02vh, 60px);
+}
+
+.student-table tbody tr.student-row:hover {
+  background-color: #f8f9fa;
+}
+
+.student-table tbody tr.student-row:last-child:not(.empty-row) td {
+  border-bottom: none;
+}
+
+.student-table tbody tr.empty-row {
+  cursor: default;
+  pointer-events: none;
+}
+
+.student-table tbody tr.empty-row:hover {
+  background-color: transparent;
+}
+
+.student-table th.sortable {
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.student-table th.sortable:hover {
+  background-color: #f8f9fa;
+}
+
+.student-table th.sortable.sorted {
+  background-color: transparent;
+}
+
+.student-table th .th-content {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 0.52vw, 8px);
+  justify-content: flex-start;
+  position: relative;
+}
+
+.student-table .title-cell-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.student-table .col-council {
+  white-space: normal;
+  overflow: visible;
+}
+
+.student-table .col-council .council-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 0.52vw, 6px);
+  white-space: normal;
+}
+
+.student-table .title-cell-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.student-table .title-cell-inner .title-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 필터 아이콘 스타일 */
+.student-table th .filter-clear-icon {
+  background: none;
+  border: none;
+  padding: clamp(2px, 0.23vh, 4px);
+  margin-left: auto;
+  cursor: pointer;
+  color: #666666;
+  font-size: clamp(12px, 1.39vh, 14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(20px, 2.31vh, 24px);
+  height: clamp(20px, 2.31vh, 24px);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.student-table th .filter-clear-icon .filter-icon,
+.student-table th .filter-clear-icon .clear-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.student-table th .filter-clear-icon .filter-icon {
+  opacity: 1;
+}
+
+.student-table th .filter-clear-icon .clear-icon {
+  opacity: 0;
+}
+
+.student-table th .filter-clear-icon:hover .filter-icon {
+  opacity: 0;
+}
+
+.student-table th .filter-clear-icon:hover .clear-icon {
+  opacity: 1;
+}
+
+.student-table th .filter-clear-icon:hover {
+  color: #000000;
+  background-color: #f8f9fa;
+}
+
+.student-table th .filter-clear-icon:active {
+  transform: scale(0.95);
+}
+
 .students-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: clamp(24px, 2.78vh, 32px);
+  margin-bottom: clamp(8px, 0.93vh, 10px);
   padding: 0;
   background: transparent;
   border-radius: 0;
@@ -58,7 +254,7 @@
   gap: clamp(8px, 1.04vw, 12px);
 }
 
-.tab-button,
+
 .filter-toggle-btn,
 .clear-filters-btn {
   padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px) !important;
@@ -73,7 +269,7 @@
   display: flex;
   align-items: center;
   gap: clamp(6px, 0.74vw, 8px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   height: clamp(44px, 5.09vh, 48px) !important;
   box-sizing: border-box;
   white-space: nowrap;
@@ -86,7 +282,16 @@
   color: inherit;
 }
 
-.tab-button:hover,
+.tab-button .tab-icon {
+  font-size: clamp(14px, 1.62vh, 16px);
+  color: inherit;
+}
+
+.tab-button span {
+  font-size: clamp(13px, 1.5vh, 15px);
+  font-weight: var(--font-weight-semibold);
+}
+
 .filter-toggle-btn:hover,
 .clear-filters-btn:hover {
   background-color: var(--sidebar-hover-bg);
@@ -94,15 +299,18 @@
   border: 1px solid #1a1a1a;
 }
 
-.tab-button.active,
 .filter-toggle-btn.active {
   background-color: var(--sidebar-hover-bg);
   color: var(--sidebar-hover-text);
   font-weight: var(--font-weight-semibold);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .students-list {
+  margin-top: 0;
+}
+
+.students-list .action-buttons-container {
   margin-top: 0;
 }
 
@@ -140,7 +348,7 @@
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   display: flex;
   align-items: center;
   gap: clamp(6px, 0.74vw, 8px);
@@ -157,7 +365,7 @@
 
 .back-to-list-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .year-selector {
@@ -188,7 +396,7 @@
 .year-select:focus {
   outline: none;
   border-color: var(--sidebar-primary);
-  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+  box-shadow: none;
 }
 
 .council-table {
@@ -229,86 +437,45 @@
   margin-bottom: 0;
 }
 
-/* 학생회 배지 스타일 */
+/* 학생회 배지 스타일 - 문서관리 type-badge 스타일 적용 */
 .council-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(6px, 0.78vw, 8px);
+  gap: clamp(4px, 0.52vw, 6px);
   align-items: center;
 }
 
-.council-badge {
+.council-badge-item {
   display: inline-flex;
   align-items: center;
-  background-color: var(--sidebar-primary);
-  color: #f8f8f7;
-  padding: clamp(4px, 0.46vh, 6px) clamp(10px, 1.3vw, 12px);
+  justify-content: center;
+  padding: clamp(4px, 0.46vh, 6px) clamp(10px, 1.3vw, 14px);
   border-radius: var(--sidebar-radius-sm);
-  font-size: clamp(12px, 1.39vh, 14px);
-  font-weight: var(--font-weight-semibold);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: var(--transition-base);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
   white-space: nowrap;
+  background-color: #f3e5f5;
+  color: #000000;
 }
 
-.council-badge:hover {
-  background-color: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
-}
-
-.badge-year {
-  background: rgba(255, 255, 255, 0.25);
-  padding: clamp(2px, 0.23vh, 4px) clamp(6px, 0.78vw, 8px);
-  border-radius: var(--sidebar-radius-sm);
-  margin-right: clamp(6px, 0.78vw, 8px);
-  font-size: clamp(10px, 1.16vh, 12px);
-  font-weight: var(--font-weight-bold);
-  color: #f8f8f7;
-  text-shadow: none;
-}
-
-.badge-position {
-  font-weight: var(--font-weight-semibold);
-  color: #f8f8f7;
-  text-shadow: none;
-}
-
-/* 학생회 직책별 색상 구분 - 모두 검은색/흰색 테마로 통일 */
-.council-badge:nth-child(1),
-.council-badge:nth-child(2),
-.council-badge:nth-child(3),
-.council-badge:nth-child(4),
-.council-badge:nth-child(5),
-.council-badge:nth-child(n+6) {
-  background-color: var(--sidebar-primary);
-  color: #f8f8f7;
-}
-
-.council-badge:hover {
-  background-color: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
-}
-
-/* 단일 학생회 배지 (학생회 탭용) */
-.council-badge-single {
+/* 상태 배지 스타일 - 문서관리 type-badge 스타일 적용 */
+.state-badge {
   display: inline-flex;
   align-items: center;
-  background-color: var(--sidebar-primary);
-  color: #f8f8f7;
-  padding: clamp(6px, 0.74vh, 8px) clamp(14px, 1.85vw, 16px);
+  justify-content: center;
+  padding: clamp(4px, 0.46vh, 6px) clamp(10px, 1.3vw, 14px);
   border-radius: var(--sidebar-radius-sm);
-  font-size: clamp(13px, 1.5vh, 15px);
-  font-weight: var(--font-weight-semibold);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: var(--transition-base);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
   white-space: nowrap;
+  background-color: #f3e5f5;
+  color: #000000;
 }
 
-.council-badge-single:hover {
-  background-color: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
+.no-tag {
+  color: #000000;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-normal);
 }
 
 /* 검색 및 필터 영역 */
@@ -363,7 +530,7 @@
   outline: none;
   border-color: var(--sidebar-primary);
   background-color: #ffffff;
-  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+  box-shadow: none;
 }
 
 .clear-search-btn {
@@ -398,7 +565,7 @@
   padding: clamp(20px, 2.31vh, 24px);
   border-radius: var(--sidebar-radius-sm);
   border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   margin-top: clamp(16px, 1.85vh, 24px);
 }
 
@@ -448,7 +615,7 @@
 .filter-select:focus {
   outline: none;
   border-color: var(--sidebar-primary);
-  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+  box-shadow: none;
 }
 
 .filter-select:hover {
@@ -456,17 +623,28 @@
 }
 
 /* 액션 버튼들 */
-.action-buttons {
+.action-buttons-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 0;
   margin-bottom: clamp(16px, 1.85vh, 24px);
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  border: none;
+  padding-top: clamp(10.67px, 1.23vh, 13.33px);
+  padding-bottom: clamp(10.67px, 1.23vh, 13.33px);
+  padding-left: clamp(16px, 1.85vh, 20px);
+  padding-right: clamp(16px, 1.85vh, 20px);
+  background-color: #ffffff;
+  border-radius: var(--sidebar-radius-sm);
+  border: 1px solid #e2e8f0;
   box-shadow: none;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: clamp(16px, 2.08vw, 20px);
 }
 
 .action-left {
@@ -476,51 +654,176 @@
   flex-wrap: wrap;
 }
 
+.student-action-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.04vw, 12px);
+  flex-wrap: wrap;
+}
+
 .export-btn, .template-btn, .import-btn {
-  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
-  border: none;
+  position: relative;
+  padding: clamp(8px, 0.93vh, 12px) clamp(14px, 1.82vw, 20px);
+  border: 1px solid transparent;
   border-radius: var(--sidebar-radius-sm);
+  background-color: transparent;
   cursor: pointer;
   font-size: clamp(14px, 1.62vh, 16px);
-  font-weight: var(--font-weight-semibold);
+  color: var(--text-medium);
+  font-weight: var(--font-weight-medium);
   transition: var(--transition-base);
   display: flex;
   align-items: center;
-  gap: clamp(6px, 0.74vw, 8px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  height: clamp(44px, 5.09vh, 48px);
+  gap: 4px;
+  box-shadow: none;
   box-sizing: border-box;
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
-.export-btn {
-  background-color: #b3d9ff;
-  color: #003d7a;
+.students-container .tab-button,
+.action-buttons-container .tab-button,
+.tab-buttons .tab-button {
+  position: relative !important;
+  padding: clamp(8px, 0.93vh, 12px) clamp(14px, 1.82vw, 20px) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--sidebar-radius-sm) !important;
+  background-color: transparent !important;
+  cursor: pointer;
+  font-size: clamp(14px, 1.62vh, 16px) !important;
+  color: var(--text-medium) !important;
+  font-weight: var(--font-weight-medium) !important;
+  transition: var(--transition-base);
+  display: flex !important;
+  align-items: center;
+  gap: 4px !important;
+  box-shadow: none !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+  flex: none !important;
+  letter-spacing: -0.01em !important;
+}
+
+.export-btn::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background-color: var(--sidebar-primary);
+  transition: width 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
 }
 
 .export-btn:hover {
-  background-color: #99ccff;
-  color: #002d5a;
+  color: var(--text-dark);
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
-.template-btn {
-  background-color: #c9e5ff;
-  color: #004d99;
+.export-btn:hover::before {
+  width: calc(100% - clamp(28px, 3.65vw, 40px));
+  opacity: 0.6;
+}
+
+.students-container .tab-button::before,
+.action-buttons-container .tab-button::before,
+.tab-buttons .tab-button::before {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 0 !important;
+  height: 2px !important;
+  background-color: var(--sidebar-primary) !important;
+  transition: width 0.2s ease, opacity 0.2s ease !important;
+  opacity: 0 !important;
+}
+
+.students-container .tab-button:hover,
+.action-buttons-container .tab-button:hover,
+.tab-buttons .tab-button:hover {
+  color: var(--text-dark) !important;
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+.students-container .tab-button:hover::before,
+.action-buttons-container .tab-button:hover::before,
+.tab-buttons .tab-button:hover::before {
+  width: calc(100% - clamp(28px, 3.65vw, 40px)) !important;
+  opacity: 0.6 !important;
+}
+
+.students-container .tab-button.active,
+.action-buttons-container .tab-button.active,
+.tab-buttons .tab-button.active {
+  font-weight: var(--font-weight-semibold) !important;
+  color: var(--sidebar-primary) !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+.students-container .tab-button.active::before,
+.action-buttons-container .tab-button.active::before,
+.tab-buttons .tab-button.active::before {
+  width: calc(100% - clamp(28px, 3.65vw, 40px)) !important;
+  opacity: 1 !important;
+}
+
+
+.students-container .tab-button.active::after,
+.action-buttons-container .tab-button.active::after,
+.tab-buttons .tab-button.active::after {
+  display: none !important;
+  content: none !important;
+}
+
+.template-btn::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background-color: var(--sidebar-primary);
+  transition: width 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
 }
 
 .template-btn:hover {
-  background-color: #b3d9ff;
-  color: #003d7a;
+  color: var(--text-dark);
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
-.import-btn {
-  background-color: #ffd9b3;
-  color: #7a3d00;
+.template-btn:hover::before {
+  width: calc(100% - clamp(28px, 3.65vw, 40px));
+  opacity: 0.6;
+}
+
+.import-btn::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background-color: var(--sidebar-primary);
+  transition: width 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
 }
 
 .import-btn:hover {
-  background-color: #ffcc99;
-  color: #5a2d00;
+  color: var(--text-dark);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.import-btn:hover::before {
+  width: calc(100% - clamp(28px, 3.65vw, 40px));
+  opacity: 0.6;
 }
 
 .btn-icon {
@@ -530,7 +833,8 @@
 
 .export-btn .btn-icon,
 .template-btn .btn-icon,
-.import-btn .btn-icon {
+.import-btn .btn-icon,
+.tab-button .tab-icon {
   font-size: clamp(14px, 1.62vh, 16px);
   color: inherit;
 }
@@ -577,7 +881,7 @@
   border-radius: var(--sidebar-radius-sm);
   border: 1px solid #e2e8f0;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .table-header {
@@ -731,7 +1035,13 @@
     font-size: clamp(12px, 1.39vh, 14px);
   }
   
-  .tab-button,
+  .students-container .tab-button,
+  .action-buttons-container .tab-button,
+  .tab-buttons .tab-button {
+    padding: clamp(6px, 0.74vh, 8px) clamp(12px, 1.56vw, 16px) !important;
+    font-size: clamp(12px, 1.39vh, 14px) !important;
+  }
+  
   .filter-toggle-btn,
   .clear-filters-btn {
     padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px) !important;
@@ -752,7 +1062,7 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   display: flex;
   align-items: center;
   gap: clamp(6px, 0.74vw, 8px);
@@ -762,4 +1072,83 @@
   background-color: #f8f9fa;
   color: #000000;
   border-color: var(--sidebar-primary);
+}
+
+/* 페이지네이션 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(4px, 0.52vw, 8px);
+  margin-top: clamp(16px, 1.85vh, 24px);
+  padding: 0;
+}
+
+.pagination button {
+  width: clamp(36px, 4.17vh, 44px);
+  height: clamp(36px, 4.17vh, 44px);
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: var(--text-dark);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(13px, 1.51vh, 15px);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #cbd5e0;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination button.active {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+}
+
+.pagination button.active:hover {
+  background-color: #2a2a2a;
+}
+
+.pagination button.page-arrow-link {
+  width: auto;
+  min-width: clamp(60px, 6.94vh, 80px);
+  height: clamp(36px, 4.17vh, 44px);
+  padding: 0 clamp(12px, 1.56vw, 16px);
+  background-color: #ffffff !important;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.pagination button.page-arrow-link:hover:not(:disabled) {
+  background-color: #ffffff !important;
+  border-color: #cbd5e0;
+}
+
+.pagination button.page-arrow-link:disabled {
+  background-color: #ffffff !important;
+  opacity: 0.5;
+}
+
+.page-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(36px, 4.17vh, 44px);
+  height: clamp(36px, 4.17vh, 44px);
+  color: var(--text-medium);
+  font-size: clamp(13px, 1.51vh, 15px);
 }

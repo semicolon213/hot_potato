@@ -138,6 +138,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const datePickerRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isSearchVisible) {
@@ -472,17 +473,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
                     const title = (dayOfWeek === 0 || eventStartDate.toDateString() === currentDayDate.toDateString()) ? event.title : '';
 
+                    const dayWidthPercent = 100 / 7;
+                    const eventWidthPercent = (span / 7) * 100;
+                    const marginPercent = 1.5; // 각 칸의 좌우 마진 (약 1.5%)
+                    const adjustedLeft = (dayOfWeek / 7) * 100 + marginPercent;
+                    const adjustedWidth = eventWidthPercent - (marginPercent * 2);
+                    
                     eventElements.push(
                         <div
                             key={`${event.id}-${day.date}`}
                             className={`monthly-event-item ${isContinuationLeft ? 'continuation-left' : ''} ${isContinuationRight ? 'continuation-right' : ''}`}
                             style={{
                                 top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (laneIndex * eventHeight)}px`,
-                                left: `${(dayOfWeek / 7) * 100}%`,
-                                width: `calc(${(span / 7) * 100}% - 4px)`,
+                                left: `${adjustedLeft}%`,
+                                width: `${adjustedWidth}%`,
                                 backgroundColor: event.color,
-                                marginLeft: '2px',
-                                marginRight: '2px',
                             }}
                             onClick={(e) => handleEventClick(event, e)}
                         >
@@ -559,7 +564,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
 
     return (
-        <>
+        <div className="calendar-wrapper">
 
 
             <div className="calendar-header-container">
@@ -628,15 +633,36 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                         </div>
                     ) : (
                         <>
-                            <div className="calendar-title" style={{display: 'flex', alignItems: 'center', gap: '15px', visibility: calendarViewMode === 'calendar' ? 'visible' : 'hidden'}}>
+                            <div className={`calendar-title ${calendarViewMode === 'calendar' ? 'visible' : 'hidden'}`}>
                                 <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
-                                <h2 className="calendar-month-year" style={{textAlign: 'center', flexGrow: 1}}>
+                                <h2 
+                                    className="calendar-month-year"
+                                    onClick={() => {
+                                        if (viewMode === 'monthly' && datePickerRef.current) {
+                                            datePickerRef.current.showPicker?.() || datePickerRef.current.focus();
+                                        }
+                                    }}
+                                >
                                     {viewMode === 'monthly' ? (
-                                        `${currentDate.year}년 ${currentDate.month}월`
+                                        <>
+                                            {`${currentDate.year}년 ${currentDate.month}월`}
+                                            <input
+                                                ref={datePickerRef}
+                                                type="date"
+                                                value={`${currentDate.year}-${String(currentDate.month).padStart(2, '0')}-01`}
+                                                onChange={(e) => {
+                                                    const selectedDate = new Date(e.target.value);
+                                                    if (goToDate) {
+                                                        goToDate(selectedDate);
+                                                    }
+                                                }}
+                                                style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+                                            />
+                                        </>
                                     ) : (
                                         <>
                                             {`${selectedWeek}주차`}
-                                            <span style={{fontSize: '14px', color: 'var(--text-medium)', display: 'block', marginTop: '4px'}}>
+                                            <span className="week-dates-text">
                                                 {getWeekDatesText(selectedWeek)}
                                             </span>
                                         </>
@@ -645,18 +671,14 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                                 <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handleNextMonth() : setSelectedWeek(selectedWeek < 16 ? selectedWeek + 1 : 16)}>&#8250;</button>
                             </div>
 
-                            <div className="header-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div className="header-right-controls">
                                 <button className="today-button" onClick={handleTodayClick}>오늘</button>
-                                <BiPlus onClick={onAddEvent} style={{ cursor: 'pointer', fontSize: '30px', color: 'black' }} />
-                                <BiHelpCircle onClick={() => setIsHelpModalOpen(true)} style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }} />
-                                <div className="search-container-wrapper">
-                                    <BiSearchAlt2
-                                        onClick={() => setIsSearchVisible(!isSearchVisible)}
-                                        style={{ cursor: 'pointer', fontSize: '25px', color: 'black' }}
-                                    />
-                                </div>
+                                <button className="header-icon-button add-event" onClick={onAddEvent}><BiPlus /></button>
+                                <button className="header-icon-button" onClick={() => setIsHelpModalOpen(true)}><BiHelpCircle /></button>
                                 {user && user.userType === 'admin' && (
-                                    <IoSettingsSharp onClick={() => setIsSemesterPickerOpen(true)} style={{ cursor: 'pointer', fontSize: '25px' }} />
+                                    <button className="header-icon-button" onClick={() => setIsSemesterPickerOpen(true)}>
+                                        <IoSettingsSharp />
+                                    </button>
                                 )}
                                 <div className="view-switcher">
                                     <button onClick={() => { setCalendarViewMode('schedule'); setSearchResults(null); }} className={calendarViewMode === 'schedule' ? 'active' : ''}>일정</button>
@@ -741,9 +763,9 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                 onSave={onSave}
             />
 
-                        {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
-                    </>
-                );
+            {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
+        </div>
+    );
 };
 
 export default Calendar;

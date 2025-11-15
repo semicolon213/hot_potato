@@ -4,7 +4,6 @@ import { useStudentManagement } from '../hooks/features/students/useStudentManag
 import StudentDetailModal from '../components/ui/StudentDetailModal';
 import {
   StudentHeader,
-  StudentSearchFilter,
   StudentActionButtons,
   StudentList,
   CouncilSection
@@ -47,8 +46,6 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
 
   const [activeTab, setActiveTab] = useState<'list' | 'council'>('list');
   const [selectedYear, setSelectedYear] = useState<string>('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [showCouncilFilters, setShowCouncilFilters] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentWithCouncil | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); // 학생 추가 모달 상태
@@ -105,11 +102,6 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
     console.log('Council sort:', key);
   };
 
-  // 학생회 필터 토글 핸들러
-  const handleToggleCouncilFilters = () => {
-    setShowCouncilFilters(!showCouncilFilters);
-  };
-
   // 학생 더블클릭 핸들러
   const handleStudentDoubleClick = (student: StudentWithCouncil) => {
     setSelectedStudent(student);
@@ -136,24 +128,6 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
     deleteStudent(studentToDelete.no_student);
   };
 
-  // 필터 토글 핸들러
-  const handleToggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
-
-  // 필터 변경 핸들러
-  const handleFiltersChange = (newFilters: typeof filters) => {
-    setFilters(newFilters);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="students-container">
-        <div className="loading">학생 데이터를 불러오는 중...</div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="students-container">
@@ -173,7 +147,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
 
       {activeTab === 'list' && (
         <div className="students-list">
-          <div className="action-buttons">
+          <div className="action-buttons-container">
             <div className="action-left">
               <StudentActionButtons
                 onExportCSV={exportToCSV}
@@ -186,35 +160,25 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
             <div className="action-right">
               <div className="tab-buttons">
                 <button 
-                  className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
+                  className={`tab-button tab-button-list ${activeTab === 'list' ? 'active' : ''}`}
                   onClick={() => setActiveTab('list')}
                 >
                   <FaListUl className="tab-icon" />
-                  <span>학생 목록</span>
+                  <span className="btn-text">학생 목록</span>
                 </button>
                 <button 
-                  className={`tab-button ${activeTab === 'council' ? 'active' : ''}`}
+                  className={`tab-button tab-button-council ${activeTab === 'council' ? 'active' : ''}`}
                   onClick={() => setActiveTab('council')}
                 >
                   <FaUsers className="tab-icon" />
-                  <span>학생회</span>
+                  <span className="btn-text">학생회</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <StudentSearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            showFilters={showFilters}
-            onToggleFilters={handleToggleFilters}
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            filterOptions={filterOptions}
-          />
-
           <StudentList
-            students={filteredStudents}
+            students={students}
             columns={studentColumns}
             sortConfig={sortConfig}
             onSort={(key: string) => handleSort(key as keyof StudentWithCouncil)}
@@ -226,7 +190,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
 
       {activeTab === 'council' && (
         <div className="students-list">
-          <div className="action-buttons">
+          <div className="action-buttons-container">
             <div className="action-left">
               <StudentActionButtons
                 onExportCSV={exportToCSV}
@@ -239,41 +203,25 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
             <div className="action-right">
               <div className="tab-buttons">
                 <button 
-                  className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
+                  className={`tab-button tab-button-list ${activeTab === 'list' ? 'active' : ''}`}
                   onClick={() => setActiveTab('list')}
                 >
                   <FaListUl className="tab-icon" />
-                  <span>학생 목록</span>
+                  <span className="btn-text">학생 목록</span>
                 </button>
                 <button 
-                  className={`tab-button ${activeTab === 'council' ? 'active' : ''}`}
+                  className={`tab-button tab-button-council ${activeTab === 'council' ? 'active' : ''}`}
                   onClick={() => setActiveTab('council')}
                 >
                   <FaUsers className="tab-icon" />
-                  <span>학생회</span>
+                  <span className="btn-text">학생회</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <StudentSearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            showFilters={showCouncilFilters}
-            onToggleFilters={handleToggleCouncilFilters}
-            filters={{ grade: selectedYear, state: '', council: '' }}
-            onFiltersChange={(newFilters) => {
-              setSelectedYear(newFilters.grade || '');
-            }}
-            filterOptions={{
-              grades: ['전체 년도', ...years],
-              states: [],
-              councilPositions: []
-            }}
-          />
-
           <StudentList
-            students={filteredCouncilData}
+            students={allCouncilData}
             columns={councilColumns}
             sortConfig={sortConfig}
             onSort={(key: string) => handleSort(key as keyof StudentWithCouncil)}

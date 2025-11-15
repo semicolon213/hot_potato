@@ -5,6 +5,8 @@ import type { Student, Staff } from '../../../../types/app';
 import './AddEventModal.css';
 import xIcon from '../../../../assets/Icons/x.svg';
 import { RRule } from 'rrule';
+import CustomDatePicker from './CustomDatePicker';
+import CustomTimePicker from './CustomTimePicker';
 
 interface AddEventModalProps {
   onClose: () => void;
@@ -17,19 +19,37 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const { user, addEvent, addSheetEvent, updateEvent, selectedDate, eventTypes, eventTypeStyles, formatDate, students, staff } = useCalendarContext();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const endDateInputRef = useRef<HTMLInputElement>(null);
+  const startDateButtonRef = useRef<HTMLDivElement>(null);
+  const endDateButtonRef = useRef<HTMLDivElement>(null);
+  const startTimeButtonRef = useRef<HTMLDivElement>(null);
+  const endTimeButtonRef = useRef<HTMLDivElement>(null);
+  
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const formatDateDisplay = (dateString: string) => {
+    if (!dateString) return '날짜 선택';
+    const [year, month, day] = dateString.split('-');
+    return `${year}년 ${parseInt(month)}월 ${parseInt(day)}일`;
+  };
   const [showTime, setShowTime] = useState(false);
   const [startTime, setStartTime] = useState('00:00');
   const [endTime, setEndTime] = useState('00:00');
   const [saveTarget, setSaveTarget] = useState<'google' | 'sheet'>('google');
-  const [tag, setTag] = useState('event');
-  const [isCustomTag, setIsCustomTag] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<Array<{ type: string; isCustom: boolean; color?: string }>>([]);
   const [customTag, setCustomTag] = useState('');
   const [customColor, setCustomColor] = useState('#7986CB');
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [isTagSearchVisible, setIsTagSearchVisible] = useState(false);
+  const [editingTag, setEditingTag] = useState<{ type: string; isCustom: boolean; color?: string } | null>(null);
+  const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   
   // Attendee States
   const [isAttendeeSearchVisible, setIsAttendeeSearchVisible] = useState(false);
@@ -45,8 +65,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const [dateError, setDateError] = useState(false);
 
   const isEditMode = !!eventToEdit;
-
-  const tenColors = ['#7986CB', '#33B679', '#8E24AA', '#E67C73', '#F6BF26', '#F4511E', '#039BE5', '#616161', '#3F51B5', '#0B8043'];
 
   const tagLabels: { [key: string]: string } = {
       holiday: '휴일/휴강',
@@ -70,23 +88,24 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
       if (eventToEdit.id.includes('-cal-')) {
           setSaveTarget('sheet');
-          const isPredefined = eventTypes.includes(eventToEdit.type || '');
+          const eventType = eventToEdit.type || 'event';
+          const isPredefined = eventTypes.includes(eventType);
           if (isPredefined) {
-              setTag(eventToEdit.type || 'event');
-              setIsCustomTag(false);
+              setSelectedTags([{ type: eventType, isCustom: false }]);
           } else {
-              setIsCustomTag(true);
-              setCustomTag(eventToEdit.type || '');
-              setCustomColor(eventToEdit.color || '#7986CB');
+              setSelectedTags([{ type: eventType, isCustom: true, color: eventToEdit.color || '#7986CB' }]);
           }
       } else {
           setSaveTarget('google');
+          setSelectedTags([]);
       }
 
       if (eventToEdit.startDateTime && eventToEdit.endDateTime) {
-        setShowTime(true);
         setStartTime(eventToEdit.startDateTime.split('T')[1].substring(0, 5));
         setEndTime(eventToEdit.endDateTime.split('T')[1].substring(0, 5));
+      } else {
+        setStartTime('00:00');
+        setEndTime('00:00');
       }
 
       if (eventToEdit.rrule) {
@@ -118,13 +137,13 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setStartDate(formatDate(initialDate));
       setEndDate(formatDate(initialDate));
 
-      // Always default to all-day event when adding a new event
-      setShowTime(false);
+      // Default time values
       setStartTime('00:00');
       setEndTime('00:00');
 
       setSaveTarget('google');
       setSelectedAttendees([]);
+      setSelectedTags([]);
     }
   }, [eventToEdit, isEditMode, eventTypes]);
 
@@ -142,13 +161,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
 
   useEffect(() => {
-    if (showTime) {
-      setEndDate(startDate);
-    }
-  }, [showTime, startDate]);
-
-  useEffect(() => {
-    if (!showTime && startDate && endDate) {
+    if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       if (start > end) {
@@ -158,7 +171,45 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     } else {
       setDateError(false);
     }
-  }, [startDate, endDate, showTime]);
+  }, [startDate, endDate]);
+
+  // 시작일과 종료일의 차이를 계산하여 반복 옵션 제한
+  const dateDifferenceInDays = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // 포함일 계산
+    return diffDays;
+  }, [startDate, endDate]);
+
+  // 하루 일정인지 확인 (시작일과 종료일이 같은 날)
+  const isSingleDayEvent = useMemo(() => {
+    if (!startDate || !endDate) return true;
+    return startDate === endDate;
+  }, [startDate, endDate]);
+
+  // 사용 가능한 반복 옵션 필터링
+  const availableRecurrenceOptions = useMemo(() => {
+    const options: { value: RecurrenceFreq; label: string; disabled: boolean }[] = [
+      { value: 'NONE', label: '반복 안 함', disabled: false },
+      // 하루 일정만 매일 반복 가능 (물리적으로 겹치지 않음)
+      { value: 'DAILY', label: '매일', disabled: !isSingleDayEvent },
+      // 일주일 이하 일정만 매주 반복 가능
+      { value: 'WEEKLY', label: '매주', disabled: dateDifferenceInDays > 7 },
+      // 모든 일정에 매월 반복 가능
+      { value: 'MONTHLY', label: '매월', disabled: false },
+    ];
+    return options;
+  }, [dateDifferenceInDays, isSingleDayEvent]);
+
+  // 현재 선택된 반복 옵션이 유효하지 않으면 NONE으로 리셋
+  useEffect(() => {
+    if ((recurrenceFreq === 'DAILY' && !isSingleDayEvent) || 
+        (recurrenceFreq === 'WEEKLY' && dateDifferenceInDays > 7)) {
+      setRecurrenceFreq('NONE');
+    }
+  }, [dateDifferenceInDays, isSingleDayEvent, recurrenceFreq]);
 
   const filteredAttendees = useMemo(() => {
     const allPeople = [
@@ -201,6 +252,66 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
   const handleToggleAttendeeSearch = () => {
     setIsAttendeeSearchVisible(!isAttendeeSearchVisible);
+    if (!isAttendeeSearchVisible) {
+      setIsTagSearchVisible(false);
+    }
+  };
+
+  const handleToggleTagSearch = () => {
+    setIsTagSearchVisible(!isTagSearchVisible);
+    if (!isTagSearchVisible) {
+      setIsAttendeeSearchVisible(false);
+    }
+  };
+
+  const handleSelectTag = (selectedTag: string) => {
+    const tagExists = selectedTags.some(t => t.type === selectedTag && !t.isCustom);
+    if (!tagExists) {
+      setSelectedTags([...selectedTags, { type: selectedTag, isCustom: false }]);
+    }
+  };
+
+  const handleAddCustomTag = () => {
+    if (customTag.trim()) {
+      if (editingTag) {
+        // 편집 모드: 기존 태그 업데이트
+        setSelectedTags(selectedTags.map(t => 
+          t.type === editingTag.type && t.isCustom === editingTag.isCustom
+            ? { type: customTag.trim(), isCustom: true, color: customColor }
+            : t
+        ));
+        setEditingTag(null);
+      } else {
+        // 추가 모드: 새 태그 추가
+        const tagExists = selectedTags.some(t => t.type === customTag.trim() && t.isCustom);
+        if (!tagExists) {
+          setSelectedTags([...selectedTags, { type: customTag.trim(), isCustom: true, color: customColor }]);
+        }
+      }
+      setCustomTag('');
+      setCustomColor('#7986CB');
+      setShowCustomTagInput(false);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: { type: string; isCustom: boolean }) => {
+    setSelectedTags(selectedTags.filter(t => !(t.type === tagToRemove.type && t.isCustom === tagToRemove.isCustom)));
+  };
+
+  const handleEditTag = (tag: { type: string; isCustom: boolean; color?: string }) => {
+    if (tag.isCustom) {
+      setEditingTag(tag);
+      setCustomTag(tag.type);
+      setCustomColor(tag.color || '#7986CB');
+      setShowCustomTagInput(true);
+    }
+  };
+
+  const handleCancelCustomTag = () => {
+    setCustomTag('');
+    setCustomColor('#7986CB');
+    setEditingTag(null);
+    setShowCustomTagInput(false);
   };
 
   // Auto-add current user when opening attendee search for a new event
@@ -217,11 +328,23 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAttendeeSearchVisible, students, staff]);
 
+  // 참석자 수에 따라 자동으로 개인/공유 결정
   useEffect(() => {
-    if (isAttendeeSearchVisible) {
+    // 참석자가 없거나 본인만 있으면 개인 일정, 그 외에는 공유 일정
+    const hasOtherAttendees = selectedAttendees.some(a => {
+      if (user && user.userType !== 'admin') {
+        return ('no_student' in a ? a.no_student : a.no) !== String(user.studentId);
+      }
+      return true; // admin인 경우 참석자가 있으면 공유
+    });
+    
+    if (selectedAttendees.length === 0 || !hasOtherAttendees) {
+      setSaveTarget('google');
+    } else {
       setSaveTarget('sheet');
     }
-  }, [isAttendeeSearchVisible]);
+  }, [selectedAttendees, user]);
+
 
   const handleSave = () => {
     if (title.trim()) {
@@ -231,26 +354,42 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       };
 
       if (saveTarget === 'sheet') {
-          if (isCustomTag) {
-              eventData.type = customTag;
-              eventData.color = customColor;
+          // 첫 번째 태그를 사용 (기존 Event 타입이 하나의 type만 지원)
+          if (selectedTags.length > 0) {
+              const firstTag = selectedTags[0];
+              if (firstTag.isCustom) {
+                  eventData.type = firstTag.type;
+                  eventData.color = firstTag.color;
+              } else {
+                  eventData.type = tagLabels[firstTag.type] || firstTag.type;
+              }
           } else {
-              eventData.type = tagLabels[tag] || tag;
+              eventData.type = tagLabels['event'] || 'event';
           }
           eventData.attendees = selectedAttendees.map(a => 'no_student' in a ? a.no_student : a.no).join(',');
       } else {
-          eventData.colorId = '9';
+          // 개인 일정: 태그 정보를 description에 추가하거나 colorId 설정
+          if (selectedTags.length > 0) {
+              const firstTag = selectedTags[0];
+              if (firstTag.isCustom) {
+                  // 커스텀 태그의 경우 색상 정보를 저장할 방법이 제한적이므로 description에 추가
+                  const tagLabel = firstTag.type;
+                  eventData.description = (eventData.description || '') + (eventData.description ? '\n' : '') + `[태그: ${tagLabel}]`;
+              } else {
+                  // 사전 정의 태그는 colorId로 매핑 가능하면 매핑
+                  const tagType = firstTag.type;
+                  // Google Calendar colorId 매핑 (기본값 9는 파란색)
+                  eventData.colorId = '9';
+              }
+          } else {
+              eventData.colorId = '9';
+          }
       }
 
-      if (showTime) {
-        eventData.startDateTime = `${startDate}T${startTime}:00`;
-        eventData.endDateTime = `${startDate}T${endTime}:00`;
-        eventData.startDate = startDate;
-        eventData.endDate = startDate;
-      } else {
-        eventData.startDate = startDate;
-        eventData.endDate = endDate;
-      }
+      eventData.startDateTime = `${startDate}T${startTime}:00`;
+      eventData.endDateTime = `${endDate}T${endTime}:00`;
+      eventData.startDate = startDate;
+      eventData.endDate = endDate;
 
       if (saveTarget === 'sheet' && recurrenceFreq !== 'NONE') {
         const ruleOptions: {
@@ -303,157 +442,306 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
   const modalContent = (
     <div className="add-event-modal-overlay" onClick={onClose}>
-      <div className={`modal-content ${isAttendeeSearchVisible ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
-        <img src={xIcon} alt="Close" className="close-icon" onClick={onClose} />
+      <div className={`modal-content ${isAttendeeSearchVisible || isTagSearchVisible ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="header-left">
+            <h2>{isEditMode ? '일정 수정' : '일정 추가'}</h2>
+          </div>
+          <button className="modal-close" onClick={onClose}>
+            <img src={xIcon} alt="Close" />
+          </button>
+        </div>
         
         <div className="modal-body-two-column">
           <div className="modal-form-content">
-            <input
-              ref={titleInputRef}
-              type="text"
-              placeholder="제목"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="title-input"
-            />
-            <textarea
-                ref={descriptionRef}
-                placeholder="설명"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="add-event-description"
-                rows={1}
-            />
-
-            {!isEditMode && (
-                <div className="save-target-group">
-                  {!isAttendeeSearchVisible && (
-                    <button type="button" className={`target-button ${saveTarget === 'google' ? 'active' : ''}`} onClick={() => setSaveTarget('google')}>개인</button>
-                  )}
-                  <button type="button" className={`target-button ${saveTarget === 'sheet' ? 'active' : ''}`} onClick={() => {
-                    setSaveTarget('sheet');
-                    if (user && user.userType !== 'admin' && (students.length > 0 || staff.length > 0)) {
-                        const allPeople = [...students, ...staff];
-                        const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === String(user.studentId));
-                        if (loggedInUserObject) {
-                            setSelectedAttendees(prev => {
-                                const userExists = prev.some(a => ('no_student' in a ? a.no_student : a.no) === String(user.studentId));
-                                if (!userExists) {
-                                    return [...prev, loggedInUserObject];
-                                }
-                                return prev;
-                            });
-                        }
-                    }
-                  }}>공유</button>
-                </div>
-            )}
-
-            {saveTarget === 'sheet' && (
-                <>
-                    <div className="tag-selection-group">
-                        {eventTypes
-                            .map(type => (
-                            <button
-                                key={type}
-                                type="button"
-                                className={`target-button ${!isCustomTag && tag === type ? 'active' : ''}`}
-                                onClick={() => { setTag(type); setIsCustomTag(false); }}
-                                style={!isCustomTag && tag === type ? { backgroundColor: eventTypeStyles[type]?.color || '#343a40', color: 'white', borderColor: eventTypeStyles[type]?.color || '#343a40' } : {}}
-                            >
-                                {tagLabels[type] || type}
-                            </button>
-                        ))}
-                            <button type="button" className={`target-button ${isCustomTag ? 'active' : ''}`} onClick={() => setIsCustomTag(true)}>+</button>
-                    </div>
-                    {isCustomTag && (
-                        <div className="custom-tag-container">
-                            <input type="text" placeholder="태그 이름 입력" value={customTag} onChange={(e) => setCustomTag(e.target.value)} className="custom-tag-input" />
-                            <div className="custom-color-picker">
-                                <button type="button" className="color-display" style={{ backgroundColor: customColor }} onClick={() => setShowColorPicker(!showColorPicker)}></button>
-                                {showColorPicker && (
-                                    <div className="color-palette-popup">
-                                        {tenColors.map(c => (
-                                            <div key={c} className="color-swatch-popup" style={{ backgroundColor: c }} onClick={() => { setCustomColor(c); setShowColorPicker(false); }}></div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            <div className="date-time-container">
-                <div className="date-row">
-                    <label>시작일: <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label>
-                    {!showTime && (<label>종료일: <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ backgroundColor: dateError ? '#ffebee' : '' }} /></label>)}
-                    <button type="button" className="time-add-button-inline" onClick={() => setShowTime(!showTime)}>{showTime ? '시간 제거' : '시간 추가'}</button>
-                </div>
-                {showTime && (
-                    <div className="time-row">
-                        <label>시작 시간: <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></label>
-                        <label>종료 시간: <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></label>
-                    </div>
-                )}
+            <div className="modal-form-section">
+              <input
+                ref={titleInputRef}
+                type="text"
+                placeholder="제목"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="title-input"
+              />
             </div>
 
-            {saveTarget === 'sheet' && (
-              <div className="recurrence-section">
-                <label>
-                  <select
-                    value={recurrenceFreq}
-                    onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
-                    className="recurrence-select"
-                  >
-                    <option value="NONE">반복 안 함</option>
-                    <option value="DAILY">매일</option>
-                    <option value="WEEKLY">매주</option>
-                    <option value="MONTHLY">매월</option>
-                  </select>
-                </label>
+            <div className="modal-form-section">
+              <textarea
+                  ref={descriptionRef}
+                  placeholder="설명"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="add-event-description"
+                  rows={1}
+              />
+            </div>
 
-                {recurrenceFreq !== 'NONE' && (
-                  <div className="recurrence-details">
-                    <input
-                      type="number"
-                      min="1"
-                      value={recurrenceDetails.interval}
-                      onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
-                    />
-                    <span>{recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}</span>
-                    <label>
-                      종료일:
-                      <input
-                        type="date"
-                        value={recurrenceDetails.until}
-                        onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
-                        min={startDate}
-                      />
-                    </label>
+            <div className="modal-form-section">
+              <div className="schedule-settings-container">
+                  <div className="schedule-section">
+                      <div className="schedule-section-header">
+                          <span className="schedule-section-title">일정 기간</span>
+                          {dateDifferenceInDays > 0 && (
+                              <span className="schedule-duration-badge">
+                                  {dateDifferenceInDays}일
+                              </span>
+                          )}
+                      </div>
+                      <div className="schedule-time-grid">
+                          <div className="schedule-time-item">
+                              <label className="schedule-time-label">시작</label>
+                              <div className="schedule-input-group">
+                                  <div 
+                                      ref={startDateButtonRef}
+                                      className="schedule-date-input"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowStartDatePicker(!showStartDatePicker);
+                                          setShowStartTimePicker(false);
+                                          setShowEndDatePicker(false);
+                                          setShowEndTimePicker(false);
+                                      }}
+                                  >
+                                      {formatDateDisplay(startDate)}
+                                  </div>
+                                  {showStartDatePicker && startDateButtonRef.current && createPortal(
+                                      <CustomDatePicker
+                                          value={startDate}
+                                          onChange={(value) => {
+                                              setStartDate(value);
+                                              setShowStartDatePicker(false);
+                                          }}
+                                          onClose={() => setShowStartDatePicker(false)}
+                                          position={{
+                                              top: startDateButtonRef.current.getBoundingClientRect().bottom + 4,
+                                              left: startDateButtonRef.current.getBoundingClientRect().left
+                                          }}
+                                      />,
+                                      document.body
+                                  )}
+                                  <div 
+                                      ref={startTimeButtonRef}
+                                      className="schedule-time-input"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowStartTimePicker(!showStartTimePicker);
+                                          setShowStartDatePicker(false);
+                                          setShowEndDatePicker(false);
+                                          setShowEndTimePicker(false);
+                                      }}
+                                  >
+                                      {startTime || '00:00'}
+                                  </div>
+                                  {showStartTimePicker && startTimeButtonRef.current && createPortal(
+                                      <CustomTimePicker
+                                          value={startTime}
+                                          onChange={(value) => {
+                                              setStartTime(value);
+                                              setShowStartTimePicker(false);
+                                          }}
+                                          onClose={() => setShowStartTimePicker(false)}
+                                          step={10}
+                                          position={{
+                                              top: startTimeButtonRef.current.getBoundingClientRect().bottom + 4,
+                                              left: startTimeButtonRef.current.getBoundingClientRect().left
+                                          }}
+                                      />,
+                                      document.body
+                                  )}
+                              </div>
+                          </div>
+                          <div className="schedule-time-item">
+                              <label className="schedule-time-label">종료</label>
+                              <div className="schedule-input-group">
+                                  <div 
+                                      ref={endDateButtonRef}
+                                      className="schedule-date-input"
+                                      style={{ backgroundColor: dateError ? '#ffebee' : '' }}
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowEndDatePicker(!showEndDatePicker);
+                                          setShowStartDatePicker(false);
+                                          setShowStartTimePicker(false);
+                                          setShowEndTimePicker(false);
+                                      }}
+                                  >
+                                      {formatDateDisplay(endDate)}
+                                  </div>
+                                  {showEndDatePicker && endDateButtonRef.current && createPortal(
+                                      <CustomDatePicker
+                                          value={endDate}
+                                          onChange={(value) => {
+                                              setEndDate(value);
+                                              setShowEndDatePicker(false);
+                                          }}
+                                          onClose={() => setShowEndDatePicker(false)}
+                                          position={{
+                                              top: endDateButtonRef.current.getBoundingClientRect().bottom + 4,
+                                              left: endDateButtonRef.current.getBoundingClientRect().left
+                                          }}
+                                      />,
+                                      document.body
+                                  )}
+                                  <div 
+                                      ref={endTimeButtonRef}
+                                      className="schedule-time-input"
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowEndTimePicker(!showEndTimePicker);
+                                          setShowStartDatePicker(false);
+                                          setShowStartTimePicker(false);
+                                          setShowEndDatePicker(false);
+                                      }}
+                                  >
+                                      {endTime || '00:00'}
+                                  </div>
+                                  {showEndTimePicker && endTimeButtonRef.current && createPortal(
+                                      <CustomTimePicker
+                                          value={endTime}
+                                          onChange={(value) => {
+                                              setEndTime(value);
+                                              setShowEndTimePicker(false);
+                                          }}
+                                          onClose={() => setShowEndTimePicker(false)}
+                                          step={10}
+                                          position={{
+                                              top: endTimeButtonRef.current.getBoundingClientRect().bottom + 4,
+                                              left: endTimeButtonRef.current.getBoundingClientRect().left
+                                          }}
+                                      />,
+                                      document.body
+                                  )}
+                              </div>
+                          </div>
+                      </div>
                   </div>
+
+                  {saveTarget === 'sheet' && (
+                      <div className="schedule-section">
+                          <div className="schedule-section-header">
+                              <span className="schedule-section-title">반복 설정</span>
+                              {dateDifferenceInDays > 7 && (
+                                  <span className="schedule-warning-badge">
+                                      장기 일정
+                                  </span>
+                              )}
+                          </div>
+                          <div className="schedule-recurrence-group">
+                              <select
+                                  id="recurrence"
+                                  value={recurrenceFreq}
+                                  onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
+                                  className="schedule-recurrence-select"
+                              >
+                                  {availableRecurrenceOptions.map(option => (
+                                      <option 
+                                          key={option.value} 
+                                          value={option.value}
+                                          disabled={option.disabled}
+                                      >
+                                          {option.label}
+                                      </option>
+                                  ))}
+                              </select>
+                              {recurrenceFreq !== 'NONE' && (
+                                  <div className="schedule-recurrence-details">
+                                      <div className="schedule-recurrence-interval">
+                                          <input
+                                              type="number"
+                                              min="1"
+                                              value={recurrenceDetails.interval}
+                                              onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
+                                              className="schedule-interval-input"
+                                          />
+                                          <span className="schedule-interval-label">
+                                              {recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}
+                                          </span>
+                                      </div>
+                                      <div className="schedule-recurrence-until">
+                                          <label className="schedule-until-label">반복 종료일</label>
+                                          <input
+                                              type="date"
+                                              value={recurrenceDetails.until}
+                                              onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
+                                              min={startDate}
+                                              className="schedule-until-input"
+                                          />
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+                  )}
+              </div>
+            </div>
+
+            <div className="modal-form-section">
+              <div className="attendees-section">
+                <div className="attendees-header">
+                  <label className="attendees-label">태그</label>
+                  <button type="button" className="add-attendee-btn" onClick={handleToggleTagSearch}>
+                    {isTagSearchVisible ? '닫기' : '추가'}
+                  </button>
+                </div>
+                {selectedTags.length > 0 ? (
+                  <div className="selected-attendees-list">
+                    {selectedTags.map((tagItem, index) => {
+                      const tagColor = tagItem.isCustom 
+                        ? tagItem.color 
+                        : eventTypeStyles[tagItem.type]?.color || '#7986CB';
+                      const tagLabel = tagItem.isCustom 
+                        ? tagItem.type 
+                        : tagLabels[tagItem.type] || tagItem.type;
+                      return (
+                        <div 
+                          key={`${tagItem.type}-${tagItem.isCustom}-${index}`} 
+                          className="attendee-tag" 
+                          style={{ backgroundColor: tagColor, color: 'white' }}
+                        >
+                          <span className="attendee-name">{tagLabel}</span>
+                          <button 
+                            type="button" 
+                            className="remove-attendee-btn" 
+                            onClick={() => handleRemoveTag(tagItem)} 
+                            style={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="no-attendees-message">태그가 없습니다</div>
                 )}
               </div>
-            )}
-            
-            {saveTarget === 'sheet' && (
+            </div>
+
+            <div className="modal-form-section">
               <div className="attendees-section">
-                <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
-                  {isAttendeeSearchVisible ? '- 참석자 검색 닫기' : '+ 참석자 추가'}
-                </button>
-                <div className="selected-attendees-list">
-                  {selectedAttendees.map(person => (
-                    <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
-                      <span>{person.name}</span>
-                      <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
-                    </div>
-                  ))}
+                <div className="attendees-header">
+                  <label className="attendees-label">참석자</label>
+                  <button type="button" className="add-attendee-btn" onClick={handleToggleAttendeeSearch}>
+                    {isAttendeeSearchVisible ? '닫기' : '추가'}
+                  </button>
                 </div>
-                <div className="selected-attendees-count">
-                  선택된 참석자: {selectedAttendees.length}명
-                </div>
+                {selectedAttendees.length > 0 ? (
+                  <div className="selected-attendees-list">
+                    {selectedAttendees.map(person => {
+                      const isCurrentUser = user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
+                      return (
+                        <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
+                          <span className="attendee-name">{person.name}{isCurrentUser ? '(본인)' : ''}</span>
+                          <button type="button" className="remove-attendee-btn" onClick={() => handleRemoveAttendee(person)}>&times;</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="no-attendees-message">참석자가 없습니다</div>
+                )}
               </div>
-            )}
+            </div>
           </div>
           <div className={`attendee-search-panel ${isAttendeeSearchVisible ? 'visible' : ''}`}>
             <h3>참석자 검색</h3>
@@ -472,9 +760,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                   <ul>
                     {filteredAttendees.map(person => {
                       const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
+                      const isCurrentUser = user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
                       return (
                         <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
-                          {person.name} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
+                          {person.name}{isCurrentUser ? '(본인)' : ''} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
                           {isSelected && <span className="checkmark-icon">✓</span>}
                         </li>
                       );
@@ -486,11 +775,107 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               )}
             </div>
           </div>
+          <div className={`attendee-search-panel ${isTagSearchVisible ? 'visible' : ''}`}>
+            <h3>태그 선택</h3>
+            <div className="tag-selection-panel-content">
+              <div className="tag-selection-panel-section">
+                <div className="tag-selection-panel-grid">
+                  {eventTypes.map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`tag-panel-button ${selectedTags.some(t => t.type === type && !t.isCustom) ? 'active' : ''}`}
+                      onClick={() => handleSelectTag(type)}
+                      style={{ 
+                        backgroundColor: selectedTags.some(t => t.type === type && !t.isCustom) 
+                          ? (eventTypeStyles[type]?.color || '#343a40')
+                          : '#ffffff',
+                        color: selectedTags.some(t => t.type === type && !t.isCustom) ? 'white' : 'var(--text-medium)',
+                        borderColor: eventTypeStyles[type]?.color || '#e2e8f0'
+                      }}
+                    >
+                      {tagLabels[type] || type}
+                    </button>
+                  ))}
+                  {selectedTags.filter(t => t.isCustom).map((tag, index) => (
+                    <button
+                      key={`custom-${tag.type}-${index}`}
+                      type="button"
+                      className={`tag-panel-button active`}
+                      onClick={() => handleEditTag(tag)}
+                      style={{ 
+                        backgroundColor: tag.color || '#7986CB',
+                        color: 'white',
+                        borderColor: tag.color || '#7986CB'
+                      }}
+                    >
+                      {tag.type}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="tag-panel-button tag-add-button"
+                    onClick={() => {
+                      setShowCustomTagInput(true);
+                      setEditingTag(null);
+                      setCustomTag('');
+                      setCustomColor('#7986CB');
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                {showCustomTagInput && (
+                  <div className="custom-tag-input-panel">
+                    <div className="custom-tag-input-row">
+                      <input 
+                        type="text" 
+                        placeholder="태그 이름 입력" 
+                        value={customTag} 
+                        onChange={(e) => setCustomTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddCustomTag();
+                          } else if (e.key === 'Escape') {
+                            handleCancelCustomTag();
+                          }
+                        }}
+                        className="custom-tag-input-field" 
+                        autoFocus
+                      />
+                      <input
+                        type="color"
+                        value={customColor}
+                        onChange={(e) => setCustomColor(e.target.value)}
+                        className="custom-tag-color-input"
+                        title="색상 선택"
+                      />
+                      <button 
+                        type="button" 
+                        className="custom-tag-confirm-btn"
+                        onClick={handleAddCustomTag}
+                        disabled={!customTag.trim()}
+                      >
+                        ✓
+                      </button>
+                      <button 
+                        type="button" 
+                        className="custom-tag-cancel-btn"
+                        onClick={handleCancelCustomTag}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="modal-actions">
-          <button className="submit-button" onClick={handleSave} disabled={dateError || title.trim() === ''}>{isEditMode ? '수정' : '일정 추가'}</button>
           <button className="cancel-button" onClick={onClose}>취소</button>
+          <button className="submit-button" onClick={handleSave} disabled={dateError || title.trim() === ''}>{isEditMode ? '수정' : '일정 추가'}</button>
         </div>
       </div>
     </div>

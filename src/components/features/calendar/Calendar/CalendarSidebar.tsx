@@ -10,7 +10,7 @@ interface CalendarSidebarProps {
 
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, onDateSelect }) => {
     const { semesterStartDate, eventTypes, activeFilters, handleFilterChange, filterLabels, selectedWeek, viewMode } = useCalendarContext();
-
+    const [activeTab, setActiveTab] = useState<'weeks' | 'tags'>('weeks');
 
     const getWeekDates = (weekNum: number) => {
         if (!semesterStartDate) return '';
@@ -24,43 +24,61 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, onDateS
         return `${start.getMonth() + 1}/${start.getDate()} ~ ${end.getMonth() + 1}/${end.getDate()}`;
     };
 
-
     return (
         <aside className="calendar-sidebar">
             <div className="sidebar-section">
                 <MiniCalendar selectedWeek={selectedWeek} viewMode={viewMode} onDateSelect={onDateSelect} />
             </div>
 
-            <div className="sidebar-section week-list-section">
-                <h3>주차별 보기</h3>
-                <ul className="week-navigation-list">
-                    {Array.from({ length: 16 }, (_, i) => i + 1).map(weekNum => (
-                        <li
-                            key={weekNum}
-                            className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
-                            onClick={() => onSelectWeek(weekNum)}
-                        >
-                            {weekNum}주차
-                            <span className="week-dates">{getWeekDates(weekNum)}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            <div className="sidebar-section">
-                <h3>태그</h3>
-                <div className="filter-tags-container" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                    {['all', ...eventTypes].map(filter => (
-                        <label key={filter} className="filter-checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={activeFilters.includes(filter)}
-                                onChange={() => handleFilterChange(filter)}
-                            />
-                            <span>{filterLabels[filter] || filter}</span>
-                        </label>
-                    ))}
+            <div className="sidebar-section tabbed-section">
+                <div className="sidebar-tabs">
+                    <button
+                        className={`sidebar-tab ${activeTab === 'weeks' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('weeks')}
+                    >
+                        주차별 보기
+                    </button>
+                    <button
+                        className={`sidebar-tab ${activeTab === 'tags' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('tags')}
+                    >
+                        태그
+                    </button>
                 </div>
+
+                {activeTab === 'weeks' && (
+                    <div className="tab-content week-list-section">
+                        <ul className="week-navigation-list">
+                            {Array.from({ length: 16 }, (_, i) => i + 1).map(weekNum => (
+                                <li
+                                    key={weekNum}
+                                    className={`week-navigation-item ${selectedWeek === weekNum ? 'active' : ''}`}
+                                    onClick={() => onSelectWeek(weekNum)}
+                                >
+                                    {weekNum}주차
+                                    <span className="week-dates">{getWeekDates(weekNum)}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {activeTab === 'tags' && (
+                    <div className="tab-content">
+                        <div className="filter-tags-container" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                            {['all', ...eventTypes].map(filter => (
+                                <label key={filter} className="filter-checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        checked={activeFilters.includes(filter)}
+                                        onChange={() => handleFilterChange(filter)}
+                                    />
+                                    <span>{filterLabels[filter] || filter}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </aside>
     );

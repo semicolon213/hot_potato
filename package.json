@@ -38,6 +38,7 @@
     "@tiptap/pm": "^3.9.0",
     "@tiptap/react": "^3.9.0",
     "@tiptap/starter-kit": "^3.9.0",
+    "@types/recharts": "^1.8.29",
     "@vitejs/plugin-react": "^4.7.0",
     "docx": "^9.5.1",
     "file-saver": "^2.0.5",

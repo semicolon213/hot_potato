@@ -180,19 +180,15 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
   // 학생 목록 컬럼 정의
   const studentColumns = [
     { key: 'no_student' as const, header: '학번', width: '12%' },
-    { key: 'name' as const, header: '이름', width: '12%' },
-    { key: 'address' as const, header: '주소', width: '20%' },
+    { key: 'name' as const, header: '이름', width: '15%' },
+    { key: 'address' as const, header: '주소', width: '19%' },
     { key: 'phone_num' as const, header: '연락처', width: '15%' },
     { key: 'grade' as const, header: '학년', width: '8%' },
     { key: 'state' as const, header: '상태', width: '8%' },
     { 
       key: 'council' as const, 
       header: '학생회', 
-      width: '25%',
-      render: (row: StudentWithCouncil) => 
-        row.parsedCouncil.map(council => 
-          (council.year ? council.year + '년 ' : '') + council.position
-        ).join(', ')
+      width: '21%'
     }
   ];
 

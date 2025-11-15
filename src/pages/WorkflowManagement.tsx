@@ -11,7 +11,7 @@ import WorkflowActionModal from '../components/features/workflow/WorkflowActionM
 import WorkflowDetailModal from '../components/features/workflow/WorkflowDetailModal';
 import WorkflowResubmitModal from '../components/features/workflow/WorkflowResubmitModal';
 import type { WorkflowInfoResponse, WorkflowListResponse, WorkflowRequestResponse } from '../types/api/apiResponses';
-import { FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
+import '../components/features/templates/TemplateUI.css';
 import './WorkflowManagement.css';
 
 interface WorkflowManagementProps {
@@ -35,9 +35,6 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowInfoResponse | null>(null);
   const [actionType, setActionType] = useState<'review' | 'payment'>('review');
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [filterStatus, setFilterStatus] = useState<string>('전체');
 
   useEffect(() => {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
@@ -97,29 +94,8 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
 
   // 필터링된 워크플로우 목록
   const filteredWorkflows = useMemo(() => {
-    const workflows = getCurrentWorkflows();
-    return workflows.filter((workflow) => {
-      const matchesSearch = searchTerm === '' || 
-        (workflow.workflowDocumentTitle || workflow.attachedDocumentTitle || workflow.documentTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (workflow.requesterName || workflow.requesterEmail || '').toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = filterStatus === '전체' || workflow.workflowStatus === filterStatus;
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [activeTab, requestedWorkflows, pendingWorkflows, completedWorkflows, searchTerm, filterStatus]);
-
-  // 상태 옵션 생성
-  const statusOptions = useMemo(() => {
-    const workflows = getCurrentWorkflows();
-    const statuses = new Set(workflows.map(w => w.workflowStatus));
-    return ['전체', ...Array.from(statuses).sort()];
+    return getCurrentWorkflows();
   }, [activeTab, requestedWorkflows, pendingWorkflows, completedWorkflows]);
-
-  const handleResetFilters = () => {
-    setSearchTerm('');
-    setFilterStatus('전체');
-  };
 
   const getStatusBadgeClass = (status: string): string => {
     const statusMap: Record<string, string> = {
@@ -264,113 +240,69 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
 
   const workflows = getCurrentWorkflows();
 
+  const getTabLabel = (tab: TabType): string => {
+    switch (tab) {
+      case 'requested':
+        return '내가 올린 결재';
+      case 'pending':
+        return '내가 결재해야 하는 것';
+      case 'completed':
+        return '결재 완료된 리스트';
+      default:
+        return '';
+    }
+  };
+
+  const getTabCount = (tab: TabType): number => {
+    switch (tab) {
+      case 'requested':
+        return requestedWorkflows.length;
+      case 'pending':
+        return pendingWorkflows.length;
+      case 'completed':
+        return completedWorkflows.length;
+      default:
+        return 0;
+    }
+  };
+
   return (
     <div className="workflow-management-container">
-      <div className="workflow-header">
-        <div />
-        <button 
-          className="btn-new-workflow"
-          onClick={() => {
-            setSelectedDocument(null);
-            setIsWorkflowModalOpen(true);
-          }}
-        >
-          새 결재 요청
-        </button>
-      </div>
-
-      <div className="search-filter-section">
-        <div className="search-controls">
-          <div className="search-input-group">
-            <FaSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="제목, 요청자로 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button 
-                className="clear-search-btn"
-                onClick={() => setSearchTerm('')}
-                title="검색어 지우기"
-              >
-                <FaTimes />
-              </button>
-            )}
-          </div>
-          
-          <div className="filter-controls">
-            <button 
-              className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}
-              onClick={() => setShowFilters(!showFilters)}
+      {/* 결재 탭 선택 창 */}
+      <div className="category-tabs-wrapper">
+        <div className="tabs-header">
+          <div className="new-tabs-container">
+            <button
+              className={`new-tab ${activeTab === 'requested' ? 'new-active' : ''}`}
+              onClick={() => setActiveTab('requested')}
             >
-              <FaFilter className="btn-icon" />
-              <span>필터 {showFilters ? '숨기기' : '보기'}</span>
+              {getTabLabel('requested')} ({getTabCount('requested')})
+            </button>
+            <button
+              className={`new-tab ${activeTab === 'pending' ? 'new-active' : ''}`}
+              onClick={() => setActiveTab('pending')}
+            >
+              {getTabLabel('pending')} ({getTabCount('pending')})
+            </button>
+            <button
+              className={`new-tab ${activeTab === 'completed' ? 'new-active' : ''}`}
+              onClick={() => setActiveTab('completed')}
+            >
+              {getTabLabel('completed')} ({getTabCount('completed')})
+            </button>
+          </div>
+          <div className="tag-create-wrapper">
+            <button 
+              className="tag-create-toggle"
+              onClick={() => {
+                setSelectedDocument(null);
+                setIsWorkflowModalOpen(true);
+              }}
+            >
+              새 결재 요청
             </button>
           </div>
         </div>
-
-        {showFilters && (
-          <div className="filters-panel">
-            <div className="filter-row">
-              <div className="filter-group">
-                <label className="filter-label">상태</label>
-                <div className="select-container">
-                  <select
-                    className="filter-select"
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                  >
-                    {statusOptions.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="filter-actions">
-                <button className="btn-reset" onClick={handleResetFilters}>
-                  필터 초기화
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="workflow-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'requested' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('requested');
-            setSearchTerm('');
-            setFilterStatus('전체');
-          }}
-        >
-          내가 올린 결재 ({requestedWorkflows.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('pending');
-            setSearchTerm('');
-            setFilterStatus('전체');
-          }}
-        >
-          내가 결재해야 하는 것 ({pendingWorkflows.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('completed');
-            setSearchTerm('');
-            setFilterStatus('전체');
-          }}
-        >
-          결재 완료된 리스트 ({completedWorkflows.length})
-        </button>
       </div>
 
       <div className="workflow-content">
@@ -378,139 +310,109 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
           <div className="loading-message">로딩 중...</div>
         ) : filteredWorkflows.length === 0 ? (
           <div className="empty-message">
-            {searchTerm || filterStatus !== '전체' 
-              ? '검색 결과가 없습니다.' 
-              : activeTab === 'requested' && '올린 결재가 없습니다.'}
-            {!searchTerm && filterStatus === '전체' && activeTab === 'pending' && '결재해야 할 문서가 없습니다.'}
-            {!searchTerm && filterStatus === '전체' && activeTab === 'completed' && '완료된 결재가 없습니다.'}
+            {activeTab === 'requested' && '올린 결재가 없습니다.'}
+            {activeTab === 'pending' && '결재해야 할 문서가 없습니다.'}
+            {activeTab === 'completed' && '완료된 결재가 없습니다.'}
           </div>
         ) : (
-          <div className="workflow-list">
-            {filteredWorkflows.map((workflow) => {
-              const myStep = activeTab === 'pending' ? getMyPendingStep(workflow) : null;
-              const heldStep = activeTab === 'requested' && (workflow.workflowStatus === '검토보류' || workflow.workflowStatus === '결재보류') ? getHeldStep(workflow) : null;
-              
-              return (
-                <div
-                  key={workflow.workflowId}
-                  className="workflow-card"
-                  onClick={() => handleWorkflowClick(workflow)}
-                >
-                  <div className="workflow-card-header">
-                    <h3 className="workflow-title">
-                      {workflow.workflowDocumentTitle || 
-                       workflow.attachedDocumentTitle || 
-                       workflow.documentTitle || 
-                       '제목 없음'}
-                    </h3>
-                    <span className={`status-badge ${getStatusBadgeClass(workflow.workflowStatus)}`}>
-                      {workflow.workflowStatus}
-                    </span>
-                  </div>
-                  <div className="workflow-card-body">
-                    <div className="workflow-info-row">
-                      <span className="info-label">요청자:</span>
-                      <span className="info-value">{workflow.requesterName || workflow.requesterEmail}</span>
-                    </div>
-                    <div className="workflow-info-row">
-                      <span className="info-label">요청일시:</span>
-                      <span className="info-value">{formatDate(workflow.workflowRequestDate)}</span>
-                    </div>
-                    {workflow.workflowType === 'direct' && workflow.documentUrl && (
-                      <div className="workflow-info-row">
-                        <span className="info-label">문서:</span>
-                        <a 
-                          href={workflow.documentUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="document-link"
-                        >
-                          문서 열기
-                        </a>
-                      </div>
-                    )}
-                    {workflow.workflowDocumentUrl && (
-                      <div className="workflow-info-row">
-                        <span className="info-label">결재 문서:</span>
-                        <a 
-                          href={workflow.workflowDocumentUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="document-link"
-                        >
-                          결재 문서 열기
-                        </a>
-                      </div>
-                    )}
-                    {workflow.attachedDocumentUrl && (
-                      <div className="workflow-info-row">
-                        <span className="info-label">첨부 문서:</span>
-                        <a 
-                          href={workflow.attachedDocumentUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="document-link"
-                        >
-                          첨부 문서 열기
-                        </a>
-                      </div>
-                    )}
-                    <div className="workflow-progress">
-                      <div className="progress-item">
-                        <span className="progress-label">검토:</span>
-                        <span className="progress-value">
-                          {workflow.reviewLine.filter(r => r.status === '승인').length} / {workflow.reviewLine.length}
+          <div className="workflow-list-section">
+            <table className="workflow-table">
+              <colgroup>
+                <col className="col-number-width" />
+                <col className="col-title-width" />
+                <col className="col-author-width" />
+                <col className="col-date-width" />
+                <col className="col-status-width" />
+                <col className="col-progress-width" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className="col-number">결재번호</th>
+                  <th className="col-title">문서이름</th>
+                  <th className="col-author">요청자</th>
+                  <th className="col-date">요청일시</th>
+                  <th className="col-status">상태</th>
+                  <th className="col-progress">진행상황</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredWorkflows.map((workflow) => {
+                  const myStep = activeTab === 'pending' ? getMyPendingStep(workflow) : null;
+                  const heldStep = activeTab === 'requested' && (workflow.workflowStatus === '검토보류' || workflow.workflowStatus === '결재보류') ? getHeldStep(workflow) : null;
+                  const documentTitle = workflow.workflowDocumentTitle || 
+                                       workflow.attachedDocumentTitle || 
+                                       workflow.documentTitle || 
+                                       '제목 없음';
+                  const reviewProgress = `${workflow.reviewLine.filter(r => r.status === '승인').length} / ${workflow.reviewLine.length}`;
+                  const paymentProgress = `${workflow.paymentLine.filter(p => p.status === '승인').length} / ${workflow.paymentLine.length}`;
+                  
+                  return (
+                    <tr
+                      key={workflow.workflowId}
+                      className="workflow-row"
+                      onClick={() => handleWorkflowClick(workflow)}
+                    >
+                      <td className="col-number">{workflow.workflowId}</td>
+                      <td className="col-title">
+                        <div className="title-cell-inner">
+                          <span className="title-ellipsis">{documentTitle}</span>
+                        </div>
+                      </td>
+                      <td className="col-author">{workflow.requesterName || workflow.requesterEmail}</td>
+                      <td className="col-date">{formatDate(workflow.workflowRequestDate)}</td>
+                      <td className="col-status">
+                        <span className={`status-badge ${getStatusBadgeClass(workflow.workflowStatus)}`}>
+                          {workflow.workflowStatus}
                         </span>
-                      </div>
-                      <div className="progress-item">
-                        <span className="progress-label">결재:</span>
-                        <span className="progress-value">
-                          {workflow.paymentLine.filter(p => p.status === '승인').length} / {workflow.paymentLine.length}
-                        </span>
-                      </div>
-                    </div>
-                    {activeTab === 'pending' && myStep && (
-                      <div className="workflow-actions">
-                        <button
-                          className={`btn-action ${myStep.status === '보류' ? 'btn-resume' : 'btn-approve'}`}
-                          onClick={(e) => handleActionClick(workflow, myStep.type, myStep.step, e)}
-                          title={myStep.status === '보류' ? '보류된 결재 재개' : `${myStep.type === 'review' ? '검토' : '결재'} 처리`}
-                        >
-                          {myStep.status === '보류' ? '▶️ 재개' : `${myStep.type === 'review' ? '검토' : '결재'} 처리`}
-                        </button>
-                      </div>
-                    )}
-                    {activeTab === 'requested' && heldStep && (
-                      <div className="workflow-actions">
-                        <button
-                          className="btn-action btn-resume"
-                          onClick={(e) => handleActionClick(workflow, heldStep.type, heldStep.step, e)}
-                          title="보류된 결재 재개"
-                        >
-                          ▶️ 재개
-                        </button>
-                      </div>
-                    )}
-                    {activeTab === 'requested' && 
-                     (workflow.workflowStatus === '검토반려' || workflow.workflowStatus === '전체반려') &&
-                     workflow.requesterEmail === userEmail && (
-                      <div className="workflow-actions">
-                        <button
-                          className="btn-action btn-resubmit"
-                          onClick={(e) => handleResubmit(workflow, e)}
-                          title="반려된 결재 재제출"
-                        >
-                          🔄 재제출
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td className="col-progress">
+                        <div className="progress-info">
+                          <span className="progress-item">검토: {reviewProgress}</span>
+                          <span className="progress-item">결재: {paymentProgress}</span>
+                        </div>
+                        {(activeTab === 'pending' && myStep) || 
+                         (activeTab === 'requested' && heldStep) ||
+                         (activeTab === 'requested' && 
+                          (workflow.workflowStatus === '검토반려' || workflow.workflowStatus === '전체반려') &&
+                          workflow.requesterEmail === userEmail) ? (
+                          <div className="workflow-row-actions" onClick={(e) => e.stopPropagation()}>
+                            {activeTab === 'pending' && myStep && (
+                              <button
+                                className={`btn-action ${myStep.status === '보류' ? 'btn-resume' : 'btn-approve'}`}
+                                onClick={(e) => handleActionClick(workflow, myStep.type, myStep.step, e)}
+                                title={myStep.status === '보류' ? '보류된 결재 재개' : `${myStep.type === 'review' ? '검토' : '결재'} 처리`}
+                              >
+                                {myStep.status === '보류' ? '▶️ 재개' : `${myStep.type === 'review' ? '검토' : '결재'} 처리`}
+                              </button>
+                            )}
+                            {activeTab === 'requested' && heldStep && (
+                              <button
+                                className="btn-action btn-resume"
+                                onClick={(e) => handleActionClick(workflow, heldStep.type, heldStep.step, e)}
+                                title="보류된 결재 재개"
+                              >
+                                ▶️ 재개
+                              </button>
+                            )}
+                            {activeTab === 'requested' && 
+                             (workflow.workflowStatus === '검토반려' || workflow.workflowStatus === '전체반려') &&
+                             workflow.requesterEmail === userEmail && (
+                              <button
+                                className="btn-action btn-resubmit"
+                                onClick={(e) => handleResubmit(workflow, e)}
+                                title="반려된 결재 재제출"
+                              >
+                                🔄 재제출
+                              </button>
+                            )}
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

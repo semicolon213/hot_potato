@@ -22,7 +22,8 @@ import type { DocumentInfo } from "../types/documents";
 import type { WorkflowRequestResponse } from "../types/api/apiResponses";
 import RightArrowIcon from "../assets/Icons/right_black.svg";
 import TableColumnFilter, { type SortDirection, type FilterOption } from "../components/ui/common/TableColumnFilter";
-import { FaFilter, FaTimes } from "react-icons/fa";
+import { FaFilter, FaTimes, FaFileAlt, FaUsers, FaLock, FaEdit, FaUpload, FaShare, FaTrash, FaPlus, FaFolderOpen, FaTag, FaFile } from "react-icons/fa";
+import { HiX } from "react-icons/hi";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -94,7 +95,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   // 검색 및 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
-  const documentsPerPage = 10;
+  const documentsPerPage = 9;
 
   // 필터 상태
   const [filterConfigs, setFilterConfigs] = useState<Record<string, {
@@ -110,13 +111,16 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadTag, setUploadTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [permissionType, setPermissionType] = useState<'private' | 'shared'>('shared');
+  const [permissionType, setPermissionType] = useState<'private' | 'shared'>('private');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [individualEmails, setIndividualEmails] = useState<string[]>(['']);
   const [staticTags, setStaticTags] = useState<string[]>([]);
   const [personalTags, setPersonalTags] = useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  
+  // 통계 필터 상태
+  const [selectedStatFilter, setSelectedStatFilter] = useState<string | null>(null);
   
   // 컨텍스트 메뉴 상태
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -164,7 +168,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     setUploadFile(null);
     setUploadFileName('');
     setUploadTag('');
-    setPermissionType('shared');
+    setPermissionType('private');
     setSelectedGroups([]);
     setIndividualEmails(['']);
   };
@@ -284,6 +288,20 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         return [...prev, docId];
       }
     });
+  };
+
+  // 컨텍스트 메뉴 핸들러 (행 우클릭 시)
+  const handleRowContextMenu = (docId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 우클릭한 행의 문서가 선택되어 있지 않으면 선택
+    if (!selectedDocs.includes(docId)) {
+      setSelectedDocs([docId]);
+    }
+    
+    // 컨텍스트 메뉴 표시
+    setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
   // 전체 선택/해제 핸들러
@@ -483,6 +501,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           originalIndex: index,
           documentType: doc.documentType || 'shared',
           creator: doc.creator,
+          creatorEmail: doc.creatorEmail,
           tag: doc.tag
         }));
 
@@ -571,26 +590,68 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     }
   }, [documents]);
 
-  const statCards = [
+  // 문서 통계 계산
+  const totalDocumentsCount = documents.length;
+  const sharedDocumentsCount = documents.filter(doc => doc.documentType === 'shared').length;
+  const personalDocumentsCount = documents.filter(doc => doc.documentType === 'personal').length;
+  
+  const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+  const userEmail = userInfo.email;
+  const myCreatedDocumentsCount = userEmail 
+    ? documents.filter(doc => {
+        const creatorEmail = doc.creatorEmail || doc.creator || doc.author;
+        return creatorEmail === userEmail || creatorEmail?.includes(userEmail);
+      }).length
+    : 0;
+
+  const documentStatCards = [
     {
-      count: receivedCount,
-      title: "수신 문서함",
-      backgroundColor: "#4A9AFF",
-      textColor: "#FFFFFF",
+      count: totalDocumentsCount,
+      title: "전체 문서",
+      backgroundColor: "#E3F2FD",
+      textColor: "#000000",
+      icon: FaFileAlt,
+      iconColor: "#1976D2",
+      filterType: 'all',
     },
     {
-      count: sentCount,
-      title: "발신 문서함",
-      backgroundColor: "#4AB866",
-      textColor: "#FFFFFF",
+      count: sharedDocumentsCount,
+      title: "공유 문서",
+      backgroundColor: "#E8F5E9",
+      textColor: "#000000",
+      icon: FaUsers,
+      iconColor: "#388E3C",
+      filterType: 'shared',
     },
     {
-      count: myDocumentsCount,
-      title: "내 문서함",
-      backgroundColor: "#F9C620",
-      textColor: "#FFFFFF",
+      count: personalDocumentsCount,
+      title: "개인 문서",
+      backgroundColor: "#FFF9C4",
+      textColor: "#000000",
+      icon: FaLock,
+      iconColor: "#F57C00",
+      filterType: 'personal',
+    },
+    {
+      count: myCreatedDocumentsCount,
+      title: "내가 만든 문서",
+      backgroundColor: "#FCE4EC",
+      textColor: "#000000",
+      icon: FaEdit,
+      iconColor: "#C2185B",
+      filterType: 'myCreated',
     },
   ];
+
+  // 통계 필터 핸들러
+  const handleStatFilterClick = (filterType: string) => {
+    if (selectedStatFilter === filterType) {
+      setSelectedStatFilter(null); // 같은 항목 클릭 시 필터 해제
+    } else {
+      setSelectedStatFilter(filterType);
+    }
+    setCurrentPage(1); // 필터 변경 시 첫 페이지로
+  };
 
   // 문서 타입을 한국어로 변환
   const typeMap: { [key: string]: string } = {
@@ -604,6 +665,64 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       // 검색어 필터링
       const matchesSearch = propSearchTerm === '' || doc.title.replace(/\s/g, '').toLowerCase().includes(propSearchTerm.replace(/\s/g, '').toLowerCase());
       if (!matchesSearch) return false;
+
+      // 통계 필터 적용
+      if (selectedStatFilter) {
+        const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+        const userEmail = userInfo.email;
+
+        switch (selectedStatFilter) {
+          case 'shared':
+            if (doc.documentType !== 'shared') return false;
+            break;
+          case 'personal':
+            if (doc.documentType !== 'personal') return false;
+            break;
+          case 'myCreated':
+            if (userEmail) {
+              // creatorEmail 우선 확인, 없으면 creator나 author에서 이메일 추출
+              let creatorEmail = doc.creatorEmail;
+              
+              // creatorEmail이 없으면 creator나 author에서 이메일 형식 찾기
+              if (!creatorEmail) {
+                const creatorOrAuthor = doc.creator || doc.author || '';
+                if (creatorOrAuthor.includes('@')) {
+                  creatorEmail = creatorOrAuthor;
+                }
+              }
+              
+              // 이메일이 있으면 이메일로 비교
+              if (creatorEmail) {
+                const normalizedCreatorEmail = creatorEmail.toLowerCase().trim();
+                const normalizedUserEmail = userEmail.toLowerCase().trim();
+                if (normalizedCreatorEmail !== normalizedUserEmail && 
+                    !normalizedCreatorEmail.includes(normalizedUserEmail) && 
+                    !normalizedUserEmail.includes(normalizedCreatorEmail)) {
+                  return false;
+                }
+              } else {
+                // 이메일이 없으면 이름으로 비교 (creator나 author)
+                const creatorName = (doc.creator || doc.author || '').trim();
+                if (!creatorName || creatorName === '알 수 없음') {
+                  return false;
+                }
+                // 이름으로는 정확한 매칭이 어려우므로, 사용자 정보에서 이름을 가져와 비교
+                const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+                const userName = userInfo.name || '';
+                if (userName && creatorName !== userName && !creatorName.includes(userName) && !userName.includes(creatorName)) {
+                  return false;
+                }
+              }
+            } else {
+              return false;
+            }
+            break;
+          case 'all':
+          default:
+            // 전체 문서는 필터링하지 않음
+            break;
+        }
+      }
 
       // 컬럼별 필터 적용
       for (const [columnKey, config] of Object.entries(filterConfigs)) {
@@ -650,7 +769,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
       return true;
     });
-  }, [documents, propSearchTerm, filterConfigs]);
+  }, [documents, propSearchTerm, filterConfigs, selectedStatFilter]);
 
   // 정렬된 문서 목록
   const sortedDocuments = useMemo(() => {
@@ -954,19 +1073,31 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
   return (
     <div className="document-management-container">
-      <div className="document-list-section">
-        <div className="actions-bar">
-          <div className="action-buttons">
-            <button className="btn-print" onClick={openUploadModal}>
-              업로드
-            </button>
-          </div>
-        </div>
+      {/* 문서 통계 카드 */}
+      <div className="stats-container">
+        {documentStatCards.map((stat, index) => (
+          <StatCard
+            key={index}
+            count={stat.count}
+            title={stat.title}
+            backgroundColor={stat.backgroundColor}
+            textColor={stat.textColor}
+            icon={stat.icon}
+            iconColor={stat.iconColor}
+            onClick={() => handleStatFilterClick(stat.filterType)}
+            isSelected={selectedStatFilter === stat.filterType}
+            uploadIcon={stat.filterType === 'myCreated' ? FaPlus : undefined}
+            onUploadClick={stat.filterType === 'myCreated' ? openUploadModal : undefined}
+          />
+        ))}
+      </div>
 
+      <div className="document-list-section">
         <div 
           className="post-list"
           onContextMenu={(e) => {
-            if (selectedDocs.length > 0) {
+            // 빈 공간 우클릭 시 업로드 메뉴만 표시
+            if (selectedDocs.length === 0) {
               e.preventDefault();
               setContextMenu({ x: e.clientX, y: e.clientY });
             }
@@ -1116,6 +1247,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                       <tr 
                         key={docId} 
                         onClick={() => handleDocClick({ url: doc.url })}
+                        onContextMenu={(e) => handleRowContextMenu(docId, e)}
                         className="document-row"
                       >
                         <td className="col-checkbox" onClick={(e) => handleDocSelect(docId, e)}>
@@ -1164,6 +1296,18 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                     </tr>
                   );
                   })}
+                  {/* 빈 행 추가: 화면을 채우기 위해 최소 10개 행 유지 */}
+                  {Array.from({ length: Math.max(0, documentsPerPage - currentDocuments.length) }).map((_, index) => (
+                    <tr key={`empty-${index}`} className="document-row empty-row">
+                      <td className="col-checkbox"></td>
+                      <td className="col-number"></td>
+                      <td className="col-title"></td>
+                      <td className="col-author"></td>
+                      <td className="col-date"></td>
+                      <td className="col-tag"></td>
+                      <td className="col-type"></td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </>
@@ -1197,7 +1341,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         )}
 
         {/* 컨텍스트 메뉴 */}
-        {contextMenu && selectedDocs.length > 0 && (
+        {contextMenu && (
           <div
             ref={contextMenuRef}
             className="context-menu"
@@ -1212,22 +1356,40 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
             <button
               className="context-menu-item"
               onClick={() => {
-                handleShare();
-                setContextMenu(null);
-              }}
-              disabled={selectedDocs.length !== 1}
-            >
-              공유
-            </button>
-            <button
-              className="context-menu-item context-menu-item-danger"
-              onClick={() => {
-                handleDelete();
+                openUploadModal();
                 setContextMenu(null);
               }}
             >
-              삭제
+              <FaUpload className="context-menu-icon" />
+              <span>업로드</span>
             </button>
+            {selectedDocs.length > 0 && (
+              <>
+                <div className="context-menu-divider"></div>
+                <button
+                  className="context-menu-item"
+                  onClick={() => {
+                    handleShare();
+                    setContextMenu(null);
+                  }}
+                  disabled={selectedDocs.length !== 1}
+                >
+                  <FaShare className="context-menu-icon" />
+                  <span>공유</span>
+                </button>
+                <div className="context-menu-divider"></div>
+                <button
+                  className="context-menu-item context-menu-item-danger"
+                  onClick={() => {
+                    handleDelete();
+                    setContextMenu(null);
+                  }}
+                >
+                  <FaTrash className="context-menu-icon" />
+                  <span>삭제</span>
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -1235,10 +1397,8 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           <div className="pagination">
             <button 
               onClick={() => paginate(currentPage - 1)} 
-              disabled={currentPage === 1} 
               className="page-arrow-link"
             >
-              <img src={RightArrowIcon} alt="Previous" className="arrow-icon arrow-left" />
               <span>이전</span>
             </button>
 
@@ -1259,11 +1419,9 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
             <button 
               onClick={() => paginate(currentPage + 1)} 
-              disabled={currentPage === totalPages} 
               className="page-arrow-link"
             >
               <span>다음</span>
-              <img src={RightArrowIcon} alt="Next" className="arrow-icon" />
             </button>
           </div>
         )}
@@ -1296,206 +1454,239 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       {showUploadModal && (
         <div className="document-modal-overlay" onClick={closeUploadModal}>
           <div className="document-modal-content has-file-upload" onClick={(e) => e.stopPropagation()}>
-            <div className="document-modal-header">
-              <div className="header-left">
-                <h2>📤 문서 업로드</h2>
-                <p className="header-subtitle">파일을 업로드하고 문서 정보를 입력해주세요</p>
+              <div className="document-modal-header">
+                <div className="header-left">
+                  <h2>
+                    문서 업로드
+                  </h2>
+                </div>
+                <button className="document-modal-close" onClick={closeUploadModal}>
+                  <HiX />
+                </button>
               </div>
-              <button className="document-modal-close" onClick={closeUploadModal}>
-                <span>&times;</span>
-              </button>
-            </div>
 
             <div className="document-modal-body">
               {/* 파일 선택 */}
-              <div className="form-section">
-                <div className="form-group-large">
-                  <label htmlFor="upload-file" className="form-label-large">
-                    <span className="label-icon">📁</span>
-                    파일 선택
-                  </label>
-                  <div className="file-upload-area">
-                    <input
-                      id="upload-file"
-                      type="file"
-                      accept=".docx,.xlsx,.doc,.xls,.pdf"
-                      onChange={handleFileSelect}
-                      className="file-input"
-                      disabled={isUploading}
-                    />
-                    <div className="file-upload-display" onClick={() => !isUploading && document.getElementById('upload-file')?.click()}>
-                      {uploadFile ? (
-                        <div className="uploaded-file">
-                          <span className="file-icon">📄</span>
-                          <span className="file-name">{uploadFile.name}</span>
-                          <span className="file-size">({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)</span>
-                        </div>
-                      ) : (
-                        <div className="upload-placeholder">
-                          <span className="upload-icon">📁</span>
-                          <span className="upload-text">파일을 선택하거나 여기에 드래그하세요</span>
-                          <span className="upload-hint">지원 형식: .docx, .xlsx, .doc, .xls, .pdf</span>
-                        </div>
-                      )}
+              <div className="upload-form-section">
+                <input
+                  id="upload-file"
+                  type="file"
+                  accept=".docx,.xlsx,.doc,.xls,.pdf"
+                  onChange={handleFileSelect}
+                  className="file-input"
+                  disabled={isUploading}
+                />
+                <div className="file-upload-display" onClick={() => !isUploading && document.getElementById('upload-file')?.click()}>
+                  {uploadFile ? (
+                    <div className="uploaded-file">
+                      <FaFile className="file-icon" />
+                      <div className="file-info">
+                        <span className="file-name">{uploadFile.name}</span>
+                        <span className="file-size">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="upload-placeholder">
+                      <FaFolderOpen className="upload-icon" />
+                      <div className="upload-text-group">
+                        <span className="upload-text">파일을 선택하거나 여기에 드래그하세요</span>
+                        <span className="upload-hint">지원 형식: .docx, .xlsx, .doc, .xls, .pdf</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* 파일명 입력 */}
-              <div className="form-section">
-                <div className="form-group-large">
-                  <label htmlFor="upload-filename" className="form-label-large">
-                    <span className="label-icon">📝</span>
-                    파일명
-                  </label>
-                  <input
-                    id="upload-filename"
-                    type="text"
-                    className="form-input-large"
-                    placeholder="예: 2024년 1월 정기회의록"
-                    value={uploadFileName}
-                    onChange={(e) => setUploadFileName(e.target.value)}
-                    disabled={isUploading}
-                  />
-                  <div className="input-hint">문서를 식별할 수 있는 명확한 파일명을 입력하세요</div>
-                </div>
+              <div className="upload-form-section">
+                <input
+                  id="upload-filename"
+                  type="text"
+                  className="upload-form-input"
+                  placeholder="파일명을 입력하세요"
+                  value={uploadFileName}
+                  onChange={(e) => setUploadFileName(e.target.value)}
+                  disabled={isUploading}
+                />
+              </div>
 
-                {/* 태그 선택 */}
-                <div className="form-group-large">
-                  <label htmlFor="upload-tag" className="form-label-large">
-                    <span className="label-icon">🏷️</span>
-                    태그
-                  </label>
-                  <select
-                    id="upload-tag"
-                    className="form-select-large"
-                    value={uploadTag}
-                    onChange={(e) => setUploadTag(e.target.value)}
-                    disabled={isUploading || isLoadingTags}
-                  >
-                    <option value="">선택 안 함</option>
-                    {staticTags.length > 0 && (
-                      <optgroup label="기본 태그">
-                        {staticTags.map(tag => (
-                          <option key={tag} value={tag}>{tag}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {personalTags.length > 0 && (
-                      <optgroup label="개인 태그">
-                        {personalTags.map(tag => (
-                          <option key={tag} value={tag}>{tag}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                  <div className="input-hint">
-                    {permissionType === 'shared'
-                      ? '문서를 분류할 태그를 선택하세요 (필수)'
-                      : '문서를 분류할 태그를 선택하세요 (선택사항)'
-                    }
-                  </div>
-                </div>
+              {/* 태그 선택 */}
+              <div className="upload-form-section">
+                <select
+                  id="upload-tag"
+                  className="upload-form-select"
+                  value={uploadTag}
+                  onChange={(e) => setUploadTag(e.target.value)}
+                  disabled={isUploading || isLoadingTags}
+                >
+                  <option value="">태그 선택</option>
+                  {staticTags.length > 0 && (
+                    <optgroup label="기본 태그">
+                      {staticTags.map(tag => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {personalTags.length > 0 && (
+                    <optgroup label="개인 태그">
+                      {personalTags.map(tag => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
               </div>
 
               {/* 문서 접근 권한 설정 */}
-              <div className="form-section">
-                <div className="form-group-large">
-                  <label className="form-label-large">
-                    <span className="label-icon">🔐</span>
-                    문서 접근 권한
-                  </label>
-                  <div className="permission-options">
-                    <button
-                      type="button"
-                      className={`permission-option ${permissionType === 'private' ? 'active' : ''}`}
-                      onClick={() => setPermissionType('private')}
-                      disabled={isUploading}
-                    >
-                      <div className="option-icon">🔒</div>
-                      <div className="option-content">
-                        <div className="option-title">나만 보기</div>
-                        <div className="option-desc">개인 문서 폴더에 저장</div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      className={`permission-option ${permissionType === 'shared' ? 'active' : ''}`}
-                      onClick={() => setPermissionType('shared')}
-                      disabled={isUploading}
-                    >
-                      <div className="option-icon">👥</div>
-                      <div className="option-content">
-                        <div className="option-title">권한 부여</div>
-                        <div className="option-desc">공유 문서 폴더에 저장</div>
-                      </div>
-                    </button>
-                  </div>
+              <div className="upload-form-section">
+                <div className="permission-tabs">
+                  <button
+                    type="button"
+                    className={`permission-tab ${permissionType === 'private' ? 'active' : ''}`}
+                    onClick={() => setPermissionType('private')}
+                    disabled={isUploading}
+                  >
+                    <FaLock className="tab-icon" />
+                    <span className="tab-text">나만 보기</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`permission-tab ${permissionType === 'shared' ? 'active' : ''}`}
+                    onClick={() => setPermissionType('shared')}
+                    disabled={isUploading}
+                  >
+                    <FaUsers className="tab-icon" />
+                    <span className="tab-text">권한 부여</span>
+                  </button>
                 </div>
 
                 {permissionType === 'shared' && (
-                  <div className="sharing-options">
-                    <h4 className="section-title">공유 설정</h4>
-
-                    <div className="group-permissions-section">
-                      <h5 className="subsection-title">그룹 권한</h5>
-                      <div className="group-permissions">
-                        {Object.entries(ENV_CONFIG.GROUP_EMAILS).map(([key, email]) => (
-                          <label key={key} className="group-permission-item">
+                  <>
+                    {/* 그룹 권한 */}
+                    <div className="upload-form-section">
+                      <div className="group-permissions-list">
+                        {/* 첫 번째 줄: 학생, 집행부, 조교 */}
+                        <div className="group-checkbox-row">
+                          {Object.entries(ENV_CONFIG.GROUP_EMAILS)
+                            .filter(([key]) => ['STUDENT', 'COUNCIL', 'ASSISTANT'].includes(key))
+                            .map(([key, email]) => (
+                              <label key={key} className="group-checkbox-item">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedGroups.includes(key)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedGroups([...selectedGroups, key]);
+                                    } else {
+                                      setSelectedGroups(selectedGroups.filter(group => group !== key));
+                                    }
+                                  }}
+                                  disabled={isUploading}
+                                  className="group-checkbox"
+                                />
+                                <span className="group-checkbox-label">
+                                  {key === 'STUDENT' && '학생'}
+                                  {key === 'COUNCIL' && '집행부'}
+                                  {key === 'ASSISTANT' && '조교'}
+                                </span>
+                              </label>
+                            ))}
+                        </div>
+                        {/* 두 번째 줄: 교수, 겸임교원, 모두 */}
+                        <div className="group-checkbox-row">
+                          {/* 교수 */}
+                          {Object.entries(ENV_CONFIG.GROUP_EMAILS)
+                            .filter(([key]) => key === 'PROFESSOR')
+                            .map(([key, email]) => (
+                              <label key={key} className="group-checkbox-item">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedGroups.includes(key)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedGroups([...selectedGroups, key]);
+                                    } else {
+                                      setSelectedGroups(selectedGroups.filter(group => group !== key));
+                                    }
+                                  }}
+                                  disabled={isUploading}
+                                  className="group-checkbox"
+                                />
+                                <span className="group-checkbox-label">교수</span>
+                              </label>
+                            ))}
+                          {/* 겸임교원 */}
+                          {Object.entries(ENV_CONFIG.GROUP_EMAILS)
+                            .filter(([key]) => key === 'ADJUNCT_PROFESSOR')
+                            .map(([key, email]) => (
+                              <label key={key} className="group-checkbox-item">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedGroups.includes(key)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedGroups([...selectedGroups, key]);
+                                    } else {
+                                      setSelectedGroups(selectedGroups.filter(group => group !== key));
+                                    }
+                                  }}
+                                  disabled={isUploading}
+                                  className="group-checkbox"
+                                />
+                                <span className="group-checkbox-label">겸임교원</span>
+                              </label>
+                            ))}
+                          {/* 모두 */}
+                          <label className="group-checkbox-item">
                             <input
                               type="checkbox"
-                              checked={selectedGroups.includes(key)}
+                              checked={Object.keys(ENV_CONFIG.GROUP_EMAILS).every(key => selectedGroups.includes(key))}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedGroups([...selectedGroups, key]);
+                                  setSelectedGroups(Object.keys(ENV_CONFIG.GROUP_EMAILS));
                                 } else {
-                                  setSelectedGroups(selectedGroups.filter(group => group !== key));
+                                  setSelectedGroups([]);
                                 }
                               }}
                               disabled={isUploading}
+                              className="group-checkbox"
                             />
-                            <span className="checkbox-custom"></span>
-                            <span className="group-name">
-                              {key === 'STUDENT' && '학생'}
-                              {key === 'COUNCIL' && '집행부'}
-                              {key === 'PROFESSOR' && '교수'}
-                              {key === 'ADJUNCT_PROFESSOR' && '겸임교원'}
-                              {key === 'ASSISTANT' && '조교'}
-                            </span>
+                            <span className="group-checkbox-label">모두</span>
                           </label>
-                        ))}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="individual-emails-section">
-                      <h5 className="subsection-title">개별 이메일</h5>
-                      <div className="individual-emails">
+                    {/* 개별 이메일 */}
+                    <div className="upload-form-section">
+                      <div className="individual-emails-list">
                         {individualEmails.map((email, index) => (
-                          <div key={index} className="email-input-group">
-                            <EmailAutocomplete
-                              value={email}
-                              onChange={(value) => {
-                                const newEmails = [...individualEmails];
-                                newEmails[index] = value;
-                                setIndividualEmails(newEmails);
-                              }}
-                              placeholder="이름이나 이메일을 입력하세요"
-                              disabled={isUploading}
-                              className="email-input"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newEmails = individualEmails.filter((_, i) => i !== index);
-                                setIndividualEmails(newEmails);
-                              }}
-                              className="remove-email-btn"
-                              title="이메일 제거"
-                              disabled={isUploading}
-                            >
-                              ×
-                            </button>
+                          <div key={index} className="email-item">
+                            <div className="email-input-wrapper">
+                              <EmailAutocomplete
+                                value={email}
+                                onChange={(value) => {
+                                  const newEmails = [...individualEmails];
+                                  newEmails[index] = value;
+                                  setIndividualEmails(newEmails);
+                                }}
+                                placeholder="이름이나 이메일을 입력하세요"
+                                disabled={isUploading}
+                                className="email-input"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEmails = individualEmails.filter((_, i) => i !== index);
+                                  setIndividualEmails(newEmails);
+                                }}
+                                className="remove-email-btn"
+                                title="이메일 제거"
+                                disabled={isUploading}
+                              >
+                                <HiX />
+                              </button>
+                            </div>
                           </div>
                         ))}
                         <button
@@ -1504,11 +1695,12 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                           className="add-email-btn"
                           disabled={isUploading}
                         >
-                          <span>+</span> 이메일 추가
+                          <FaPlus className="add-icon" />
+                          <span>이메일 추가</span>
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1528,9 +1720,14 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
                 onClick={handleUpload}
                 disabled={!uploadFile || !uploadFileName.trim() || (permissionType === 'shared' && !uploadTag.trim()) || isUploading}
               >
-                <span>
-                  {isUploading ? '업로드 중...' : '📤 업로드'}
-                </span>
+                {isUploading ? (
+                  <span>업로드 중...</span>
+                ) : (
+                  <>
+                    <FaUpload className="btn-icon" />
+                    <span>업로드</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
