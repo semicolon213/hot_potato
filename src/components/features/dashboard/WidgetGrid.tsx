@@ -33,6 +33,9 @@ interface WidgetGridProps {
   handleRemoveWidget: (id: string) => void;
   onWidgetButtonClick?: (widgetId: string) => void;
   onStudentStatusChange?: (widgetId: string, status: string) => void;
+  onPageChange?: (pageName: string, params?: Record<string, string>) => void;
+  onSelectAnnouncement?: (post: { id: string; title: string }) => void;
+  announcements?: Array<{ id: string; title: string }>;
 }
 
 /**
@@ -48,6 +51,9 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
   handleRemoveWidget,
   onWidgetButtonClick,
   onStudentStatusChange,
+  onPageChange,
+  onSelectAnnouncement,
+  announcements,
 }) => {
   return (
     <div className="widget-grid">
@@ -74,6 +80,52 @@ const WidgetGrid: React.FC<WidgetGridProps> = ({
             selectedStatus: widget.props.selectedStatus || '재학',
             onStatusChange: (status: string) => {
               onStudentStatusChange?.(widget.id, status);
+            },
+            onGradeClick: (status: string, grade: string) => {
+              // 학생 관리 페이지로 이동하면서 필터 적용
+              onPageChange?.('students', { 
+                state: status, 
+                grade: grade 
+              });
+            }
+          }),
+          // 위젯 항목 클릭 핸들러 전달
+          ...(widget.type === 'notice' && { 
+            onItemClick: (item: string) => {
+              // 공지사항 제목으로 공지사항 찾기
+              const announcement = announcements?.find(a => a.title === item);
+              if (announcement && onSelectAnnouncement) {
+                onSelectAnnouncement(announcement);
+                onPageChange?.('announcement-view', { announcementId: String(announcement.id) });
+              } else {
+                // 제목으로 찾지 못하면 공지사항 페이지로 이동
+                onPageChange?.('announcements');
+              }
+            }
+          }),
+          ...(widget.type === 'calendar' && {
+            onItemClick: () => {
+              onPageChange?.('calendar');
+            }
+          }),
+          ...(widget.type === 'workflow-status' && {
+            onItemClick: () => {
+              onPageChange?.('workflow_management');
+            }
+          }),
+          ...(widget.type === 'document-management' && {
+            onItemClick: (item: { title: string; url?: string }) => {
+              if (item.url) {
+                window.open(item.url, '_blank');
+              } else {
+                // URL이 없으면 문서 관리 페이지로 이동
+                onPageChange?.('document_management');
+              }
+            }
+          }),
+          ...(widget.type === 'user-approval' && {
+            onItemClick: () => {
+              onPageChange?.('admin');
             }
           })
         };

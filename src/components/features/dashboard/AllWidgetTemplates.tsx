@@ -84,12 +84,59 @@ export const DefaultMessage = ({ message, onButtonClick }: { message: string, on
  * @param {object} props - 컴포넌트 props
  * @param {{ date: string; event: string }[]} props.items - 이벤트 항목 배열 (날짜, 이벤트 내용 포함)
  */
-export const EventListComponent = ({ items }: { items: { date: string; event: string }[] }) => (
-    <div className="widget-content">
+export const EventListComponent = ({ items, onItemClick }: { items: { date: string; event: string }[], onItemClick?: () => void }) => (
+    <div className="widget-content" style={{ padding: '6px 0' }}>
         {items.map((item, index) => (
-            <div key={index} style={{ marginBottom: '8px' }}>
-                <div className="calendar-day">{item.date}</div>
-                <div className="calendar-event">{item.event}</div>
+            <div 
+                key={index} 
+                onClick={onItemClick}
+                style={{ 
+                    marginBottom: index < items.length - 1 ? '6px' : '0',
+                    cursor: onItemClick ? 'pointer' : 'default',
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    transition: 'background-color 0.2s',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    fontSize: '13px'
+                }}
+                onMouseEnter={(e) => {
+                    if (onItemClick) {
+                        e.currentTarget.style.backgroundColor = '#f8fafc';
+                    }
+                }}
+                onMouseLeave={(e) => {
+                    if (onItemClick) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                }}
+            >
+                <span 
+                    className="calendar-day" 
+                    style={{ 
+                        minWidth: '75px', 
+                        fontSize: '11px', 
+                        fontWeight: '600', 
+                        color: '#888',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
+                        paddingTop: '2px'
+                    }}
+                >
+                    {item.date}
+                </span>
+                <span 
+                    className="calendar-event" 
+                    style={{ 
+                        flex: 1, 
+                        fontSize: '13px',
+                        color: '#1a1a1a',
+                        lineHeight: '1.5'
+                    }}
+                >
+                    {item.event}
+                </span>
             </div>
         ))}
     </div>
@@ -155,7 +202,7 @@ export const KeyValueListComponent = ({ items }: { items: { icon: string; key: s
  * @param {object} props - 컴포넌트 props
  * @param {string[]} props.items - 텍스트 항목 배열
  */
-export const ListComponent = ({ items, onButtonClick, spreadsheetId, widgetType }: { items: string[], onButtonClick?: () => void, spreadsheetId?: string, widgetType?: string }) => {
+export const ListComponent = ({ items, onButtonClick, spreadsheetId, widgetType, onItemClick }: { items: string[], onButtonClick?: () => void, spreadsheetId?: string, widgetType?: string, onItemClick?: (item: string) => void }) => {
   // 장부 관련 위젯(tuition)인 경우에만 장부 선택 메시지 표시
   const isAccountingWidget = widgetType === 'tuition';
   
@@ -209,7 +256,27 @@ export const ListComponent = ({ items, onButtonClick, spreadsheetId, widgetType 
   return (
     <div className="widget-content">
       {items.map((item, index) => (
-        <p key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+        <p 
+          key={index} 
+          onClick={() => onItemClick?.(item)}
+          style={{ 
+            marginBottom: '8px', 
+            paddingBottom: '8px', 
+            borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none',
+            cursor: onItemClick ? 'pointer' : 'default',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
           {item}
         </p>
       ))}
@@ -275,6 +342,55 @@ export const StatusListComponent = ({ items, onButtonClick }: { items: { name: s
         </button>
     </div>
 );
+
+import { getScheduleEvents } from '../../../utils/database/personalConfigManager';
+
+
+/**
+ * 시간표 데이터를 동적으로 불러와 표시하는 컨테이너 위젯 컴포넌트입니다.
+ */
+export const TimetableWidget: React.FC = () => {
+    const [items, setItems] = React.useState<{ time: string; course: string }[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchTimetableData = async () => {
+            try {
+                const events = await getScheduleEvents();
+                const today = new Date();
+                const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][today.getDay()];
+
+                const formattedItems = events
+                    .filter(event => event.date === dayOfWeek)
+                    .map(event => ({
+                        time: `${event.startTime} - ${event.endTime}`,
+                        course: `${event.title} (${event.description})`
+                    }))
+                    .sort((a, b) => a.time.localeCompare(b.time));
+                
+                setItems(formattedItems);
+            } catch (error) {
+                console.error("Failed to fetch timetable for widget:", error);
+                // 에러 발생 시 빈 배열로 설정하거나 에러 메시지를 표시할 수 있습니다.
+                setItems([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTimetableData();
+    }, []);
+
+    if (isLoading) {
+        return <div className="widget-content"><p>시간표를 불러오는 중...</p></div>;
+    }
+
+    if (items.length === 0) {
+        return <div className="widget-content"><p>오늘의 일정이 없습니다.</p></div>;
+    }
+
+    return <TimetableComponent items={items} />;
+};
 
 /**
  * 시간표를 표시하는 위젯 컴포넌트입니다.
@@ -492,11 +608,33 @@ export const BudgetPlanComponent = ({ items, onButtonClick, spreadsheetId }: { i
  * @param {object} props - 컴포넌트 props
  * @param {{ title: string; status: string; date: string }[]} props.items - 워크플로우 항목 배열
  */
-export const WorkflowStatusComponent = ({ items }: { items: { title: string; status: string; date: string }[] }) => (
+export const WorkflowStatusComponent = ({ items, onItemClick }: { items: { title: string; status: string; date: string }[], onItemClick?: () => void }) => (
   <div className="widget-content">
     {items.length > 0 ? (
       items.map((item, index) => (
-        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+        <div 
+          key={index} 
+          onClick={onItemClick}
+          style={{ 
+            marginBottom: '8px', 
+            paddingBottom: '8px', 
+            borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none',
+            cursor: onItemClick ? 'pointer' : 'default',
+            padding: '8px',
+            borderRadius: '4px',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
             <span style={{ fontWeight: '500', fontSize: '14px' }}>{item.title}</span>
             <span style={{ 
@@ -525,7 +663,7 @@ export const WorkflowStatusComponent = ({ items }: { items: { title: string; sta
  * @param {string} props.selectedStatus - 선택된 학생 상태 (재학, 휴학, 유급)
  * @param {(status: string) => void} props.onStatusChange - 상태 변경 핸들러
  */
-export const StudentSummaryComponent = ({ items, selectedStatus, onStatusChange, rawData }: { items: { label: string; value: string }[], selectedStatus?: string, onStatusChange?: (status: string) => void, rawData?: { status: string; grade: string; count: number }[] }) => {
+export const StudentSummaryComponent = ({ items, selectedStatus, onStatusChange, rawData, onGradeClick }: { items: { label: string; value: string }[], selectedStatus?: string, onStatusChange?: (status: string) => void, rawData?: { status: string; grade: string; count: number }[], onGradeClick?: (status: string, grade: string) => void }) => {
   const [currentStatus, setCurrentStatus] = React.useState<string>(selectedStatus || '재학');
   
   // selectedStatus prop이 변경되면 state 업데이트
@@ -588,12 +726,40 @@ export const StudentSummaryComponent = ({ items, selectedStatus, onStatusChange,
       {/* 선택된 상태의 학년별 학생 수 표시 */}
       {displayItems.length > 0 ? (
         <>
-          {displayItems.map((item, index) => (
-            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '8px', borderBottom: index < displayItems.length - 1 ? '1px solid #f8fafc' : 'none' }}>
-              <span><i className="fas fa-user-graduate" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
-              <span style={{ fontWeight: '600' }}>{item.value}</span>
-            </div>
-          ))}
+          {displayItems.map((item, index) => {
+            // 학년 추출 (예: "1학년" -> "1")
+            const grade = item.label.replace('학년', '');
+            return (
+              <div 
+                key={index} 
+                onClick={() => onGradeClick?.(currentStatus, grade)}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  marginBottom: '8px', 
+                  paddingBottom: '8px', 
+                  borderBottom: index < displayItems.length - 1 ? '1px solid #f8fafc' : 'none',
+                  cursor: onGradeClick ? 'pointer' : 'default',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (onGradeClick) {
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (onGradeClick) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <span><i className="fas fa-user-graduate" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
+                <span style={{ fontWeight: '600' }}>{item.value}</span>
+              </div>
+            );
+          })}
           {/* 총원 표시 */}
           {totalCount > 0 && (
             <div style={{ 
@@ -638,11 +804,33 @@ export const StaffSummaryComponent = ({ items }: { items: { label: string; value
  * @param {object} props - 컴포넌트 props
  * @param {{ name: string; email: string; userType: string }[]} props.items - 승인 대기 사용자 배열
  */
-export const UserApprovalComponent = ({ items }: { items: { name: string; email: string; userType: string }[] }) => (
+export const UserApprovalComponent = ({ items, onItemClick }: { items: { name: string; email: string; userType: string }[], onItemClick?: () => void }) => (
   <div className="widget-content">
     {items.length > 0 ? (
       items.map((item, index) => (
-        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+        <div 
+          key={index} 
+          onClick={onItemClick}
+          style={{ 
+            marginBottom: '8px', 
+            paddingBottom: '8px', 
+            borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none',
+            cursor: onItemClick ? 'pointer' : 'default',
+            padding: '8px',
+            borderRadius: '4px',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
             <span style={{ fontWeight: '500', fontSize: '14px' }}>{item.name}</span>
             <span style={{ fontSize: '12px', color: '#666666', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f8fafc' }}>
@@ -683,11 +871,33 @@ export const SystemStatsComponent = ({ items }: { items: { label: string; value:
  * @param {object} props - 컴포넌트 props
  * @param {{ title: string; date: string; type: string }[]} props.items - 문서 항목 배열
  */
-export const DocumentManagementComponent = ({ items }: { items: { title: string; date: string; type: string }[] }) => (
+export const DocumentManagementComponent = ({ items, onItemClick }: { items: { title: string; date: string; type: string; url?: string }[], onItemClick?: (item: { title: string; url?: string }) => void }) => (
   <div className="widget-content">
     {items.length > 0 ? (
       items.map((item, index) => (
-        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+        <div 
+          key={index} 
+          onClick={() => onItemClick?.(item)}
+          style={{ 
+            marginBottom: '8px', 
+            paddingBottom: '8px', 
+            borderBottom: index < items.length - 1 ? '1px solid #f8fafc' : 'none',
+            cursor: onItemClick ? 'pointer' : 'default',
+            padding: '8px',
+            borderRadius: '4px',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onItemClick) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
             <span style={{ fontWeight: '500', fontSize: '14px' }}>{item.title}</span>
             <span style={{ fontSize: '12px', color: '#666666', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f8fafc' }}>
@@ -706,10 +916,10 @@ export const DocumentManagementComponent = ({ items }: { items: { title: string;
 /**
  * 예산 집행 현황을 표시하는 위젯 컴포넌트입니다.
  * @param {object} props - 컴포넌트 props
- * @param {{ label: string; value: string; percentage: number }[]} props.items - 집행 현황 항목 배열
+ * @param {{ label: string; reviewerCount: string; reviewProgress: number; approvalProgress: number; executionProgress: number }[]} props.items - 집행 현황 항목 배열
  * @param {() => void} props.onButtonClick - 장부 선택 버튼 클릭 핸들러
  */
-export const BudgetExecutionComponent = ({ items, onButtonClick }: { items: { label: string; value: string; percentage: number }[], onButtonClick?: () => void }) => (
+export const BudgetExecutionComponent = ({ items, onButtonClick }: { items: { label: string; reviewerCount: string; reviewProgress: number; approvalProgress: number; executionProgress: number }[], onButtonClick?: () => void }) => (
   <div className="widget-content">
     {items.length > 0 && items[0].label === '장부를 선택해주세요' ? (
       <div>
@@ -732,23 +942,124 @@ export const BudgetExecutionComponent = ({ items, onButtonClick }: { items: { la
         </button>
       </div>
     ) : (
-      items.map((item, index) => (
-        <div key={index} style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span><i className="fas fa-chart-pie" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
-            <span style={{ fontWeight: '600' }}>{item.value}</span>
+      items.map((item, index) => {
+        // 전체 진행률 계산: 검토(33%) + 승인(33%) + 집행(33%)
+        const totalProgress = (item.reviewProgress * 33.33) + (item.approvalProgress * 33.33) + (item.executionProgress * 33.34);
+        const reviewSectionEnd = 33.33;
+        const approvalSectionEnd = 66.66;
+        
+        return (
+          <div key={index} style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontWeight: '500', fontSize: '14px' }}><i className="fas fa-chart-pie" style={{ marginRight: '8px', color: '#1a1a1a' }}></i>{item.label}</span>
+              <span style={{ fontSize: '12px', color: '#666666' }}>검토: {item.reviewerCount}</span>
+            </div>
+            
+            {/* 통합 진행 바 */}
+            <div style={{ position: 'relative', height: '20px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden', marginBottom: '4px' }}>
+              {/* 검토 구간 - 진행된 부분만 표시 */}
+              {item.reviewProgress > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  width: `${item.reviewProgress * reviewSectionEnd}%`,
+                  height: '100%',
+                  backgroundColor: item.reviewProgress === 1 ? '#10b981' : '#f59e0b',
+                  transition: 'width 0.3s ease'
+                }}></div>
+              )}
+              
+              {/* 승인 구간 - 진행된 부분만 표시 */}
+              {item.approvalProgress > 0 && item.reviewProgress === 1 && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${reviewSectionEnd}%`,
+                  width: `${item.approvalProgress * (approvalSectionEnd - reviewSectionEnd)}%`,
+                  height: '100%',
+                  backgroundColor: '#10b981',
+                  transition: 'width 0.3s ease'
+                }}></div>
+              )}
+              
+              {/* 집행 구간 - 진행된 부분만 표시 */}
+              {item.executionProgress > 0 && item.approvalProgress === 1 && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${approvalSectionEnd}%`,
+                  width: `${item.executionProgress * (100 - approvalSectionEnd)}%`,
+                  height: '100%',
+                  backgroundColor: '#10b981',
+                  transition: 'width 0.3s ease'
+                }}></div>
+              )}
+              
+              {/* 단계 구분선 및 라벨 */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', pointerEvents: 'none' }}>
+                {/* 검토 구분선 */}
+                <div style={{ 
+                  position: 'absolute', 
+                  left: `${reviewSectionEnd}%`, 
+                  top: 0, 
+                  bottom: 0, 
+                  width: '1px', 
+                  backgroundColor: '#cbd5e1',
+                  zIndex: 1
+                }}></div>
+                <div style={{ 
+                  position: 'absolute', 
+                  left: `${reviewSectionEnd / 2}%`, 
+                  top: '50%', 
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '10px',
+                  color: '#666666',
+                  fontWeight: '500',
+                  zIndex: 2
+                }}>검토</div>
+                
+                {/* 승인 구분선 */}
+                <div style={{ 
+                  position: 'absolute', 
+                  left: `${approvalSectionEnd}%`, 
+                  top: 0, 
+                  bottom: 0, 
+                  width: '1px', 
+                  backgroundColor: '#cbd5e1',
+                  zIndex: 1
+                }}></div>
+                <div style={{ 
+                  position: 'absolute', 
+                  left: `${reviewSectionEnd + (approvalSectionEnd - reviewSectionEnd) / 2}%`, 
+                  top: '50%', 
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '10px',
+                  color: '#666666',
+                  fontWeight: '500',
+                  zIndex: 2
+                }}>승인</div>
+                
+                {/* 집행 라벨 */}
+                <div style={{ 
+                  position: 'absolute', 
+                  left: `${approvalSectionEnd + (100 - approvalSectionEnd) / 2}%`, 
+                  top: '50%', 
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '10px',
+                  color: '#666666',
+                  fontWeight: '500',
+                  zIndex: 2
+                }}>집행</div>
+              </div>
+            </div>
+            
+            {/* 상태 표시 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666666' }}>
+              <span>검토: {isNaN(item.reviewProgress) ? '0' : (item.reviewProgress * 100).toFixed(0)}%</span>
+              <span>승인: {item.approvalProgress === 1 ? '완료' : '대기'}</span>
+              <span>집행: {item.executionProgress === 1 ? '완료' : '대기'}</span>
+            </div>
           </div>
-          <div style={{ height: '6px', backgroundColor: '#f8fafc', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ 
-              width: `${item.percentage}%`, 
-              height: '100%', 
-              backgroundColor: item.percentage > 100 ? '#ef4444' : item.percentage > 80 ? '#f59e0b' : '#10b981',
-              transition: 'width 0.3s ease'
-            }}></div>
-          </div>
-          <div style={{ fontSize: '12px', color: '#666666', marginTop: '2px' }}>{item.percentage.toFixed(1)}%</div>
-        </div>
-      ))
+        );
+      })
     )}
   </div>
 );

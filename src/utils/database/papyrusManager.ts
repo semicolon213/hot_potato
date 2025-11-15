@@ -137,6 +137,10 @@ export const findSpreadsheetById = async (name: string): Promise<string | null> 
     }
 };
 
+// 초기화 중복 방지
+let isInitializing = false;
+let initializationPromise: Promise<any> | null = null;
+
 /**
  * @brief 스프레드시트 ID들 초기화 (Apps Script를 통한 일괄 조회)
  */
@@ -152,9 +156,17 @@ export const initializeSpreadsheetIds = async (): Promise<{
     staffSpreadsheetId: string | null;
     accountingFolderId: string | null;
 }> => {
+    // 이미 초기화 중이면 기존 Promise 반환
+    if (isInitializing && initializationPromise) {
+        console.log('📊 스프레드시트 ID 초기화가 이미 진행 중입니다. 기존 요청을 재사용합니다.');
+        return initializationPromise;
+    }
+
+    isInitializing = true;
     console.log('📊 스프레드시트 ID 초기화 시작 (Apps Script 방식)...');
 
-    try {
+    initializationPromise = (async () => {
+        try {
         // 환경변수에서 스프레드시트 이름 목록 가져오기 (hp_potato_DB는 개인 설정 파일로 분리)
         const spreadsheetNames = [
             ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
@@ -269,7 +281,13 @@ export const initializeSpreadsheetIds = async (): Promise<{
             staffSpreadsheetId: null,
             accountingFolderId: null
         };
-    }
+        } finally {
+            isInitializing = false;
+            initializationPromise = null;
+        }
+    })();
+
+    return initializationPromise;
 };
 
 // 공지사항 관련 함수들 (앱스크립트 API 사용)
@@ -433,9 +451,10 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
         const uploadPromises = [];
 
         while ((match = imgRegex.exec(postData.content)) !== null) {
-            const base64Src = match[1];
+            const fullImgTag = match[0]; // The entire <img ...> tag
+            const base64Src = match[1]; // The base64 data URL
             const blob = dataURLtoBlob(base64Src);
-            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD';
+            const folderId = '1nXDKPPjHZVQu_qqng4O5vu1sSahDXNpD'; // Assuming a fixed folder ID
 
             const fileMetadata = {
                 name: `announcement-image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -455,6 +474,7 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
                 .then(async uploadedFile => {
                     if (uploadedFile.id) {
                         const fileId = uploadedFile.id;
+                        // Make the file publicly readable
                         await window.gapi.client.drive.permissions.create({
                             fileId: fileId,
                             resource: {
@@ -462,14 +482,27 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
                                 type: 'anyone'
                             }
                         });
+
+                        // Get the thumbnailLink for a potentially better-performing URL
                         const fileInfo = await window.gapi.client.drive.files.get({
                             fileId: fileId,
-                            fields: 'thumbnailLink'
+                            fields: 'thumbnailLink, webContentLink'
                         });
-                        return {base64Src, url: fileInfo.result.thumbnailLink};
+                        
+                        // Prioritize thumbnailLink, fallback to webContentLink
+                        const permanentUrl = fileInfo.result.thumbnailLink || fileInfo.result.webContentLink;
+
+                        if (permanentUrl) {
+                            // The thumbnailLink might be sized, remove the sizing parameter for flexibility
+                            const baseUrl = permanentUrl.split('=s')[0];
+                            return { oldTag: fullImgTag, newUrl: baseUrl };
+                        } else {
+                            console.error('webContentLink and thumbnailLink not found for file:', fileId);
+                            return { oldTag: fullImgTag, newUrl: null };
+                        }
                     } else {
                         console.error('File upload failed:', uploadedFile);
-                        return {base64Src, url: null};
+                        return { oldTag: fullImgTag, newUrl: null };
                     }
                 });
             uploadPromises.push(uploadPromise);
@@ -477,8 +510,10 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
 
         const uploadedImages = await Promise.all(uploadPromises);
         uploadedImages.forEach(image => {
-            if (image.url) {
-                processedContent = processedContent.replace(image.base64Src, image.url);
+            if (image.newUrl) {
+                // Replace the entire old <img> tag with a new one that only has the src
+                const newImgTag = `<img src="${image.newUrl}">`;
+                processedContent = processedContent.replace(image.oldTag, newImgTag);
             }
         });
 
@@ -802,37 +837,53 @@ export const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: s
 
 // 캘린더 관련 함수들
 export const fetchCalendarEvents = async (): Promise<Event[]> => {
-    if (!calendarProfessorSpreadsheetId) {
-        console.log('Professor calendar spreadsheet ID not available');
+    const allCalendarIds = [
+        calendarProfessorSpreadsheetId,
+        calendarStudentSpreadsheetId,
+        calendarCouncilSpreadsheetId,
+        calendarADProfessorSpreadsheetId,
+        calendarSuppSpreadsheetId
+    ].filter((id): id is string => !!id); // Filter out null/undefined IDs and assert type
+
+    if (allCalendarIds.length === 0) {
+        console.log('No calendar spreadsheet IDs are available.');
         return [];
     }
 
     try {
-        console.log(`Fetching calendar events from spreadsheet: ${calendarProfessorSpreadsheetId}`);
-        const data = await getSheetData(calendarProfessorSpreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
+        const allEvents: Event[] = [];
+        
+        for (const spreadsheetId of allCalendarIds) {
+            try {
+                console.log(`Fetching calendar events from spreadsheet: ${spreadsheetId}`);
+                const data = await getSheetData(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME);
 
-        if (!data || !data.values || data.values.length <= 1) {
-            return [];
+                if (data && data.values && data.values.length > 1) {
+                    const events = data.values.slice(1).map((row: string[], index: number) => ({
+                        id: `${spreadsheetId}-${row[0] || index}`,
+                        title: row[1] || '',
+                        startDate: row[2] || '',
+                        endDate: row[3] || '',
+                        description: row[4] || '',
+                        colorId: row[5] || '',
+                        startDateTime: row[6] || '',
+                        endDateTime: row[7] || '',
+                        type: row[8] || '',
+                        rrule: row[9] || '',
+                        attendees: row[10] || '',
+                    }));
+                    allEvents.push(...events);
+                }
+            } catch (error) {
+                console.error(`Error fetching events from spreadsheet ${spreadsheetId}:`, error);
+                // Continue to next spreadsheet even if one fails
+            }
         }
 
-        const events = data.values.slice(1).map((row: string[], index: number) => ({
-            id: `${calendarProfessorSpreadsheetId}-${row[0] || index}`,
-            title: row[1] || '',
-            startDate: row[2] || '',
-            endDate: row[3] || '',
-            description: row[4] || '',
-            colorId: row[5] || '',
-            startDateTime: row[6] || '',
-            endDateTime: row[7] || '',
-            type: row[8] || '',
-            rrule: row[9] || '',
-            attendees: row[10] || '',
-        }));
-
-        console.log('Loaded calendar events:', events.length);
-        return events;
+        console.log('Loaded a total of', allEvents.length, 'calendar events from all sheets.');
+        return allEvents;
     } catch (error) {
-        console.error('Error fetching calendar events from Google Sheet:', error);
+        console.error('Error fetching calendar events from Google Sheets:', error);
         return [];
     }
 };

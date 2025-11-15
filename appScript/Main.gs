@@ -801,6 +801,15 @@ function callUserManagementPost(req) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
+    if (action === 'addUsersToSpreadsheet') {
+      console.log('📊 사용자 일괄 추가 요청:', req.users?.length || 0, '명');
+      const result = addUsersToSpreadsheet(req);
+      console.log('📊 사용자 일괄 추가 결과:', result);
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     if (action === 'clearUserCache') {
       console.log('🗑️ 사용자 캐시 초기화 요청');
       const result = clearUserCache();

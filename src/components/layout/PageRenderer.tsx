@@ -29,6 +29,7 @@ import Accounting from '../../pages/Accounting';
 import Proceedings from '../../pages/Proceedings';
 import GoogleServicePage from '../../pages/GoogleService';
 import WorkflowManagement from '../../pages/WorkflowManagement';
+import Timetable from '../../pages/Timetable';
 
 interface PageRendererProps {
   currentPage: PageType;
@@ -148,10 +149,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           isLoading={isBoardLoading}
           data-oid="d01oi2r" />;
       case "new-board-post":
-        return <NewBoardPost 
-          onPageChange={onPageChange} 
-          onAddPost={(postData: { title: string; content: string; author: string; writer_id: string; }) => Promise.resolve()} 
-          user={user} 
+        return <NewBoardPost
+          onPageChange={onPageChange}
+          onAddPost={(postData: { title: string; content: string; author: string; writer_id: string; }) => Promise.resolve()}
+          user={user}
           isAuthenticated={isGoogleAuthenticatedForBoard} />;
       case "announcements":
         return <AnnouncementsPage
@@ -165,10 +166,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           user={user}
           data-oid="d01oi2r" />;
       case "new-announcement-post":
-        return <NewAnnouncementPost 
-          onPageChange={onPageChange} 
-          onAddPost={onAddAnnouncement} 
-          user={user} 
+        return <NewAnnouncementPost
+          onPageChange={onPageChange}
+          onAddPost={onAddAnnouncement}
+          user={user}
           isAuthenticated={isGoogleAuthenticatedForAnnouncements} />;
       case "announcement-view":
         return selectedAnnouncement ? (
@@ -216,13 +217,13 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         );
       case "new_document":
         return (
-          <NewDocument 
-            onPageChange={onPageChange} 
-            tags={tags} 
-            addTag={onAddTag} 
-            deleteTag={onDeleteTag} 
-            updateTag={onUpdateTag} 
-            isTemplatesLoading={isTemplatesLoading} 
+          <NewDocument
+            onPageChange={onPageChange}
+            tags={tags}
+            addTag={onAddTag}
+            deleteTag={onDeleteTag}
+            updateTag={onUpdateTag}
+            isTemplatesLoading={isTemplatesLoading}
             data-oid="ou.h__l" />
         );
       case "workflow_management":
@@ -261,18 +262,18 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard user={user} hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'accounting':
         return <Accounting />;
       case 'admin':
         return <Admin />;
       case 'students':
-        return <Students 
-          onPageChange={onPageChange} 
+        return <Students
+          onPageChange={onPageChange}
           studentSpreadsheetId={studentSpreadsheetId} />;
       case 'staff':
-        return <Staff 
-          onPageChange={onPageChange} 
+        return <Staff
+          onPageChange={onPageChange}
           staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;

@@ -1,0 +1,159 @@
+/* AddTimetableEventModal.css */
+/* Based on AddEventModal.css */
+
+.add-event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.modal-content {
+  background: var(--background, #fff);
+  padding: 24px;
+  border-radius: var(--border-radius-lg, 12px);
+  box-shadow: var(--shadow-base);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.close-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+}
+
+.title-input,
+.add-event-description {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  padding: 8px 0;
+  font-size: var(--font-size-base);
+  background-color: transparent;
+}
+
+.title-input {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.title-input:focus,
+.add-event-description:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+}
+
+.add-event-description {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.timetable-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.modal-grid-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-grid-item label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-light);
+}
+
+.modal-grid-item input[type="time"],
+.modal-grid-item .day-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-base);
+}
+
+.custom-color-picker {
+    position: relative;
+}
+
+.color-display {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.color-palette-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-base);
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 8px;
+    width: 150px;
+    z-index: 10;
+}
+
+.color-swatch-popup {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.submit-button,
+.cancel-button {
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  border: none;
+}
+
+.submit-button {
+  background-color: var(--primary);
+  color: white;
+}
+
+.submit-button:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background-color: var(--lightgrey);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+}

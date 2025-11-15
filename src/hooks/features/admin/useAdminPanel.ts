@@ -36,6 +36,7 @@ export const useAdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<AdminUser[]>([]);
+  const [unusedUsers, setUnusedUsers] = useState<AdminUser[]>([]);
   const [pinnedAnnouncementRequests, setPinnedAnnouncementRequests] = useState<PinnedAnnouncementRequest[]>([]);
   const [emailToSend, setEmailToSend] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -191,23 +192,59 @@ export const useAdminPanel = () => {
         console.log('setUsers 호출 전 현재 users 상태:', users);
         
         // Apps Script에서 받은 데이터를 AdminUser 타입으로 변환
-        const convertedUsers = result.users.map((user: Partial<AdminUser> & Record<string, unknown>) => ({
-          id: user.id || user.no_member || `user_${Math.random()}`,
-          email: user.email || '',
-          studentId: user.studentId || user.no_member || '',
-          name: user.name || user.name_member || '',
-          isAdmin: user.isAdmin || (user.is_admin === 'O'),
-          isApproved: user.isApproved || (user.Approval === 'O'),
-          requestDate: user.requestDate || user.approval_date || new Date().toISOString().split('T')[0],
-          approvalDate: user.approvalDate || (user.Approval === 'O' ? user.approval_date : null),
-          userType: user.userType || user.user_type || 'student'
-        }));
+        const convertedUsers = result.users.map((user: Partial<AdminUser> & Record<string, unknown>) => {
+          // Approval 필드 확인 (앱스크립트에서 직접 전달되는 필드)
+          // 'O' = 승인됨, 'X' = 승인 대기, '' 또는 null = 승인 대기 (비어있으면 사용자로 처리)
+          const approvalStatus = user.Approval || user.approval || '';
+          const isApproved = approvalStatus === 'O';
+          
+          return {
+            id: user.id || user.no_member || `user_${Math.random()}`,
+            email: user.email || '',
+            studentId: user.studentId || user.no_member || '',
+            name: user.name || user.name_member || '',
+            isAdmin: user.isAdmin || (user.is_admin === 'O'),
+            isApproved: isApproved,
+            requestDate: user.requestDate || user.approval_date || new Date().toISOString().split('T')[0],
+            approvalDate: isApproved ? (user.approvalDate || user.approval_date || null) : null,
+            userType: user.userType || user.user_type || 'student',
+            // 원본 Approval 필드 저장 (필터링용)
+            _approvalStatus: approvalStatus
+          };
+        });
         
         console.log('변환된 사용자 데이터:', convertedUsers.slice(0, 2));
         
+        // Approval 필드 기준으로 필터링
+        // 승인 대기: Approval이 'X'인 경우만
+        const pending = convertedUsers.filter(user => {
+          const approvalStatus = (user as any)._approvalStatus || '';
+          return approvalStatus === 'X';
+        });
+        
+        // 승인된 사용자: Approval이 'O'인 경우만
+        const approved = convertedUsers.filter(user => {
+          const approvalStatus = (user as any)._approvalStatus || '';
+          return approvalStatus === 'O';
+        });
+        
+        // 미사용 사용자: Approval이 비어있는 경우 ('' 또는 null 또는 undefined)
+        const unused = convertedUsers.filter(user => {
+          const approvalStatus = (user as any)._approvalStatus || '';
+          return approvalStatus === '' || approvalStatus === null || approvalStatus === undefined;
+        });
+        
+        console.log('필터링된 승인 대기 사용자 수:', pending.length);
+        console.log('필터링된 승인 대기 사용자 샘플:', pending.slice(0, 2));
+        console.log('필터링된 승인된 사용자 수:', approved.length);
+        console.log('필터링된 승인된 사용자 샘플:', approved.slice(0, 2));
+        console.log('필터링된 미사용 사용자 수:', unused.length);
+        console.log('필터링된 미사용 사용자 샘플:', unused.slice(0, 2));
+        
         setUsers(convertedUsers);
-        setPendingUsers(result.pendingUsers || []);
-        setApprovedUsers(result.approvedUsers || []);
+        setPendingUsers(pending);
+        setApprovedUsers(approved);
+        setUnusedUsers(unused);
         console.log('setUsers 호출 완료');
       } else {
         console.log('❌ 사용자 목록 로딩 실패:', {
@@ -225,11 +262,17 @@ export const useAdminPanel = () => {
         }
         
         setUsers([]);
+        setPendingUsers([]);
+        setApprovedUsers([]);
+        setUnusedUsers([]);
         setMessage('사용자 목록을 가져오는데 실패했습니다.');
       }
     } catch (error) {
       console.error('❌ 사용자 목록 조회 실패:', error);
       setUsers([]);
+      setPendingUsers([]);
+      setApprovedUsers([]);
+      setUnusedUsers([]);
       setMessage('사용자 목록을 가져오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
@@ -331,6 +374,44 @@ export const useAdminPanel = () => {
     } catch (error) {
       console.error('사용자 거부 실패:', error);
       setMessage('사용자 거부에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 사용자 일괄 추가
+  const handleAddUsers = async (usersToAdd: Array<{ no_member: string; name_member: string }>) => {
+    try {
+      setIsLoading(true);
+      setMessage('');
+      
+      console.log('=== 사용자 일괄 추가 요청 ===');
+      console.log('추가할 사용자 수:', usersToAdd.length);
+      
+      const result = await apiClient.addUsersToSpreadsheet(usersToAdd);
+      
+      if (result.success) {
+        const addedCount = (result.data as { added?: number })?.added || usersToAdd.length;
+        const skippedCount = (result.data as { skipped?: number })?.skipped || 0;
+        
+        setMessage(`${addedCount}명의 사용자가 추가되었습니다.${skippedCount > 0 ? ` (${skippedCount}명 중복으로 건너뜀)` : ''}`);
+        
+        // 캐시 무효화 후 목록 새로고침
+        console.log('캐시 무효화 시작...');
+        await clearUserCache();
+        console.log('캐시 무효화 완료, 사용자 목록 새로고침 시작...');
+        await loadUsers();
+        console.log('사용자 목록 새로고침 완료');
+      } else {
+        setMessage(result.message || result.error || '사용자 추가에 실패했습니다.');
+        throw new Error(result.message || result.error || '사용자 추가에 실패했습니다.');
+      }
+      
+    } catch (error) {
+      console.error('사용자 추가 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '사용자 추가에 실패했습니다.';
+      setMessage(errorMessage);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -478,6 +559,7 @@ export const useAdminPanel = () => {
     users,
     pendingUsers,
     approvedUsers,
+    unusedUsers,
     pinnedAnnouncementRequests,
     emailToSend,
     setEmailToSend,
@@ -487,6 +569,7 @@ export const useAdminPanel = () => {
     debugInfo,
     handleApproveUser,
     handleRejectUser,
+    handleAddUsers,
     handleSendAdminKey,
     handleApprovePinnedAnnouncement,
     handleRejectPinnedAnnouncement,

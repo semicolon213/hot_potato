@@ -137,6 +137,17 @@ export const useAppState = () => {
                 setCurrentPage("dashboard");
             }
 
+            // 선택된 공지사항 상태 복원
+            const savedSelectedAnnouncement = localStorage.getItem('selectedAnnouncement');
+            if (savedSelectedAnnouncement) {
+                try {
+                    setSelectedAnnouncement(JSON.parse(savedSelectedAnnouncement));
+                } catch (e) {
+                    console.error("Failed to parse saved selected announcement:", e);
+                    localStorage.removeItem('selectedAnnouncement');
+                }
+            }
+
             // 검색어 상태 복원
             if (savedSearchTerm) {
                 // console.log('검색어 상태 복원:', savedSearchTerm);
@@ -371,11 +382,22 @@ export const useAppState = () => {
             if (!gapi || !gapi.client || !gapi.client.sheets) throw new Error("Google API가 초기화되지 않았습니다.");
             if (ENV_CONFIG.PAPYRUS_DB_API_KEY) gapi.client.setApiKey(ENV_CONFIG.PAPYRUS_DB_API_KEY);
 
-            const response = await gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: hotPotatoDBSpreadsheetId,
-                range: WIDGET_RANGE,
-                majorDimension: 'ROWS'
-            });
+            let response;
+            try {
+                response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: hotPotatoDBSpreadsheetId,
+                    range: WIDGET_RANGE,
+                    majorDimension: 'ROWS'
+                });
+            } catch (apiError: any) {
+                // 429 에러 (Too Many Requests) 처리
+                if (apiError.status === 429 || apiError.result?.error?.code === 429) {
+                    console.warn('⚠️ API 호출 제한 초과. 위젯 동기화를 건너뜁니다.');
+                    setInitialLoadComplete(true);
+                    return;
+                }
+                throw apiError;
+            }
 
             // 새 형식: widget_id, widget_type, widget_order, widget_config
             const rows = response.result.values || [];
@@ -454,8 +476,13 @@ export const useAppState = () => {
             } else {
                 setWidgets([]);
             }
-        } catch (error) {
-            console.error("Google Sheets 동기화 실패:", error);
+        } catch (error: any) {
+            // 429 에러는 경고만 표시하고 계속 진행
+            if (error.status === 429 || error.result?.error?.code === 429) {
+                console.warn("⚠️ API 호출 제한 초과. 위젯 동기화를 건너뜁니다.");
+            } else {
+                console.error("Google Sheets 동기화 실패:", error);
+            }
         } finally {
             setInitialLoadComplete(true);
         }
@@ -468,10 +495,17 @@ export const useAppState = () => {
     }, [hotPotatoDBSpreadsheetId, syncWidgetsWithGoogleSheets]);
 
     const prevWidgetConfigRef = useRef<string>(''); // 이전 위젯 설정 저장
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 디바운싱용 타이머
     
     useEffect(() => {
         if (!initialLoadComplete) return;
-        const saveWidgetsToGoogleSheets = async () => {
+        
+        // 디바운싱: 1초 후에 저장 (빠른 연속 변경 방지)
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        
+        saveTimeoutRef.current = setTimeout(async () => {
             if (!hotPotatoDBSpreadsheetId) return;
             try {
                 const gapi = window.gapi;
@@ -508,31 +542,49 @@ export const useAppState = () => {
                     // 설정이 변경되었으면 저장
                     prevWidgetConfigRef.current = currentConfig;
                     
-                    await gapi.client.sheets.spreadsheets.values.update({
-                        spreadsheetId: hotPotatoDBSpreadsheetId,
-                        range: WIDGET_RANGE,
-                        valueInputOption: 'RAW',
-                        resource: { values: dataToSave },
-                    });
+                    try {
+                        await gapi.client.sheets.spreadsheets.values.update({
+                            spreadsheetId: hotPotatoDBSpreadsheetId,
+                            range: WIDGET_RANGE,
+                            valueInputOption: 'RAW',
+                            resource: { values: dataToSave },
+                        });
+                        console.log('📝 위젯 설정 저장 완료');
+                    } catch (apiError: any) {
+                        // 429 에러 (Too Many Requests) 처리
+                        if (apiError.status === 429 || apiError.result?.error?.code === 429) {
+                            console.warn('⚠️ API 호출 제한 초과. 잠시 후 재시도하세요.');
+                            // 에러를 무시하고 계속 진행 (다음 저장 시도에서 처리)
+                        } else {
+                            throw apiError;
+                        }
+                    }
                 }
             } catch (error) {
                 console.error("Error saving widget data to Google Sheets:", error);
             }
+        }, 1000); // 1초 디바운싱
+        
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
         };
-        saveWidgetsToGoogleSheets();
     }, [widgets, hotPotatoDBSpreadsheetId, initialLoadComplete]);
 
     // Sync global announcements state with the notice widget props
+    // 주의: 이 업데이트는 위젯 설정 저장을 트리거하지 않음 (데이터 props만 업데이트)
     useEffect(() => {
         const noticeWidget = widgets.find(w => w.type === 'notice');
         if (noticeWidget && announcements.length > 0) {
             const newItems = announcements.slice(0, 4).map(a => a.title);
             const currentItems = noticeWidget.props.items as string[] || [];
             if (JSON.stringify(newItems) !== JSON.stringify(currentItems)) {
+                // 위젯 props만 업데이트 (설정 저장은 트리거하지 않음)
                 setWidgets(prevWidgets =>
                     prevWidgets.map(widget =>
                         widget.type === 'notice'
-                            ? { ...widget, props: { items: newItems } }
+                            ? { ...widget, props: { ...widget.props, items: newItems } }
                             : widget
                     )
                 );
@@ -541,16 +593,18 @@ export const useAppState = () => {
     }, [announcements, widgets]);
 
     // Sync global calendar events state with the calendar widget props
+    // 주의: 이 업데이트는 위젯 설정 저장을 트리거하지 않음 (데이터 props만 업데이트)
     useEffect(() => {
         const calendarWidget = widgets.find(w => w.type === 'calendar');
         if (calendarWidget && calendarEvents.length > 0) {
             const newItems = calendarEvents.slice(0, 4).map(e => ({ date: e.startDate, event: e.title }));
             const currentItems = calendarWidget.props.items as { date: string, event: string }[] || [];
             if (JSON.stringify(newItems) !== JSON.stringify(currentItems)) {
+                // 위젯 props만 업데이트 (설정 저장은 트리거하지 않음)
                 setWidgets(prevWidgets =>
                     prevWidgets.map(widget =>
                         widget.type === 'calendar'
-                            ? { ...widget, props: { items: newItems } }
+                            ? { ...widget, props: { ...widget.props, items: newItems } }
                             : widget
                     )
                 );

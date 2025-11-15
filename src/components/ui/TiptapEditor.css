@@ -50,4 +50,55 @@
   outline: none;
 }
 
+div.ProseMirror img {
+  /* 기본 스타일 제거 - ResizableImage에서 처리 */
+}
+
+/* ResizableImage가 아닌 일반 이미지는 여전히 반응형으로 */
+div.ProseMirror img:not(.resizable-image-wrapper img) {
+  max-width: 100%;
+  height: auto;
+}
+
+.resizable-image-wrapper {
+  display: inline-block;
+  position: relative;
+  margin: 10px 0;
+  line-height: 0;
+}
+
+.resizable-image-wrapper img {
+    display: block;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    vertical-align: bottom;
+}
+
+/* When the image is selected, show a blue outline */
+.resizable-image-wrapper.selected img {
+  outline: 2px solid #007bff;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #007bff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+.resize-handle[data-direction="top-left"] { cursor: nwse-resize; }
+.resize-handle[data-direction="top"] { cursor: ns-resize; }
+.resize-handle[data-direction="top-right"] { cursor: nesw-resize; }
+.resize-handle[data-direction="left"] { cursor: ew-resize; }
+.resize-handle[data-direction="right"] { cursor: ew-resize; }
+.resize-handle[data-direction="bottom-left"] { cursor: nesw-resize; }
+.resize-handle[data-direction="bottom"] { cursor: ns-resize; }
+.resize-handle[data-direction="bottom-right"] { cursor: nwse-resize; }
+
 

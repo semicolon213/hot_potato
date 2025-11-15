@@ -41,16 +41,9 @@ export const widgetData = {
         }
     },
     timetable: {
-        title: '<i class="fas fa-calendar-day"></i> 시간표',
-        component: 'TimetableComponent',
-        props: {
-            items: [
-                { time: '09:00 - 10:30', course: '데이터베이스 (정보관 302)' },
-                { time: '11:00 - 12:30', course: '알고리즘 (공학관 105)' },
-                { time: '13:30 - 15:00', course: '웹프로그래밍 (컴퓨터관 203)' },
-                { time: '15:30 - 17:00', course: '인공지능 (AI센터 401)' },
-            ]
-        }
+        title: '<i class="fas fa-calendar-day"></i> 오늘의 시간표',
+        component: 'TimetableWidget',
+        props: {}
     },
     tuition: {
         title: '<i class="fas fa-money-bill-wave"></i> 장부 잔액',

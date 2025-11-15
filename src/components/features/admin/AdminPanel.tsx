@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAdminPanel } from '../../../hooks/features/admin/useAdminPanel';
 import AdminKeySection from './AdminKeySection';
 import UserList from './UserList';
 import PinnedAnnouncementList from './PinnedAnnouncementList';
+import AddUsersModal from './AddUsersModal';
 import './AdminPanel.css';
 
 const AdminPanel: React.FC = () => {
@@ -10,6 +11,7 @@ const AdminPanel: React.FC = () => {
     users,
     pendingUsers,
     approvedUsers,
+    unusedUsers,
     pinnedAnnouncementRequests,
     emailToSend,
     setEmailToSend,
@@ -21,8 +23,11 @@ const AdminPanel: React.FC = () => {
     handleRejectUser,
     handleSendAdminKey,
     handleApprovePinnedAnnouncement,
-    handleRejectPinnedAnnouncement
+    handleRejectPinnedAnnouncement,
+    handleAddUsers
   } = useAdminPanel();
+  
+  const [isAddUsersModalOpen, setIsAddUsersModalOpen] = useState(false);
 
   return (
     <div className="admin-panel">
@@ -35,10 +40,33 @@ const AdminPanel: React.FC = () => {
         onSendAdminKey={handleSendAdminKey}
       />
 
+      <div className="users-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={{ margin: 0 }}>사용자 관리</h3>
+        <button
+          onClick={() => setIsAddUsersModalOpen(true)}
+          className="add-users-btn"
+          disabled={isLoading}
+          style={{
+            background: 'var(--sidebar-primary)',
+            color: 'white',
+            border: 'none',
+            borderRadius: 'var(--sidebar-radius-sm)',
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          사용자 일괄 추가
+        </button>
+      </div>
+
       <UserList
         users={users}
         pendingUsers={pendingUsers}
         approvedUsers={approvedUsers}
+        unusedUsers={unusedUsers}
         isLoading={isLoading}
         onApproveUser={handleApproveUser}
         onRejectUser={handleRejectUser}
@@ -49,6 +77,17 @@ const AdminPanel: React.FC = () => {
         isLoading={isLoading}
         onApprove={handleApprovePinnedAnnouncement}
         onReject={handleRejectPinnedAnnouncement}
+      />
+
+      <AddUsersModal
+        isOpen={isAddUsersModalOpen}
+        onClose={() => setIsAddUsersModalOpen(false)}
+        onSuccess={async () => {
+          setIsAddUsersModalOpen(false);
+          // 사용자 목록 새로고침은 useAdminPanel에서 처리
+        }}
+        onAddUsers={handleAddUsers}
+        isLoading={isLoading}
       />
 
       {/* 디버깅 정보 (개발용) */}

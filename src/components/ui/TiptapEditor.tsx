@@ -1,28 +1,60 @@
 import React from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
+
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import Image from '@tiptap/extension-image';
+import { Image } from '@tiptap/extension-image';
+
 import { FontSize } from './FontSize';
 import './TiptapEditor.css';
+import ResizableImageComponent from './ResizableImage';
+import { CustomImage } from './CustomImage';
+
+// CustomImage에 NodeView 추가
+const CustomImageWithResize = CustomImage.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageComponent);
+  },
+});
 
 const MenuBar = ({ editor }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   if (!editor) {
     return null;
   }
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
   const addImage = (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const src = e.target.result as string;
-      editor.chain().focus().setImage({ src }).run();
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(event.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const src = e.target.result as string;
+        // 이미지 로드 후 원본 크기 가져오기
+        const img = document.createElement('img');
+        img.onload = () => {
+          // 원본 크기로 이미지 삽입 (최대 너비 800px로 제한)
+          const maxWidth = 800;
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+          
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height = height * ratio;
+          }
+          
+          editor.chain().focus().setImage({ 
+            src,
+            width: `${width}`,
+            height: `${height}`
+          }).run();
+        };
+        img.src = src;
+      };
+      reader.readAsDataURL(file);
+    });
     event.target.value = ''; // Reset the input value
   };
 
@@ -60,15 +92,16 @@ const MenuBar = ({ editor }) => {
 
 const TiptapEditor = ({ content, onContentChange }) => {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextStyle,
-      Color,
-      Image,
-      FontSize,
-    ],
-    content: content,
+                    extensions: [
+                      StarterKit,
+                      TextStyle,
+                      Color,
+                      CustomImageWithResize.configure({
+                        inline: false,
+                        allowBase64: true,
+                      }),
+                      FontSize,
+                    ],    content: content,
     onUpdate: ({ editor }) => {
       onContentChange(editor.getHTML());
     },
