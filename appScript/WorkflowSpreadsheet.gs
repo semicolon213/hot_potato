@@ -123,7 +123,7 @@ function getWorkflowSpreadsheet() {
       }
       
       // 루트 폴더로 이동
-      if (rootFolder) {
+        if (rootFolder) {
         try {
           const file = DriveApp.getFileById(spreadsheetId);
           const parents = file.getParents();
@@ -131,9 +131,9 @@ function getWorkflowSpreadsheet() {
             const oldParent = parents.next();
             file.moveTo(rootFolder);
             console.log('📊 워크플로우 스프레드시트를 루트 폴더로 이동:', rootFolderName);
-          }
-        } catch (error) {
-          console.warn('📊 워크플로우 스프레드시트 폴더 이동 실패 (무시됨):', error.message);
+        }
+      } catch (error) {
+        console.warn('📊 워크플로우 스프레드시트 폴더 이동 실패 (무시됨):', error.message);
         }
       }
     }

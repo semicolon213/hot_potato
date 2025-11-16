@@ -28,11 +28,12 @@ body {
 
 .dashboard-header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: clamp(24px, 2.78vh, 32px);
     padding: 0;
     margin: 0 0 clamp(24px, 2.78vh, 32px) 0;
+    gap: 16px;
 }
 
 

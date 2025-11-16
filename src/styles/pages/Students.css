@@ -7,9 +7,119 @@
   background: transparent;
 }
 
+/* 년도별 탭 스타일 (장부 항목 표기 방식과 동일) */
+.year-tabs {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.56vw, 16px);
+  margin: 0;
+  border-bottom: none;
+  padding: 0;
+  flex: 1;
+}
+
+.year-nav-btn {
+  flex: 0 0 auto;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-light);
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(28px, 3.24vh, 32px);
+  min-width: clamp(28px, 3.24vh, 32px);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.year-nav-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.year-nav-btn:hover:not(:disabled) {
+  color: var(--text-dark);
+  background-color: var(--bg-gray-alt);
+}
+
+.year-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.year-display {
+  flex: 0 0 auto;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.04vw, 12px);
+  min-height: clamp(28px, 3.24vh, 32px);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.year-display-item {
+  cursor: pointer;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  border-radius: var(--sidebar-radius-sm);
+  transition: var(--transition-base);
+}
+
+.year-display-item:hover {
+  background-color: var(--bg-gray-alt);
+}
+
+.year-display-item.active {
+  background-color: transparent;
+  color: var(--text-dark);
+}
+
 .student-list-section {
   width: 100%;
   margin-top: clamp(16px, 1.85vh, 24px);
+}
+
+.student-list-add-button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: clamp(12px, 1.39vh, 16px);
+}
+
+.student-add-button {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.69vh, 8px);
+  padding: clamp(8px, 0.93vh, 10px) clamp(16px, 2.08vw, 20px);
+  background-color: var(--sidebar-primary, #1a1a1a);
+  color: var(--white-pure, #fff);
+  border: none;
+  border-radius: var(--sidebar-radius-sm, 6px);
+  font-size: clamp(13px, 1.5vh, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition: var(--transition-base, all 0.2s ease);
+}
+
+.student-add-button:hover {
+  background-color: var(--sidebar-hover-bg, #2a2a2a);
+}
+
+.student-add-button .add-icon {
+  font-size: clamp(12px, 1.39vh, 14px);
+}
+
+.student-add-button .add-button-text {
+  white-space: nowrap;
 }
 
 .student-table-container {

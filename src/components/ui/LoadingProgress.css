@@ -1,0 +1,135 @@
+/**
+ * @file LoadingProgress.css
+ * @brief LoadingProgress 컴포넌트 스타일
+ */
+
+.loading-progress-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  pointer-events: auto;
+}
+
+.loading-progress-container {
+  background: var(--white-pure, #ffffff);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 500px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.loading-progress-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark, #333);
+}
+
+.loading-progress-cancel {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-placeholder, #999);
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.loading-progress-cancel:hover {
+  background: var(--gray-100, #f5f5f5);
+  color: var(--text-dark, #333);
+}
+
+.loading-progress-bar-container {
+  margin-bottom: 12px;
+}
+
+.loading-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--gray-200, #e5e5e5);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.loading-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #45a049);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.loading-progress-text {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  text-align: center;
+}
+
+.loading-progress-message {
+  font-size: 14px;
+  color: var(--text-dark, #333);
+  text-align: center;
+  margin-top: 12px;
+  padding: 8px;
+  background: var(--gray-50, #fafafa);
+  border-radius: 6px;
+  min-height: 20px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .loading-progress-container {
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 20px;
+  }
+
+  .loading-progress-header h3 {
+    font-size: 16px;
+  }
+}
+

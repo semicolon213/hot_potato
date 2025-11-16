@@ -1,5 +1,5 @@
 /* AddTimetableEventModal.css */
-/* Based on AddEventModal.css */
+/* 개인시간표 일정 추가 모달 스타일 */
 
 .add-event-modal-overlay {
   position: fixed;
@@ -7,153 +7,322 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1001;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
-  background: var(--background, #fff);
-  padding: 24px;
-  border-radius: var(--border-radius-lg, 12px);
-  box-shadow: var(--shadow-base);
-  width: 90%;
-  max-width: 500px;
+  background: var(--white-pure, #fff);
+  border-radius: var(--sidebar-radius, 12px);
+  border: 1px solid var(--border-color, #e0e0e0);
+  width: clamp(480px, 50vw, 600px);
+  max-width: 90vw;
+  max-height: calc(100vh - clamp(80px, 9.26vh, 104px));
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--white-pure, #fff);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(18px, 2.08vh, 22px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-dark, #333);
+}
+
+.close-icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: clamp(4px, 0.46vh, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--sidebar-radius-sm, 6px);
+  transition: var(--transition-base, all 0.2s ease);
+  width: clamp(32px, 3.7vw, 36px);
+  height: clamp(32px, 3.7vw, 36px);
+}
+
+.close-icon-button:hover {
+  background-color: var(--bg-gray-alt, #f5f5f5);
 }
 
 .close-icon {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
+  width: clamp(18px, 2.08vh, 20px);
+  height: clamp(18px, 2.08vh, 20px);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
 }
 
-.title-input,
-.add-event-description {
-  width: 100%;
-  border: none;
-  border-bottom: 1px solid var(--border-color);
-  padding: 8px 0;
-  font-size: var(--font-size-base);
-  background-color: transparent;
+.close-icon-button:hover .close-icon {
+  opacity: 1;
+}
+
+.modal-body {
+  padding: clamp(20px, 2.31vh, 24px) clamp(24px, 3.125vw, 32px);
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 1.85vh, 20px);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 0.93vh, 12px);
 }
 
 .title-input {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  width: 100%;
+  padding: clamp(12px, 1.39vh, 16px);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: var(--sidebar-radius-sm, 6px);
+  font-size: clamp(16px, 1.85vh, 18px);
+  font-weight: var(--font-weight-semibold, 600);
+  background-color: var(--white-pure, #fff);
+  color: var(--text-dark, #333);
+  transition: var(--transition-base, all 0.2s ease);
+  box-sizing: border-box;
 }
 
-.title-input:focus,
-.add-event-description:focus {
+.title-input:focus {
   outline: none;
-  border-bottom-color: var(--primary);
+  border-color: var(--sidebar-primary, #1a1a1a);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
-.add-event-description {
-  resize: vertical;
-  min-height: 60px;
+.title-input::placeholder {
+  color: var(--text-light, #999);
+  font-weight: var(--font-weight-normal, 400);
 }
 
 .timetable-modal-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 1.85vh, 20px);
 }
 
 .modal-grid-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 0.93vh, 10px);
 }
 
 .modal-grid-item label {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-light);
+  font-size: clamp(13px, 1.5vh, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-dark, #333);
+  margin-bottom: 0;
 }
 
 .modal-grid-item input[type="time"],
 .modal-grid-item .day-select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    font-size: var(--font-size-base);
+  width: 100%;
+  padding: clamp(10px, 1.16vh, 12px) clamp(12px, 1.56vw, 16px);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: var(--sidebar-radius-sm, 6px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  background-color: var(--white-pure, #fff);
+  color: var(--text-dark, #333);
+  transition: var(--transition-base, all 0.2s ease);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.modal-grid-item input[type="time"]:focus,
+.modal-grid-item .day-select:focus {
+  outline: none;
+  border-color: var(--sidebar-primary, #1a1a1a);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+}
+
+.time-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 0.93vw, 12px);
+}
+
+.time-input {
+  flex: 1;
+}
+
+.time-display {
+  font-size: clamp(13px, 1.5vh, 14px);
+  color: var(--text-light, #666);
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .custom-color-picker {
-    position: relative;
+  position: relative;
 }
 
 .color-display {
-    width: 38px;
-    height: 38px;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
-    cursor: pointer;
+  width: clamp(40px, 4.63vw, 48px);
+  height: clamp(40px, 4.63vw, 48px);
+  border-radius: var(--sidebar-radius-sm, 6px);
+  border: 2px solid var(--border-color, #e0e0e0);
+  cursor: pointer;
+  transition: var(--transition-base, all 0.2s ease);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.color-display:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.color-picker-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9;
 }
 
 .color-palette-popup {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: var(--background);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    box-shadow: var(--shadow-base);
-    display: flex;
-    flex-wrap: wrap;
-    padding: 8px;
-    gap: 8px;
-    width: 150px;
-    z-index: 10;
+  position: absolute;
+  top: calc(100% + clamp(8px, 0.93vh, 12px));
+  left: 0;
+  background: var(--white-pure, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: var(--sidebar-radius-sm, 6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-wrap: wrap;
+  padding: clamp(12px, 1.39vh, 16px);
+  gap: clamp(8px, 0.93vh, 12px);
+  width: clamp(180px, 18.75vw, 220px);
+  z-index: 10;
 }
 
 .color-swatch-popup {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    cursor: pointer;
+  width: clamp(32px, 3.7vw, 36px);
+  height: clamp(32px, 3.7vw, 36px);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: var(--transition-base, all 0.2s ease);
+  padding: 0;
+  background: none;
+}
+
+.color-swatch-popup:hover {
+  transform: scale(1.15);
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.color-swatch-popup.selected {
+  border-color: var(--text-dark, #333);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+}
+
+.add-event-description {
+  width: 100%;
+  padding: clamp(12px, 1.39vh, 16px);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: var(--sidebar-radius-sm, 6px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  background-color: var(--white-pure, #fff);
+  color: var(--text-dark, #333);
+  resize: vertical;
+  min-height: clamp(80px, 9.26vh, 100px);
+  font-family: inherit;
+  transition: var(--transition-base, all 0.2s ease);
+  box-sizing: border-box;
+}
+
+.add-event-description:focus {
+  outline: none;
+  border-color: var(--sidebar-primary, #1a1a1a);
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
+}
+
+.add-event-description::placeholder {
+  color: var(--text-light, #999);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 16px;
+  gap: clamp(12px, 1.39vw, 16px);
+  padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+  border-top: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--white-pure, #fff);
+  flex-shrink: 0;
 }
 
 .submit-button,
 .cancel-button {
-  padding: 10px 20px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
+  padding: clamp(10px, 1.16vh, 12px) clamp(20px, 2.6vw, 24px);
+  border-radius: var(--sidebar-radius-sm, 6px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold, 600);
   cursor: pointer;
-  transition: var(--transition-base);
-  border: none;
+  transition: var(--transition-base, all 0.2s ease);
+  border: 1px solid transparent;
+  min-width: clamp(80px, 10.42vw, 100px);
 }
 
 .submit-button {
-  background-color: var(--primary);
-  color: white;
+  background-color: var(--sidebar-primary, #1a1a1a);
+  color: var(--white-pure, #fff);
+  border-color: var(--sidebar-primary, #1a1a1a);
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--sidebar-hover-bg, #2a2a2a);
+  border-color: var(--sidebar-hover-bg, #2a2a2a);
 }
 
 .submit-button:disabled {
-  background-color: var(--border-color);
+  background-color: var(--border-color, #e0e0e0);
+  color: var(--text-light, #999);
+  border-color: var(--border-color, #e0e0e0);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .cancel-button {
-  background-color: var(--lightgrey);
-  color: var(--text-dark);
-  border: 1px solid var(--border-color);
+  background-color: var(--white-pure, #fff);
+  color: var(--text-dark, #333);
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.cancel-button:hover {
+  background-color: var(--bg-gray-alt, #f5f5f5);
+  border-color: var(--border-color-alt, #d0d0d0);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .timetable-modal-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    width: 95vw;
+    max-height: 90vh;
+  }
 }

@@ -633,6 +633,15 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       filterType: 'personal',
     },
     {
+      count: myCreatedDocumentsCount,
+      title: "내가 만든 문서",
+      backgroundColor: "#F3E5F5",
+      textColor: "#000000",
+      icon: FaEdit,
+      iconColor: "#7B1FA2",
+      filterType: 'myCreated',
+    },
+    {
       count: 0,
       title: "새 문서 만들기",
       backgroundColor: "#FCE4EC",

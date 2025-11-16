@@ -7,6 +7,8 @@
  */
 
 import { getSheetData, append, update } from 'papyrus-db';
+import { getCacheManager } from '../cache/cacheManager';
+import { generateCacheKey, getCacheTTL, getActionCategory } from '../cache/cacheUtils';
 import type {
   Account,
   LedgerEntry,
@@ -207,8 +209,21 @@ export const uploadEvidenceFile = async (
  * 통장 목록 조회
  */
 export const getAccounts = async (spreadsheetId: string): Promise<Account[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'getAccounts';
+  const category = getActionCategory(action);
+  const cacheKey = generateCacheKey(category, action, { spreadsheetId });
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<Account[]>(cacheKey);
+  if (cachedData) {
+    console.log('💰 캐시에서 통장 목록 로드:', cachedData.length, '개');
+    return cachedData;
+  }
+
   try {
     ensureAuth();
+    console.log('💰 통장 목록 로드 시작 (캐시 미스)...');
     const data = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.ACCOUNT);
     
     if (!data || !data.values || data.values.length <= 1) {
@@ -236,6 +251,13 @@ export const getAccounts = async (spreadsheetId: string): Promise<Account[]> => 
       });
     }
 
+    console.log(`💰 통장 목록 로드 완료: ${accounts.length}개`);
+    
+    // 캐시에 저장
+    const ttl = getCacheTTL(action);
+    await cacheManager.set(cacheKey, accounts, ttl);
+    console.log('💰 통장 목록 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+    
     return accounts;
   } catch (error) {
     console.error('❌ 통장 목록 조회 오류:', error);
@@ -862,8 +884,21 @@ export const getLedgerEntries = async (
  * 카테고리 목록 조회
  */
 export const getCategories = async (spreadsheetId: string): Promise<Category[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'getAccountingCategories';
+  const category = getActionCategory(action);
+  const cacheKey = generateCacheKey(category, action, { spreadsheetId });
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<Category[]>(cacheKey);
+  if (cachedData) {
+    console.log('📂 캐시에서 카테고리 목록 로드:', cachedData.length, '개');
+    return cachedData;
+  }
+
   try {
     ensureAuth();
+    console.log('📂 카테고리 목록 로드 시작 (캐시 미스)...');
     const data = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY);
     
     if (!data || !data.values || data.values.length <= 1) {
@@ -887,7 +922,15 @@ export const getCategories = async (spreadsheetId: string): Promise<Category[]> 
       });
     }
 
-    return categories.filter(cat => cat.isActive);
+    const filteredCategories = categories.filter(cat => cat.isActive);
+    console.log(`📂 카테고리 목록 로드 완료: ${filteredCategories.length}개`);
+    
+    // 캐시에 저장
+    const ttl = getCacheTTL(action);
+    await cacheManager.set(cacheKey, filteredCategories, ttl);
+    console.log('📂 카테고리 목록 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+    
+    return filteredCategories;
   } catch (error) {
     console.error('❌ 카테고리 목록 조회 오류:', error);
     throw error;

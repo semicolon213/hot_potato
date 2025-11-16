@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import PageRenderer from "./components/layout/PageRenderer";
@@ -47,6 +47,10 @@ import { ENV_CONFIG } from './config/environment';
 import { tokenManager } from './utils/auth/tokenManager';
 import { lastUserManager } from './utils/auth/lastUserManager';
 import { useSession } from './hooks/features/auth/useSession';
+import { useNotification } from './hooks/ui/useNotification';
+import { NotificationModal, ConfirmModal } from './components/ui/NotificationModal';
+import LoadingProgress from './components/ui/LoadingProgress';
+import { useAuthStore } from './hooks/features/auth/useAuthStore';
 
 /**
  * @brief 메인 애플리케이션 컴포넌트
@@ -125,9 +129,24 @@ const App: React.FC = () => {
     handleDrop,
     widgetOptions,
 
+    // DataSyncService 관련 상태
+    isInitializingData,
+    dataSyncProgress,
+    lastSyncTime,
+    handleRefreshAllData,
+
     // State reset
     resetAllState
   } = useAppState();
+
+  // 알림 훅
+  const {
+    notification,
+    confirm,
+    hideNotification,
+    hideConfirm,
+    handleConfirm
+  } = useNotification();
 
   // 로그인 처리
   const handleLogin = (userData: User) => {
@@ -149,7 +168,7 @@ const App: React.FC = () => {
   };
 
   // 일반 로그아웃 처리 (기본 동작)
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUser(null);
     setCurrentPage("dashboard");
     setSearchTerm("");
@@ -162,9 +181,8 @@ const App: React.FC = () => {
       window.google.accounts.id.disableAutoSelect();
     }
 
-    // Zustand auth store도 초기화 (동기적으로)
+    // Zustand auth store도 초기화
     try {
-      const { useAuthStore } = require('./hooks/features/auth/useAuthStore');
       const authStoreLogout = useAuthStore.getState().logout;
       authStoreLogout();
     } catch (error) {
@@ -172,7 +190,7 @@ const App: React.FC = () => {
     }
 
     console.log('🚪 로그아웃 완료');
-  };
+  }, [setUser, setCurrentPage, setSearchTerm, setGoogleAccessToken]);
 
   // 완전 로그아웃 처리 (현재 로그인한 계정만 제거)
   const handleFullLogout = () => {
@@ -207,6 +225,45 @@ const App: React.FC = () => {
     handleLogout();
     alert('세션이 만료되었습니다. 다시 로그인해주세요.');
   });
+
+  // 토큰 만료 체크 및 자동 갱신/로그아웃
+  useEffect(() => {
+    if (!user) {
+      return; // 로그인하지 않은 경우 체크하지 않음
+    }
+
+    // 토큰 만료 체크 및 자동 갱신 간격 (30초마다 체크)
+    const checkInterval = setInterval(async () => {
+      // 토큰이 만료 임박 시 자동 갱신 시도
+      if (tokenManager.isExpiringSoon()) {
+        const refreshed = await tokenManager.autoRefresh();
+        if (refreshed) {
+          console.log('✅ 토큰이 자동으로 갱신되었습니다.');
+          // gapi에 새 토큰 설정
+          const newToken = tokenManager.get();
+          if (newToken && window.gapi?.client) {
+            window.gapi.client.setToken({ access_token: newToken });
+          }
+          return;
+        } else {
+          console.warn('⚠️ 토큰 자동 갱신 실패 (Refresh Token이 없을 수 있습니다)');
+        }
+      }
+
+      // 토큰이 완전히 만료된 경우
+      if (!tokenManager.isValid()) {
+        console.log('🔒 토큰이 만료되어 자동 로그아웃합니다.');
+        clearInterval(checkInterval);
+        handleLogout();
+        alert('토큰이 만료되었습니다. 다시 로그인해주세요.');
+      }
+    }, 30 * 1000); // 30초마다 체크
+
+    // 컴포넌트 언마운트 시 인터벌 정리
+    return () => {
+      clearInterval(checkInterval);
+    };
+  }, [user, handleLogout]);
 
   // Electron 이벤트 처리 (자동 로그아웃)
   useEffect(() => {
@@ -999,6 +1056,9 @@ const App: React.FC = () => {
               onSearchSubmit={handleSearchSubmit}
               pageSectionLabel={pageSectionLabel}
               currentPage={currentPage}
+              lastSyncTime={lastSyncTime}
+              onRefresh={handleRefreshAllData}
+              isRefreshing={isInitializingData}
             />
           )}
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
@@ -1063,10 +1123,42 @@ const App: React.FC = () => {
               handleDragEnter={handleDragEnter}
               handleDrop={handleDrop}
               widgetOptions={widgetOptions}
+              // DataSyncService 관련 props
+              lastSyncTime={lastSyncTime}
+              onRefresh={handleRefreshAllData}
+              isRefreshing={isInitializingData}
             />
           </div>
         </div>
       </div>
+      
+      {/* 알림 모달 */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        message={notification.message}
+        type={notification.type}
+        onClose={hideNotification}
+        duration={notification.duration}
+      />
+      
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirm.isOpen}
+        message={confirm.message}
+        title={confirm.title}
+        confirmText={confirm.confirmText}
+        cancelText={confirm.cancelText}
+        type={confirm.type}
+        onConfirm={handleConfirm}
+        onCancel={hideConfirm}
+        onCancelAction={confirm.onCancelAction}
+      />
+      
+      {/* 초기 로딩 진행률 */}
+      <LoadingProgress
+        isVisible={isInitializingData && dataSyncProgress.total > 0}
+        progress={dataSyncProgress}
+      />
     </GoogleOAuthProvider>
   );
 };

@@ -282,7 +282,7 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
       textColor: '#000000',
       icon: FaPlus,
       iconColor: '#E65100',
-      onClick: () => onPageChange('NewAnnouncementPost'),
+      onClick: () => onPageChange('new-announcement-post'),
     },
   ];
 

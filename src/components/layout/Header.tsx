@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./Header.css";
 import type { PageType } from "../../types/app";
-import { FaSearch, FaTimes } from "react-icons/fa";
+import { FaSearch, FaTimes, FaClock } from "react-icons/fa";
+import DataSyncStatus from "../ui/DataSyncStatus";
+import { tokenManager } from "../../utils/auth/tokenManager";
 
 // 사용자 프로필 타입이 필요해지면 아래를 참조해 확장
 
@@ -18,6 +20,9 @@ interface HeaderProps {
   onSearchSubmit: () => void;
   pageSectionLabel?: string;
   currentPage?: PageType;
+  lastSyncTime?: Date | null;
+  onRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 
 interface SubMenuTab {
@@ -25,7 +30,49 @@ interface SubMenuTab {
   label: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, currentPage, searchTerm, onSearchChange, onSearchSubmit }) => {
+const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, currentPage, searchTerm, onSearchChange, onSearchSubmit, lastSyncTime, onRefresh, isRefreshing, userInfo }) => {
+  // 토큰 만료까지 남은 시간 상태
+  const [timeUntilExpiry, setTimeUntilExpiry] = useState<number>(0);
+
+  // 토큰 만료 시간 실시간 업데이트
+  useEffect(() => {
+    const updateTimeUntilExpiry = () => {
+      const remaining = tokenManager.getTimeUntilExpiry();
+      setTimeUntilExpiry(remaining);
+    };
+
+    // 즉시 업데이트
+    updateTimeUntilExpiry();
+
+    // 1초마다 업데이트
+    const interval = setInterval(updateTimeUntilExpiry, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 토큰 만료 시간 포맷팅
+  const formatTimeUntilExpiry = (ms: number): string => {
+    if (ms <= 0) return '만료됨';
+
+    const totalSeconds = Math.floor(ms / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const days = Math.floor(totalHours / 24);
+
+    if (days > 0) {
+      const hours = totalHours % 24;
+      return `${days}일 ${hours}시간`;
+    } else if (totalHours > 0) {
+      const minutes = totalMinutes % 60;
+      return `${totalHours}시간 ${minutes}분`;
+    } else if (totalMinutes > 0) {
+      const seconds = totalSeconds % 60;
+      return `${totalMinutes}분 ${seconds}초`;
+    } else {
+      return `${totalSeconds}초`;
+    }
+  };
+
   // 페이지별 검색 placeholder
   const getSearchPlaceholder = (): string => {
     if (!currentPage) return '검색하기';
@@ -158,6 +205,32 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
           renderBreadcrumb()
         )}
         <div className="header-actions" data-oid="xq1uhkt">
+          {lastSyncTime !== undefined && onRefresh && (
+            <DataSyncStatus
+              lastSyncTime={lastSyncTime || null}
+              onRefresh={onRefresh}
+              isRefreshing={isRefreshing || false}
+            />
+          )}
+          {userInfo && (
+            <div className="token-expiry-container">
+              <div 
+                className={`token-expiry-status ${
+                  timeUntilExpiry <= 0 
+                    ? 'expired' 
+                    : timeUntilExpiry < 5 * 60 * 1000 
+                      ? 'expiring-soon' 
+                      : ''
+                }`}
+                title={`토큰 만료까지 ${formatTimeUntilExpiry(timeUntilExpiry)} 남음`}
+              >
+                <FaClock className="token-expiry-icon" />
+                <span className="token-expiry-text">
+                  {timeUntilExpiry > 0 ? formatTimeUntilExpiry(timeUntilExpiry) : '만료됨'}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="header-search-group">
             <FaSearch className="header-search-icon" />
             <input

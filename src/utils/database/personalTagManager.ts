@@ -8,6 +8,8 @@
 
 import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
+import { getCacheManager } from '../cache/cacheManager';
+import { generateCacheKey, getCacheTTL, getActionCategory } from '../cache/cacheUtils';
 import { 
   initializePersonalConfigFile, 
   getPersonalConfigSpreadsheetId,
@@ -49,6 +51,18 @@ const setupPapyrusAuth = () => {
  * @returns {Promise<string[]>} 태그 목록
  */
 export const fetchTags = async (): Promise<string[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'fetchPersonalTags';
+  const category = 'personalTags';
+  const cacheKey = generateCacheKey(category, action, {});
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<string[]>(cacheKey);
+  if (cachedData) {
+    console.log('🏷️ 캐시에서 개인 태그 로드:', cachedData.length, '개');
+    return cachedData;
+  }
+
   try {
     setupPapyrusAuth();
     
@@ -62,7 +76,7 @@ export const fetchTags = async (): Promise<string[]> => {
       }
     }
 
-    console.log('📄 개인 설정 파일 ID:', spreadsheetId);
+    console.log('🏷️ 개인 태그 로드 시작 (캐시 미스)...');
     const data = await getSheetData(spreadsheetId, 'tag');
     
     if (!data || !data.values || data.values.length <= 1) {
@@ -74,7 +88,13 @@ export const fetchTags = async (): Promise<string[]> => {
       .map((row: string[]) => row[0])
       .filter(tag => tag && tag.trim() !== '');
 
-    console.log(`✅ 태그 ${tags.length}개 로드 완료`);
+    console.log(`🏷️ 개인 태그 로드 완료: ${tags.length}개`);
+    
+    // 캐시에 저장 (개인 데이터는 30분)
+    const ttl = 30 * 60 * 1000;
+    await cacheManager.set(cacheKey, tags, ttl);
+    console.log('🏷️ 개인 태그 캐시 저장 완료 (TTL: 30분)');
+    
     return tags;
   } catch (error) {
     console.error('❌ 태그 가져오기 오류:', error);

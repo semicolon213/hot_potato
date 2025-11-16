@@ -480,18 +480,6 @@ function NewDocument({
     const [showAfterCreateModal, setShowAfterCreateModal] = useState(false);
     const [createdDocumentUrl, setCreatedDocumentUrl] = useState("");
     
-    // 파일명 입력 모달 함수들
-    const openFileNameModal = (template: Template) => {
-        setSelectedTemplate(template);
-        setDocumentTitle("");
-        setShowFileNameModal(true);
-    };
-    
-    const closeFileNameModal = () => {
-        setShowFileNameModal(false);
-        setDocumentTitle("");
-        setSelectedTemplate(null);
-    };
     
     const openPermissionModal = () => {
         setShowFileNameModal(false);
@@ -1167,6 +1155,30 @@ function NewDocument({
         uploadSharedTemplate,
     } = useTemplateUI([], onPageChange, searchTerm, activeTab); // 빈 배열로 시트 템플릿 제거
 
+    // 파일명 입력 모달 함수들 (useTemplateUI 호출 이후에 정의)
+    const openFileNameModal = useCallback((template: Template) => {
+        console.log('📝 파일명 모달 열기:', template);
+        if (!template) {
+            console.error('❌ 템플릿이 없습니다!');
+            return;
+        }
+        setSelectedTemplate(template);
+        setDocumentTitle("");
+        setShowFileNameModal(true);
+        console.log('📝 모달 상태 설정 완료:', { showFileNameModal: true, selectedTemplate: template });
+    }, [setSelectedTemplate]);
+    
+    const closeFileNameModal = useCallback(() => {
+        setShowFileNameModal(false);
+        setDocumentTitle("");
+        setSelectedTemplate(null);
+    }, [setSelectedTemplate]);
+    
+    // 모달 상태 디버깅
+    useEffect(() => {
+        console.log('📝 모달 상태:', { showFileNameModal, selectedTemplate: selectedTemplate?.title });
+    }, [showFileNameModal, selectedTemplate]);
+
     // 기본 태그 로드 (Apps Script에서)
     useEffect(() => {
         const loadStaticTags = async () => {
@@ -1265,23 +1277,34 @@ function NewDocument({
         }
     }, [togglePersonalTemplateFavorite]);
 
-    const handleUseTemplateClick = (type: string, title: string) => {
+    const handleUseTemplateClick = useCallback((type: string, title: string) => {
+        console.log('📄 템플릿 사용 클릭:', { type, title, personalTemplates: personalTemplates.length, defaultTemplateItems: defaultTemplateItems.length });
+        console.log('📄 개인 템플릿 목록:', personalTemplates.map(t => ({ title: t.title, type: t.type })));
+        console.log('📄 기본 템플릿 목록:', defaultTemplateItems.map(t => ({ title: t.title, type: t.type })));
+        
         // 개인 템플릿의 경우 documentId를 찾아서 전달
-        const template = personalTemplates.find(t => t.title === title);
+        const template = personalTemplates.find(t => t.title === title || t.type === type);
         const templateType = template?.documentId || type;
         
-        console.log('📄 템플릿 클릭:', { type, title, templateType, template });
+        console.log('📄 템플릿 찾기 결과:', { template, templateType });
         
         if (template) {
+            console.log('📄 개인 템플릿 사용:', template);
             openFileNameModal(template);
-        } else {
-            // 기본 템플릿의 경우
-            const defaultTemplate = defaultTemplateItems.find(t => t.type === type);
-            if (defaultTemplate) {
-                openFileNameModal(defaultTemplate);
-            }
+            return;
         }
-    };
+        
+        // 기본 템플릿의 경우
+        const defaultTemplate = defaultTemplateItems.find(t => t.type === type || t.title === title);
+        if (defaultTemplate) {
+            console.log('📄 기본 템플릿 사용:', defaultTemplate);
+            openFileNameModal(defaultTemplate);
+            return;
+        }
+        
+        console.warn('⚠️ 템플릿을 찾을 수 없습니다:', { type, title });
+        alert(`템플릿을 찾을 수 없습니다.\n타입: ${type}\n제목: ${title}`);
+    }, [personalTemplates, defaultTemplateItems, openFileNameModal]);
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
     const orderedTags = useMemo(() => {

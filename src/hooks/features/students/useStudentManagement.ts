@@ -34,24 +34,49 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
   }>({ key: null, direction: 'asc' });
 
   // council 필드를 파싱하는 함수
+  // 실제 데이터 형식: "24 기획부장/25 학생장" (2자리 년도 + 공백 + 직책, 여러 항목은 "/"로 구분)
   const parseCouncil = (council: string): CouncilPosition[] => {
     if (!council || council.trim() === '') return [];
     
+    // "/"로 구분하여 각 항목 처리
     return council.split('/').map(item => {
       const trimmed = item.trim();
-      // "24 기획부장" 형태에서 년도와 직책 분리
-      const match = trimmed.match(/^(\d+)\s+(.+)$/);
+      if (!trimmed) return { year: '', position: '' };
+      
+      // 실제 형식: "24 기획부장" 또는 "25 학생장"
+      // 패턴: 숫자(년도) + 공백 + 직책명
+      
+      // "년"이 포함된 경우: "24년 기획부장" 또는 "2024년 기획부장"
+      let match = trimmed.match(/^(\d+)\s*년\s+(.+)$/);
       if (match) {
+        const year = match[1];
+        // 2자리 년도는 2000년대로 가정 (24 -> 2024, 25 -> 2025)
+        const fullYear = year.length === 2 ? `20${year}` : year;
         return {
-          year: match[1],
-          position: match[2]
+          year: fullYear,
+          position: match[2].trim()
         };
       }
+      
+      // 공백으로 구분된 경우: "24 기획부장" 또는 "2024 기획부장"
+      // 정규식: 숫자로 시작 + 하나 이상의 공백 + 나머지(직책)
+      match = trimmed.match(/^(\d+)\s+(.+)$/);
+      if (match) {
+        const year = match[1];
+        // 2자리 년도는 2000년대로 가정 (24 -> 2024, 25 -> 2025)
+        const fullYear = year.length === 2 ? `20${year}` : year;
+        return {
+          year: fullYear,
+          position: match[2].trim()
+        };
+      }
+      
+      // 년도 없이 직책만 있는 경우: "기획부장"
       return {
         year: '',
         position: trimmed
       };
-    });
+    }).filter(item => item.position !== ''); // 빈 항목 제거
   };
 
   // 전화번호 복호화 함수
@@ -111,30 +136,43 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
       console.log('Papyrus DB에서 받은 학생 데이터:', studentsData);
       
       if (studentsData && studentsData.length > 0) {
-        // 전화번호 복호화 처리
-        const studentData: StudentWithCouncil[] = await Promise.all(
-          studentsData.map(async (student: Student) => {
-            const decryptedPhone = await decryptPhone(student.phone_num || '');
-            
-            const studentObj: Student = {
-              no_student: student.no_student || '',
-              name: student.name || '',
-              address: student.address || '',
-              phone_num: decryptedPhone,
-              grade: student.grade || '',
-              state: student.state || '',
-              council: student.council || ''
-            };
-
-            return {
-              ...studentObj,
-              parsedCouncil: parseCouncil(studentObj.council)
-            };
-          })
-        );
+        // fetchStudentsFromPapyrus에서 이미 복호화된 데이터를 반환하므로 복호화 불필요
+        const studentData: StudentWithCouncil[] = studentsData.map((student: Student) => {
+          const parsed = parseCouncil(student.council);
+          // 디버깅: 파싱 결과 확인
+          if (student.council && parsed.length === 0) {
+            console.warn('⚠️ 학생회 파싱 실패:', {
+              학생: student.name,
+              학번: student.no_student,
+              원본데이터: student.council,
+              파싱결과: parsed
+            });
+          }
+          return {
+            ...student,
+            parsedCouncil: parsed
+          };
+        });
 
         setStudents(studentData);
-        console.log(`학생 ${studentData.length}명 데이터 로드 완료 (전화번호 복호화 완료)`);
+        console.log(`학생 ${studentData.length}명 데이터 로드 완료 (이미 복호화된 데이터)`);
+        
+        // 디버깅: 전체 파싱 결과 요약
+        const totalCouncilItems = studentData.reduce((sum, s) => sum + s.parsedCouncil.length, 0);
+        const studentsWithCouncil = studentData.filter(s => s.parsedCouncil.length > 0).length;
+        console.log('📊 학생회 데이터 파싱 요약:', {
+          총학생수: studentData.length,
+          학생회있는학생수: studentsWithCouncil,
+          총학생회항목수: totalCouncilItems,
+          년도별분포: studentData.reduce((acc, student) => {
+            student.parsedCouncil.forEach(council => {
+              if (council.year) {
+                acc[council.year] = (acc[council.year] || 0) + 1;
+              }
+            });
+            return acc;
+          }, {} as Record<string, number>)
+        });
       } else {
         console.log('학생 데이터가 없습니다.');
         setStudents([]);
@@ -304,49 +342,107 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
   };
 
   // 엑셀 양식 다운로드
-  const downloadExcelTemplate = () => {
-    const headers = ['학번', '이름', '주소', '학년', '상태', '학생회'];
-    const sampleData = [
-      ['202400001', '홍길동', '서울특별시 강남구', '1', '재학', '25 기획부장'],
-      ['202400002', '김철수', '경기도 수원시', '2', '재학', '25 총무부장'],
-      ['202400003', '이영희', '인천광역시', '3', '휴학', '']
-    ];
-    
-    const csvContent = [
-      headers.join(','),
-      ...sampleData.map(row => row.join(','))
-    ].join('\n');
+  const downloadExcelTemplate = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const templateData = [
+        ['학번', '이름', '주소', '연락처', '학년', '상태', '학생회'],
+        ['202400001', '홍길동', '서울특별시 강남구', '010-1234-5678', '1', '재학', '25 기획부장'],
+        ['202400002', '김철수', '경기도 수원시', '010-2345-6789', '2', '재학', '25 총무부장'],
+        ['202400003', '이영희', '인천광역시', '010-3456-7890', '3', '휴학', '']
+      ];
 
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `학생일괄입력_양식_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+      const ws = XLSX.utils.aoa_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '학생 목록');
+      XLSX.writeFile(wb, `학생일괄입력_양식_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('양식 다운로드 실패:', error);
+      alert('양식 다운로드에 실패했습니다.');
+    }
   };
 
   // 엑셀 파일 업로드 및 중복 검증
   const handleExcelUpload = async (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
+      const fileName = file.name.toLowerCase();
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+      const isCSV = fileName.endsWith('.csv');
+
+      if (!isExcel && !isCSV) {
+        reject(new Error('CSV 또는 Excel 파일(.xlsx, .xls)만 업로드 가능합니다.'));
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const data = e.target?.result as string;
-          const lines = data.split('\n').filter(line => line.trim());
-          
+          let rows: string[][] = [];
+
+          if (isExcel) {
+            // Excel 파일 파싱
+            const XLSX = await import('xlsx');
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+          } else {
+            // CSV 파일 파싱
+            const data = e.target?.result as string;
+            const lines = data.split('\n').filter(line => line.trim());
+            rows = lines.map(line => {
+              // CSV 파싱 (쉼표로 구분, 따옴표 처리)
+              const values: string[] = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                  inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                  values.push(current.trim());
+                  current = '';
+                } else {
+                  current += char;
+                }
+              }
+              values.push(current.trim());
+              return values;
+            });
+          }
+
+          if (rows.length < 2) {
+            reject(new Error('파일에 데이터가 없습니다.'));
+            return;
+          }
+
           const newStudents: StudentWithCouncil[] = [];
           const duplicates: string[] = [];
-          
-          for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
+          const errors: string[] = [];
+
+          // 헤더 행 건너뛰기 (첫 번째 행)
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0 || row.every(cell => !cell || cell.trim() === '')) {
+              continue; // 빈 행 건너뛰기
+            }
+
             const student: Student = {
-              no_student: values[0] || '',
-              name: values[1] || '',
-              address: values[2] || '',
-              phone_num: values[3] || '',
-              grade: values[4] || '',
-              state: values[5] || '',
-              council: values[6] || ''
+              no_student: (row[0] || '').toString().trim(),
+              name: (row[1] || '').toString().trim(),
+              address: (row[2] || '').toString().trim(),
+              phone_num: (row[3] || '').toString().trim(),
+              grade: (row[4] || '').toString().trim(),
+              state: (row[5] || '').toString().trim(),
+              council: (row[6] || '').toString().trim()
             };
+
+            // 필수 필드 검증
+            if (!student.no_student || !student.name) {
+              errors.push(`${i + 1}행: 학번과 이름은 필수입니다.`);
+              continue;
+            }
 
             // 중복 검증 (학번 기준)
             if (students.some(s => s.no_student === student.no_student)) {
@@ -360,6 +456,10 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
             });
           }
 
+          if (errors.length > 0) {
+            alert(`오류가 발생했습니다:\n${errors.join('\n')}`);
+          }
+
           if (duplicates.length > 0) {
             alert(`중복된 학번이 발견되었습니다: ${duplicates.join(', ')}`);
           }
@@ -370,6 +470,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
               student.no_student,
               student.name,
               student.address,
+              student.phone_num || '',
               student.grade,
               student.state,
               student.council
@@ -377,7 +478,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
 
             await window.gapi.client.sheets.spreadsheets.values.append({
               spreadsheetId: studentSpreadsheetId,
-              range: 'A:F',
+              range: 'A:G',
               valueInputOption: 'RAW',
               insertDataOption: 'INSERT_ROWS',
               resource: { values }
@@ -386,14 +487,25 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
             // 로컬 상태 업데이트
             setStudents(prev => [...prev, ...newStudents]);
             alert(`${newStudents.length}명의 학생이 추가되었습니다.`);
+            
+            // 데이터 새로고침
+            await fetchStudents();
+          } else if (newStudents.length === 0) {
+            alert('추가할 학생이 없습니다.');
           }
 
           resolve();
         } catch (error) {
+          console.error('파일 업로드 오류:', error);
           reject(error);
         }
       };
-      reader.readAsText(file);
+
+      if (isExcel) {
+        reader.readAsBinaryString(file);
+      } else {
+        reader.readAsText(file, 'UTF-8');
+      }
     });
   };
 

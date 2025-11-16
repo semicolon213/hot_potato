@@ -303,6 +303,117 @@
   margin-left: auto;
 }
 
+/* 토큰 만료 시간 표시 컨테이너 */
+.token-expiry-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 토큰 만료 시간 표시 */
+.token-expiry-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--white-pure, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-dark, #333);
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.token-expiry-status:hover {
+  background-color: var(--bg-gray-alt, #f5f5f5);
+  border-color: var(--border-color-alt, #d0d0d0);
+}
+
+.token-expiry-icon {
+  font-size: 12px;
+  color: var(--text-light, #666);
+  flex-shrink: 0;
+}
+
+.token-expiry-text {
+  font-weight: 500;
+  color: var(--text-dark, #333);
+  user-select: none;
+  min-width: fit-content;
+}
+
+/* 토큰 만료 임박 시 스타일 (5분 이내) */
+.token-expiry-status.expiring-soon {
+  border-color: #ff9800;
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.token-expiry-status.expiring-soon .token-expiry-icon {
+  color: #ff9800;
+}
+
+.token-expiry-status.expiring-soon .token-expiry-text {
+  color: #e65100;
+  font-weight: 600;
+}
+
+/* 토큰 만료됨 스타일 */
+.token-expiry-status.expired {
+  border-color: #f44336;
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.token-expiry-status.expired .token-expiry-icon {
+  color: #f44336;
+}
+
+.token-expiry-status.expired .token-expiry-text {
+  color: #c62828;
+  font-weight: 600;
+}
+
+/* 토큰 연장 버튼 */
+.token-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background-color: var(--sidebar-primary, #1a1a1a);
+  color: var(--white-pure, #fff);
+  border: 1px solid var(--sidebar-primary, #1a1a1a);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.token-refresh-btn:hover:not(:disabled) {
+  background-color: var(--sidebar-hover-bg, #2a2a2a);
+  border-color: var(--sidebar-hover-bg, #2a2a2a);
+}
+
+.token-refresh-btn:disabled {
+  background-color: var(--border-color, #e0e0e0);
+  color: var(--text-light, #999);
+  border-color: var(--border-color, #e0e0e0);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.token-refresh-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.token-refresh-text {
+  white-space: nowrap;
+}
+
 /* 헤더 검색창 */
 .header-search-group {
   position: relative;

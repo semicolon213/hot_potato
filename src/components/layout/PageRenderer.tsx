@@ -86,6 +86,10 @@ interface PageRendererProps {
   onAddTemplate: (newDocData: { title: string; description: string; tag: string; }) => Promise<void>;
   onUpdateTemplate: (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => Promise<void>;
   onUpdateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => Promise<void>;
+  // DataSyncService 관련 props
+  lastSyncTime?: Date | null;
+  onRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 
 const PageRenderer: React.FC<PageRendererProps> = ({
@@ -136,7 +140,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onUpdateTag,
   onAddTemplate,
   onUpdateTemplate,
-  onUpdateTemplateFavorite
+  onUpdateTemplateFavorite,
+  lastSyncTime,
+  onRefresh,
+  isRefreshing
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -251,6 +258,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           students={students}
           staff={staff}
         />;
+      case "timetable":
+        return <Timetable />;
       case "preferences":
         return (
           <div>환경설정 페이지 (구현 예정)</div>
@@ -262,7 +271,13 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+        return <Dashboard 
+          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
+          user={user}
+          lastSyncTime={lastSyncTime || undefined}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+        />;
       case 'accounting':
         return <Accounting />;
       case 'admin':

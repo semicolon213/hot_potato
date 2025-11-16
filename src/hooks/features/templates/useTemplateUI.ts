@@ -18,7 +18,7 @@ import {
 import { ENV_CONFIG } from "../../../config/environment";
 import { apiClient } from "../../../utils/api/apiClient";
 import { usePersonalTemplates } from "./usePersonalTemplates";
-import type { CreateDocumentResponse } from "../../../types/api/apiResponses";
+import type { CreateDocumentResponse, SharedTemplatesResponse } from "../../../types/api/apiResponses";
 import { 
   addFavorite,
   removeFavorite,
@@ -171,6 +171,42 @@ export function useTemplateUI(
         
         try {
             console.log('📄 동적 템플릿 로드 시작');
+            
+            // 캐시에서 먼저 확인
+            const { getCacheManager } = await import('../../../utils/cache/cacheManager');
+            const cacheManager = getCacheManager();
+            const { generateCacheKey, getActionCategory } = await import('../../../utils/cache/cacheUtils');
+            const action = 'getSharedTemplates';
+            const category = getActionCategory(action);
+            const cacheKey = generateCacheKey(category, action, {});
+            
+            // apiClient는 ApiResponse 형식으로 캐시에 저장하므로, ApiResponse 형식으로 조회
+            interface ApiResponse<T> {
+                success: boolean;
+                data?: T;
+                message?: string;
+            }
+            const cachedResponse = await cacheManager.get<ApiResponse<SharedTemplatesResponse>>(cacheKey);
+            console.log('📄 캐시 키:', cacheKey);
+            console.log('📄 캐시 응답:', cachedResponse);
+            
+            if (cachedResponse && cachedResponse.success && cachedResponse.data && Array.isArray(cachedResponse.data) && cachedResponse.data.length > 0) {
+                console.log('📄 캐시에서 동적 템플릿 로드:', cachedResponse.data.length, '개');
+                const processedTemplates = cachedResponse.data.map((t) => ({
+                  type: t.id,
+                  title: t.title,
+                  description: t.description,
+                  tag: t.tag || '기본',
+                  documentId: t.id,
+                  mimeType: t.mimeType || 'application/vnd.google-apps.document'
+                }));
+                setDynamicTemplates(processedTemplates);
+                setIsLoadingTemplates(false);
+                return;
+            }
+            
+            // 캐시에 없으면 API 호출
+            console.log('📄 캐시 미스 - API에서 동적 템플릿 로드');
             const result = await apiClient.getSharedTemplates();
             console.log('📄 API 응답:', result);
             

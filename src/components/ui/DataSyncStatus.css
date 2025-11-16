@@ -1,0 +1,149 @@
+/**
+ * @file DataSyncStatus.css
+ * @brief DataSyncStatus 컴포넌트 스타일
+ */
+
+.data-sync-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.sync-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-label {
+  font-weight: 500;
+  color: #888;
+}
+
+.sync-time-value {
+  color: #666;
+  cursor: help;
+  user-select: none;
+}
+
+.sync-time-value:hover {
+  color: #333;
+}
+
+.sync-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sync-refresh-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #bbb;
+  color: #333;
+}
+
+.sync-refresh-btn:active:not(:disabled) {
+  background: #eee;
+  transform: scale(0.95);
+}
+
+.sync-refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sync-refresh-btn.refreshing {
+  border-color: #4CAF50;
+  background: #f1f8f4;
+}
+
+.sync-refresh-btn.success {
+  border-color: #4CAF50;
+  background: #f1f8f4;
+}
+
+.refresh-icon {
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.refresh-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.success-icon {
+  position: absolute;
+  font-size: 12px;
+  color: #4CAF50;
+  animation: fadeIn 0.3s ease;
+}
+
+.error-icon {
+  position: absolute;
+  font-size: 12px;
+  color: #f44336;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sync-error-message {
+  font-size: 11px;
+  color: #f44336;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .data-sync-status {
+    font-size: 11px;
+    gap: 8px;
+  }
+
+  .sync-time {
+    gap: 4px;
+  }
+
+  .sync-refresh-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .refresh-icon {
+    font-size: 12px;
+  }
+}
+

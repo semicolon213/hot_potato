@@ -137,7 +137,7 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
             }
             // 액션 버튼이나 메뉴를 클릭한 경우 무시
             if (menuRef.current?.contains(e.target as Node) || 
-                (e.target as HTMLElement).closest('.card-action-button, .delete-template-button, .options-menu')) {
+                (e.target as HTMLElement).closest('.card-action-button, .delete-template-button, .options-menu, .template-use-button')) {
                 return;
             }
             // 파일 타입 배지나 즐겨찾기 버튼을 클릭한 경우 무시
@@ -230,6 +230,37 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                         {template.title}
                     </h3>
                     <p className="new-card-description">{template.partTitle || template.description}</p>
+                    <button
+                        className="template-use-button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.stopImmediatePropagation();
+                            console.log('🔘 사용하기 버튼 클릭:', { type: template.type, title: template.title, onUse: !!onUse });
+                            if (onUse) {
+                                try {
+                                    onUse(template.type, template.title);
+                                } catch (error) {
+                                    console.error('❌ onUse 호출 오류:', error);
+                                }
+                            } else {
+                                console.error('❌ onUse 함수가 없습니다!');
+                            }
+                        }}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.stopImmediatePropagation();
+                        }}
+                        onMouseUp={(e) => {
+                            e.stopPropagation();
+                            e.nativeEvent.stopImmediatePropagation();
+                        }}
+                        title="사용하기"
+                        type="button"
+                    >
+                        사용하기
+                    </button>
                 </div>
 
                 {/* 컨텍스트 메뉴 */}

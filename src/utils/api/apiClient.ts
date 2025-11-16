@@ -27,6 +27,13 @@ import type {
   WorkflowHistoryParams
 } from '../../types/documents';
 import type { ApprovalStatusResponse } from '../../types/api/userResponses';
+import { getCacheManager } from '../cache/cacheManager';
+import { 
+  generateCacheKey, 
+  getCacheTTL, 
+  getActionCategory, 
+  CACHEABLE_ACTIONS 
+} from '../cache/cacheUtils';
 
 // API 응답 타입 정의
 export interface ApiResponse<T = unknown> {
@@ -53,7 +60,8 @@ export class ApiClient {
   private baseUrl: string;
   private defaultTimeout: number;
   private defaultRetries: number;
-  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
+  private cacheManager = getCacheManager();
+  private dataSyncService: any = null; // DataSyncService 인스턴스 (나중에 주입)
 
   constructor() {
     // CSP 문제 해결을 위해 Vite 프록시 사용
@@ -70,19 +78,11 @@ export class ApiClient {
     });
   }
 
-  // 캐시에서 데이터 가져오기
-  private getCachedData<T>(key: string, maxAge: number = 300000): T | null {
-    const cached = this.cache.get(key);
-    if (cached && (Date.now() - cached.timestamp) < maxAge) {
-      console.log('프론트엔드 캐시에서 데이터 로드:', key);
-      return cached.data as T;
-    }
-    return null;
-  }
-
-  // 캐시에 데이터 저장
-  private setCachedData(key: string, data: unknown): void {
-    this.cache.set(key, { data, timestamp: Date.now() });
+  /**
+   * DataSyncService 설정 (쓰기 작업 후 자동 캐시 무효화용)
+   */
+  setDataSyncService(service: any): void {
+    this.dataSyncService = service;
   }
 
   // 공통 API 호출 메서드
@@ -97,13 +97,19 @@ export class ApiClient {
       headers = {}
     } = options;
 
-    // 캐시 가능한 요청인지 확인 (읽기 전용 액션, 로그인/관리자 관련 제외)
-    const cacheableActions: string[] = []; // 모든 액션을 실시간으로 처리
-    const cacheKey = `${action}_${JSON.stringify(data)}`;
+    // 캐시 가능한 요청인지 확인
+    const isCacheable = CACHEABLE_ACTIONS.includes(action);
+    let cacheKey: string | null = null;
     
-    if (cacheableActions.includes(action)) {
-      const cachedData = this.getCachedData<ApiResponse<T>>(cacheKey);
+    if (isCacheable) {
+      // 캐시 키 생성
+      const category = getActionCategory(action);
+      cacheKey = generateCacheKey(category, action, data);
+      
+      // 캐시에서 데이터 조회
+      const cachedData = await this.cacheManager.get<ApiResponse<T>>(cacheKey);
       if (cachedData) {
+        console.log('✅ 캐시에서 데이터 로드:', cacheKey);
         return cachedData;
       }
     }
@@ -170,8 +176,21 @@ export class ApiClient {
         const result = await response.json();
         
         // 성공한 응답을 캐시에 저장
-        if (cacheableActions.includes(action) && result.success) {
-          this.setCachedData(cacheKey, result as ApiResponse<T>);
+        if (isCacheable && result.success && cacheKey) {
+          const ttl = getCacheTTL(action);
+          await this.cacheManager.set(cacheKey, result as ApiResponse<T>, ttl);
+          console.log('💾 캐시에 데이터 저장:', cacheKey, `TTL: ${ttl / 1000}초`);
+        }
+        
+        // 쓰기 작업 성공 시 자동으로 캐시 무효화
+        if (result.success && this.isWriteAction(action)) {
+          const cacheKeys = this.getCacheKeysToInvalidate(action, data);
+          if (cacheKeys.length > 0 && this.dataSyncService) {
+            // 비동기로 처리하여 응답 지연 최소화
+            this.dataSyncService.invalidateAndRefresh(cacheKeys).catch((err: Error) => {
+              console.warn('캐시 무효화 실패:', err);
+            });
+          }
         }
         
         console.log(`API 응답 성공:`, {
@@ -587,6 +606,111 @@ export class ApiClient {
       templateId,
       userEmail: userInfo.email || userInfo.google_member || ''
     });
+  }
+
+  // ========== 캐시 무효화 관련 메서드 ==========
+
+  /**
+   * 쓰기 작업 여부 판단
+   */
+  private isWriteAction(action: string): boolean {
+    const writeActions = [
+      // 문서 관리
+      'createDocument', 'deleteDocuments',
+      'uploadSharedTemplate', 'updateSharedTemplateMeta', 'deleteSharedTemplate',
+      'addStaticTag', 'updateStaticTag', 'deleteStaticTag',
+      
+      // 워크플로우
+      'requestWorkflow', 'setWorkflowLine', 'grantWorkflowPermissions',
+      'approveReview', 'rejectReview', 'holdReview',
+      'approvePayment', 'rejectPayment', 'holdPayment',
+      'resubmitWorkflow',
+      'createWorkflowTemplate', 'updateWorkflowTemplate', 'deleteWorkflowTemplate',
+      
+      // 회계
+      'createLedger', 'updateAccountSubManagers',
+      
+      // 사용자 관리
+      'approveUserWithGroup', 'rejectUser', 'addUsersToSpreadsheet',
+      'requestPinnedAnnouncementApproval',
+      
+      // 기타
+      'migrateEmails', 'clearUserCache',
+    ];
+    return writeActions.includes(action);
+  }
+
+  /**
+   * 액션별 무효화할 캐시 키 매핑
+   */
+  private getCacheKeysToInvalidate(action: string, data: any): string[] {
+    const cacheKeyMap: Record<string, (data: any) => string[]> = {
+      // 문서 관리
+      'createDocument': () => ['documents:getDocuments:*', 'documents:getAllDocuments:{}'],
+      'deleteDocuments': () => ['documents:getDocuments:*', 'documents:getAllDocuments:{}'],
+      'uploadSharedTemplate': () => ['templates:getTemplates:*', 'templates:getSharedTemplates:*'],
+      'updateSharedTemplateMeta': () => ['templates:getSharedTemplates:*'],
+      'deleteSharedTemplate': () => ['templates:getSharedTemplates:*'],
+      'addStaticTag': () => ['tags:getStaticTags:*'],
+      'updateStaticTag': () => ['tags:getStaticTags:*', 'templates:getSharedTemplates:*'],
+      'deleteStaticTag': () => ['tags:getStaticTags:*', 'templates:getSharedTemplates:*'],
+      
+      // 워크플로우
+      'requestWorkflow': (d) => [
+        'workflow:getMyRequestedWorkflows:*',
+        `workflow:getMyRequestedWorkflows:{"userEmail":"${d.requesterEmail || ''}"}`
+      ],
+      'approveReview': (d) => [
+        'workflow:getMyPendingWorkflows:*',
+        'workflow:getMyRequestedWorkflows:*',
+        `workflow:getMyPendingWorkflows:{"userEmail":"${d.userEmail || ''}"}`
+      ],
+      'rejectReview': (d) => [
+        'workflow:getMyPendingWorkflows:*',
+        'workflow:getMyRequestedWorkflows:*',
+        `workflow:getMyPendingWorkflows:{"userEmail":"${d.userEmail || ''}"}`
+      ],
+      'holdReview': (d) => [
+        'workflow:getMyPendingWorkflows:*',
+        `workflow:getMyPendingWorkflows:{"userEmail":"${d.userEmail || ''}"}`
+      ],
+      'approvePayment': (d) => [
+        'workflow:getMyPendingWorkflows:*',
+        'workflow:getMyRequestedWorkflows:*',
+        'workflow:getCompletedWorkflows:*',
+        `workflow:getMyPendingWorkflows:{"userEmail":"${d.userEmail || ''}"}`
+      ],
+      'rejectPayment': (d) => [
+        'workflow:getMyPendingWorkflows:*',
+        'workflow:getMyRequestedWorkflows:*',
+        `workflow:getMyPendingWorkflows:{"userEmail":"${d.userEmail || ''}"}`
+      ],
+      'holdPayment': (d) => [
+        'workflow:getMyPendingWorkflows:*',
+        `workflow:getMyPendingWorkflows:{"userEmail":"${d.userEmail || ''}"}`
+      ],
+      'resubmitWorkflow': (d) => [
+        'workflow:getMyRequestedWorkflows:*',
+        'workflow:getMyPendingWorkflows:*',
+        `workflow:getMyRequestedWorkflows:{"userEmail":"${d.requesterEmail || ''}"}`
+      ],
+      'createWorkflowTemplate': () => ['workflow:getWorkflowTemplates:*'],
+      'updateWorkflowTemplate': () => ['workflow:getWorkflowTemplates:*'],
+      'deleteWorkflowTemplate': () => ['workflow:getWorkflowTemplates:*'],
+      
+      // 회계
+      'createLedger': () => ['accounting:getLedgerList:*'],
+      'updateAccountSubManagers': () => ['accounting:getLedgerList:*'],
+      
+      // 사용자 관리
+      'approveUserWithGroup': () => ['users:getAllUsers:*', 'users:getPendingUsers:*'],
+      'rejectUser': () => ['users:getPendingUsers:*'],
+      'addUsersToSpreadsheet': () => ['users:getAllUsers:*'],
+      'requestPinnedAnnouncementApproval': () => ['announcements:fetchAnnouncements:*'],
+    };
+    
+    const getKeys = cacheKeyMap[action];
+    return getKeys ? getKeys(data) : [];
   }
 }
 
