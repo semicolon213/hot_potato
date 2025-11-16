@@ -1552,6 +1552,83 @@ function callUserManagementPost(req) {
       }
     }
     
+    // 워크플로우 템플릿 관리
+    if (action === 'createWorkflowTemplate') {
+      console.log('📋 워크플로우 템플릿 생성:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = createWorkflowTemplate(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 템플릿 생성 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '템플릿 생성 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'getWorkflowTemplates') {
+      console.log('📋 워크플로우 템플릿 목록 조회:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = getWorkflowTemplates(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 템플릿 목록 조회 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '템플릿 목록 조회 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'updateWorkflowTemplate') {
+      console.log('📋 워크플로우 템플릿 수정:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = updateWorkflowTemplate(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 템플릿 수정 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '템플릿 수정 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    if (action === 'deleteWorkflowTemplate') {
+      console.log('📋 워크플로우 템플릿 삭제:', req);
+      try {
+        initializeWorkflowSheets();
+        const result = deleteWorkflowTemplate(req);
+        return ContentService
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('❌ 워크플로우 템플릿 삭제 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            success: false,
+            message: '템플릿 삭제 중 오류가 발생했습니다: ' + error.message
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     // 알 수 없는 액션
     console.log('❌ 알 수 없는 액션:', req.action);
     return ContentService
@@ -1581,7 +1658,11 @@ function callUserManagementPost(req) {
             'rejectPayment',
             'holdPayment',
             'resubmitWorkflow',
-            'getWorkflowHistory'
+            'getWorkflowHistory',
+            'createWorkflowTemplate',
+            'getWorkflowTemplates',
+            'updateWorkflowTemplate',
+            'deleteWorkflowTemplate'
           ],
           requestKeys: Object.keys(req),
           requestActionType: typeof req.action,

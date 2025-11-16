@@ -559,8 +559,7 @@ export class ApiClient {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
     return this.request<WorkflowTemplateResponse>('createWorkflowTemplate', {
       ...data,
-      createdBy: userInfo.email,
-      userEmail: userInfo.email
+      creatorEmail: userInfo.email || userInfo.google_member || ''
     });
   }
 
@@ -577,7 +576,7 @@ export class ApiClient {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
     return this.request<WorkflowTemplateResponse>('updateWorkflowTemplate', {
       ...data,
-      userEmail: userInfo.email
+      userEmail: userInfo.email || userInfo.google_member || ''
     });
   }
 
@@ -586,7 +585,7 @@ export class ApiClient {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
     return this.request('deleteWorkflowTemplate', {
       templateId,
-      userEmail: userInfo.email
+      userEmail: userInfo.email || userInfo.google_member || ''
     });
   }
 }
