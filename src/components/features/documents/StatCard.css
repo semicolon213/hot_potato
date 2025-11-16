@@ -16,7 +16,7 @@
   justify-content: space-between;
   transition: all 0.2s ease;
   border: none;
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   min-height: clamp(100px, 11.57vh, 120px);
   cursor: pointer;
 }
@@ -53,7 +53,7 @@
 }
 
 .stat-upload-icon-btn:hover {
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   border-color: rgba(0, 0, 0, 0.15);
   color: rgba(0, 0, 0, 0.8);
   transform: translateY(-1px);
@@ -93,7 +93,7 @@
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
   line-height: 1.4;
-  color: #666666;
+  color: var(--text-light);
 }
 
 .stat-count {

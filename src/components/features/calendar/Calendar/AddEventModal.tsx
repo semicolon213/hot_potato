@@ -47,7 +47,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const [selectedTags, setSelectedTags] = useState<Array<{ type: string; isCustom: boolean; color?: string }>>([]);
   const [customTag, setCustomTag] = useState('');
   const [customColor, setCustomColor] = useState('#7986CB');
-  const [isTagSearchVisible, setIsTagSearchVisible] = useState(false);
   const [editingTag, setEditingTag] = useState<{ type: string; isCustom: boolean; color?: string } | null>(null);
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   
@@ -252,22 +251,30 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
   const handleToggleAttendeeSearch = () => {
     setIsAttendeeSearchVisible(!isAttendeeSearchVisible);
-    if (!isAttendeeSearchVisible) {
-      setIsTagSearchVisible(false);
-    }
   };
 
-  const handleToggleTagSearch = () => {
-    setIsTagSearchVisible(!isTagSearchVisible);
-    if (!isTagSearchVisible) {
-      setIsAttendeeSearchVisible(false);
-    }
-  };
 
-  const handleSelectTag = (selectedTag: string) => {
-    const tagExists = selectedTags.some(t => t.type === selectedTag && !t.isCustom);
-    if (!tagExists) {
+  const handleSelectTag = (selectedTag: string, isCustom: boolean = false) => {
+    const tagExists = selectedTags.some(t => t.type === selectedTag && t.isCustom === isCustom);
+    if (tagExists) {
+      // 이미 선택된 태그면 제거
+      setSelectedTags(selectedTags.filter(t => !(t.type === selectedTag && t.isCustom === isCustom)));
+    } else {
+      // 선택되지 않은 태그면 추가
+      if (isCustom) {
+        // 커스텀 태그인 경우 색상 정보도 함께 가져오기
+        // selectedTags에서 찾거나, 모든 커스텀 태그 목록에서 찾기
+        const existingCustomTag = selectedTags.find(t => t.type === selectedTag && t.isCustom);
+        if (existingCustomTag) {
+          // 이미 존재하는 커스텀 태그면 색상 정보와 함께 추가
+          setSelectedTags([...selectedTags, { type: selectedTag, isCustom: true, color: existingCustomTag.color }]);
+        } else {
+          // 새로 추가된 커스텀 태그는 이미 selectedTags에 있으므로 추가하지 않음
+          // 이 경우는 발생하지 않아야 함
+        }
+      } else {
       setSelectedTags([...selectedTags, { type: selectedTag, isCustom: false }]);
+      }
     }
   };
 
@@ -442,7 +449,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
   const modalContent = (
     <div className="add-event-modal-overlay" onClick={onClose}>
-      <div className={`modal-content ${isAttendeeSearchVisible || isTagSearchVisible ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-content ${isAttendeeSearchVisible ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="header-left">
             <h2>{isEditMode ? '일정 수정' : '일정 추가'}</h2>
@@ -489,8 +496,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                       </div>
                       <div className="schedule-time-grid">
                           <div className="schedule-time-item">
-                              <label className="schedule-time-label">시작</label>
+                              <label className="schedule-time-label">시작:</label>
                               <div className="schedule-input-group">
+                                  <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={startDateButtonRef}
                                       className="schedule-date-input"
@@ -503,6 +511,39 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       }}
                                   >
                                       {formatDateDisplay(startDate)}
+                                      </div>
+                                      <div className="schedule-input-buttons">
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-up"
+                                              aria-label="날짜 하루 증가"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (startDate) {
+                                                      const date = new Date(startDate);
+                                                      date.setDate(date.getDate() + 1);
+                                                      setStartDate(date.toISOString().split('T')[0]);
+                                                  }
+                                              }}
+                                          >
+                                              ▲
+                                          </button>
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-down"
+                                              aria-label="날짜 하루 감소"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (startDate) {
+                                                      const date = new Date(startDate);
+                                                      date.setDate(date.getDate() - 1);
+                                                      setStartDate(date.toISOString().split('T')[0]);
+                                                  }
+                                              }}
+                                          >
+                                              ▼
+                                          </button>
+                                      </div>
                                   </div>
                                   {showStartDatePicker && startDateButtonRef.current && createPortal(
                                       <CustomDatePicker
@@ -519,6 +560,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       />,
                                       document.body
                                   )}
+                                  <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={startTimeButtonRef}
                                       className="schedule-time-input"
@@ -531,6 +573,45 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       }}
                                   >
                                       {startTime || '00:00'}
+                                      </div>
+                                      <div className="schedule-input-buttons">
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-up"
+                                              aria-label="시간 10분 증가"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const [hours, minutes] = (startTime || '00:00').split(':').map(Number);
+                                                  let newMinutes = minutes + 10;
+                                                  let newHours = hours;
+                                                  if (newMinutes >= 60) {
+                                                      newMinutes = 0;
+                                                      newHours = (newHours + 1) % 24;
+                                                  }
+                                                  setStartTime(`${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`);
+                                              }}
+                                          >
+                                              ▲
+                                          </button>
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-down"
+                                              aria-label="시간 10분 감소"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const [hours, minutes] = (startTime || '00:00').split(':').map(Number);
+                                                  let newMinutes = minutes - 10;
+                                                  let newHours = hours;
+                                                  if (newMinutes < 0) {
+                                                      newMinutes = 50;
+                                                      newHours = (newHours - 1 + 24) % 24;
+                                                  }
+                                                  setStartTime(`${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`);
+                                              }}
+                                          >
+                                              ▼
+                                          </button>
+                                      </div>
                                   </div>
                                   {showStartTimePicker && startTimeButtonRef.current && createPortal(
                                       <CustomTimePicker
@@ -551,8 +632,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                               </div>
                           </div>
                           <div className="schedule-time-item">
-                              <label className="schedule-time-label">종료</label>
+                              <label className="schedule-time-label">종료:</label>
                               <div className="schedule-input-group">
+                                  <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={endDateButtonRef}
                                       className="schedule-date-input"
@@ -566,6 +648,39 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       }}
                                   >
                                       {formatDateDisplay(endDate)}
+                                      </div>
+                                      <div className="schedule-input-buttons">
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-up"
+                                              aria-label="날짜 하루 증가"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (endDate) {
+                                                      const date = new Date(endDate);
+                                                      date.setDate(date.getDate() + 1);
+                                                      setEndDate(date.toISOString().split('T')[0]);
+                                                  }
+                                              }}
+                                          >
+                                              ▲
+                                          </button>
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-down"
+                                              aria-label="날짜 하루 감소"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (endDate) {
+                                                      const date = new Date(endDate);
+                                                      date.setDate(date.getDate() - 1);
+                                                      setEndDate(date.toISOString().split('T')[0]);
+                                                  }
+                                              }}
+                                          >
+                                              ▼
+                                          </button>
+                                      </div>
                                   </div>
                                   {showEndDatePicker && endDateButtonRef.current && createPortal(
                                       <CustomDatePicker
@@ -582,6 +697,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       />,
                                       document.body
                                   )}
+                                  <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={endTimeButtonRef}
                                       className="schedule-time-input"
@@ -594,6 +710,45 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       }}
                                   >
                                       {endTime || '00:00'}
+                                      </div>
+                                      <div className="schedule-input-buttons">
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-up"
+                                              aria-label="시간 10분 증가"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const [hours, minutes] = (endTime || '00:00').split(':').map(Number);
+                                                  let newMinutes = minutes + 10;
+                                                  let newHours = hours;
+                                                  if (newMinutes >= 60) {
+                                                      newMinutes = 0;
+                                                      newHours = (newHours + 1) % 24;
+                                                  }
+                                                  setEndTime(`${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`);
+                                              }}
+                                          >
+                                              ▲
+                                          </button>
+                                          <button
+                                              type="button"
+                                              className="schedule-input-btn schedule-input-btn-down"
+                                              aria-label="시간 10분 감소"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const [hours, minutes] = (endTime || '00:00').split(':').map(Number);
+                                                  let newMinutes = minutes - 10;
+                                                  let newHours = hours;
+                                                  if (newMinutes < 0) {
+                                                      newMinutes = 50;
+                                                      newHours = (newHours - 1 + 24) % 24;
+                                                  }
+                                                  setEndTime(`${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`);
+                                              }}
+                                          >
+                                              ▼
+                                          </button>
+                                      </div>
                                   </div>
                                   {showEndTimePicker && endTimeButtonRef.current && createPortal(
                                       <CustomTimePicker
@@ -679,41 +834,92 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               <div className="attendees-section">
                 <div className="attendees-header">
                   <label className="attendees-label">태그</label>
-                  <button type="button" className="add-attendee-btn" onClick={handleToggleTagSearch}>
-                    {isTagSearchVisible ? '닫기' : '추가'}
+                </div>
+                <div className="tag-selection-panel-content">
+                  <div className="tag-selection-panel-section">
+                    <div className="custom-tag-input-group">
+                      <input 
+                        type="text" 
+                        placeholder="태그 이름 입력" 
+                        value={customTag} 
+                        onChange={(e) => setCustomTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddCustomTag();
+                          } else if (e.key === 'Escape') {
+                            handleCancelCustomTag();
+                          }
+                        }}
+                        className="custom-tag-name-input" 
+                      />
+                      <input
+                        type="color"
+                        value={customColor}
+                        onChange={(e) => setCustomColor(e.target.value)}
+                        className="custom-tag-color-picker"
+                        title="색상 선택"
+                        aria-label="태그 색상 선택"
+                      />
+                      <button 
+                        type="button" 
+                        className="custom-tag-confirm-btn"
+                        onClick={handleAddCustomTag}
+                        disabled={!customTag.trim()}
+                        aria-label="태그 저장"
+                      >
+                        +
                   </button>
                 </div>
-                {selectedTags.length > 0 ? (
-                  <div className="selected-attendees-list">
-                    {selectedTags.map((tagItem, index) => {
-                      const tagColor = tagItem.isCustom 
-                        ? tagItem.color 
-                        : eventTypeStyles[tagItem.type]?.color || '#7986CB';
-                      const tagLabel = tagItem.isCustom 
-                        ? tagItem.type 
-                        : tagLabels[tagItem.type] || tagItem.type;
-                      return (
-                        <div 
-                          key={`${tagItem.type}-${tagItem.isCustom}-${index}`} 
-                          className="attendee-tag" 
-                          style={{ backgroundColor: tagColor, color: 'white' }}
+                    <div className="tag-selection-panel-grid">
+                      {eventTypes.map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          className={`tag-panel-button ${selectedTags.some(t => t.type === type && !t.isCustom) ? 'active' : ''}`}
+                          onClick={() => handleSelectTag(type)}
+                          style={{ 
+                            backgroundColor: selectedTags.some(t => t.type === type && !t.isCustom) 
+                              ? (eventTypeStyles[type]?.color || '#343a40')
+                              : '#ffffff',
+                            color: selectedTags.some(t => t.type === type && !t.isCustom) ? 'var(--text-dark)' : 'var(--text-medium)',
+                            borderColor: selectedTags.some(t => t.type === type && !t.isCustom) ? 'transparent' : (eventTypeStyles[type]?.color || '#e2e8f0')
+                          }}
                         >
-                          <span className="attendee-name">{tagLabel}</span>
+                          {tagLabels[type] || type}
+                        </button>
+                      ))}
+                      {selectedTags.filter(t => t.isCustom).map((tag, index) => (
                           <button 
+                          key={`custom-${tag.type}-${index}`}
                             type="button" 
-                            className="remove-attendee-btn" 
-                            onClick={() => handleRemoveTag(tagItem)} 
-                            style={{ color: 'rgba(255, 255, 255, 0.8)' }}
-                          >
-                            &times;
+                          className={`tag-panel-button active`}
+                          onClick={() => {
+                            // 커스텀 태그 클릭 시 선택/해제 토글
+                            handleSelectTag(tag.type, true);
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            if (editingTag && editingTag.type === tag.type && editingTag.isCustom === tag.isCustom) {
+                              // 편집 중인 태그를 다시 더블클릭하면 편집 취소
+                              handleCancelCustomTag();
+                            } else {
+                              // 더블클릭 시 편집
+                              handleEditTag(tag);
+                            }
+                          }}
+                          style={{ 
+                            backgroundColor: tag.color || '#7986CB',
+                            color: 'var(--text-dark)',
+                            borderColor: 'transparent'
+                          }}
+                          title="클릭: 선택 해제, 더블클릭: 편집"
+                        >
+                          {tag.type}
                           </button>
+                      ))}
                         </div>
-                      );
-                    })}
                   </div>
-                ) : (
-                  <div className="no-attendees-message">태그가 없습니다</div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -773,102 +979,6 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                   <p>{attendeeSearchTerm.trim() !== '' ? '검색 결과가 없습니다.' : '전체 목록이 표시됩니다.'}</p>
                 )
               )}
-            </div>
-          </div>
-          <div className={`attendee-search-panel ${isTagSearchVisible ? 'visible' : ''}`}>
-            <h3>태그 선택</h3>
-            <div className="tag-selection-panel-content">
-              <div className="tag-selection-panel-section">
-                <div className="tag-selection-panel-grid">
-                  {eventTypes.map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`tag-panel-button ${selectedTags.some(t => t.type === type && !t.isCustom) ? 'active' : ''}`}
-                      onClick={() => handleSelectTag(type)}
-                      style={{ 
-                        backgroundColor: selectedTags.some(t => t.type === type && !t.isCustom) 
-                          ? (eventTypeStyles[type]?.color || '#343a40')
-                          : '#ffffff',
-                        color: selectedTags.some(t => t.type === type && !t.isCustom) ? 'white' : 'var(--text-medium)',
-                        borderColor: eventTypeStyles[type]?.color || '#e2e8f0'
-                      }}
-                    >
-                      {tagLabels[type] || type}
-                    </button>
-                  ))}
-                  {selectedTags.filter(t => t.isCustom).map((tag, index) => (
-                    <button
-                      key={`custom-${tag.type}-${index}`}
-                      type="button"
-                      className={`tag-panel-button active`}
-                      onClick={() => handleEditTag(tag)}
-                      style={{ 
-                        backgroundColor: tag.color || '#7986CB',
-                        color: 'white',
-                        borderColor: tag.color || '#7986CB'
-                      }}
-                    >
-                      {tag.type}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className="tag-panel-button tag-add-button"
-                    onClick={() => {
-                      setShowCustomTagInput(true);
-                      setEditingTag(null);
-                      setCustomTag('');
-                      setCustomColor('#7986CB');
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-                {showCustomTagInput && (
-                  <div className="custom-tag-input-panel">
-                    <div className="custom-tag-input-row">
-                      <input 
-                        type="text" 
-                        placeholder="태그 이름 입력" 
-                        value={customTag} 
-                        onChange={(e) => setCustomTag(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleAddCustomTag();
-                          } else if (e.key === 'Escape') {
-                            handleCancelCustomTag();
-                          }
-                        }}
-                        className="custom-tag-input-field" 
-                        autoFocus
-                      />
-                      <input
-                        type="color"
-                        value={customColor}
-                        onChange={(e) => setCustomColor(e.target.value)}
-                        className="custom-tag-color-input"
-                        title="색상 선택"
-                      />
-                      <button 
-                        type="button" 
-                        className="custom-tag-confirm-btn"
-                        onClick={handleAddCustomTag}
-                        disabled={!customTag.trim()}
-                      >
-                        ✓
-                      </button>
-                      <button 
-                        type="button" 
-                        className="custom-tag-cancel-btn"
-                        onClick={handleCancelCustomTag}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>

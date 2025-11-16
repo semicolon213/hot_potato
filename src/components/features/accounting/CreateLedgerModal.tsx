@@ -181,114 +181,112 @@ export const CreateLedgerModal: React.FC<CreateLedgerModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content accounting-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content accounting-modal create-ledger-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>새 장부 만들기</h2>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>장부 이름 *</label>
-            <input
-              type="text"
-              value={ledgerName}
-              onChange={(e) => setLedgerName(e.target.value)}
-              placeholder="예: 2024년 본부 장부"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="create-ledger-form">
+          <div className="form-section">
+            <div className="form-group">
+              <input
+                type="text"
+                className="form-input"
+                value={ledgerName}
+                onChange={(e) => setLedgerName(e.target.value)}
+                placeholder="장부 이름 *"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>통장 이름 *</label>
-            <input
-              type="text"
-              value={accountName}
-              onChange={(e) => setAccountName(e.target.value)}
-              placeholder="예: 본부 운영 통장"
-              required
-            />
-          </div>
+            <div className="form-group">
+              <input
+                type="text"
+                className="form-input"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="통장 이름 *"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>최초 잔액 (원) *</label>
-            <input
-              type="number"
-              value={initialBalance}
-              onChange={(e) => setInitialBalance(e.target.value)}
-              placeholder="0"
-              min="0"
-              step="1"
-              required
-            />
-          </div>
+            <div className="form-group">
+              <input
+                type="number"
+                className="form-input"
+                value={initialBalance}
+                onChange={(e) => setInitialBalance(e.target.value)}
+                placeholder="최초 잔액 (원) *"
+                min="0"
+                step="1"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>주관리인 *</label>
-            <select
-              value={mainManagerEmail}
-              onChange={(e) => setMainManagerEmail(e.target.value)}
-              required
-            >
-              <option value="">선택하세요</option>
-              {users.map(user => (
-                <option key={user.email} value={user.email}>
-                  {user.name} ({user.studentId}) - {user.email}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="form-group">
+              <select
+                className="form-select"
+                value={mainManagerEmail}
+                onChange={(e) => setMainManagerEmail(e.target.value)}
+                required
+              >
+                <option value="">주관리인 *</option>
+                {users.map(user => (
+                  <option key={user.email} value={user.email}>
+                    {user.name} ({user.studentId}) - {user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="form-group">
-            <UserMultiSelect
-              users={users}
-              selectedUsers={subManagerEmails}
-              onSelectionChange={setSubManagerEmails}
-              label="별도 관리인"
-              placeholder="별도 관리인 검색..."
-            />
-            <p className="form-hint">관리자들은 자동으로 접근 권한에 포함됩니다.</p>
-          </div>
+            <div className="form-group">
+              <UserMultiSelect
+                users={users}
+                selectedUsers={subManagerEmails}
+                onSelectionChange={setSubManagerEmails}
+                label="별도 관리인"
+                placeholder="별도 관리인 검색..."
+              />
+            </div>
 
-          <div className="form-group">
-            <UserMultiSelect
-              users={users.filter(user => 
-                user.email !== mainManagerEmail && 
-                !subManagerEmails.includes(user.email)
-              )}
-              selectedUsers={accessUsers.filter(email => 
-                email !== mainManagerEmail && 
-                !subManagerEmails.includes(email)
-              )}
-              onSelectionChange={(selected) => {
-                // 관리자 제외하고 업데이트
-                const filtered = selected.filter(email => 
+            <div className="form-group">
+              <UserMultiSelect
+                users={users.filter(user => 
+                  user.email !== mainManagerEmail && 
+                  !subManagerEmails.includes(user.email)
+                )}
+                selectedUsers={accessUsers.filter(email => 
                   email !== mainManagerEmail && 
                   !subManagerEmails.includes(email)
-                );
-                setAccessUsers(filtered);
-              }}
-              label="접근 권한 - 개인 사용자"
-              placeholder="사용자 검색..."
-            />
-            <p className="form-hint">주관리인과 별도 관리인은 자동으로 포함됩니다.</p>
-          </div>
-
-          <div className="form-group">
-            <label>접근 권한 - 그룹</label>
-            <div className="multi-select-list">
-              {GROUP_ROLES.map(role => (
-                <label key={role.value} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={accessGroups.includes(role.value)}
-                    onChange={() => handleGroupToggle(role.value)}
-                  />
-                  <span>{role.label}</span>
-                </label>
-              ))}
+                )}
+                onSelectionChange={(selected) => {
+                  // 관리자 제외하고 업데이트
+                  const filtered = selected.filter(email => 
+                    email !== mainManagerEmail && 
+                    !subManagerEmails.includes(email)
+                  );
+                  setAccessUsers(filtered);
+                }}
+                label="접근 권한 - 개인 사용자"
+                placeholder="사용자 검색..."
+              />
             </div>
-            <p className="form-hint">선택된 그룹: {accessGroups.length}개</p>
+
+            <div className="form-group">
+              <div className="multi-select-list">
+                {GROUP_ROLES.map(role => (
+                  <label key={role.value} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={accessGroups.includes(role.value)}
+                      onChange={() => handleGroupToggle(role.value)}
+                    />
+                    <span>{role.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -298,10 +296,10 @@ export const CreateLedgerModal: React.FC<CreateLedgerModalProps> = ({
           )}
 
           <div className="modal-actions">
-            <button type="button" onClick={onClose} disabled={isLoading}>
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={isLoading}>
               취소
             </button>
-            <button type="submit" disabled={isLoading}>
+            <button type="submit" className="btn-primary" disabled={isLoading}>
               {isLoading ? '생성 중...' : '생성'}
             </button>
           </div>

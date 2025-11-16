@@ -436,45 +436,46 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
 
   return (
     <div className="announcements-container">
-      <div className="post-view-header">
+      <div className="post-view-meta-details">
         <h1 className="announcements-title">
           {post.isPinned && <span style={{ color: '#ff6b6b', marginRight: '8px' }}>📌 [고정]</span>}
           {post.title}
         </h1>
-        {isAuthor && (
-          <div className="post-view-actions">
-            <button onClick={handleEdit} className="edit-button">수정</button>
-            <button onClick={handleDelete} className="delete-button">삭제</button>
-          </div>
-        )}
-      </div>
-      <div className="post-view-meta-details">
-        <span>작성자: {post.author}</span>
-        <span>작성일: {formatDateToYYYYMMDD(post.date)}</span>
-        <span>조회수: {post.views}</span>
-        {post.fix_notice === 'X' && isAuthor && (
-          <span style={{ color: '#ff6b6b', marginLeft: '10px' }}>
-            [고정 공지 거절됨]
-            <button 
-              onClick={handleRequestPinnedAnnouncement}
-              style={{ 
-                marginLeft: '10px', 
-                padding: '4px 8px', 
-                fontSize: '12px',
-                cursor: 'pointer',
-                border: '1px solid #ff6b6b',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#ff6b6b'
-              }}
-            >
-              재요청
-            </button>
-          </span>
-        )}
-        {post.fix_notice === '-' && isAuthor && (
-          <span style={{ color: '#ffa500', marginLeft: '10px' }}>[고정 공지 승인 대기 중]</span>
-        )}
+        <div className="post-view-meta-info">
+          <span>작성자: {post.author}</span>
+          <span>작성일: {formatDateToYYYYMMDD(post.date)}</span>
+          <span>조회수: {post.views}</span>
+          <button onClick={onBack} className="back-to-list-button">목록으로</button>
+          {post.fix_notice === 'X' && isAuthor && (
+            <span style={{ color: '#ff6b6b', marginLeft: '10px' }}>
+              [고정 공지 거절됨]
+              <button 
+                onClick={handleRequestPinnedAnnouncement}
+                style={{ 
+                  marginLeft: '10px', 
+                  padding: '4px 8px', 
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  border: '1px solid #ff6b6b',
+                  borderRadius: '4px',
+                  background: 'white',
+                  color: '#ff6b6b'
+                }}
+              >
+                재요청
+              </button>
+            </span>
+          )}
+          {post.fix_notice === '-' && isAuthor && (
+            <span style={{ color: '#ffa500', marginLeft: '10px' }}>[고정 공지 승인 대기 중]</span>
+          )}
+          {isAuthor && (
+            <div className="post-view-actions">
+              <button onClick={handleEdit} className="edit-button">수정</button>
+              <button onClick={handleDelete} className="delete-button">삭제</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {attachmentHtml && (
@@ -482,9 +483,6 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
       )}
 
       <div className="post-view-body" dangerouslySetInnerHTML={{ __html: mainContent.replace(/\n/g, '<br />') }} />
-      <div className="post-view-footer">
-        <button onClick={onBack} className="back-to-list-button">목록으로</button>
-      </div>
     </div>
   );
 };

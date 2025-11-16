@@ -40,19 +40,19 @@
 /* 버튼 변형 */
 .button-primary {
   background-color: var(--sidebar-primary); /* 검은색 */
-  color: #ffffff; /* 흰색 텍스트 */
+  color: var(--white-pure); /* 흰색 텍스트 */
 }
 
 .button-primary:hover:not(:disabled) {
-  background-color: #ffffff; /* 흰색 */
-  color: #000000; /* 검은 텍스트 */
-  border: 1px solid #1a1a1a; /* 검은 테두리 */
+  background-color: var(--white-pure); /* 흰색 */
+  color: var(--text-dark); /* 검은 텍스트 */
+  border: 1px solid var(--sidebar-primary); /* 검은 테두리 */
   box-shadow: none; /* 위로 이동/그림자 제거 */
 }
 
 .button-secondary {
   background-color: var(--button-secondary);
-  color: white;
+  color: var(--white-pure);
 }
 
 .button-secondary:hover:not(:disabled) {
@@ -61,7 +61,7 @@
 
 .button-danger {
   background-color: var(--button-danger);
-  color: white;
+  color: var(--white-pure);
 }
 
 .button-danger:hover:not(:disabled) {
@@ -70,7 +70,7 @@
 
 .button-warning {
   background-color: var(--button-warning);
-  color: #000;
+  color: var(--text-dark);
 }
 
 .button-warning:hover:not(:disabled) {
@@ -107,4 +107,24 @@
 @keyframes button-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* 모바일 반응형: 터치 타겟 크기 확보 */
+@media (max-width: 768px) {
+  .button {
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+  }
+  
+  .button-sm {
+    padding: clamp(8px, 0.93vh, 12px) clamp(12px, 1.56vw, 16px);
+  }
+  
+  .button-md {
+    padding: clamp(10px, 1.16vh, 14px) clamp(14px, 1.82vw, 18px);
+  }
+  
+  .button-lg {
+    padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
+  }
 }

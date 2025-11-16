@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { BiPencil } from "react-icons/bi";
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { FaFilter, FaTimes, FaBullhorn, FaThumbtack, FaFileAlt, FaPlus } from "react-icons/fa";
 import '../../styles/pages/Announcements.css';
 import type { Post, User } from '../../types/app';
-import RightArrowIcon from '../../assets/Icons/right_black.svg';
 import { formatDateToYYYYMMDD } from '../../utils/helpers/timeUtils';
+import TableColumnFilter, { type SortDirection, type FilterValue } from '../../components/ui/common/TableColumnFilter';
+import StatCard from '../../components/features/documents/StatCard';
 
 interface AnnouncementsProps {
   onPageChange: (pageName: string) => void;
@@ -60,48 +61,230 @@ const getPaginationNumbers = (currentPage: number, totalPages: number) => {
 
 
 const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelectAnnouncement, onUnpinAnnouncement, posts, isAuthenticated, announcementSpreadsheetId, isLoading, user }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchCriteria, setSearchCriteria] = useState('title'); // 'title' or 'author'
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 10;
+  const postsPerPage = 8;
 
-  const filteredPosts = posts.filter(post => {
-    const term = searchTerm.toLowerCase();
-    if (searchCriteria === 'title') {
-      return post.title && typeof post.title === 'string' && post.title.toLowerCase().includes(term);
+  // 필터 상태
+  const [filterConfigs, setFilterConfigs] = useState<Record<string, {
+    sortDirection: SortDirection;
+    selectedFilters: FilterValue[];
+  }>>({});
+  const [openFilterColumn, setOpenFilterColumn] = useState<string | null>(null);
+  const [filterPopupPosition, setFilterPopupPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  // 필터 옵션 가져오기
+  const getFilterOptions = (columnKey: string) => {
+    const uniqueValues = new Set<FilterValue>();
+    
+    posts.forEach(post => {
+      let value: FilterValue | null = null;
+      if (columnKey === 'number') {
+        value = post.id;
+      } else if (columnKey === 'title') {
+        value = post.title || '';
+      } else if (columnKey === 'author') {
+        value = post.author || '';
+      } else if (columnKey === 'views') {
+        value = post.views || 0;
+      } else if (columnKey === 'date') {
+        value = post.date || '';
+      }
+      
+      if (value !== null) {
+        uniqueValues.add(value);
+      }
+    });
+
+    return Array.from(uniqueValues).map(value => ({
+      value,
+      label: String(value)
+    })).sort((a, b) => String(a.value).localeCompare(String(b.value)));
+  };
+
+  // 헤더 클릭 핸들러
+  const handleHeaderClick = (e: React.MouseEvent, key: string) => {
+    e.stopPropagation();
+    const thElement = e.currentTarget as HTMLElement;
+    const rect = thElement.getBoundingClientRect();
+    setFilterPopupPosition({
+      top: rect.bottom + 4,
+      left: rect.left + rect.width / 2 // 헤더 셀의 가운데 위치
+    });
+    setOpenFilterColumn(openFilterColumn === key ? null : key);
+  };
+
+  // 정렬 변경 핸들러
+  const handleSortChange = (columnKey: string, direction: SortDirection) => {
+    setFilterConfigs(prev => ({
+      ...prev,
+      [columnKey]: {
+        ...prev[columnKey] || { sortDirection: null, selectedFilters: [] },
+        sortDirection: direction
+      }
+    }));
+  };
+
+  // 필터 변경 핸들러
+  const handleFilterChange = (columnKey: string, filters: FilterValue[]) => {
+    setFilterConfigs(prev => ({
+      ...prev,
+      [columnKey]: {
+        ...prev[columnKey] || { sortDirection: null, selectedFilters: [] },
+        selectedFilters: filters
+      }
+    }));
+    setCurrentPage(1); // 필터 변경 시 첫 페이지로
+  };
+
+  // 필터 초기화 핸들러
+  const handleClearFilters = (columnKey: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
     }
-    if (searchCriteria === 'author') {
-      return post.author && typeof post.author === 'string' && post.author.toLowerCase().includes(term);
+    setFilterConfigs(prev => {
+      const newConfigs = { ...prev };
+      if (newConfigs[columnKey]) {
+        newConfigs[columnKey] = {
+          sortDirection: null,
+          selectedFilters: []
+        };
+      }
+      return newConfigs;
+    });
+  };
+
+  // 검색어 필터링 제거 - 모든 posts 사용
+  const searchFilteredPosts = useMemo(() => {
+    return posts;
+  }, [posts]);
+
+  // 필터 및 정렬 적용
+  const filteredPosts = useMemo(() => {
+    let filtered = [...searchFilteredPosts];
+
+    // 컬럼별 필터 적용
+    Object.keys(filterConfigs).forEach(columnKey => {
+      const config = filterConfigs[columnKey];
+      if (config.selectedFilters.length > 0) {
+        filtered = filtered.filter(post => {
+          let value: FilterValue | null = null;
+          if (columnKey === 'number') {
+            value = post.id;
+          } else if (columnKey === 'title') {
+            value = post.title || '';
+          } else if (columnKey === 'author') {
+            value = post.author || '';
+          } else if (columnKey === 'views') {
+            value = post.views || 0;
+          } else if (columnKey === 'date') {
+            value = post.date || '';
+          }
+          return value !== null && config.selectedFilters.includes(value);
+        });
+      }
+    });
+
+    // 정렬 적용
+    Object.keys(filterConfigs).forEach(columnKey => {
+      const config = filterConfigs[columnKey];
+      if (config.sortDirection) {
+        filtered.sort((a, b) => {
+          let aValue: any;
+          let bValue: any;
+          
+          if (columnKey === 'number') {
+            aValue = parseInt(String(a.id).replace('temp-', ''), 10) || 0;
+            bValue = parseInt(String(b.id).replace('temp-', ''), 10) || 0;
+          } else if (columnKey === 'title') {
+            aValue = a.title || '';
+            bValue = b.title || '';
+          } else if (columnKey === 'author') {
+            aValue = a.author || '';
+            bValue = b.author || '';
+          } else if (columnKey === 'views') {
+            aValue = a.views || 0;
+            bValue = b.views || 0;
+          } else if (columnKey === 'date') {
+            aValue = a.date || '';
+            bValue = b.date || '';
+          }
+
+          if (aValue < bValue) return config.sortDirection === 'asc' ? -1 : 1;
+          if (aValue > bValue) return config.sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+    });
+
+    // 고정 공지와 일반 공지를 분리하여 각각 정렬
+    const pinnedPosts = filtered.filter(p => p.isPinned);
+    const normalPosts = filtered.filter(p => !p.isPinned);
+
+    // 각 그룹을 ID 역순으로 정렬 (최신순) - 정렬이 없을 때만
+    if (!Object.values(filterConfigs).some(config => config.sortDirection)) {
+      pinnedPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+      normalPosts.sort((a, b) => {
+        const isATemp = String(a.id).startsWith('temp-');
+        const isBTemp = String(b.id).startsWith('temp-');
+
+        if (isATemp && !isBTemp) return -1;
+        if (!isATemp && isBTemp) return 1;
+
+        const idA = parseInt(String(a.id).replace('temp-', ''), 10);
+        const idB = parseInt(String(b.id).replace('temp-', ''), 10);
+
+        if (isNaN(idA) || isNaN(idB)) return 0;
+        return idB - idA;
+      });
     }
-    if (searchCriteria === 'content') {
-      return post.content && typeof post.content === 'string' && post.content.toLowerCase().includes(term);
-    }
-    return false;
-  });
 
-  // 고정 공지와 일반 공지를 분리하여 각각 정렬
-  const pinnedPosts = filteredPosts.filter(p => p.isPinned);
-  const normalPosts = filteredPosts.filter(p => !p.isPinned);
+    // 고정 공지를 최상단에 위치시켜 최종 목록 생성
+    return [...pinnedPosts, ...normalPosts];
+  }, [searchFilteredPosts, filterConfigs]);
 
-  // 각 그룹을 ID 역순으로 정렬 (최신순)
-  pinnedPosts.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
-  normalPosts.sort((a, b) => {
-    const isATemp = String(a.id).startsWith('temp-');
-    const isBTemp = String(b.id).startsWith('temp-');
+  const sortedFilteredPosts = filteredPosts;
 
-    if (isATemp && !isBTemp) return -1; // a가 임시면 a를 위로
-    if (!isATemp && isBTemp) return 1;  // b가 임시면 b를 위로
+  // 통계 데이터 계산
+  const totalPosts = posts.length;
+  const pinnedPostsCount = posts.filter(p => p.isPinned).length;
+  const normalPostsCount = posts.filter(p => !p.isPinned).length;
 
-    // 둘 다 임시이거나 둘 다 임시가 아닐 경우 ID로 정렬
-    const idA = parseInt(String(a.id).replace('temp-', ''), 10);
-    const idB = parseInt(String(b.id).replace('temp-', ''), 10);
-
-    if (isNaN(idA) || isNaN(idB)) return 0;
-    return idB - idA;
-  });
-
-  // 고정 공지를 최상단에 위치시켜 최종 목록 생성
-  const sortedFilteredPosts = [...pinnedPosts, ...normalPosts];
+  // 통계 카드 데이터
+  const announcementStatCards = [
+    {
+      count: totalPosts,
+      title: '전체 공지',
+      backgroundColor: '#E8F5E9',
+      textColor: '#000000',
+      icon: FaBullhorn,
+      iconColor: '#2E7D32',
+    },
+    {
+      count: pinnedPostsCount,
+      title: '고정 공지',
+      backgroundColor: '#FFEBEE',
+      textColor: '#000000',
+      icon: FaThumbtack,
+      iconColor: '#C62828',
+    },
+    {
+      count: normalPostsCount,
+      title: '일반 공지',
+      backgroundColor: '#E3F2FD',
+      textColor: '#000000',
+      icon: FaFileAlt,
+      iconColor: '#1565C0',
+    },
+    {
+      count: 0,
+      title: '새 공지 만들기',
+      backgroundColor: '#FFF3E0',
+      textColor: '#000000',
+      icon: FaPlus,
+      iconColor: '#E65100',
+      onClick: () => onPageChange('NewAnnouncementPost'),
+    },
+  ];
 
   // Pagination logic
   const totalPages = Math.ceil(sortedFilteredPosts.length / postsPerPage);
@@ -122,158 +305,239 @@ const AnnouncementsPage: React.FC<AnnouncementsProps> = ({ onPageChange, onSelec
       <div className="announcements-header">
         <h1 className="announcements-title">공지사항</h1>
       </div>
-      <div className="actions-bar">
-        <div className="total-posts">총 {filteredPosts.length}건</div>
-        <div className="actions-right">
-          <div className="search-box">
-            <div className="select-wrapper">
-              <select 
-                value={searchCriteria} 
-                onChange={(e) => setSearchCriteria(e.target.value)} 
-                className="search-criteria-select"
-              >
-                <option value="title">제목</option>
-                <option value="author">작성자</option>
-                <option value="content">내용</option>
-              </select>
-            </div>
-            <input
-              type="text"
-              placeholder={`${searchCriteria === 'title' ? '제목' : searchCriteria === 'author' ? '작성자' : '내용'}으로 검색...`}
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on new search
-              }}
-            />
-          </div>
-          {isAuthenticated && user && user.userType && user.userType !== 'student' && (
-            <button 
-              className="new-post-button" 
-              onClick={() => onPageChange('new-announcement-post')}
-              disabled={!announcementSpreadsheetId}
-            >
-              {announcementSpreadsheetId ? <><BiPencil /> 새 공지</> : '불러오는 중...'}
-            </button>
-          )}
-        </div>
+
+      {/* 공지사항 통계 카드 */}
+      <div className="stats-container">
+        {announcementStatCards.map((stat, index) => (
+          <StatCard
+            key={index}
+            count={stat.count}
+            title={stat.title}
+            backgroundColor={stat.backgroundColor}
+            textColor={stat.textColor}
+            icon={stat.icon}
+            iconColor={stat.iconColor}
+            onClick={stat.onClick}
+          />
+        ))}
       </div>
       
       <div className="post-list">
         {isLoading ? (
           <p className="loading-message">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</p>
         ) : filteredPosts.length > 0 ? (
-          <>
-            <table className="post-table">
-              <thead>
-                <tr>
-                  <th className="col-number">번호</th>
-                  <th className="col-title">제목</th>
-                  <th className="col-author">작성자</th>
-                  <th className="col-views">조회</th>
-                  <th className="col-date">작성일자</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentPosts.map((post, index) => (
-                  <tr 
-                    key={post.id} 
-                    onClick={() => onSelectAnnouncement(post)}
-                    className={post.isPinned ? 'pinned-announcement-row' : ''}
-                    style={post.isPinned ? { 
-                      backgroundColor: '#fff5f5', 
-                      borderLeft: '4px solid #ff6b6b',
-                      fontWeight: '500'
-                    } : {}}
-                  >
-                    <td className="col-number">
-                      {post.isPinned ? (
-                        <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>📌</span>
-                      ) : String(post.id).startsWith('temp-') ? (
-                        <span style={{ color: '#999' }}>-</span>
-                      ) : (
-                        post.id
+          <table className="post-table">
+            <thead>
+              <tr>
+                <th 
+                  className={`col-number sortable ${filterConfigs['number']?.sortDirection ? 'sorted' : ''} ${filterConfigs['number']?.selectedFilters.length ? 'filtered' : ''}`}
+                  onClick={(e) => handleHeaderClick(e, 'number')}
+                >
+                  <div className="th-content">
+                    <span>번호</span>
+                    {(filterConfigs['number']?.sortDirection || filterConfigs['number']?.selectedFilters.length > 0) && (
+                      <button
+                        className="filter-clear-icon"
+                        onClick={(e) => handleClearFilters('number', e)}
+                        title="필터/정렬 초기화"
+                      >
+                        <FaFilter className="filter-icon" />
+                        <FaTimes className="clear-icon" />
+                      </button>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className={`col-title sortable ${filterConfigs['title']?.sortDirection ? 'sorted' : ''} ${filterConfigs['title']?.selectedFilters.length ? 'filtered' : ''}`}
+                  onClick={(e) => handleHeaderClick(e, 'title')}
+                >
+                  <div className="th-content">
+                    <span>제목</span>
+                    {(filterConfigs['title']?.sortDirection || filterConfigs['title']?.selectedFilters.length > 0) && (
+                      <button
+                        className="filter-clear-icon"
+                        onClick={(e) => handleClearFilters('title', e)}
+                        title="필터/정렬 초기화"
+                      >
+                        <FaFilter className="filter-icon" />
+                        <FaTimes className="clear-icon" />
+                      </button>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className={`col-author sortable ${filterConfigs['author']?.sortDirection ? 'sorted' : ''} ${filterConfigs['author']?.selectedFilters.length ? 'filtered' : ''}`}
+                  onClick={(e) => handleHeaderClick(e, 'author')}
+                >
+                  <div className="th-content">
+                    <span>작성자</span>
+                    {(filterConfigs['author']?.sortDirection || filterConfigs['author']?.selectedFilters.length > 0) && (
+                      <button
+                        className="filter-clear-icon"
+                        onClick={(e) => handleClearFilters('author', e)}
+                        title="필터/정렬 초기화"
+                      >
+                        <FaFilter className="filter-icon" />
+                        <FaTimes className="clear-icon" />
+                      </button>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className={`col-views sortable ${filterConfigs['views']?.sortDirection ? 'sorted' : ''} ${filterConfigs['views']?.selectedFilters.length ? 'filtered' : ''}`}
+                  onClick={(e) => handleHeaderClick(e, 'views')}
+                >
+                  <div className="th-content">
+                    <span>조회</span>
+                    {(filterConfigs['views']?.sortDirection || filterConfigs['views']?.selectedFilters.length > 0) && (
+                      <button
+                        className="filter-clear-icon"
+                        onClick={(e) => handleClearFilters('views', e)}
+                        title="필터/정렬 초기화"
+                      >
+                        <FaFilter className="filter-icon" />
+                        <FaTimes className="clear-icon" />
+                      </button>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className={`col-date sortable ${filterConfigs['date']?.sortDirection ? 'sorted' : ''} ${filterConfigs['date']?.selectedFilters.length ? 'filtered' : ''}`}
+                  onClick={(e) => handleHeaderClick(e, 'date')}
+                >
+                  <div className="th-content">
+                    <span>작성일자</span>
+                    {(filterConfigs['date']?.sortDirection || filterConfigs['date']?.selectedFilters.length > 0) && (
+                      <button
+                        className="filter-clear-icon"
+                        onClick={(e) => handleClearFilters('date', e)}
+                        title="필터/정렬 초기화"
+                      >
+                        <FaFilter className="filter-icon" />
+                        <FaTimes className="clear-icon" />
+                      </button>
+                    )}
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentPosts.map((post, index) => (
+                <tr 
+                  key={post.id} 
+                  onClick={() => onSelectAnnouncement(post)}
+                  className={post.isPinned ? 'pinned-announcement-row' : ''}
+                >
+                  <td className="col-number">
+                    {post.isPinned ? (
+                      <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>📌</span>
+                    ) : String(post.id).startsWith('temp-') ? (
+                      <span style={{ color: '#999' }}>-</span>
+                    ) : (
+                      post.id
+                    )}
+                  </td>
+                  <td className="col-title">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ flex: 1 }}>
+                        {post.isPinned && <span style={{ color: '#ff6b6b', marginRight: '5px', fontWeight: 'bold' }}>[고정]</span>}
+                        {post.title}
+                      </span>
+                      {post.isPinned && user && onUnpinAnnouncement && (
+                        (String(user.studentId) === post.writer_id || user.isAdmin) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('고정 공지를 해제하시겠습니까?')) {
+                                onUnpinAnnouncement(post.id);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '12px',
+                              backgroundColor: '#fff',
+                              color: '#ff6b6b',
+                              border: '1px solid #ff6b6b',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: '500'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#ff6b6b';
+                              e.currentTarget.style.color = '#fff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#fff';
+                              e.currentTarget.style.color = '#ff6b6b';
+                            }}
+                          >
+                            해제
+                          </button>
+                        )
                       )}
-                    </td>
-                    <td className="col-title">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ flex: 1 }}>
-                          {post.isPinned && <span style={{ color: '#ff6b6b', marginRight: '5px', fontWeight: 'bold' }}>[고정]</span>}
-                          {post.title}
-                        </span>
-                        {post.isPinned && user && onUnpinAnnouncement && (
-                          (String(user.studentId) === post.writer_id || user.isAdmin) && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm('고정 공지를 해제하시겠습니까?')) {
-                                  onUnpinAnnouncement(post.id);
-                                }
-                              }}
-                              style={{
-                                padding: '4px 8px',
-                                fontSize: '12px',
-                                backgroundColor: '#fff',
-                                color: '#ff6b6b',
-                                border: '1px solid #ff6b6b',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontWeight: '500'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#ff6b6b';
-                                e.currentTarget.style.color = '#fff';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#fff';
-                                e.currentTarget.style.color = '#ff6b6b';
-                              }}
-                            >
-                              해제
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </td>
-                    <td className="col-author">{post.author}</td>
-                    <td className="col-views">{post.views}</td>
-                    <td className="col-date">{formatDateToYYYYMMDD(post.date)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="page-arrow-link">
-                  <img src={RightArrowIcon} alt="Previous" className="arrow-icon arrow-left" />
-                  <span>이전</span>
-                </button>
-
-                {paginationNumbers.map((page, index) => {
-                  if (typeof page === 'string') {
-                    return <span key={`ellipsis-${index}`} className="page-ellipsis">...</span>;
-                  }
-                  return (
-                    <button 
-                      key={page} 
-                      onClick={() => paginate(page)} 
-                      className={`page-link ${currentPage === page ? 'active' : ''}`}>
-                      {page}
-                    </button>
-                  );
-                })}
-
-                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="page-arrow-link">
-                  <span>다음</span>
-                  <img src={RightArrowIcon} alt="Next" className="arrow-icon" />
-                </button>
-              </div>
-            )}
-          </>
+                    </div>
+                  </td>
+                  <td className="col-author">{post.author}</td>
+                  <td className="col-views">{post.views}</td>
+                  <td className="col-date">{formatDateToYYYYMMDD(post.date)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
           <p className="no-results">{isAuthenticated ? '공지사항이 없습니다.' : '데이터를 불러오는 중입니다. 잠시만 기다려주세요...'}</p>
         )}
       </div>
+
+      {/* 페이지네이션 - 표와 분리 */}
+      {!isLoading && filteredPosts.length > 0 && totalPages > 1 && (
+        <div className="pagination">
+          <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="page-arrow-link">
+            <span>이전</span>
+          </button>
+
+          {paginationNumbers.map((page, index) => {
+            if (typeof page === 'string') {
+              return <span key={`ellipsis-${index}`} className="page-ellipsis">...</span>;
+            }
+            return (
+              <button 
+                key={page} 
+                onClick={() => paginate(page)} 
+                className={`page-link ${currentPage === page ? 'active' : ''}`}>
+                {page}
+              </button>
+            );
+          })}
+
+          <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="page-arrow-link">
+            <span>다음</span>
+          </button>
+        </div>
+      )}
+
+      {/* 필터 팝업 */}
+      {openFilterColumn && (
+        <TableColumnFilter
+          columnKey={openFilterColumn}
+          columnLabel={
+            openFilterColumn === 'number' ? '번호' :
+            openFilterColumn === 'title' ? '제목' :
+            openFilterColumn === 'author' ? '작성자' :
+            openFilterColumn === 'views' ? '조회' :
+            openFilterColumn === 'date' ? '작성일자' : ''
+          }
+          isOpen={true}
+          position={filterPopupPosition}
+          onClose={() => setOpenFilterColumn(null)}
+          sortDirection={filterConfigs[openFilterColumn]?.sortDirection || null}
+          onSortChange={(direction) => handleSortChange(openFilterColumn, direction)}
+          availableOptions={getFilterOptions(openFilterColumn)}
+          selectedFilters={filterConfigs[openFilterColumn]?.selectedFilters || []}
+          onFilterChange={(filters) => handleFilterChange(openFilterColumn, filters)}
+          onClearFilters={() => handleClearFilters(openFilterColumn)}
+        />
+      )}
     </div>
   );
 };

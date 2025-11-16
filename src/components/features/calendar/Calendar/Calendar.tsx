@@ -14,6 +14,7 @@ import MoreEventsModal from './MoreEventsModal';
 import ScheduleView from './ScheduleView';
 import HelpModal from './HelpModal';
 import SemesterPickerModal from './SemesterPickerModal';
+import MonthYearPicker from './MonthYearPicker';
 
 import { RRule } from 'rrule';
 import { findSpreadsheetById, fetchCalendarEvents } from '../../../../utils/google/spreadsheetManager';
@@ -136,9 +137,12 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
     const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+    const [isMonthYearPickerOpen, setIsMonthYearPickerOpen] = useState(false);
+    const [monthYearPickerPosition, setMonthYearPickerPosition] = useState<{ top: number; left: number } | undefined>(undefined);
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const datePickerRef = useRef<HTMLInputElement>(null);
+    const monthYearButtonRef = useRef<HTMLHeadingElement>(null);
 
     useEffect(() => {
         if (isSearchVisible) {
@@ -425,18 +429,82 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
         return layouts;
     }, [weeksInMonth, expandedEvents]);
 
+    const calendarBodyRef = useRef<HTMLDivElement>(null);
+    const [weekHeights, setWeekHeights] = useState<number[]>([]);
+
+    // 각 주의 실제 높이를 측정
+    useEffect(() => {
+        if (!calendarBodyRef.current) return;
+        
+        // DOM 렌더링 완료 후 측정
+        const measureHeights = () => {
+            const dayWrapper = calendarBodyRef.current?.querySelector('.day-wrapper:not(:first-of-type)') as HTMLElement;
+            if (!dayWrapper) return;
+            
+            const days = dayWrapper.querySelectorAll('.day') as NodeListOf<HTMLElement>;
+            if (days.length === 0) return;
+            
+            const heights: number[] = [];
+            const weekStartIndices: number[] = [];
+            
+            // 각 주의 시작 인덱스 찾기 (일요일, index % 7 === 0)
+            days.forEach((day, index) => {
+                if (index % 7 === 0) {
+                    weekStartIndices.push(index);
+                }
+            });
+            
+            // 각 주의 높이 계산
+            weekStartIndices.forEach((startIndex, weekIndex) => {
+                const firstDay = days[startIndex];
+                const nextWeekStartIndex = weekStartIndices[weekIndex + 1];
+                
+                if (firstDay) {
+                    if (nextWeekStartIndex !== undefined) {
+                        // 다음 주의 첫 번째 셀까지의 거리
+                        const nextWeekFirstDay = days[nextWeekStartIndex];
+                        const weekHeight = nextWeekFirstDay.offsetTop - firstDay.offsetTop;
+                        heights.push(weekHeight);
+                    } else {
+                        // 마지막 주: 첫 번째 셀의 높이 사용
+                        heights.push(firstDay.offsetHeight);
+                    }
+                }
+            });
+            
+            if (heights.length > 0) {
+                setWeekHeights(heights);
+            }
+        };
+        
+        // requestAnimationFrame을 사용하여 DOM 렌더링 완료 후 측정
+        requestAnimationFrame(() => {
+            setTimeout(measureHeights, 0);
+        });
+    }, [weeksInMonth, daysInMonth]);
+
     const { eventElements, moreButtonElements } = useMemo(() => {
         const eventElements: React.ReactNode[] = [];
         const moreButtonElements: React.ReactNode[] = [];
         const processedEvents = new Set<string>();
         const MAX_EVENTS = 3;
 
-        const dayHeight = 130;
+        // 동적 높이 계산: 각 주의 실제 높이를 사용하거나 기본값 사용
+        const getWeekHeight = (weekIndex: number) => {
+            return weekHeights[weekIndex] || 130; // 기본값 130px
+        };
+        
         const eventHeight = 22;
         const dateHeaderHeight = 30;
 
+        // 이전 주들의 누적 높이 계산
+        let cumulativeTop = dateHeaderHeight;
+
         weeksInMonth.forEach((week, weekIndex) => {
             if (!week || week.length === 0) return;
+            
+            const currentWeekHeight = getWeekHeight(weekIndex);
+            
             week.forEach((day, dayOfWeek) => {
                 if (!day) return;
                 const dayLayout = eventLayouts.get(day.date) || [];
@@ -484,7 +552,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             key={`${event.id}-${day.date}`}
                             className={`monthly-event-item ${isContinuationLeft ? 'continuation-left' : ''} ${isContinuationRight ? 'continuation-right' : ''}`}
                             style={{
-                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (laneIndex * eventHeight)}px`,
+                                top: `${cumulativeTop + (laneIndex * eventHeight)}px`,
                                 left: `${adjustedLeft}%`,
                                 width: `${adjustedWidth}%`,
                                 backgroundColor: event.color,
@@ -507,7 +575,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             className="more-events-text"
                             style={{
                                 position: 'absolute',
-                                top: `${(weekIndex * (dayHeight + 10)) + dateHeaderHeight + (MAX_EVENTS * eventHeight)}px`,
+                                top: `${cumulativeTop + (MAX_EVENTS * eventHeight)}px`,
                                 left: `${(dayOfWeek / 7) * 100}%`,
                                 width: `calc(${(1 / 7) * 100}% - 4px)`,
                                 marginLeft: '4px',
@@ -523,10 +591,13 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                     );
                 }
             });
+            
+            // 다음 주를 위해 누적 높이 업데이트
+            cumulativeTop += currentWeekHeight;
         });
 
         return { eventElements, moreButtonElements };
-    }, [eventLayouts, weeksInMonth, handleEventClick, onMoreClick, selectedEvent]);
+    }, [eventLayouts, weeksInMonth, handleEventClick, onMoreClick, selectedEvent, weekHeights]);
 
     const getWeekDatesText = (weekNum: number) => {
         if (!semesterStartDate || isNaN(semesterStartDate.getTime())) return '';
@@ -636,29 +707,21 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
                             <div className={`calendar-title ${calendarViewMode === 'calendar' ? 'visible' : 'hidden'}`}>
                                 <button className="arrow-button" onClick={() => viewMode === 'monthly' ? dispatch.handlePrevMonth() : setSelectedWeek(selectedWeek > 1 ? selectedWeek - 1 : 1)}>&#8249;</button>
                                 <h2 
+                                    ref={monthYearButtonRef}
                                     className="calendar-month-year"
-                                    onClick={() => {
-                                        if (viewMode === 'monthly' && datePickerRef.current) {
-                                            datePickerRef.current.showPicker?.() || datePickerRef.current.focus();
+                                    onClick={(e) => {
+                                        if (viewMode === 'monthly') {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setMonthYearPickerPosition({
+                                                top: rect.bottom + 8,
+                                                left: rect.left + (rect.width / 2) - 140 // 중앙 정렬 (피커 너비의 절반)
+                                            });
+                                            setIsMonthYearPickerOpen(true);
                                         }
                                     }}
                                 >
                                     {viewMode === 'monthly' ? (
-                                        <>
-                                            {`${currentDate.year}년 ${currentDate.month}월`}
-                                            <input
-                                                ref={datePickerRef}
-                                                type="date"
-                                                value={`${currentDate.year}-${String(currentDate.month).padStart(2, '0')}-01`}
-                                                onChange={(e) => {
-                                                    const selectedDate = new Date(e.target.value);
-                                                    if (goToDate) {
-                                                        goToDate(selectedDate);
-                                                    }
-                                                }}
-                                                style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
-                                            />
-                                        </>
+                                        `${currentDate.year}년 ${currentDate.month}월`
                                     ) : (
                                         <>
                                             {`${selectedWeek}주차`}
@@ -716,7 +779,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
             </div>
             {calendarViewMode === 'calendar' ? (
                 viewMode === 'monthly' ? (
-                    <div className="calendar-body-container">
+                    <div className="calendar-body-container" ref={calendarBodyRef}>
                         <div className="day-wrapper">
                             {weeks.map((week, index) => (
                                 <div className={`calendar-item ${index === 0 ? 'sunday' : ''} ${index === 6 ? 'saturday' : ''}`} key={week}>{week}</div>
@@ -764,6 +827,22 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
             />
 
             {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
+            
+            {isMonthYearPickerOpen && (
+                <MonthYearPicker
+                    currentYear={currentDate.year}
+                    currentMonth={currentDate.month}
+                    onSelect={(year, month) => {
+                        const newDate = new Date(year, month - 1, 1);
+                        if (goToDate) {
+                            goToDate(newDate);
+                        }
+                        setIsMonthYearPickerOpen(false);
+                    }}
+                    onClose={() => setIsMonthYearPickerOpen(false)}
+                    position={monthYearPickerPosition}
+                />
+            )}
         </div>
     );
 };

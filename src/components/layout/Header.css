@@ -8,10 +8,48 @@
   padding-left: clamp(24px, 3.125vw, 40px);
   padding-right: clamp(6px, 0.83vw, 12px);
   background: transparent; /* 메인 패널의 흰 배경을 사용 */
-  border-bottom: 1px solid #e2e8f0; /* 하단 실선 추가 */
+  border-bottom: 1px solid var(--border-color); /* 하단 실선 추가 */
   margin: 0;
   grid-row: 1;
   flex-wrap: wrap;
+}
+
+/* 모바일 반응형: 헤더 컴팩트화 */
+@media (max-width: 768px) {
+  .header {
+    height: clamp(48px, 5.56vh, 64px);
+    padding-left: clamp(16px, 2.08vw, 24px);
+    padding-right: clamp(12px, 1.56vw, 16px);
+    gap: clamp(12px, 1.56vw, 16px);
+  }
+  
+  .header-navigation-group {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .page-section-label {
+    font-size: clamp(16px, 1.85vh, 20px);
+  }
+  
+  .submenu-tabs {
+    gap: clamp(2px, 0.26vw, 4px);
+  }
+  
+  .submenu-tab {
+    padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 14px);
+    font-size: clamp(12px, 1.39vh, 14px);
+  }
+  
+  .header-search-group {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+  
+  .header-search-input {
+    font-size: clamp(13px, 1.5vh, 15px);
+  }
 }
 .top-submenu {
   display: flex;
@@ -82,7 +120,7 @@
   content: '';
   width: 1px;
   height: clamp(24px, 2.78vh, 32px);
-  background-color: #e2e8f0;
+  background-color: var(--border-color);
   margin-left: clamp(12px, 1.56vw, 16px);
   flex-shrink: 0;
   display: none;
@@ -95,7 +133,7 @@
 
 .top-submenu-item {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   height: clamp(28px, 3.24vh, 40px);
   padding: 0 clamp(8px, 1.04vw, 14px);
@@ -273,7 +311,7 @@
   flex: 0 1 clamp(280px, 29.17vw, 360px);
   max-width: clamp(280px, 29.17vw, 360px);
   background-color: var(--lightgrey);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   padding: 0 clamp(12px, 1.56vw, 16px);
   transition: var(--transition-base);
@@ -282,19 +320,19 @@
 }
 
 .header-search-group:hover {
-  background-color: #ffffff;
-  border-color: #cbd5e0;
+  background-color: var(--white-pure);
+  border-color: var(--border-color-alt);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .header-search-group:focus-within {
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   border-color: var(--sidebar-primary);
   box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .header-search-icon {
-  color: #999999;
+  color: var(--text-placeholder);
   font-size: clamp(14px, 1.62vh, 16px);
   margin-right: clamp(10px, 1.3vw, 14px);
   flex-shrink: 0;
@@ -324,7 +362,7 @@
 }
 
 .header-search-input::placeholder {
-  color: #999999;
+  color: var(--text-placeholder);
   opacity: 0.7;
   font-weight: var(--font-weight-normal);
 }
@@ -339,7 +377,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: #999999;
+  color: var(--text-placeholder);
   cursor: pointer;
   padding: clamp(4px, 0.46vh, 6px);
   margin-left: clamp(8px, 1.04vw, 12px);
@@ -446,7 +484,7 @@
 /* 미니멀리즘 사용자 프로필 */
 .user-button {
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   color: #333333;
   padding: clamp(5px, 0.56vh, 8px) clamp(10px, 1.25vw, 16px);
   border-radius: var(--sidebar-radius-sm);
@@ -464,7 +502,7 @@
 /* 로그아웃 버튼 */
 .logout-button {
   background: none;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   color: #333333;
   padding: clamp(5px, 0.56vh, 8px) clamp(10px, 1.25vw, 16px);
   border-radius: var(--sidebar-radius-sm);
@@ -483,7 +521,7 @@
 .login-button {
   background: var(--sidebar-primary);
   border: 1px solid var(--sidebar-primary);
-  color: #f8f8f7;
+  color: var(--white);
   padding: clamp(6px, 0.74vh, 10px) clamp(12px, 1.5vw, 20px);
   border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
@@ -516,7 +554,7 @@
   right: 20px;
   width: 320px;
   height: 400px;
-  background-color: #f8f8f7;
+  background-color: var(--white);
   border-radius: var(--border-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
@@ -547,7 +585,7 @@
 .chat-header {
   padding: 12px 15px;
   background-color: var(--sidebar-primary);
-  color: #f8f8f7;
+  color: var(--white);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -617,12 +655,12 @@
 .chat-input-area {
   display: flex;
   padding: 10px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
 }
 
 .chat-input {
   flex: 1;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   padding: 8px 12px;
   font-size: var(--font-size-base);
@@ -692,7 +730,7 @@
 
 .notification-item {
   padding: 12px 15px 12px 35px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: flex-start;
   transition: background-color 0.2s;
@@ -758,7 +796,7 @@
   font-size: var(--font-size-sm);
   color: var(--text-medium);
   cursor: pointer;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
 }
 
 .all-notifications:hover {
@@ -791,7 +829,7 @@
 
 /* 모달 컨텐츠 크기 조정 */
 .modal-content {
-  background: #f8f8f7;
+  background: var(--white);
   border-radius: var(--sidebar-radius);
   width: clamp(400px, 26vw, 600px);
   max-width: 90%;
@@ -820,7 +858,7 @@
 .modal-textarea {
   width: 100%;
   padding: clamp(10px, 1.16vh, 16px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(14px, 1.62vh, 18px);
   box-sizing: border-box;
@@ -840,7 +878,7 @@
 .modal-input {
   width: 100%;
   padding: clamp(10px, 1.16vh, 16px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(14px, 1.62vh, 18px);
   box-sizing: border-box;
@@ -882,7 +920,7 @@
 /* 모달 헤더 */
 .modal-header {
   padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -915,7 +953,7 @@
 /* 모달 푸터 */
 .modal-footer {
   padding: 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -935,7 +973,7 @@
 .modal-button.cancel {
   background: var(--lightgrey);
   color: var(--text-dark);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .modal-button.cancel:hover {
@@ -945,7 +983,7 @@
 
 .modal-button.confirm {
   background: var(--sidebar-primary);
-  color: #f8f8f7;
+  color: var(--white);
 }
 
 .modal-button.confirm:hover {
@@ -957,7 +995,7 @@
 /* 채팅 및 알림 아이콘 색상 및 크기 조정 */
 .chat-button .icon,
 .bell-button .icon {
-    color: #333333; /* 아이콘만 어두운 색으로 지정 */
+    color: var(--text-dark); /* 아이콘만 어두운 색으로 지정 */
     width: auto;
     height: auto;
     font-size: var(--font-size-lg); /* 다른 아이콘과 크기 맞춤 */

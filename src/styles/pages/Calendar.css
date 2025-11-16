@@ -1,7 +1,7 @@
 #Calendar {
   display: flex;
   height: calc(100vh - 60px); /* Adjust based on header height */
-  background-color: #f5f5f5;
+  background-color: var(--bg-gray);
 }
 
 .calendar-main-content {
@@ -34,7 +34,7 @@
   padding: clamp(8px, 0.93vh, 14px) clamp(12px, 1.5vw, 20px);
   border: none;
   background-color: var(--sidebar-primary); /* 검은색 */
-  color: #ffffff; /* 흰색 텍스트 */
+  color: var(--white-pure); /* 흰색 텍스트 */
   border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
   font-size: clamp(15px, 1.74vh, 20px);

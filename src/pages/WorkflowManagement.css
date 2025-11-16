@@ -42,10 +42,10 @@
 .search-input {
   width: 100%;
   padding: clamp(12px, 1.39vh, 16px) clamp(40px, 5.2vw, 50px) clamp(12px, 1.39vh, 16px) clamp(40px, 5.2vw, 50px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(14px, 1.62vh, 16px);
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   color: var(--text-dark);
   transition: var(--transition-base);
   height: clamp(44px, 5.09vh, 48px);
@@ -56,7 +56,7 @@
 .search-input:focus {
   outline: none;
   border-color: var(--sidebar-primary);
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
 }
 
@@ -79,7 +79,7 @@
 
 .clear-search-btn:hover {
   color: var(--sidebar-primary);
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
 }
 
 .filter-controls {
@@ -111,7 +111,7 @@
 .filter-toggle-btn:hover {
   background-color: var(--sidebar-hover-bg);
   color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--sidebar-primary);
 }
 
 .filter-toggle-btn.active {
@@ -127,10 +127,10 @@
 }
 
 .filters-panel {
-  background: #ffffff;
+  background: var(--white-pure);
   padding: clamp(20px, 2.31vh, 24px);
   border-radius: var(--sidebar-radius-sm);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-top: clamp(16px, 1.85vh, 24px);
 }
@@ -168,12 +168,12 @@
 .filter-select {
   width: 100%;
   height: clamp(44px, 5.09vh, 48px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   padding: 0 clamp(12px, 1.56vw, 16px);
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-medium);
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   color: var(--text-dark);
   transition: var(--transition-base);
   appearance: none;
@@ -183,14 +183,14 @@
 
 .filter-select:hover {
   border-color: #cbd5e0;
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
 }
 
 .filter-select:focus {
   outline: none;
   border-color: var(--sidebar-primary);
   box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
-  background-color: #ffffff;
+  background-color: var(--white-pure);
 }
 
 .filter-actions {
@@ -216,9 +216,9 @@
   padding: 0 clamp(20px, 2.6vw, 28px);
   height: clamp(44px, 5.09vh, 48px);
   box-sizing: border-box;
-  background-color: #1a1a1a;
-  border: 1px solid #1a1a1a;
-  color: #ffffff;
+  background-color: var(--sidebar-primary);
+  border: 1px solid var(--sidebar-primary);
+  color: var(--white-pure);
   transition: var(--transition-base);
   box-shadow: none;
   display: flex;
@@ -228,9 +228,9 @@
 }
 
 .btn-reset:hover {
-  background-color: #2a2a2a;
-  border-color: #2a2a2a;
-  color: #ffffff;
+  background-color: var(--gray-dark);
+  border-color: var(--gray-dark);
+  color: var(--white-pure);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
@@ -238,13 +238,13 @@
 .btn-reset:active {
   transform: translateY(0);
   box-shadow: none;
-  background-color: #1a1a1a;
+  background-color: var(--sidebar-primary);
 }
 
 .workflow-tabs {
   display: flex;
   gap: 10px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--border-color);
   margin-bottom: clamp(20px, 2.31vh, 24px);
 }
 
@@ -262,7 +262,7 @@
 
 .tab-btn:hover {
   color: var(--sidebar-primary);
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
 }
 
 .tab-btn.active {
@@ -281,8 +281,8 @@
   padding: clamp(40px, 4.63vh, 48px);
   font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-medium);
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--white-pure);
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
 }
 
@@ -303,9 +303,9 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   color: var(--text-dark);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   font-weight: var(--font-weight-semibold);
   text-align: left;
   font-size: clamp(14px, 1.62vh, 16px);
@@ -318,7 +318,7 @@
 }
 
 .workflow-table th, .workflow-table td {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.56vw, 16px);
   text-align: left;
   overflow: hidden;
@@ -333,7 +333,7 @@
 }
 
 .workflow-table td {
-  color: #000000;
+  color: var(--text-dark);
   font-weight: var(--font-weight-normal);
   transition: background-color 0.2s ease;
 }
@@ -430,7 +430,7 @@
 }
 
 .workflow-table tbody tr.workflow-row:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
 }
 
 .workflow-table tbody tr.workflow-row:last-child td {

@@ -35,16 +35,16 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: var(--sidebar-radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   padding: clamp(32px, 3.7vh, 40px);
   display: flex;
   align-items: center;
   gap: clamp(24px, 2.78vw, 32px);
-  transition: box-shadow 0.2s ease;
+  transition: none;
 }
 
 .profile-header:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
 }
 
 .avatar-wrapper {
@@ -62,7 +62,7 @@
   justify-content: center;
   position: relative;
   border: 3px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   transition: transform 0.2s ease;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -120,17 +120,17 @@
 }
 
 /* 정보 섹션 카드 */
-.info-section {
-  background: #ffffff;
+.mypage-container .info-section {
+  background: var(--white-pure) !important;
   border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: var(--sidebar-radius) !important;
+  box-shadow: none !important;
   padding: clamp(28px, 3.24vh, 36px) clamp(28px, 3.24vw, 36px);
-  transition: box-shadow 0.2s ease;
+  transition: none;
 }
 
-.info-section:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+.mypage-container .info-section:hover {
+  box-shadow: none !important;
 }
 
 /* 섹션 제목 */
@@ -256,7 +256,7 @@
     align-items: center;
   }
 
-  .info-section {
+  .mypage-container .info-section {
     padding: clamp(24px, 2.78vh, 28px) clamp(20px, 2.6vw, 24px);
   }
 

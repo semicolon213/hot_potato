@@ -1,40 +1,117 @@
 /* 회계 페이지 스타일 */
 
 .accounting-page {
-  padding: 20px;
-  min-height: 100vh;
-  background-color: #f5f5f5;
+  width: 100%;
+  padding: clamp(11px, 1.39vw, 16px) clamp(24px, 3.125vw, 40px);
+  margin: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: var(--bg-gray) !important;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 0.93vh, 12px);
+}
+
+/* 회계 페이지 내부 모든 요소의 그림자 제거 */
+.accounting-page *,
+.accounting-page *::before,
+.accounting-page *::after {
+  box-shadow: none !important;
 }
 
 .accounting-header {
-  margin-bottom: 30px;
+  background-color: var(--white-pure);
+  border-radius: var(--sidebar-radius);
+  border: 1px solid var(--border-color);
+  padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .accounting-header h1 {
   margin: 0;
-  font-size: 28px;
-  color: #333;
+  font-size: clamp(20px, 2.31vh, 24px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  flex: 1;
 }
 
-.accounting-header .back-btn {
-  background: none;
+/* 통일된 버튼 스타일 */
+.accounting-header .back-btn,
+.accounting-header .export-btn,
+.accounting-header .add-entry-btn {
+  padding: clamp(8px, 0.93vh, 12px) clamp(16px, 2.08vw, 24px);
   border: none;
-  font-size: 18px;
-  color: #2196F3;
+  border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
-  padding: 5px 10px;
-  margin-bottom: 10px;
-  transition: color 0.2s;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.69vh, 8px);
+  box-shadow: none !important;
+  background: var(--text-dark);
+  color: var(--white-pure);
 }
 
-.accounting-header .back-btn:hover {
-  color: #0b7dda;
+.accounting-header .back-btn:hover:not(:disabled),
+.accounting-header .export-btn:hover:not(:disabled),
+.accounting-header .add-entry-btn:hover:not(:disabled) {
+  background: var(--gray-dark);
+  color: var(--white-pure);
+}
+
+.accounting-header .back-btn:disabled,
+.accounting-header .export-btn:disabled,
+.accounting-header .add-entry-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 통계 카드 컨테이너 */
+.stats-container {
+  display: flex;
+  gap: clamp(16px, 2.08vw, 24px);
+  padding: clamp(24px, 2.78vh, 32px);
+  background-color: var(--white-pure);
+  border-radius: var(--sidebar-radius) !important;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin: 0;
+  margin-bottom: clamp(16px, 1.86vh, 24px);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 회계 리스트 섹션 */
+.accounting-list-section {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 0.62vh, 8px);
+  border-radius: var(--sidebar-radius);
+}
+
+/* 장부 항목 컨트롤 (accounting-header 아래 별도 컨테이너) */
+.accounting-header + .ledger-entry-controls {
+  width: 100%;
+  background-color: var(--white-pure);
+  border-radius: var(--sidebar-radius);
+  border: 1px solid var(--border-color);
+  padding: clamp(16px, 1.85vh, 20px) clamp(24px, 2.78vh, 32px);
+  margin-top: clamp(8px, 0.93vh, 12px);
+  margin-bottom: 0;
+  box-shadow: none;
+  box-sizing: border-box;
 }
 
 .accounting-content {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  width: 100%;
+  box-sizing: border-box;
 }
 

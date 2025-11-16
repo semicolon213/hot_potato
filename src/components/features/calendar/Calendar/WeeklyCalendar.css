@@ -1,10 +1,10 @@
 .weekly-calendar-container {
     display: flex;
     flex-direction: column;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
     overflow: hidden;
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     flex: 1;
     overflow-y: auto;
     min-height: 0;
@@ -12,8 +12,8 @@
 
 .weekly-header {
     display: flex;
-    border-bottom: 1px solid #e2e8f0;
-    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--white-pure);
 }
 
 .time-column-header {
@@ -25,8 +25,8 @@
     flex: 1;
     text-align: center;
     padding: clamp(8px, 0.93vh, 12px) 0;
-    border-left: 1px solid #e2e8f0;
-    background-color: #ffffff;
+    border-left: 1px solid var(--border-color);
+    background-color: var(--white-pure);
 }
 
 .day-name {
@@ -56,13 +56,13 @@
 
 .day-column.sunday,
 .day-column.saturday {
-    background-color: #f8f9fa;
+    background-color: var(--bg-gray-alt);
 }
 
 .weekly-all-day-section {
     display: flex;
-    border-bottom: 1px solid #e2e8f0;
-    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--white-pure);
 }
 
 .all-day-label {
@@ -84,8 +84,8 @@
 
 .all-day-column {
     flex: 1;
-    border-left: 1px solid #e2e8f0;
-    background-color: #ffffff;
+    border-left: 1px solid var(--border-color);
+    background-color: var(--white-pure);
 }
 
 .all-day-event-item {
@@ -150,17 +150,17 @@
     font-size: clamp(12px, 1.39vh, 14px);
     color: var(--text-medium);
     position: relative;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.01em;
 }
 
 .day-column {
     flex: 1;
-    border-left: 1px solid #e2e8f0;
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    background-color: #ffffff;
+    background-color: var(--white-pure);
 }
 
 .timed-events-grid {
@@ -170,7 +170,7 @@
 
 .time-grid-line {
     height: 41.66px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .timed-event-item {

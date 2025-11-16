@@ -32,7 +32,7 @@ export const UserMultiSelect: React.FC<UserMultiSelectProps> = ({
   placeholder = '이름, 학번, 이메일로 검색...'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   // 검색 필터링
   const filteredUsers = useMemo(() => {
@@ -52,15 +52,22 @@ export const UserMultiSelect: React.FC<UserMultiSelectProps> = ({
     });
   }, [users, searchTerm]);
 
-  const handleToggleUser = (email: string) => {
-    const newSelection = selectedUsers.includes(email)
-      ? selectedUsers.filter(e => e !== email)
-      : [...selectedUsers, email];
-    onSelectionChange(newSelection);
+  const handleSelectUser = (email: string) => {
+    const isSelected = selectedUsers.includes(email);
+    if (isSelected) {
+      onSelectionChange(selectedUsers.filter(e => e !== email));
+    } else {
+      onSelectionChange([...selectedUsers, email]);
+    }
+    setSearchTerm('');
   };
 
   const handleRemoveUser = (email: string) => {
     onSelectionChange(selectedUsers.filter(e => e !== email));
+  };
+
+  const handleToggleSearch = () => {
+    setIsSearchVisible(!isSearchVisible);
   };
 
   const selectedUsersData = useMemo(() => {
@@ -68,86 +75,67 @@ export const UserMultiSelect: React.FC<UserMultiSelectProps> = ({
   }, [users, selectedUsers]);
 
   return (
-    <div className="user-multi-select">
-      <label>{label}</label>
+    <div className="user-multi-select create-ledger-user-select">
+      <div className="user-select-header">
+        <label className="user-select-label">{label}</label>
+        <button type="button" className="add-user-btn" onClick={handleToggleSearch}>
+          {isSearchVisible ? '닫기' : '추가'}
+        </button>
+      </div>
       
-      {/* 선택된 사용자 표시 */}
-      {selectedUsersData.length > 0 && (
-        <div className="selected-users">
+      {/* 선택된 사용자 태그 표시 */}
+      {selectedUsersData.length > 0 ? (
+        <div className="selected-users-list">
           {selectedUsersData.map(user => (
-            <span key={user.email} className="selected-user-tag">
-              {user.name} ({user.studentId})
+            <div key={user.email} className="user-tag">
+              <span className="user-tag-name">{user.name} ({user.studentId})</span>
               <button
                 type="button"
-                onClick={() => handleRemoveUser(user.email)}
                 className="remove-user-btn"
+                onClick={() => handleRemoveUser(user.email)}
               >
                 ×
               </button>
-            </span>
+            </div>
           ))}
         </div>
+      ) : (
+        <div className="no-users-message">선택된 사용자가 없습니다</div>
       )}
 
-      {/* 검색 입력 및 드롭다운 */}
-      <div className="user-search-wrapper">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          className="user-search-input"
-        />
-        
-        {isOpen && (
-          <>
-            <div
-              className="user-search-overlay"
-              onClick={() => setIsOpen(false)}
-            />
-            <div className="user-search-dropdown">
-              {filteredUsers.length === 0 ? (
-                <div className="user-search-empty">
-                  검색 결과가 없습니다.
-                </div>
-              ) : (
-                <div className="user-search-list">
-                  {filteredUsers.map(user => {
-                    const isSelected = selectedUsers.includes(user.email);
-                    return (
-                      <div
-                        key={user.email}
-                        className={`user-search-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleToggleUser(user.email)}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleToggleUser(user.email)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div className="user-info">
-                          <span className="user-name">{user.name}</span>
-                          <span className="user-id">({user.studentId})</span>
-                          <span className="user-email">{user.email}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-      
-      <p className="form-hint">
-        선택된 {label}: {selectedUsers.length}명
-      </p>
+      {/* 검색 패널 */}
+      {isSearchVisible && (
+        <div className="user-search-panel">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={placeholder}
+            className="user-search-input"
+          />
+          <div className="user-results-list">
+            {filteredUsers.length === 0 ? (
+              <p>검색 결과가 없습니다</p>
+            ) : (
+              <ul>
+                {filteredUsers.map(user => {
+                  const isSelected = selectedUsers.includes(user.email);
+                  return (
+                    <li
+                      key={user.email}
+                      onClick={() => handleSelectUser(user.email)}
+                      className={isSelected ? 'selected' : ''}
+                    >
+                      {user.name} ({user.studentId}) - {user.email}
+                      {isSelected && <span className="checkmark-icon">✓</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

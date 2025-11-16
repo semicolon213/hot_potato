@@ -2,12 +2,12 @@
 .document-container {
   position: relative;
   z-index: 5;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   margin-top: 0;
   margin-bottom: 0;
   border-radius: var(--sidebar-radius);
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   box-shadow: none;
   flex: 1;
   display: flex;
@@ -20,7 +20,7 @@
 }
 
 .document-container * {
-  border-color: #e2e8f0 !important;
+  border-color: var(--border-color) !important;
 }
 
 .table-container {
@@ -39,21 +39,21 @@
   display: flex;
   padding: 0;
   min-height: clamp(56px, 6.48vh, 64px);
-  background-color: #ffffff !important;
+  background-color: var(--white-pure) !important;
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
   align-items: center;
 }
 
 .document-container .table-header,
 .table-container .table-header {
-  background-color: #ffffff !important;
+  background-color: var(--white-pure) !important;
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .table-header-cell {
@@ -63,7 +63,7 @@
   padding: 0 clamp(16px, 1.85vw, 20px);
   display: flex;
   align-items: center;
-  background-color: #ffffff !important;
+  background-color: var(--white-pure) !important;
   border: none !important;
   height: 100%;
   min-height: clamp(56px, 6.48vh, 64px);
@@ -99,7 +99,7 @@
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
   padding: 0;
   margin: 0;
   height: clamp(56px, 6.48vh, 64px);
@@ -115,14 +115,14 @@
   background-color: #f8f9fa;
   transform: translateY(-1px);
   box-shadow: none;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .table-row:last-child {
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .table-row.last-row-no-header {
@@ -134,7 +134,7 @@
 
 /* 빈 상태 행 스타일 */
 .table-row:has(.no-results-cell) {
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .table-cell {
@@ -224,11 +224,11 @@
   align-items: center;
   min-height: clamp(56px, 6.48vh, 64px);
   height: clamp(56px, 6.48vh, 64px);
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
   flex-shrink: 0;
   margin: 0;
   padding: 0;
@@ -261,7 +261,7 @@
 .view-all-button,
 .btn-workflow-request {
   font-size: clamp(14px, 1.62vh, 16px) !important;
-  color: #ffffff !important;
+  color: var(--white-pure) !important;
   background-color: #1a1a1a !important;
   border: 1px solid #1a1a1a !important;
   border-radius: var(--sidebar-radius-sm) !important;
@@ -289,7 +289,7 @@
 .section-header .view-all-button:hover,
 .section-header .btn-workflow-request:hover {
   background-color: #2a2a2a !important;
-  color: #ffffff !important;
+  color: var(--white-pure) !important;
   border-color: #2a2a2a !important;
   box-shadow: none !important;
   transform: translateY(-1px) !important;

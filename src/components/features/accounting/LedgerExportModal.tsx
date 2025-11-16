@@ -1612,105 +1612,86 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content accounting-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1400px', width: '95vw', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal-content accounting-modal export-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>장부 내보내기</h2>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
 
-        <div className="modal-body" style={{ display: 'flex', gap: '20px', flex: 1, overflow: 'hidden', padding: '20px' }}>
-          {/* 왼쪽: 설정창 */}
-          <div style={{ flex: '0 0 50%', overflowY: 'auto', paddingRight: '10px' }}>
-            {/* 기본 설정 섹션 */}
-            <div className="export-settings-section">
-              <h3 className="export-section-title">기본 설정</h3>
-              
-              <div className="form-group">
-                <label htmlFor="excel-file">
-                  엑셀 양식 파일 <span className="required">*</span>
-                </label>
-                
-                {/* 템플릿 선택 */}
-                {excelTemplates.length > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
-                      템플릿에서 선택
-                    </label>
-                    <select
-                      value={selectedTemplate?.documentId || ''}
-                      onChange={(e) => {
-                        const template = excelTemplates.find(t => t.documentId === e.target.value);
-                        if (template) {
-                          handleSelectTemplate(template);
-                        }
-                      }}
-                      className="form-input"
-                      disabled={isLoadingTemplate || isLoadingTemplates}
-                    >
-                      <option value="">템플릿 선택...</option>
-                      {allDefaultTemplates.filter(t => 
-                        t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType
-                      ).length > 0 && (
-                        <optgroup label="기본 템플릿">
-                          {allDefaultTemplates
-                            .filter(t => t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType)
-                            .map(template => (
-                              <option key={template.documentId} value={template.documentId}>
-                                {template.title}
-                              </option>
-                            ))}
-                        </optgroup>
-                      )}
-                      {personalTemplates.filter(t => 
-                        t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType
-                      ).length > 0 && (
-                        <optgroup label="개인 템플릿">
-                          {personalTemplates
-                            .filter(t => t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType)
-                            .map(template => (
-                              <option key={template.documentId} value={template.documentId}>
-                                {template.title}
-                              </option>
-                            ))}
-                        </optgroup>
-                      )}
-                    </select>
-                  </div>
-                )}
-                
-                {/* 선택된 템플릿 표시 */}
-                {selectedTemplate && (
-                  <p className="form-hint" style={{ color: 'var(--accounting-primary)', marginTop: '8px' }}>
-                    ✓ {selectedTemplate.title} {selectedTemplate.isPersonal ? '(개인 템플릿)' : '(기본 템플릿)'}
-                  </p>
-                )}
-                {!selectedTemplate && (
-                  <p className="form-hint" style={{ marginTop: '8px' }}>
-                    템플릿을 선택해주세요.
-                  </p>
-                )}
-              </div>
-
-              {sheetNames.length > 0 && (
-                <div className="form-group">
-                  <label htmlFor="sheet-select">시트 선택</label>
-                  <select
-                    id="sheet-select"
-                    value={selectedSheet}
-                    onChange={(e) => {
-                      setSelectedSheet(e.target.value);
-                      if (templateSpreadsheetId) {
-                        loadSheetData(templateSpreadsheetId, e.target.value);
-                      }
-                    }}
-                    className="form-input"
-                  >
-                    {sheetNames.map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
-                </div>
+        <div className="modal-body">
+          <div className="form-group">
+              {/* 템플릿 선택 */}
+              {excelTemplates.length > 0 && (
+                <select
+                  value={selectedTemplate?.documentId || ''}
+                  onChange={(e) => {
+                    const template = excelTemplates.find(t => t.documentId === e.target.value);
+                    if (template) {
+                      handleSelectTemplate(template);
+                    }
+                  }}
+                  className="form-input"
+                  disabled={isLoadingTemplate || isLoadingTemplates}
+                  style={{ marginBottom: '12px' }}
+                >
+                  <option value=""></option>
+                  {allDefaultTemplates.filter(t => 
+                    t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType
+                  ).length > 0 && (
+                    <optgroup label="기본 템플릿">
+                      {allDefaultTemplates
+                        .filter(t => t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType)
+                        .map(template => (
+                          <option key={template.documentId} value={template.documentId}>
+                            {template.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                  {personalTemplates.filter(t => 
+                    t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType
+                  ).length > 0 && (
+                    <optgroup label="개인 템플릿">
+                      {personalTemplates
+                        .filter(t => t.mimeType === 'application/vnd.google-apps.spreadsheet' || !t.mimeType)
+                        .map(template => (
+                          <option key={template.documentId} value={template.documentId}>
+                            {template.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                </select>
               )}
+              
+              {/* 선택된 템플릿 표시 */}
+              {selectedTemplate && (
+                <p className="form-hint" style={{ color: 'var(--accounting-primary)', marginTop: '8px' }}>
+                  ✓ {selectedTemplate.title} {selectedTemplate.isPersonal ? '(개인 템플릿)' : '(기본 템플릿)'}
+                </p>
+              )}
+            </div>
+
+            {sheetNames.length > 0 && (
+              <div className="form-group">
+                <label htmlFor="sheet-select">시트 선택</label>
+                <select
+                  id="sheet-select"
+                  value={selectedSheet}
+                  onChange={(e) => {
+                    setSelectedSheet(e.target.value);
+                    if (templateSpreadsheetId) {
+                      loadSheetData(templateSpreadsheetId, e.target.value);
+                    }
+                  }}
+                  className="form-input"
+                >
+                  {sheetNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
               {templateSpreadsheetId && (
                 <div className="form-group">
@@ -1744,7 +1725,6 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
                   </p>
                 </div>
               )}
-            </div>
 
             {/* 필드 매핑 섹션 */}
             {templateSpreadsheetId && (
@@ -2340,10 +2320,9 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
               {error}
             </div>
           )}
-          </div>
 
-          {/* 오른쪽: 엑셀 미리보기 */}
-          <div style={{ flex: '0 0 50%', overflow: 'auto', border: '1px solid var(--accounting-gray-300)', borderRadius: 'var(--accounting-border-radius-sm)', background: 'white', position: 'relative' }}>
+          {/* 엑셀 미리보기 */}
+          <div className="excel-preview-container">
             {sheetHtml ? (
               <div 
                 ref={excelPreviewRef}
@@ -2367,7 +2346,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
           </div>
         </div>
 
-        <div className="modal-actions" style={{ padding: '20px', borderTop: '1px solid var(--accounting-gray-200)' }}>
+        <div className="modal-actions">
           <button
             type="button"
             onClick={onClose}
