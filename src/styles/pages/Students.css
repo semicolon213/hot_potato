@@ -664,7 +664,7 @@
 .export-btn, .template-btn, .import-btn {
   position: relative;
   padding: clamp(8px, 0.93vh, 12px) clamp(14px, 1.82vw, 20px);
-  border: none;
+  border: none !important;
   border-radius: var(--sidebar-radius-sm);
   background-color: transparent;
   cursor: pointer;

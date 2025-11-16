@@ -413,8 +413,8 @@
 
 /* 새 장부 만들기 모달 전용 스타일 */
 .accounting-modal.create-ledger-modal {
-  max-width: clamp(720px, 41.67vw, 960px);
-  width: 90%;
+  max-width: clamp(540px, 31.25vw, 720px);
+  width: 75%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
