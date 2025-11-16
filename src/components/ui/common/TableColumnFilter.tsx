@@ -46,6 +46,41 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [adjustedPosition, setAdjustedPosition] = useState<{ top: number; left: number; transform: string }>({
+    top: position.top,
+    left: position.left,
+    transform: 'translateX(-50%)'
+  });
+
+  // 위치 조정: 페이지 경계를 벗어나면 자동 조정
+  useEffect(() => {
+    if (isOpen && popupRef.current) {
+      const popup = popupRef.current;
+      const popupWidth = popup.offsetWidth;
+      const viewportWidth = window.innerWidth;
+      const padding = 16; // 화면 가장자리 여백
+
+      let newLeft = position.left;
+      let newTransform = 'translateX(-50%)';
+
+      // 오른쪽 경계를 벗어나는 경우
+      if (position.left + popupWidth / 2 > viewportWidth - padding) {
+        newLeft = viewportWidth - padding;
+        newTransform = 'translateX(-100%)';
+      }
+      // 왼쪽 경계를 벗어나는 경우
+      else if (position.left - popupWidth / 2 < padding) {
+        newLeft = padding;
+        newTransform = 'translateX(0)';
+      }
+
+      setAdjustedPosition({
+        top: position.top,
+        left: newLeft,
+        transform: newTransform
+      });
+    }
+  }, [isOpen, position]);
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -96,8 +131,9 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
       className="table-column-filter-popup"
       style={{
         position: 'fixed',
-        top: `${position.top}px`,
-        left: `${position.left}px`,
+        top: `${adjustedPosition.top}px`,
+        left: `${adjustedPosition.left}px`,
+        transform: adjustedPosition.transform,
         zIndex: 10000,
       }}
     >

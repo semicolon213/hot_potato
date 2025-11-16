@@ -37,7 +37,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px 32px;
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   border-bottom: 1px solid #e9ecef;
 }
 
@@ -133,7 +133,7 @@
 /* Tabs */
 .modal-tabs {
   display: flex;
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   border-bottom: 1px solid #e9ecef;
 }
 
@@ -152,7 +152,7 @@
 
 .tab-btn:hover {
   color: var(--sidebar-primary);
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
 }
 
 .tab-btn.active {
@@ -206,7 +206,7 @@
 .form-group select,
 .form-group textarea {
   padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-medium);
@@ -234,7 +234,7 @@
   border-color: var(--sidebar-primary);
   border-width: 1px;
   box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.1);
-  background-color: #ffffff;
+  background-color: var(--white-pure);
   transition: var(--transition-base);
   pointer-events: auto;
   user-select: text;
@@ -244,7 +244,7 @@
 .form-group input:disabled,
 .form-group select:disabled,
 .form-group textarea:disabled {
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   color: #6c757d;
   border-color: #e9ecef;
   cursor: not-allowed;
@@ -265,7 +265,7 @@
   align-items: center;
   gap: 8px;
   padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   background: white;
   transition: var(--transition-base);
@@ -303,7 +303,7 @@
 
 /* Add Issue Form */
 .add-issue-form {
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   padding: 24px;
   border-radius: 8px;
   margin-bottom: 32px;
@@ -354,7 +354,7 @@
   color: #6c757d;
   padding: 40px 20px;
   font-style: italic;
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   border-radius: 8px;
   border: 2px dashed #dee2e6;
 }
@@ -375,7 +375,7 @@
 }
 
 .issue-card:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
 }
 
 .issue-header {
@@ -430,7 +430,7 @@
   font-size: 14px;
   color: #495057;
   line-height: 1.5;
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   padding: 12px;
   border-radius: 6px;
 }

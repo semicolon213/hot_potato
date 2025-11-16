@@ -25,7 +25,7 @@
 
 .login-card-left {
   width: 50%;
-  background: #1a1a1a; /* 사이드바 배경색 */
+  background: var(--sidebar-primary); /* 사이드바 배경색 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -35,7 +35,7 @@
 
 .login-card-right {
   width: 50%;
-  background: #f8f8f7; /* 현재 배경색 */
+  background: #ffffff; /* 흰색 배경 */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -82,7 +82,7 @@
 }
 
 .hp-erp-title {
-  color: #ffffff;
+  color: var(--white-pure);
   font-size: clamp(28px, 3.24vh, 36px);
   font-weight: 700;
   margin: 0;
@@ -99,8 +99,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   object-fit: contain;
-  background-color: #ffffff; /* 흰색 사각형 배경 */
-  border: 1px solid #e2e8f0; /* 테마에 맞춘 테두리 */
+  background-color: var(--white-pure); /* 흰색 사각형 배경 */
+  border: 1px solid var(--border-color); /* 테마에 맞춘 테두리 */
   aspect-ratio: 1 / 1; /* 정사각형 유지 */
   object-position: center; /* 중앙 정렬 */
 }
@@ -131,12 +131,12 @@
   width: 100%;
   min-height: clamp(48px, 5.56vh, 64px); /* 사이즈 고정 */
   padding: clamp(12px, 1.39vh, 20px) clamp(20px, 2.6vw, 28px);
-  background: #1a1a1a; /* 사이드바 검은색 테마 */
-  border: 2px solid #1a1a1a;
+  background: var(--sidebar-primary); /* 사이드바 검은색 테마 */
+  border: 2px solid var(--sidebar-primary);
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(15px, 1.74vh, 20px);
   font-weight: var(--font-weight-semibold);
-  color: #ffffff; /* 흰색 텍스트 */
+  color: var(--white-pure); /* 흰색 텍스트 */
   cursor: pointer;
   transition: var(--transition-base);
   position: relative;
@@ -145,9 +145,9 @@
 }
 
 .google-login-btn:hover:not(:disabled) {
-  background: #ffffff; /* 호버 시 흰색 배경 */
-  border-color: #1a1a1a; /* 검은색 테두리 */
-  color: #000000; /* 검은색 텍스트 */
+  background: var(--white-pure); /* 호버 시 흰색 배경 */
+  border-color: var(--sidebar-primary); /* 검은색 테두리 */
+  color: var(--text-dark); /* 검은색 텍스트 */
   box-shadow: var(--shadow-hover);
 }
 
@@ -155,8 +155,8 @@
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
-  background: #1a1a1a; /* disabled 상태에서도 배경 유지 */
-  color: #ffffff;
+  background: var(--sidebar-primary); /* disabled 상태에서도 배경 유지 */
+  color: var(--white-pure);
 }
 
 .google-icon {
@@ -174,7 +174,7 @@
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.3); /* 흰색 반투명 */
-  border-top: 2px solid #ffffff; /* 흰색 */
+  border-top: 2px solid var(--white-pure); /* 흰색 */
   border-radius: 50%;
   animation: spin 1s linear infinite;
   flex-shrink: 0; /* 스피너 크기 고정 */
@@ -182,7 +182,7 @@
 
 .google-login-btn:hover:not(:disabled) .spinner {
   border: 2px solid rgba(0, 0, 0, 0.2); /* 호버 시 검은색 반투명 */
-  border-top: 2px solid #000000; /* 호버 시 검은색 */
+  border-top: 2px solid var(--text-dark); /* 호버 시 검은색 */
 }
 
 @keyframes spin {
@@ -196,7 +196,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-gray);
   padding: 20px;
 }
 
@@ -256,7 +256,7 @@
 
 .form-input {
   padding: clamp(10px, 1.16vh, 16px) clamp(14px, 1.82vw, 20px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   font-size: clamp(15px, 1.74vh, 20px);
   transition: var(--transition-base);
@@ -269,7 +269,7 @@
 }
 
 .form-input.disabled {
-  background-color: #f5f5f5;
+  background-color: var(--bg-gray);
   color: #666;
   cursor: not-allowed;
 }
@@ -296,7 +296,7 @@
   background: #f8f9fa;
   padding: clamp(16px, 1.85vh, 24px);
   border-radius: var(--sidebar-radius-sm);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
 }
 
 .admin-key-input-group {
@@ -334,7 +334,7 @@
   color: #c33;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   font-size: 14px;
   cursor: pointer;
 }
@@ -372,7 +372,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-gray);
   padding: 20px;
 }
 
@@ -423,7 +423,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .info-item:last-child {
@@ -519,8 +519,8 @@
   gap: clamp(12px, 1.39vh, 16px);
   width: 100%;
   padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.39vw, 16px);
-  background: #ffffff;
-  border: 2px solid #e2e8f0;
+  background: var(--white-pure);
+  border: 2px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   cursor: pointer;
   transition: var(--transition-base);
@@ -563,7 +563,7 @@
 }
 
 .last-user-initial {
-  color: #ffffff;
+  color: var(--white-pure);
   font-size: clamp(16px, 1.85vh, 20px);
   font-weight: 600;
 }
@@ -600,7 +600,7 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 50%;
   color: #666;
   cursor: pointer;
@@ -642,7 +642,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 
 .login-divider span {

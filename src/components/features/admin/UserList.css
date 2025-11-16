@@ -15,18 +15,18 @@
   color: #6c757d;
   font-style: italic;
   padding: 40px 20px;
-  background: #f8f9fa;
+  background: var(--bg-gray-alt);
   border-radius: 8px;
   border: 1px dashed #dee2e6;
 }
 
 /* 사용자 목록 컨테이너 */
 .user-list-container {
-  background: white;
+  background: transparent;
   border-radius: var(--sidebar-radius-sm);
-  box-shadow: var(--shadow-base);
+  box-shadow: none;
   overflow: visible;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -37,8 +37,8 @@
   grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 2fr;
   gap: clamp(12px, 1.5vw, 20px);
   padding: clamp(12px, 1.39vh, 20px) clamp(16px, 2.08vw, 24px);
-  background: #f8f9fa;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--white-pure);
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-dark, #333);
   font-weight: var(--font-weight-semibold);
   font-size: clamp(13px, 1.5vh, 17px);
@@ -57,13 +57,13 @@
   grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 2fr;
   gap: clamp(12px, 1.5vw, 16px);
   padding: clamp(12px, 1.39vh, 16px) clamp(16px, 2.08vw, 20px);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   transition: var(--transition-base);
   min-width: max-content;
 }
 
 .user-list-row:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
 }
 
 .user-list-cell {
@@ -127,7 +127,7 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   flex: 0 0 auto;
   min-width: clamp(70px, 9.11vw, 90px);
   white-space: nowrap;
@@ -146,13 +146,13 @@
   background: #a3d5c1;
   color: #0d3e1a;
   border-color: #93c5b1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
 .approve-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
 .approve-btn:disabled {
@@ -175,7 +175,7 @@
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   flex: 0 0 auto;
   min-width: clamp(70px, 9.11vw, 90px);
   white-space: nowrap;
@@ -194,13 +194,13 @@
   background: #ff9999;
   color: #660000;
   border-color: #ff8989;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
 .reject-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
 .reject-btn:disabled {
@@ -220,13 +220,13 @@
   justify-content: center;
   gap: 12px;
   padding: 16px;
-  background: #f8f9fa;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-gray-alt);
+  border-top: 1px solid var(--border-color);
 }
 
 .pagination-btn {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
   padding: 8px 12px;
   cursor: pointer;

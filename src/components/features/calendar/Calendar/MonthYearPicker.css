@@ -1,0 +1,170 @@
+.month-year-picker {
+  position: fixed;
+  background: var(--white-pure);
+  border: 1px solid var(--border-color);
+  border-radius: var(--sidebar-radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 280px;
+  padding: clamp(12px, 1.39vh, 16px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: clamp(12px, 1.39vh, 16px);
+  padding-bottom: clamp(8px, 0.93vh, 12px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.picker-nav-btn {
+  background: none;
+  border: none;
+  font-size: clamp(16px, 1.85vh, 18px);
+  color: var(--text-dark);
+  cursor: pointer;
+  padding: clamp(4px, 0.46vh, 6px) clamp(8px, 1.04vw, 12px);
+  border-radius: var(--sidebar-radius-sm);
+  transition: var(--transition-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.picker-nav-btn:hover {
+  background-color: var(--bg-gray-alt);
+  color: var(--sidebar-primary);
+}
+
+.picker-year-range {
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  flex: 1;
+  text-align: center;
+}
+
+.picker-close-btn {
+  background: none;
+  border: none;
+  font-size: clamp(20px, 2.31vh, 24px);
+  color: var(--text-light);
+  cursor: pointer;
+  padding: clamp(2px, 0.23vh, 4px) clamp(6px, 0.78vw, 8px);
+  border-radius: var(--sidebar-radius-sm);
+  transition: var(--transition-base);
+  line-height: 1;
+  width: clamp(24px, 2.78vh, 28px);
+  height: clamp(24px, 2.78vh, 28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-close-btn:hover {
+  background-color: var(--bg-gray-alt);
+  color: var(--text-dark);
+}
+
+.picker-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(4px, 0.46vh, 6px);
+}
+
+.picker-month-item {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--sidebar-radius-sm);
+  padding: clamp(10px, 1.16vh, 14px) clamp(8px, 1.04vw, 12px);
+  font-size: clamp(13px, 1.5vh, 15px);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: var(--transition-base);
+  font-weight: var(--font-weight-normal);
+  text-align: center;
+}
+
+.picker-month-item:hover {
+  background-color: var(--bg-gray-alt);
+  border-color: var(--sidebar-primary);
+  color: var(--sidebar-primary);
+}
+
+.picker-month-item.selected {
+  background-color: var(--sidebar-primary);
+  color: var(--white-pure);
+  border-color: var(--sidebar-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.picker-year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(4px, 0.46vh, 6px);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.picker-year-item {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--sidebar-radius-sm);
+  padding: clamp(8px, 0.93vh, 12px) clamp(6px, 0.78vw, 10px);
+  font-size: clamp(13px, 1.5vh, 15px);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: var(--transition-base);
+  font-weight: var(--font-weight-normal);
+  text-align: center;
+}
+
+.picker-year-item:hover {
+  background-color: var(--bg-gray-alt);
+  border-color: var(--sidebar-primary);
+  color: var(--sidebar-primary);
+}
+
+.picker-year-item.selected {
+  background-color: var(--sidebar-primary);
+  color: var(--white-pure);
+  border-color: var(--sidebar-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.picker-year-item.active {
+  border-color: var(--sidebar-primary);
+  border-width: 2px;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 스크롤바 스타일 */
+.picker-year-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.picker-year-grid::-webkit-scrollbar-track {
+  background: var(--bg-gray);
+  border-radius: 3px;
+}
+
+.picker-year-grid::-webkit-scrollbar-thumb {
+  background: var(--border-color-alt);
+  border-radius: 3px;
+}
+
+.picker-year-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--text-light);
+}
+

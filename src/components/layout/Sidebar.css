@@ -505,3 +505,37 @@
   line-height: 0;
   color: transparent; /* 텍스트 색상 투명하게 */
 }
+
+/* 모바일 반응형: 사이드바를 오버레이로 변경 */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+  }
+  
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+  
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+  
+  /* 모바일에서 사이드바 열릴 때 오버레이 배경 */
+  body.sidebar-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+  
+  /* 모바일에서 메뉴 아이템 터치 타겟 크기 확보 */
+  .menu-item {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -177,7 +177,6 @@ const Mypage: React.FC = () => {
 
         <div className="info-sections">
           <div className="info-section">
-            <h3 className="section-title">사용자 정보</h3>
             <table className="info-table">
               <tbody>
                 <tr className="info-row">

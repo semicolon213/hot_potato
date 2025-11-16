@@ -42,7 +42,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({ onSelectWeek, onDateS
                         className={`sidebar-tab ${activeTab === 'tags' ? 'active' : ''}`}
                         onClick={() => setActiveTab('tags')}
                     >
-                        태그
+                        태그별 보기
                     </button>
                 </div>
 

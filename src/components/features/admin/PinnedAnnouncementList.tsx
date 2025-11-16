@@ -38,8 +38,7 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
   console.log('📌 PinnedAnnouncementList 렌더링:', { requestsCount: requests.length, requests });
   
   return (
-    <div className="users-section">
-      <h3>📌 고정 공지 승인 요청 ({requests.length}개)</h3>
+    <>
       {requests.length === 0 ? (
         <p className="no-users">승인 대기 중인 고정 공지가 없습니다.</p>
       ) : (
@@ -107,7 +106,7 @@ const PinnedAnnouncementList: React.FC<PinnedAnnouncementListProps> = ({
           )}
         </div>
       )}
-    </div>
+    </>
   );
 };
 

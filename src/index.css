@@ -149,7 +149,7 @@ input, textarea, [contenteditable] {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  background: #f5f5f5;
+  background: var(--bg-gray);
 }
 
 /* === 미니멀리즘 레이아웃 === */
@@ -166,13 +166,20 @@ input, textarea, [contenteditable] {
   overflow: hidden;
 }
 
+/* 모바일 반응형 레이아웃 */
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+}
+
 body {
 margin: 0;
 padding: 0;
 width: 100%;
 height: 100vh;
 overflow: hidden;
-background-color: #1a1a1a; /* 최하단 배경 */
+background-color: var(--sidebar-primary); /* 최하단 배경 */
 }
 
 /* 로딩 화면 스타일 */
@@ -190,7 +197,7 @@ background-color: #1a1a1a; /* 최하단 배경 */
   width: clamp(40px, 4.63vh, 56px);
   height: clamp(40px, 4.63vh, 56px);
   border: 3px solid rgba(0, 0, 0, 0.1);
-  border-top: 3px solid #1a1a1a; /* 사이드바 검은색 */
+  border-top: 3px solid var(--sidebar-primary); /* 사이드바 검은색 */
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -544,11 +551,19 @@ filter: brightness(1.1);
   right: 0;
   bottom: 0;
   left: var(--sb-width, clamp(200px, 12vw, 250px)); /* 사이드바 너비와 정확히 일치하는 위치 */
-  background: #ffffff;
+  background: var(--white-pure);
   border-radius: 0; /* 모서리 둥글기 제거 */
   box-shadow: none; /* 그림자 제거 */
   overflow: hidden;
   z-index: 1; /* 사이드바와 하위 메뉴보다 뒤에 배치하여 가려지지 않도록 */
+}
+
+/* 모바일 반응형: 메인 패널이 전체 너비 사용 */
+@media (max-width: 768px) {
+  .main-panel {
+    left: 0;
+    grid-column: 1;
+  }
 }
 
 .main-panel.no-header {
@@ -563,7 +578,7 @@ filter: brightness(1.1);
   margin: 0;
   width: 100%;
   box-sizing: border-box;
-  background: #f5f5f5; /* 내부 페이지 배경 회색 */
+  background: var(--bg-gray); /* 내부 페이지 배경 회색 */
 }
 
 .main-panel.no-header .content {

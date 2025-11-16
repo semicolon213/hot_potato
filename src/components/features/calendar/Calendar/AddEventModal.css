@@ -13,10 +13,10 @@
 }
 
 .add-event-modal-overlay .modal-content {
-  background: #ffffff;
+  background: var(--white-pure);
   padding: 0;
-  border-radius: var(--sidebar-radius-sm);
-  border: 1px solid #e2e8f0;
+  border-radius: clamp(8px, 0.93vh, 12px);
+  border: 1px solid var(--border-color);
   width: clamp(460px, 27.08vw, 580px);
   max-width: 90vw;
   max-height: calc(100vh - clamp(80px, 9.26vh, 104px));
@@ -26,6 +26,7 @@
   flex-direction: column;
   gap: 0;
   transition: var(--transition-base);
+  overflow: hidden;
 }
 
 .add-event-modal-overlay .modal-content.wide {
@@ -39,6 +40,8 @@
   flex: 1 1 auto;
   overflow: hidden; /* Prevent parent from scrolling */
   width: 100%;
+  min-height: 0;
+  position: relative;
 }
 
 .modal-form-content {
@@ -48,6 +51,7 @@
   flex-direction: column;
   gap: 0;
   scrollbar-width: none; /* For Firefox */
+  position: relative;
 }
 
 .modal-form-content::-webkit-scrollbar {
@@ -58,10 +62,22 @@
   flex: 1;
   display: none; /* Hidden by default */
   flex-direction: column;
-  border-left: 1px solid #e2e8f0;
   padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
   box-sizing: border-box;
   overflow-y: auto;
+  position: relative;
+  min-height: 100%;
+}
+
+.attendee-search-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--border-color);
+  z-index: 1;
 }
 
 .attendee-search-panel.visible {
@@ -79,9 +95,9 @@
 .attendee-search-input {
   width: 100%;
   padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border-radius: var(--sidebar-radius-sm);
-  border: 1px solid #e2e8f0;
-  background-color: #ffffff;
+  border-radius: clamp(4px, 0.46vh, 6px);
+  border: 1px solid var(--border-color);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   font-size: clamp(14px, 1.62vh, 16px);
   margin-bottom: clamp(10px, 1.16vh, 12px);
@@ -96,9 +112,9 @@
 .attendee-results-list {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
 }
 
 .attendee-results-list ul {
@@ -115,7 +131,7 @@
   font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-dark);
   cursor: pointer;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
   transition: var(--transition-base);
 }
 
@@ -133,7 +149,8 @@
 .tag-selection-panel-content {
   display: flex;
   flex-direction: column;
-  gap: clamp(20px, 2.31vh, 24px);
+  gap: clamp(12px, 1.39vh, 16px);
+  margin-top: clamp(12px, 1.39vh, 16px);
 }
 
 .tag-selection-panel-section {
@@ -152,15 +169,15 @@
 
 .tag-selection-panel-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(clamp(100px, 13.02vw, 120px), 1fr));
   gap: clamp(8px, 0.93vh, 10px);
 }
 
 .tag-panel-button {
   padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border: 1px solid #e2e8f0;
-  border-radius: clamp(6px, 0.69vh, 8px);
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   cursor: pointer;
   text-align: center;
   font-size: clamp(13px, 1.51vh, 15px);
@@ -169,6 +186,15 @@
   transition: var(--transition-base);
   letter-spacing: -0.01em;
   white-space: nowrap;
+  height: clamp(32px, 3.7vh, 36px);
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tag-panel-button:hover {
@@ -178,18 +204,20 @@
 }
 
 .tag-panel-button.active {
-  color: #ffffff;
+  color: var(--white-pure);
   border-color: transparent;
   font-weight: var(--font-weight-semibold);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .tag-panel-button.tag-add-button {
-  font-size: clamp(20px, 2.31vh, 24px);
+  font-size: clamp(18px, 2.08vh, 20px);
   font-weight: var(--font-weight-semibold);
   color: var(--sidebar-primary);
   border-color: var(--sidebar-primary);
   background-color: rgba(121, 134, 203, 0.05);
+  height: clamp(32px, 3.7vh, 36px);
+  line-height: 1;
 }
 
 .tag-panel-button.tag-add-button:hover {
@@ -198,70 +226,73 @@
   color: var(--sidebar-primary);
 }
 
-.custom-tag-input-panel {
-  margin-top: clamp(12px, 1.39vh, 16px);
-  padding: clamp(12px, 1.39vh, 16px);
-  background-color: #f8f9fa;
-  border-radius: clamp(6px, 0.69vh, 8px);
-  border: 1px solid #e2e8f0;
-}
-
-.custom-tag-input-row {
+.custom-tag-input-group {
   display: flex;
-  align-items: center;
-  gap: clamp(8px, 1.04vw, 12px);
+  align-items: stretch;
+  gap: clamp(8px, 1.04vw, 10px);
+  margin-bottom: clamp(4px, 0.46vh, 6px);
+  height: clamp(32px, 3.7vh, 36px);
 }
 
-.custom-tag-input-field {
+.custom-tag-name-input {
   flex: 1;
-  padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  background-color: #ffffff;
+  padding: 0 clamp(12px, 1.56vw, 16px);
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   font-size: clamp(14px, 1.62vh, 16px);
   transition: var(--transition-base);
   box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  font-family: inherit;
 }
 
-.custom-tag-input-field:focus {
+.custom-tag-name-input:focus {
   outline: none;
   border-color: var(--sidebar-primary);
   box-shadow: 0 0 0 2px rgba(121, 134, 203, 0.1);
 }
 
-.custom-tag-color-input {
-  width: clamp(40px, 5.21vw, 48px);
-  height: clamp(40px, 5.21vw, 48px);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
+.custom-tag-name-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.custom-tag-color-picker {
+  width: clamp(32px, 3.7vh, 36px);
+  height: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
   cursor: pointer;
   padding: 0;
   background: none;
   box-sizing: border-box;
+  flex-shrink: 0;
+  margin: 0;
 }
 
-.custom-tag-color-input::-webkit-color-swatch-wrapper {
+.custom-tag-color-picker::-webkit-color-swatch-wrapper {
   padding: 0;
 }
 
-.custom-tag-color-input::-webkit-color-swatch {
+.custom-tag-color-picker::-webkit-color-swatch {
   border: none;
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: clamp(4px, 0.46vh, 6px);
 }
 
-.custom-tag-color-input::-moz-color-swatch {
+.custom-tag-color-picker::-moz-color-swatch {
   border: none;
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: clamp(4px, 0.46vh, 6px);
 }
 
 .custom-tag-confirm-btn,
 .custom-tag-cancel-btn {
-  width: clamp(36px, 4.69vw, 44px);
-  height: clamp(36px, 4.69vw, 44px);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  background-color: #ffffff;
+  width: clamp(32px, 3.7vh, 36px);
+  height: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   cursor: pointer;
   font-size: clamp(16px, 1.85vh, 20px);
@@ -272,6 +303,7 @@
   justify-content: center;
   padding: 0;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .custom-tag-confirm-btn {
@@ -281,20 +313,20 @@
 
 .custom-tag-confirm-btn:hover:not(:disabled) {
   background-color: var(--sidebar-primary);
-  color: #ffffff;
+  color: var(--white-pure);
 }
 
 .custom-tag-confirm-btn:disabled {
-  background-color: #e2e8f0;
-  border-color: #e2e8f0;
-  color: #cbd5e0;
+  background-color: var(--border-color);
+  border-color: var(--border-color);
+  color: var(--border-color-alt);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .custom-tag-cancel-btn:hover {
-  background-color: #f1f3f5;
-  border-color: #cbd5e0;
-  color: var(--text-dark);
+  background-color: var(--bg-gray);
+  border-color: var(--border-color-alt);
 }
 
 .custom-tag-panel-section {
@@ -310,9 +342,9 @@
 .custom-tag-panel-input-field {
   width: 100%;
   padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   font-size: clamp(14px, 1.62vh, 16px);
   transition: var(--transition-base);
@@ -346,8 +378,8 @@
 .custom-tag-panel-color-display-button {
   width: clamp(40px, 5.21vw, 48px);
   height: clamp(40px, 5.21vw, 48px);
-  border-radius: var(--sidebar-radius-sm);
-  border: 1px solid #e2e8f0;
+  border-radius: clamp(4px, 0.46vh, 6px);
+  border: 1px solid var(--border-color);
   cursor: pointer;
   transition: var(--transition-base);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -363,9 +395,9 @@
 .custom-tag-panel-submit-btn {
   padding: clamp(8px, 0.93vh, 10px) clamp(16px, 2.08vw, 20px);
   border: 1px solid var(--sidebar-primary);
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: clamp(4px, 0.46vh, 6px);
   background-color: var(--sidebar-primary);
-  color: #ffffff;
+  color: var(--white-pure);
   cursor: pointer;
   font-size: clamp(14px, 1.62vh, 16px);
   font-weight: var(--font-weight-semibold);
@@ -380,9 +412,9 @@
 }
 
 .custom-tag-panel-submit-btn:disabled {
-  background-color: #e2e8f0;
-  border-color: #e2e8f0;
-  color: #cbd5e0;
+  background-color: var(--border-color);
+  border-color: var(--border-color);
+  color: var(--border-color-alt);
   cursor: not-allowed;
 }
 
@@ -418,9 +450,9 @@
 
 .add-attendee-btn {
   padding: clamp(6px, 0.69vh, 8px) clamp(12px, 1.56vw, 16px);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--sidebar-radius-sm);
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   cursor: pointer;
   font-size: clamp(13px, 1.51vh, 15px);
@@ -464,10 +496,11 @@
   align-items: center;
   gap: clamp(6px, 0.78vw, 8px);
   background-color: rgba(121, 134, 203, 0.1);
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: clamp(4px, 0.46vh, 6px);
   padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 12px);
   font-size: clamp(13px, 1.51vh, 15px);
   transition: var(--transition-base);
+  cursor: pointer;
 }
 
 .attendee-tag:hover {
@@ -504,12 +537,13 @@
 
 .modal-header {
   padding: clamp(2px, 0.23vh, 4px) clamp(24px, 3.125vw, 32px);
-  border-bottom: 1px solid #e2e8f0;
-  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--white-pure);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: clamp(24px, 2.78vh, 28px);
+  height: clamp(36px, 4.17vh, 42px);
+  min-height: clamp(36px, 4.17vh, 42px);
   box-sizing: border-box;
 }
 
@@ -518,7 +552,7 @@
   padding: 0;
   font-size: clamp(16px, 1.85vh, 18px);
   font-weight: var(--font-weight-semibold);
-  color: #000000;
+  color: var(--text-dark);
   display: flex;
   align-items: center;
   gap: clamp(6px, 0.74vw, 8px);
@@ -530,15 +564,16 @@
   border: none;
   font-size: clamp(12px, 1.39vh, 14px);
   cursor: pointer;
-  color: #666666;
+  color: var(--text-light);
   transition: var(--transition-base);
   width: clamp(20px, 2.31vh, 24px);
   height: clamp(20px, 2.31vh, 24px);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: clamp(4px, 0.46vh, 6px);
   padding: 0;
+  box-sizing: border-box;
 }
 
 .modal-header .modal-close svg,
@@ -548,14 +583,18 @@
 }
 
 .modal-header .modal-close:hover {
-  color: #000000;
-  background-color: #f8f9fa;
+  color: var(--text-dark);
+  background-color: var(--bg-gray-alt);
 }
 
 .modal-form-section {
-    padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
-    border-bottom: 1px solid #e2e8f0;
+    padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 32px);
+    border-bottom: 1px solid var(--border-color);
     box-sizing: border-box;
+}
+
+.modal-form-section:first-child {
+    padding-top: clamp(24px, 2.78vh, 32px);
 }
 
 .modal-form-section:last-child {
@@ -661,14 +700,14 @@
   padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
   margin-top: 0;
   flex-shrink: 0; /* Prevent shrinking */
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
   box-sizing: border-box;
 }
 
 .add-event-modal-overlay .modal-content .modal-actions .submit-button, .add-event-modal-overlay .modal-content .modal-actions .cancel-button {
     padding: clamp(10px, 1.16vh, 12px) clamp(20px, 2.6vw, 24px);
-    border: 1px solid #e2e8f0;
-    border-radius: var(--sidebar-radius-sm);
+    border: 1px solid var(--border-color);
+    border-radius: clamp(4px, 0.46vh, 6px);
     cursor: pointer;
     font-size: clamp(14px, 1.62vh, 16px);
     font-weight: var(--font-weight-semibold);
@@ -678,7 +717,7 @@
 
 .add-event-modal-overlay .modal-content .modal-actions .submit-button {
     background-color: var(--sidebar-primary);
-    color: #ffffff;
+    color: var(--white-pure);
     border-color: var(--sidebar-primary);
 }
 
@@ -688,22 +727,22 @@
 }
 
 .add-event-modal-overlay .modal-content .modal-actions .submit-button:disabled {
-    background-color: #e2e8f0;
-    color: #cbd5e0;
-    border-color: #e2e8f0;
+    background-color: var(--border-color);
+    color: var(--border-color-alt);
+    border-color: var(--border-color);
     cursor: not-allowed;
 }
 
 .add-event-modal-overlay .modal-content .modal-actions .cancel-button {
     background-color: transparent;
     color: var(--text-medium);
-    border-color: #e2e8f0;
+    border-color: var(--border-color);
 }
 
 .add-event-modal-overlay .modal-content .modal-actions .cancel-button:hover {
     background-color: rgba(0, 0, 0, 0.03);
     color: var(--text-dark);
-    border-color: #cbd5e0;
+    border-color: var(--border-color-alt);
 }
 
 .save-target-group {
@@ -733,9 +772,9 @@
 
 .tag-button {
   padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border: 1px solid #e2e8f0;
-  border-radius: clamp(6px, 0.69vh, 8px);
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   cursor: pointer;
   text-align: center;
   font-size: clamp(13px, 1.51vh, 15px);
@@ -753,7 +792,7 @@
 }
 
 .tag-button.active {
-  color: #ffffff;
+  color: var(--text-dark);
   border-color: transparent;
   font-weight: var(--font-weight-semibold);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -765,9 +804,9 @@
   justify-content: center;
   gap: clamp(6px, 0.69vh, 8px);
   padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border: 1px dashed #cbd5e0;
-  border-radius: clamp(6px, 0.69vh, 8px);
-  background-color: #f8f9fa;
+  border: 1px dashed var(--border-color-alt);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--bg-gray-alt);
   cursor: pointer;
   font-size: clamp(13px, 1.51vh, 15px);
   color: var(--text-medium);
@@ -819,9 +858,9 @@
 .custom-tag-input-field {
   width: 100%;
   padding: clamp(8px, 0.93vh, 10px) clamp(12px, 1.56vw, 16px);
-  border: 1px solid #e2e8f0;
-  border-radius: clamp(6px, 0.69vh, 8px);
-  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   font-size: clamp(13px, 1.51vh, 15px);
   transition: var(--transition-base);
@@ -903,7 +942,7 @@
     width: clamp(32px, 3.7vh, 36px);
     height: clamp(36px, 4.17vh, 40px);
     border-radius: clamp(6px, 0.69vh, 8px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     cursor: pointer;
     transition: var(--transition-base);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -1001,8 +1040,9 @@
 
 .schedule-time-item {
     display: flex;
-    flex-direction: column;
-    gap: clamp(6px, 0.69vh, 8px);
+    flex-direction: row;
+    align-items: center;
+    gap: clamp(8px, 1.04vw, 12px);
     width: 100%;
     box-sizing: border-box;
 }
@@ -1012,25 +1052,30 @@
     font-weight: var(--font-weight-medium);
     color: var(--text-medium);
     letter-spacing: -0.01em;
+    flex: 0 0 auto;
+    min-width: clamp(40px, 5.21vw, 50px);
+    white-space: nowrap;
 }
 
 .schedule-input-group {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: clamp(6px, 0.78vw, 8px);
     position: relative;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     box-sizing: border-box;
 }
 
 .schedule-date-input {
-    flex: 1;
-    min-width: 0;
-    max-width: 100%;
+    flex: 0 0 auto;
+    min-width: clamp(120px, 15.63vw, 150px);
+    max-width: clamp(120px, 15.63vw, 150px);
     padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 12px);
-    border: 1px solid #e2e8f0;
-    border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: clamp(4px, 0.46vh, 6px);
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(13px, 1.51vh, 15px);
     cursor: pointer;
@@ -1040,6 +1085,9 @@
     text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
+    height: clamp(32px, 3.7vh, 36px);
+    display: flex;
+    align-items: center;
 }
 
 .schedule-date-input:hover {
@@ -1052,22 +1100,82 @@
     min-width: clamp(80px, 10.42vw, 100px);
     max-width: clamp(80px, 10.42vw, 100px);
     padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 12px);
-    border: 1px solid #e2e8f0;
-    border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: clamp(4px, 0.46vh, 6px);
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(13px, 1.51vh, 15px);
     cursor: pointer;
     transition: var(--transition-base);
     white-space: nowrap;
     box-sizing: border-box;
-    text-align: left;
+    text-align: center;
     position: relative;
+    height: clamp(32px, 3.7vh, 36px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .schedule-time-input:hover {
     border-color: var(--sidebar-primary);
     box-shadow: 0 0 0 2px rgba(121, 134, 203, 0.05);
+}
+
+.schedule-input-with-buttons {
+    display: flex;
+    align-items: center;
+    gap: clamp(2px, 0.26vw, 4px);
+    position: relative;
+}
+
+.schedule-input-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: clamp(32px, 3.7vh, 36px);
+    align-items: stretch;
+}
+
+.schedule-input-btn {
+    background: var(--white-pure);
+    border: 1px solid var(--border-color);
+    border-radius: clamp(4px, 0.46vh, 6px);
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: clamp(8px, 0.93vh, 10px);
+    line-height: 1;
+    padding: 0;
+    transition: var(--transition-base);
+    width: clamp(20px, 2.6vw, 24px);
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.schedule-input-btn:hover {
+    background-color: var(--bg-gray-alt);
+    border-color: var(--sidebar-primary);
+    color: var(--sidebar-primary);
+}
+
+.schedule-input-btn:active {
+    background-color: var(--sidebar-primary);
+    color: var(--white-pure);
+}
+
+.schedule-input-btn-up {
+    border-bottom: none;
+    border-radius: clamp(4px, 0.46vh, 6px) clamp(4px, 0.46vh, 6px) 0 0;
+}
+
+.schedule-input-btn-down {
+    border-top: none;
+    border-radius: 0 0 clamp(4px, 0.46vh, 6px) clamp(4px, 0.46vh, 6px);
 }
 
 /* 반복 설정 */
@@ -1083,9 +1191,9 @@
     width: 100%;
     padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 12px);
     padding-right: clamp(28px, 3.65vw, 32px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right clamp(10px, 1.3vw, 12px) center;
@@ -1112,7 +1220,7 @@
 }
 
 .schedule-recurrence-select option:disabled {
-    color: #cbd5e0;
+    color: var(--border-color-alt);
     background-color: #f7fafc;
 }
 
@@ -1139,9 +1247,9 @@
 .schedule-interval-input {
     width: clamp(50px, 6.51vw, 60px);
     padding: clamp(6px, 0.69vh, 8px) clamp(8px, 1.04vw, 10px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(13px, 1.51vh, 15px);
     transition: var(--transition-base);
@@ -1184,9 +1292,9 @@
 .schedule-until-input {
     width: 100%;
     padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 12px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(13px, 1.51vh, 15px);
     cursor: pointer;
@@ -1254,9 +1362,9 @@
     min-width: clamp(120px, 15.63vw, 150px);
     max-width: clamp(120px, 15.63vw, 150px);
     padding: clamp(6px, 0.69vh, 8px) clamp(8px, 1.04vw, 12px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(14px, 1.62vh, 16px);
     cursor: pointer;
@@ -1275,9 +1383,9 @@
     min-width: clamp(120px, 15.63vw, 140px);
     max-width: clamp(120px, 15.63vw, 140px);
     padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 14px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(14px, 1.62vh, 16px);
     cursor: pointer;
@@ -1297,9 +1405,9 @@
     min-width: clamp(120px, 15.63vw, 140px);
     max-width: clamp(120px, 15.63vw, 140px);
     padding: clamp(6px, 0.69vh, 8px) clamp(10px, 1.3vw, 14px);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     border-radius: var(--sidebar-radius-sm);
-    background-color: #ffffff;
+    background-color: var(--white-pure);
     color: var(--text-dark);
     font-size: clamp(14px, 1.62vh, 16px);
     cursor: pointer;

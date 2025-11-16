@@ -13,6 +13,7 @@ import {
     fetchTags as fetchPersonalTags
 } from "../utils/database/personalTagManager";
 import { BiLoaderAlt } from "react-icons/bi";
+import { FaFolderOpen, FaFile } from "react-icons/fa";
 import EmailAutocomplete from "../components/ui/common/EmailAutocomplete";
 import "../components/features/templates/TemplateUI.css";
 import "../styles/pages/NewDocument.css";
@@ -1531,8 +1532,7 @@ function NewDocument({
                 <div className={`document-modal-content ${templateCreationMode === 'upload' ? 'has-file-upload' : ''}`} onClick={(e) => e.stopPropagation()}>
                         <div className="document-modal-header">
                             <div className="header-left">
-                                <h2>📄 새 문서 만들기</h2>
-                                <p className="header-subtitle">문서의 기본 정보를 입력해주세요</p>
+                                <h2>새 문서 만들기</h2>
                             </div>
                             <button className="document-modal-close" onClick={handleNewDocCancel}>
                                 <span>&times;</span>
@@ -1543,22 +1543,18 @@ function NewDocument({
                             {/* 템플릿 생성 방식 선택 */}
                             <div className="form-section">
                                 <div className="form-group-large">
-                                    <label className="form-label-large">
-                                        <span className="label-icon">⚙️</span>
-                                        템플릿 생성 방식
-                                    </label>
                                     <div className="creation-mode-selector">
                                         <button 
                                             className={`mode-button ${templateCreationMode === 'create' ? 'active' : ''}`}
                                             onClick={() => setTemplateCreationMode('create')}
                                         >
-                                            📄 새로 만들기
+                                            새로 만들기
                                         </button>
                                         <button 
                                             className={`mode-button ${templateCreationMode === 'upload' ? 'active' : ''}`}
                                             onClick={() => setTemplateCreationMode('upload')}
                                         >
-                                            📁 파일 업로드
+                                            파일 업로드
                                         </button>
                                     </div>
                                 </div>
@@ -1568,10 +1564,6 @@ function NewDocument({
                             {templateCreationMode === 'upload' && (
                                 <div className="form-section">
                                     <div className="form-group-large">
-                                        <label htmlFor="file-upload" className="form-label-large">
-                                            <span className="label-icon">📁</span>
-                                            파일 선택
-                                        </label>
                                         <div className="file-upload-area">
                                             <input
                                                 id="file-upload"
@@ -1583,13 +1575,13 @@ function NewDocument({
                                             <div className="file-upload-display" onClick={() => document.getElementById('file-upload')?.click()}>
                                                 {uploadedFile ? (
                                                     <div className="uploaded-file">
-                                                        <span className="file-icon">📄</span>
+                                                        <FaFile className="file-icon" />
                                                         <span className="file-name">{uploadedFile.name}</span>
                                                         <span className="file-size">({(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)</span>
                                                     </div>
                                                 ) : (
                                                     <div className="upload-placeholder">
-                                                        <span className="upload-icon">📁</span>
+                                                        <FaFolderOpen className="upload-icon" />
                                                         <span className="upload-text">파일을 선택하거나 여기에 드래그하세요</span>
                                                         <span className="upload-hint">지원 형식: .docx, .xlsx, .doc, .xls</span>
                                                     </div>
@@ -1604,29 +1596,19 @@ function NewDocument({
                             {templateCreationMode === 'create' && (
                                 <div className="form-section">
                                     <div className="form-group-large">
-                                        <label className="form-label-large">
-                                            <span className="label-icon">📄</span>
-                                            문서 타입
-                                        </label>
                                         <div className="document-type-selector">
                                             <button 
                                                 className={`type-button ${documentType === 'document' ? 'active' : ''}`}
                                                 onClick={() => setDocumentType('document')}
                                             >
-                                                📄 문서 (Google Docs)
+                                                문서 (Google Docs)
                                             </button>
                                             <button 
                                                 className={`type-button ${documentType === 'spreadsheet' ? 'active' : ''}`}
                                                 onClick={() => setDocumentType('spreadsheet')}
                                             >
-                                                📊 스프레드시트 (Google Sheets)
+                                                스프레드시트 (Google Sheets)
                                             </button>
-                                        </div>
-                                        <div className="input-hint">
-                                            {documentType === 'document' 
-                                                ? '텍스트 기반 문서를 생성합니다 (회의록, 보고서 등)' 
-                                                : '표와 데이터를 다루는 스프레드시트를 생성합니다 (명단, 예산 등)'
-                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -1634,55 +1616,38 @@ function NewDocument({
 
                             <div className="form-section">
                                 <div className="form-group-large">
-                                    <label htmlFor="doc-title" className="form-label-large">
-                                        <span className="label-icon">📝</span>
-                                        문서 제목
-                                    </label>
                                     <input
                                         id="doc-title"
                                         type="text"
                                         className="form-input-large"
-                                        placeholder="예: 2024년 1월 정기회의록"
+                                        placeholder="제목"
                                         value={newDocData.title}
                                         onChange={(e) => handleInputChange("title", e.target.value)}
                                         autoFocus
                                     />
-                                    <div className="input-hint">문서를 식별할 수 있는 명확한 제목을 입력하세요</div>
                                 </div>
-
                                 <div className="form-group-large">
-                                    <label htmlFor="doc-description" className="form-label-large">
-                                        <span className="label-icon">📋</span>
-                                        상세 설명
-                                    </label>
                                     <textarea
                                         id="doc-description"
                                         className="form-textarea-large"
-                                        placeholder="문서의 목적이나 내용에 대한 간단한 설명을 입력하세요"
+                                        rows={3}
+                                        placeholder="설명"
                                         value={newDocData.description}
                                         onChange={(e) => handleInputChange("description", e.target.value)}
-                                        rows={4}
                                     />
-                                    <div className="input-hint">문서의 용도나 특별한 사항을 기록해두세요</div>
                                 </div>
-
                                 <div className="form-group-large">
-                                    <label htmlFor="doc-tag" className="form-label-large">
-                                        <span className="label-icon">🏷️</span>
-                                        카테고리
-                                    </label>
                                     <select
                                         id="doc-tag"
                                         className="form-select-large"
                                         value={newDocData.tag || ""}
                                         onChange={(e) => handleInputChange("tag", e.target.value)}
                                     >
-                                        <option value="">선택 안 함</option>
+                                        <option value="">카테고리 선택 안 함</option>
                                         {(orderedTags.length > 0 ? orderedTags : ['기본']).map(tag => (
                                             <option key={tag} value={tag}>{tag}</option>
                                         ))}
                                     </select>
-                                    <div className="input-hint">문서를 분류할 카테고리를 선택하세요</div>
                                 </div>
                             </div>
                         </div>
@@ -1697,14 +1662,7 @@ function NewDocument({
                                 onClick={handleCreateNewTemplate}
                                 disabled={!newDocData.title.trim() || (templateCreationMode === 'upload' && !uploadedFile)}
                             >
-                                <span>
-                                    {templateCreationMode === 'upload' 
-                                        ? '📁 템플릿 업로드' 
-                                        : documentType === 'spreadsheet' 
-                                            ? '📊 스프레드시트 생성' 
-                                            : '📄 문서 생성'
-                                    }
-                                </span>
+                                <span>생성</span>
                             </button>
                         </div>
                     </div>
@@ -1864,27 +1822,25 @@ function NewDocument({
                 <div className="document-modal-content has-file-upload" onClick={(e)=>e.stopPropagation()}>
                   <div className="document-modal-header">
                     <div className="header-left">
-                      <h2>📁 기본 템플릿 업로드</h2>
-                      <p className="header-subtitle">파일을 업로드하고 메타데이터를 입력하세요</p>
+                      <h2>기본 템플릿 업로드</h2>
                     </div>
                     <button className="document-modal-close" onClick={resetSharedUpload}><span>&times;</span></button>
                   </div>
                   <div className="document-modal-body">
                     <div className="form-section">
                       <div className="form-group-large">
-                        <label className="form-label-large"><span className="label-icon">📁</span>파일 선택</label>
                         <div className="file-upload-area">
                           <input id="shared-file" type="file" accept=".doc,.docx,.xls,.xlsx" className="file-input" onChange={handleSharedFilePick} />
                           <div className="file-upload-display" onClick={() => document.getElementById('shared-file')?.click()}>
                             {sharedUploadFile ? (
                               <div className="uploaded-file">
-                                <span className="file-icon">📄</span>
+                                <FaFile className="file-icon" />
                                 <span className="file-name">{sharedUploadFile.name}</span>
                                 <span className="file-size">({(sharedUploadFile.size/1024/1024).toFixed(2)} MB)</span>
                               </div>
                             ) : (
                               <div className="upload-placeholder">
-                                <span className="upload-icon">📁</span>
+                                <FaFolderOpen className="upload-icon" />
                                 <span className="upload-text">파일을 선택하거나 여기에 드래그하세요</span>
                                 <span className="upload-hint">지원 형식: .docx, .xlsx, .doc, .xls</span>
                               </div>
@@ -1895,17 +1851,14 @@ function NewDocument({
                     </div>
                     <div className="form-section">
                       <div className="form-group-large">
-                        <label className="form-label-large"><span className="label-icon">📝</span>제목</label>
-                        <input className="form-input-large" value={sharedMeta.title} onChange={(e)=>setSharedMeta({...sharedMeta, title: e.target.value})} />
+                        <input className="form-input-large" placeholder="제목" value={sharedMeta.title} onChange={(e)=>setSharedMeta({...sharedMeta, title: e.target.value})} />
                       </div>
                       <div className="form-group-large">
-                        <label className="form-label-large"><span className="label-icon">📋</span>설명</label>
-                        <textarea className="form-textarea-large" rows={3} value={sharedMeta.description} onChange={(e)=>setSharedMeta({...sharedMeta, description: e.target.value})} />
+                        <textarea className="form-textarea-large" rows={3} placeholder="설명" value={sharedMeta.description} onChange={(e)=>setSharedMeta({...sharedMeta, description: e.target.value})} />
                       </div>
                       <div className="form-group-large">
-                        <label className="form-label-large"><span className="label-icon">🏷️</span>카테고리</label>
                         <select className="form-select-large" value={sharedMeta.tag || ""} onChange={(e)=>setSharedMeta({...sharedMeta, tag: e.target.value})}>
-                          <option value="">선택 안 함</option>
+                          <option value="">카테고리 선택 안 함</option>
                           {/* 기본 템플릿은 기본 태그만 선택 가능 */}
                           {(staticTags.length > 0 ? staticTags : ['기본']).map(tag => (<option key={tag} value={tag}>{tag}</option>))}
                         </select>

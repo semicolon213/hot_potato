@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import { FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import type { LedgerEntryFilter } from '../../../types/features/accounting';
 import './accounting.css';
 
@@ -42,8 +43,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     <div className="filter-panel">
       <div className="filter-panel-header" onClick={() => setIsExpanded(!isExpanded)}>
         <h3>필터</h3>
-        <span className={`filter-toggle ${isExpanded ? 'expanded' : ''}`}>
-          {isExpanded ? '▼' : '▶'}
+        <span className="filter-toggle">
+          {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
         </span>
       </div>
 

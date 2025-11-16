@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../../utils/database/accountingManager';
 import type { Category } from '../../../types/features/accounting';
 import './accounting.css';
@@ -184,100 +185,76 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
   );
 
   return (
-    <div className="category-management">
-      <div className="category-management-header">
-        <div className="category-header-left">
-          <h3>카테고리 관리</h3>
-          <span className="category-count">총 {categories.length}개</span>
-        </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="add-category-btn"
-        >
-          <span className="btn-icon">+</span>
-          카테고리 추가
-        </button>
-      </div>
-
-      {/* 검색 바 */}
-      {categories.length > 0 && (
-        <div className="category-search">
-          <input
-            type="text"
-            placeholder="카테고리 검색..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="category-search-input"
-          />
-        </div>
-      )}
-
-      {/* 카테고리 목록 */}
-      <div className="category-list">
-        {categories.length === 0 ? (
-          <div className="empty-category-state">
-            <div className="empty-icon">📁</div>
-            <p className="empty-message">등록된 카테고리가 없습니다</p>
-            <p className="empty-hint">카테고리를 추가하여 장부 항목을 분류하세요</p>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="add-category-btn-empty"
-            >
-              첫 카테고리 추가하기
-            </button>
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="empty-category-state">
-            <div className="empty-icon">🔍</div>
-            <p className="empty-message">검색 결과가 없습니다</p>
-            <button
-              onClick={() => setSearchTerm('')}
-              className="add-category-btn-empty"
-            >
-              검색 초기화
-            </button>
-          </div>
-        ) : (
-          <div className="category-grid">
-            {filteredCategories.map(category => (
-              <div 
-                key={category.categoryId} 
-                className="category-card"
-                onClick={() => handleEditCategory(category)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="category-card-header">
-                  <h4 className="category-name">{category.categoryName}</h4>
-                  <div className="category-card-actions" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleEditCategory(category)}
-                      className="category-edit-btn"
-                      title="수정"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategory(category)}
-                      className="category-delete-btn"
-                      title="삭제"
-                      disabled={category.usageCount > 0}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-                <div className="category-card-body">
-                  <span className="category-usage-badge">
-                    {category.usageCount}회 사용
-                  </span>
-                  {category.description && (
-                    <p className="category-description">{category.description}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+    <>
+      <div className="category-table-wrapper">
+        <table className="category-table">
+          <thead>
+            <tr>
+              <th className="col-category-name">카테고리 이름</th>
+              <th className="col-category-description">설명</th>
+              <th className="col-category-usage">사용 횟수</th>
+              <th className="col-category-actions">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              Array.from({ length: 10 }).map((_, index) => (
+                <tr key={`loading-${index}`}>
+                  <td className="cell-category-name"></td>
+                  <td className="cell-category-description"></td>
+                  <td className="cell-category-usage"></td>
+                  <td className="cell-category-actions"></td>
+                </tr>
+              ))
+            ) : filteredCategories.length === 0 ? (
+              Array.from({ length: 10 }).map((_, index) => (
+                <tr key={`empty-${index}`}>
+                  <td className="cell-category-name"></td>
+                  <td className="cell-category-description"></td>
+                  <td className="cell-category-usage"></td>
+                  <td className="cell-category-actions"></td>
+                </tr>
+              ))
+            ) : (
+              <>
+                {filteredCategories.map(category => (
+                  <tr key={category.categoryId}>
+                    <td className="cell-category-name">{category.categoryName}</td>
+                    <td className="cell-category-description">{category.description || ''}</td>
+                    <td className="cell-category-usage">{category.usageCount}회</td>
+                    <td className="cell-category-actions">
+                      <div className="category-actions">
+                        <button
+                          onClick={() => handleEditCategory(category)}
+                          className="btn-edit"
+                          title="수정"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category)}
+                          className="btn-delete"
+                          title="삭제"
+                          disabled={category.usageCount > 0}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredCategories.length < 10 && Array.from({ length: 10 - filteredCategories.length }).map((_, index) => (
+                  <tr key={`empty-${index}`}>
+                    <td className="cell-category-name"></td>
+                    <td className="cell-category-description"></td>
+                    <td className="cell-category-usage"></td>
+                    <td className="cell-category-actions"></td>
+                  </tr>
+                ))}
+              </>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* 카테고리 추가 모달 */}
@@ -438,7 +415,7 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

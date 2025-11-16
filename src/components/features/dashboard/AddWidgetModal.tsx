@@ -53,28 +53,18 @@ const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const categorizedWidgets = categorizeWidgets(widgetOptions);
 
   return (
-    <div className="modal" style={{ display: "flex" }}>
-      <div className="modal-content">
+    <div className="add-widget-modal-overlay" onClick={() => setIsModalOpen(false)}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>위젯 추가</h2>
           <button className="close-modal" onClick={() => setIsModalOpen(false)}>
-            &times;
+            ×
           </button>
         </div>
-        <div className="widget-options-container" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          {categorizedWidgets.map(([category, categoryWidgets]) => (
-            <div key={category} style={{ marginBottom: '24px' }}>
-              <h3 style={{ 
-                fontSize: '16px', 
-                fontWeight: '600', 
-                color: '#1a1a1a', 
-                marginBottom: '12px',
-                paddingBottom: '8px',
-                borderBottom: '2px solid #a0aec0'
-              }}>
-                {category}
-              </h3>
-              <div className="widget-options">
+        <div className="modal-body">
+          <div className="widget-options-container">
+            {categorizedWidgets.map(([category, categoryWidgets]) => (
+              <div key={category} className="widget-options">
                 {categoryWidgets.map((option) => {
                   // 세부 선택이 있는 위젯은 여러 개 추가 가능하므로 항상 활성화
                   const widgetsWithSelection = ['budget-plan', 'budget-execution', 'accounting-stats'];
@@ -94,8 +84,8 @@ const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   );
                 })}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

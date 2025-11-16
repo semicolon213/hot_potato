@@ -25,6 +25,9 @@ interface UserListProps {
   isLoading: boolean;
   onApproveUser: (studentId: string, groupRole: string) => void;
   onRejectUser: (userId: string) => void;
+  showOnlyPending?: boolean;
+  showOnlyApproved?: boolean;
+  showOnlyUnused?: boolean;
 }
 
 const UserList: React.FC<UserListProps> = ({
@@ -34,7 +37,10 @@ const UserList: React.FC<UserListProps> = ({
   unusedUsers,
   isLoading,
   onApproveUser,
-  onRejectUser
+  onRejectUser,
+  showOnlyPending = false,
+  showOnlyApproved = false,
+  showOnlyUnused = false
 }) => {
   const [modalUser, setModalUser] = useState<AdminUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,8 +113,8 @@ const UserList: React.FC<UserListProps> = ({
   return (
     <>
       {/* 승인 대기 사용자 */}
-      <div className="users-section">
-        <h3>승인 대기 사용자 ({pendingUsers.length}명)</h3>
+      {showOnlyPending && (
+        <>
         {pendingUsers.length === 0 ? (
           <p className="no-users">승인 대기 중인 사용자가 없습니다.</p>
         ) : (
@@ -186,11 +192,12 @@ const UserList: React.FC<UserListProps> = ({
             )}
           </div>
         )}
-      </div>
+        </>
+      )}
 
       {/* 승인된 사용자 */}
-      <div className="users-section">
-        <h3>승인된 사용자 ({approvedUsers.length}명)</h3>
+      {showOnlyApproved && (
+        <>
         {approvedUsers.length === 0 ? (
           <p className="no-users">승인된 사용자가 없습니다.</p>
         ) : (
@@ -244,11 +251,12 @@ const UserList: React.FC<UserListProps> = ({
             )}
           </div>
         )}
-      </div>
+        </>
+      )}
 
       {/* 미사용 사용자 */}
-      <div className="users-section">
-        <h3>미사용 사용자 ({unusedUsers.length}명)</h3>
+      {showOnlyUnused && (
+        <>
         {unusedUsers.length === 0 ? (
           <p className="no-users">미사용 사용자가 없습니다.</p>
         ) : (
@@ -300,7 +308,8 @@ const UserList: React.FC<UserListProps> = ({
             )}
           </div>
         )}
-      </div>
+        </>
+      )}
 
       {/* 그룹스 권한 설정 모달 */}
       {modalUser && (

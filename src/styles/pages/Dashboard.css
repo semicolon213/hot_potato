@@ -120,7 +120,7 @@ body {
     background: #ffffff;
     padding: clamp(32px, 3.7vh, 48px);
     border-radius: var(--sidebar-radius-sm);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     border: 1px solid #e2e8f0;
     max-width: clamp(350px, 36.46vw, 480px);
     width: 100%;

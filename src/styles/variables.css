@@ -30,13 +30,19 @@
   --accent: #e8f9f0;                     /* 매우 연한 초록색 */
   --background: #f8f8f7;                 /* 순백색 배경 */
   --white: #f8f8f7;
+  --white-pure: #ffffff;                 /* 순수 흰색 */
   --lightgrey: #f8fafc;                  /* 연한 회색 (slate-50) */
+  --bg-gray: #f5f5f5;                    /* 배경 회색 (콘텐츠 영역) */
+  --bg-gray-alt: #f8f9fa;               /* 배경 회색 변형 */
+  --gray-dark: #2a2a2a;                 /* 진한 회색 */
   --border-color: #e2e8f0;               /* 연한 회색 테두리 (slate-200) */
+  --border-color-alt: #cbd5e0;           /* 테두리 색상 변형 */
   --border-light: #f1f5f9;               /* 더 연한 회색 (slate-100) */
   --border-lighter: #f8fafc;             /* 가장 연한 회색 (slate-50) */
   --text-dark: #000000;                  /* 검은색 */
   --text-medium: #000000;                /* 검은색 */
   --text-light: #666666;                 /* 중간 회색 */
+  --text-placeholder: #999999;           /* Placeholder 텍스트 색상 */
   --menu-bg: #47CB81;                    /* 사이드바 초록색 메뉴 배경 */
   --table-header-bg: #f8fafc;            /* 연한 회색 테이블 헤더 */
   --card-shadow: none;
@@ -56,6 +62,14 @@
   --transition-base: all 0.2s ease;
   --shadow-base: 0 clamp(3px, 0.37vh, 5px) clamp(12px, 1.48vh, 20px) rgba(0, 0, 0, 0.1);
   --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+  
+  /* 반응형 브레이크포인트 */
+  --breakpoint-mobile: 768px;
+  --breakpoint-tablet: 1024px;
+  --breakpoint-desktop: 1280px;
+  
+  /* 터치 타겟 최소 크기 (접근성) */
+  --touch-target-min: 44px;
 }
 
 /* 구글 테마 (기본 테마) - 사이드바 테마로 통일 */
@@ -68,10 +82,16 @@
   --background: #f8f8f7;             /* 순백색 배경 */
 
   /* 구글 테마에 맞는 회색 톤 */
+  --white-pure: #ffffff;             /* 순수 흰색 */
+  --bg-gray: #f5f5f5;               /* 배경 회색 */
+  --bg-gray-alt: #f8f9fa;           /* 배경 회색 변형 */
+  --gray-dark: #2a2a2a;             /* 진한 회색 */
   --lightgrey: #f5f5f5;              /* 구글 스타일 연한 회색 */
   --border-color: #e0e0e0;           /* 구글 스타일 테두리 */
+  --border-color-alt: #cbd5e0;       /* 테두리 색상 변형 */
   --border-light: #f0f0f0;           /* 구글 스타일 연한 테두리 */
   --border-lighter: #fafafa;         /* 구글 스타일 가장 연한 테두리 */
+  --text-placeholder: #999999;       /* Placeholder 텍스트 색상 */
 
   /* 구글 테마에 맞는 텍스트 색상 */
   --text-dark: #212121;              /* 구글 머티리얼 다크 그레이 */

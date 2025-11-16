@@ -13,6 +13,19 @@
   display: none; /* 상단바에 제목이 표시되므로 제거 */
 }
 
+/* 통계 카드 컨테이너 */
+.announcements-container .stats-container {
+  display: flex;
+  gap: clamp(16px, 2.08vw, 24px);
+  padding: clamp(24px, 2.78vh, 32px);
+  background-color: var(--white-pure);
+  border-radius: var(--sidebar-radius);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin: 0 0 clamp(24px, 2.78vh, 32px) 0;
+  align-items: center;
+}
+
 .actions-bar {
   display: flex;
   justify-content: space-between;
@@ -182,7 +195,7 @@
 }
 
 .post-table th {
-  background-color: #f8f8f7;
+  background-color: var(--white-pure);
   color: var(--text-dark);
   border-bottom: 1px solid #e2e8f0;
   font-weight: var(--font-weight-semibold);
@@ -193,6 +206,75 @@
   min-height: clamp(56px, 6.48vh, 64px);
 }
 
+.post-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.post-table th.sortable:hover {
+  background-color: var(--white-pure);
+}
+
+.post-table th.sortable.sorted {
+  background-color: var(--white-pure);
+}
+
+.post-table th .th-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.post-table th .filter-clear-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.post-table th .filter-clear-icon .filter-icon,
+.post-table th .filter-clear-icon .clear-icon {
+  position: absolute;
+  font-size: 12px;
+  transition: opacity 0.2s ease;
+}
+
+.post-table th .filter-clear-icon .filter-icon {
+  color: var(--sidebar-primary);
+  opacity: 1;
+}
+
+.post-table th .filter-clear-icon .clear-icon {
+  color: var(--sidebar-primary);
+  opacity: 0;
+}
+
+.post-table th .filter-clear-icon:hover .filter-icon {
+  opacity: 0;
+}
+
+.post-table th .filter-clear-icon:hover .clear-icon {
+  opacity: 1;
+}
+
+.post-table th .filter-clear-icon:hover {
+  background-color: rgba(26, 26, 26, 0.1);
+  border-radius: 4px;
+}
+
+.post-table th .filter-clear-icon:active {
+  background-color: rgba(26, 26, 26, 0.2);
+}
+
 .post-table td {
   color: var(--text-dark);
   font-size: 14px;
@@ -200,6 +282,7 @@
   height: clamp(56px, 6.48vh, 64px);
   min-height: clamp(56px, 6.48vh, 64px);
   vertical-align: middle;
+  background-color: var(--white-pure);
 }
 
 .title-cell-inner {
@@ -268,17 +351,21 @@
 }
 
 .post-table tr.pinned-announcement-row {
-  background-color: #fff5f5;
+  background-color: #fff5f5 !important;
   box-shadow: inset 3px 0 0 #ff6b6b;
   font-weight: 500;
 }
 
-.post-table tr.pinned-announcement-row:hover {
-  background-color: #ffe8e8;
+.post-table tr.pinned-announcement-row td {
+  background-color: #fff5f5 !important;
 }
 
 .post-table tr.pinned-announcement-row:hover {
-  background-color: #ffe8e8;
+  background-color: #ffe8e8 !important;
+}
+
+.post-table tr.pinned-announcement-row:hover td {
+  background-color: #ffe8e8 !important;
 }
 
 /* Column Specific Styles */
@@ -349,13 +436,15 @@
   margin: 0;
 }
 
-.pagination {
+.announcements-container .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
   margin-top: clamp(24px, 2.78vh, 32px);
   padding-top: 0;
+  background: var(--bg-gray);
+  border: none;
 }
 
 .page-link, .page-arrow-link {

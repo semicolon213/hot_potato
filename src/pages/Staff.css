@@ -52,7 +52,7 @@
 .error-message button:hover {
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-hover-text);
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--sidebar-primary);
 }
 
 .loading-overlay {

@@ -443,53 +443,15 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
   };
 
   return (
-    <div className="budget-plan-list">
-      <div className="budget-plan-list-header">
-        <h3>예산 계획</h3>
-        <div className="budget-plan-list-actions">
-          {accounts.length > 0 && (
-            <div className="account-info-display">
-              <span className="account-name">{accounts[0].accountName}</span>
-            </div>
-          )}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as BudgetPlan['status'] | 'all')}
-            className="status-filter"
-          >
-            <option value="all">전체</option>
-            <option value="pending">대기</option>
-            <option value="reviewed">검토됨</option>
-            <option value="approved">승인됨</option>
-            <option value="executed">집행됨</option>
-            <option value="rejected">반려됨</option>
-          </select>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="create-budget-btn"
-          >
-            + 예산 계획 작성
-          </button>
-        </div>
-      </div>
-
+    <>
       {error && (
         <div className="error-message">
           {error}
         </div>
       )}
 
-      {isLoading ? (
-        <div className="loading-message">
-          로딩 중...
-        </div>
-      ) : budgetPlans.length === 0 ? (
-        <div className="empty-message">
-          예산 계획이 없습니다.
-        </div>
-      ) : (
-        <div className="budget-plan-table-container">
-          <table className="budget-plan-table">
+      <div className="budget-plan-table-wrapper">
+        <table className="budget-plan-table">
             <thead>
               <tr>
                 <th>제목</th>
@@ -501,7 +463,31 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
               </tr>
             </thead>
             <tbody>
-              {budgetPlans.map(plan => {
+              {isLoading ? (
+                Array.from({ length: 10 }).map((_, index) => (
+                  <tr key={`loading-${index}`}>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                ))
+              ) : budgetPlans.length === 0 ? (
+                Array.from({ length: 10 }).map((_, index) => (
+                  <tr key={`empty-${index}`}>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                ))
+              ) : (
+                <>
+                  {budgetPlans.map(plan => {
                 // 디버깅: 각 계획의 상태와 조건 확인
                 if (plan.status === 'reviewed') {
                   console.log('🔍 검토 완료된 계획:', {
@@ -602,11 +588,22 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
                   </td>
                 </tr>
                 );
-              })}
+                  })}
+                  {budgetPlans.length < 10 && Array.from({ length: 10 - budgetPlans.length }).map((_, index) => (
+                    <tr key={`empty-${index}`}>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  ))}
+                </>
+              )}
             </tbody>
           </table>
         </div>
-      )}
 
       <CreateBudgetPlanModal
         isOpen={isCreateModalOpen}
@@ -705,7 +702,7 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

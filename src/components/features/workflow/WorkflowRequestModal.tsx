@@ -396,16 +396,9 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
       <div className="document-modal-overlay" onClick={onClose}>
         <div className="document-modal-content workflow-request-modal" onClick={(e) => e.stopPropagation()}>
           <div className="document-modal-header">
-            <div className="header-left">
-              <h2>📋 결재 요청</h2>
-              <p className="header-subtitle">
-                {step === 'options' && '결재 옵션을 선택해주세요'}
-                {step === 'editor' && '결재 문서 내용을 작성해주세요'}
-                {step === 'lines' && '검토 및 결재 라인을 설정해주세요'}
-              </p>
-            </div>
+            <h2>결재 요청</h2>
             <button className="document-modal-close" onClick={onClose}>
-              <span>&times;</span>
+              ×
             </button>
           </div>
 
@@ -421,7 +414,6 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
                     />
                     <span>결재 문서 생성</span>
                   </label>
-                  <p className="form-hint">별도의 결재 문서를 생성하여 결재를 진행합니다.</p>
                 </div>
 
                 {createWorkflowDocument && (
@@ -436,7 +428,7 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
                     </label>
                     <p className="form-hint">결재 문서에 기존에 생성된 문서를 첨부하여 함께 결재합니다.</p>
                     {attachDocument && (
-                      <div style={{ marginTop: '12px', marginLeft: '28px' }}>
+                      <div>
                         {selectedAttachDocumentIds.length > 0 && (
                           <div className="added-users-list" style={{ marginBottom: '16px' }}>
                             <div style={{ marginBottom: '8px', fontWeight: 600, fontSize: '14px' }}>
@@ -529,7 +521,6 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
 
                 {!createWorkflowDocument && (
                   <div className="form-group">
-                    <label>결재할 문서 선택 *</label>
                     {documentId && !selectedAttachDocumentIds.includes(documentId) ? (
                       <div className="document-info">
                         <strong>{documentTitle || '문서'}</strong>
