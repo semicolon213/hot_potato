@@ -633,13 +633,14 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       filterType: 'personal',
     },
     {
-      count: myCreatedDocumentsCount,
-      title: "내가 만든 문서",
+      count: 0,
+      title: "새 문서 만들기",
       backgroundColor: "#FCE4EC",
       textColor: "#000000",
-      icon: FaEdit,
+      icon: FaPlus,
       iconColor: "#C2185B",
       filterType: 'myCreated',
+      onClick: () => onPageChange('new_document'),
     },
   ];
 
@@ -1084,10 +1085,10 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
             textColor={stat.textColor}
             icon={stat.icon}
             iconColor={stat.iconColor}
-            onClick={() => handleStatFilterClick(stat.filterType)}
-            isSelected={selectedStatFilter === stat.filterType}
-            uploadIcon={stat.filterType === 'myCreated' ? FaPlus : undefined}
-            onUploadClick={stat.filterType === 'myCreated' ? openUploadModal : undefined}
+            onClick={stat.onClick || (() => handleStatFilterClick(stat.filterType))}
+            isSelected={stat.onClick ? false : selectedStatFilter === stat.filterType}
+            uploadIcon={stat.filterType === 'myCreated' && !stat.onClick ? FaPlus : undefined}
+            onUploadClick={stat.filterType === 'myCreated' && !stat.onClick ? openUploadModal : undefined}
           />
         ))}
       </div>

@@ -16,7 +16,6 @@ import "./components/features/auth/Login.css"; // 인증 관련 스타일
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './components/features/auth/Login';
 import PendingApproval from './components/features/auth/PendingApproval';
-import Chat from './pages/Chat';
 import { useAppState } from './hooks/core/useAppState';
 import {
   addAnnouncement,
@@ -310,8 +309,9 @@ const App: React.FC = () => {
       'announcement-view': '공지사항',
       board: '게시판',
       chat: '채팅',
-      admin: '관리자 패널',
+      admin: '관리자',
       mypage: '마이페이지',
+      accounting: '회계',
     };
 
     const PAGE_TITLES: Record<string, string> = {
@@ -333,6 +333,7 @@ const App: React.FC = () => {
       chat: '채팅',
       admin: '관리자',
       mypage: '마이페이지',
+      accounting: '회계',
     };
 
     const section = PAGE_SECTIONS[currentPage] || '';
@@ -1064,7 +1065,6 @@ const App: React.FC = () => {
               widgetOptions={widgetOptions}
             />
           </div>
-          <Chat />
         </div>
       </div>
     </GoogleOAuthProvider>

@@ -6,13 +6,15 @@
  * @date 2024
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { LedgerEntryList } from './LedgerEntryList';
 import { CategoryManagement } from './CategoryManagement';
 import { AccountDisplay } from './AccountDisplay';
 import { BudgetPlanList } from './BudgetPlanList';
+import { LedgerExportModal } from './LedgerExportModal';
 import { useLedgerManagement } from '../../../hooks/features/accounting/useLedgerManagement';
-import type { LedgerInfo } from '../../../types/features/accounting';
+import type { LedgerInfo, LedgerEntry } from '../../../types/features/accounting';
 import './accounting.css';
 
 interface LedgerDetailProps {
@@ -32,6 +34,56 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
   const [showLedgerDropdown, setShowLedgerDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { ledgers } = useLedgerManagement();
+  const [entries, setEntries] = useState<LedgerEntry[]>([]);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [entryListControls, setEntryListControls] = useState<{
+    sortedMonths: string[];
+    selectedMonthTab: string | null;
+    itemsPerPage: number;
+    groupedByMonth: Record<string, LedgerEntry[]>;
+    formatMonthLabel: (monthKey: string) => string;
+    handleAddMonthTab: () => void;
+    onMonthTabChange: (monthKey: string) => void;
+    onItemsPerPageChange: (value: number) => void;
+    finalBalance: number;
+  } | null>(null);
+
+  // 이전 컨트롤 값을 저장하기 위한 ref
+  const prevControlsRef = useRef<string>('');
+
+  // onControlsRender를 useCallback으로 메모이제이션하여 무한 루프 방지
+  const handleControlsRender = useCallback((controls: {
+    sortedMonths: string[];
+    selectedMonthTab: string | null;
+    itemsPerPage: number;
+    groupedByMonth: Record<string, LedgerEntry[]>;
+    formatMonthLabel: (monthKey: string) => string;
+    handleAddMonthTab: () => void;
+    onMonthTabChange: (monthKey: string) => void;
+    onItemsPerPageChange: (value: number) => void;
+    finalBalance: number;
+  }) => {
+    // 변경된 값만 추출하여 비교 (함수 제외)
+    const controlsKey = JSON.stringify({
+      sortedMonths: controls.sortedMonths,
+      selectedMonthTab: controls.selectedMonthTab,
+      itemsPerPage: controls.itemsPerPage,
+      finalBalance: controls.finalBalance,
+      groupedByMonthKeys: Object.keys(controls.groupedByMonth)
+    });
+    
+    // 이전 값과 다를 때만 업데이트
+    if (prevControlsRef.current !== controlsKey) {
+      prevControlsRef.current = controlsKey;
+      setEntryListControls(controls);
+    }
+  }, []);
+  
+  // 항목 추가 핸들러
+  const handleAddEntry = () => {
+    setIsAddingNew(true);
+  };
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -59,89 +111,8 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
 
   if (!ledger.spreadsheetId) {
     return (
-      <div className="accounting-page">
+      <>
         <div className="accounting-header">
-          <button onClick={onBack} className="back-btn">← 뒤로</button>
-          <h1>{ledger.folderName}</h1>
-        </div>
-        <div className="accounting-content">
-          <p className="error-message">스프레드시트를 찾을 수 없습니다.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="accounting-page">
-      <div className="accounting-header">
-        <button onClick={onBack} className="back-btn">← 뒤로</button>
-        <div style={{ position: 'relative', display: 'inline-block' }} ref={dropdownRef}>
-          <h1 
-            style={{ 
-              cursor: onSelectLedger ? 'pointer' : 'default',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-            onClick={() => onSelectLedger && setShowLedgerDropdown(!showLedgerDropdown)}
-          >
-            {ledger.folderName}
-            {onSelectLedger && (
-              <span style={{ fontSize: '0.8em', color: '#666' }}>▼</span>
-            )}
-          </h1>
-          {showLedgerDropdown && onSelectLedger && ledgers.length > 0 && (
-            <div 
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: '8px',
-                backgroundColor: 'white',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                zIndex: 1000,
-                minWidth: '200px',
-                maxHeight: '400px',
-                overflowY: 'auto'
-              }}
-            >
-              {ledgers.map((l) => (
-                <div
-                  key={l.folderId}
-                  onClick={() => handleLedgerSelect(l)}
-                  style={{
-                    padding: '12px 16px',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid #eee',
-                    backgroundColor: l.folderId === ledger.folderId ? '#f0f0f0' : 'white',
-                    fontWeight: l.folderId === ledger.folderId ? 'bold' : 'normal'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (l.folderId !== ledger.folderId) {
-                      e.currentTarget.style.backgroundColor = '#f5f5f5';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (l.folderId !== ledger.folderId) {
-                      e.currentTarget.style.backgroundColor = 'white';
-                    }
-                  }}
-                >
-                  {l.folderName}
-                  {l.folderId === ledger.folderId && (
-                    <span style={{ marginLeft: '8px', color: '#666', fontSize: '0.9em' }}>(현재)</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="accounting-content">
-        <div className="ledger-tabs">
           <button
             className={`tab-button ${activeTab === 'entries' ? 'active' : ''}`}
             onClick={() => setActiveTab('entries')}
@@ -166,24 +137,143 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
           >
             카테고리
           </button>
+          <button onClick={onBack} className="back-btn">목록으로</button>
         </div>
+        <div className="accounting-content">
+          <p className="error-message">스프레드시트를 찾을 수 없습니다.</p>
+        </div>
+      </>
+    );
+  }
 
-        <div className="ledger-tab-content">
-          {activeTab === 'entries' && (
-            <LedgerEntryList spreadsheetId={ledger.spreadsheetId} />
-          )}
-          {activeTab === 'accounts' && (
-            <AccountDisplay spreadsheetId={ledger.spreadsheetId} />
-          )}
-          {activeTab === 'budgets' && (
-            <BudgetPlanList spreadsheetId={ledger.spreadsheetId} />
-          )}
-          {activeTab === 'categories' && (
-            <CategoryManagement spreadsheetId={ledger.spreadsheetId} />
+  return (
+    <>
+      <div className="accounting-header">
+        <button
+          className={`tab-button ${activeTab === 'entries' ? 'active' : ''}`}
+          onClick={() => setActiveTab('entries')}
+        >
+          장부 항목
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'accounts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('accounts')}
+        >
+          통장
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'budgets' ? 'active' : ''}`}
+          onClick={() => setActiveTab('budgets')}
+        >
+          예산 계획
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'categories' ? 'active' : ''}`}
+          onClick={() => setActiveTab('categories')}
+        >
+          카테고리
+        </button>
+        {activeTab === 'entries' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="export-btn"
+              disabled={entries.length === 0}
+            >
+              내보내기
+            </button>
+            <button onClick={onBack} className="back-btn">목록으로</button>
+          </div>
+        )}
+        {activeTab !== 'entries' && (
+          <button onClick={onBack} className="back-btn" style={{ marginLeft: 'auto' }}>목록으로</button>
+        )}
+      </div>
+
+      {/* 장부 항목 컨트롤 (월별 탭, 페이지당 항목 수) */}
+      {activeTab === 'entries' && entryListControls && (
+        <div className="ledger-entry-controls">
+          {/* 월별 탭 */}
+          <div className="month-tabs">
+            <button
+              className="month-nav-btn"
+              onClick={() => {
+                const currentIndex = entryListControls.sortedMonths.findIndex(
+                  m => m === entryListControls.selectedMonthTab
+                );
+                // 3개씩 앞으로 이동
+                const newIndex = Math.max(0, currentIndex - 3);
+                entryListControls.onMonthTabChange(entryListControls.sortedMonths[newIndex]);
+              }}
+              disabled={entryListControls.sortedMonths.findIndex(m => m === entryListControls.selectedMonthTab) === 0}
+            >
+              <FaChevronLeft />
+            </button>
+            {entryListControls.selectedMonthTab && (() => {
+              const monthEntries = entryListControls.groupedByMonth[entryListControls.selectedMonthTab] || [];
+              
+              return (
+                <div className="month-display">
+                  <span className="month-display-item active">
+                    {entryListControls.formatMonthLabel(entryListControls.selectedMonthTab)} ({monthEntries.length})
+                  </span>
+                </div>
+              );
+            })()}
+            <button
+              className="month-nav-btn"
+              onClick={() => {
+                const currentIndex = entryListControls.sortedMonths.findIndex(
+                  m => m === entryListControls.selectedMonthTab
+                );
+                // 3개씩 뒤로 이동
+                const newIndex = Math.min(entryListControls.sortedMonths.length - 1, currentIndex + 3);
+                entryListControls.onMonthTabChange(entryListControls.sortedMonths[newIndex]);
+              }}
+              disabled={entryListControls.sortedMonths.findIndex(m => m === entryListControls.selectedMonthTab) === entryListControls.sortedMonths.length - 1}
+            >
+              <FaChevronRight />
+            </button>
+          </div>
+          {entryListControls.finalBalance !== undefined && (
+            <button className="tab-button final-balance-tab" disabled>
+              최종 잔액: {entryListControls.finalBalance.toLocaleString()}원
+            </button>
           )}
         </div>
+      )}
+
+      <div className="accounting-content">
+        {activeTab === 'entries' && (
+          <LedgerEntryList 
+              spreadsheetId={ledger.spreadsheetId}
+              onEntriesChange={setEntries}
+              onAddClick={handleAddEntry}
+              addDisabled={isAddingNew}
+              isAddingNew={isAddingNew}
+              onAddingNewChange={setIsAddingNew}
+              onControlsRender={handleControlsRender}
+            />
+        )}
+        {activeTab === 'accounts' && (
+          <AccountDisplay spreadsheetId={ledger.spreadsheetId} />
+        )}
+        {activeTab === 'budgets' && (
+          <BudgetPlanList spreadsheetId={ledger.spreadsheetId} />
+        )}
+        {activeTab === 'categories' && (
+          <CategoryManagement spreadsheetId={ledger.spreadsheetId} />
+        )}
       </div>
-    </div>
+      {activeTab === 'entries' && (
+        <LedgerExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          entries={entries}
+          spreadsheetId={ledger.spreadsheetId}
+        />
+      )}
+    </>
   );
 };
 

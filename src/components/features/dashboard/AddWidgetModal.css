@@ -1,136 +1,179 @@
 /* 위젯 추가 모달 */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(3px);
+.add-widget-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
-.modal-content {
-    background-color: #f8f8f7;
-    padding: clamp(24px, 2.78vh, 36px);
-    border-radius: var(--sidebar-radius);
-    width: 85%;
-    max-width: clamp(720px, 41.67vw, 960px);
-    box-shadow: var(--shadow-base);
-    transform: scale(0.95);
-    animation: modalOpen 0.3s forwards;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-}
-
-@keyframes modalOpen {
-    to { transform: scale(1); }
+.add-widget-modal-overlay .modal-content {
+  background: var(--white-pure);
+  padding: 0;
+  border-radius: var(--sidebar-radius);
+  border: 1px solid var(--border-color);
+  width: clamp(720px, 41.67vw, 960px);
+  max-width: 90vw;
+  max-height: calc(100vh - clamp(80px, 9.26vh, 104px));
+  height: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: var(--transition-base);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(12px, 1.39vh, 18px) clamp(24px, 3.125vw, 32px);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--white-pure);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-height: clamp(44px, 5.09vh, 48px);
 }
 
 .modal-header h2 {
-    color: var(--text-dark);
-    font-size: 24px;
-    font-weight: 800;
+  margin: 0;
+  padding: 0;
+  font-size: clamp(20px, 2.31vh, 24px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  text-align: left;
+  flex: 1;
 }
 
 .close-modal {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: var(--text-light);
-    transition: all 0.3s;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
+  background: none;
+  border: none;
+  font-size: clamp(20px, 2.31vh, 24px);
+  cursor: pointer;
+  color: var(--text-light);
+  transition: var(--transition-base);
+  width: clamp(32px, 3.7vw, 40px);
+  height: clamp(32px, 3.7vw, 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--sidebar-radius-sm);
+  padding: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .close-modal:hover {
-    color: var(--error);
-    background-color: var(--lightgrey);
+  color: var(--text-dark);
+  background-color: var(--bg-gray-alt);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(24px, 2.78vh, 32px);
+  box-sizing: border-box;
+}
+
+.widget-options-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 2.78vh, 32px);
 }
 
 .widget-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 20px;
-    overflow-y: auto;
-    flex-grow: 1;
-    padding-right: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 1.85vh, 20px);
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .widget-option {
-    border: 1px solid var(--border-color);
-    padding: clamp(16px, 1.85vh, 24px) clamp(12px, 1.5vw, 20px);
-    border-radius: var(--sidebar-radius-sm);
-    text-align: center;
-    cursor: pointer;
-    transition: var(--transition-base);
-    background-color: #f8f8f7;
+  border: 1px solid var(--border-color);
+  padding: clamp(20px, 2.31vh, 24px) clamp(16px, 2.08vw, 20px);
+  border-radius: var(--sidebar-radius-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-base);
+  background-color: var(--white-pure);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 0.93vh, 12px);
+  box-sizing: border-box;
+}
+
+.widget-option:hover:not(.disabled) {
+  border-color: var(--sidebar-primary);
+  background-color: var(--bg-gray);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .widget-option.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: var(--lightgrey);
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--bg-gray);
 }
 
 .widget-option.disabled:hover {
-    transform: none;
-    box-shadow: none;
-    border-color: var(--border-color);
-}
-
-.widget-option:hover {
-    border-color: var(--sidebar-primary);
-    background-color: var(--lightgrey);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border-color);
 }
 
 .widget-option i {
-    font-size: 36px;
-    margin-bottom: 15px;
-    color: var(--sidebar-primary);
-    display: inline-block;
-    transition: all 0.3s;
+  font-size: clamp(32px, 3.7vh, 40px);
+  margin: 0;
+  color: var(--sidebar-primary);
+  display: inline-block;
+  transition: var(--transition-base);
 }
 
-.widget-option:hover i {
-    transform: scale(1.1);
+.widget-option:hover:not(.disabled) i {
+  transform: scale(1.1);
 }
 
 .widget-option h3 {
-    color: var(--text-dark);
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 8px;
+  color: var(--text-dark);
+  font-size: clamp(15px, 1.74vh, 17px);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  padding: 0;
 }
 
 .widget-option p {
-    color: var(--text-light);
-    font-size: 13px;
-    line-height: 1.4;
+  color: var(--text-light);
+  font-size: clamp(13px, 1.5vh, 15px);
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .widget-options {
-        grid-template-columns: 1fr 1fr;
-    }
+  .add-widget-modal-overlay .modal-content {
+    width: 95vw;
+    max-height: 90vh;
+  }
+
+  .widget-options {
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(12px, 1.39vh, 16px);
+  }
 }

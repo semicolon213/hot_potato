@@ -13,7 +13,7 @@
 .info-section {
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #f8f9fa;
+  background-color: var(--bg-gray-alt);
   border-radius: var(--border-radius-md);
 }
 
@@ -173,7 +173,7 @@
 
 .line-step-item.removed {
   opacity: 0.5;
-  background-color: #f5f5f5;
+  background-color: var(--bg-gray);
   text-decoration: line-through;
 }
 
@@ -306,7 +306,7 @@
 }
 
 .modal-actions .btn-secondary {
-  background-color: #f5f5f5;
+  background-color: var(--bg-gray);
   color: var(--text-dark);
 }
 
@@ -394,7 +394,7 @@
 .line-type-badge {
   font-size: 11px;
   padding: 2px 6px;
-  background-color: #f5f5f5;
+  background-color: var(--bg-gray);
   color: #666;
   border-radius: 4px;
 }
@@ -432,7 +432,7 @@
 .status-from,
 .status-to {
   padding: 2px 6px;
-  background-color: #f5f5f5;
+  background-color: var(--bg-gray);
   border-radius: 4px;
 }
 
@@ -446,8 +446,8 @@
   text-align: center;
   color: var(--text-medium);
   font-size: 14px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--white-pure);
+  border: 1px solid var(--border-color);
   border-radius: var(--sidebar-radius-sm);
 }
 

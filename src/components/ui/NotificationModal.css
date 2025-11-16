@@ -15,7 +15,7 @@
 }
 
 .notification-modal {
-  background: white;
+  background: var(--white-pure);
   border-radius: 8px;
   padding: 16px 20px;
   min-width: 300px;
@@ -47,7 +47,7 @@
 .notification-message {
   flex: 1;
   font-size: 14px;
-  color: #333;
+  color: var(--text-dark);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -56,7 +56,7 @@
   background: none;
   border: none;
   font-size: 18px;
-  color: #999;
+  color: var(--text-placeholder);
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -69,23 +69,23 @@
 }
 
 .notification-close:hover {
-  color: #333;
+  color: var(--text-dark);
 }
 
 .notification-info {
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--info);
 }
 
 .notification-success {
-  border-left: 4px solid #28a745;
+  border-left: 4px solid var(--success);
 }
 
 .notification-error {
-  border-left: 4px solid #dc3545;
+  border-left: 4px solid var(--error);
 }
 
 .notification-warning {
-  border-left: 4px solid #ffc107;
+  border-left: 4px solid var(--warning);
 }
 
 /* 확인 모달 스타일 */
@@ -104,7 +104,7 @@
 }
 
 .confirm-modal {
-  background: white;
+  background: var(--white-pure);
   border-radius: 8px;
   padding: 24px;
   min-width: 400px;
@@ -128,12 +128,12 @@
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #333;
+  color: var(--text-dark);
 }
 
 .confirm-modal-message {
   font-size: 14px;
-  color: #666;
+  color: var(--text-light);
   margin-bottom: 24px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -158,41 +158,41 @@
 }
 
 .cancel-button {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: var(--border-light);
+  color: var(--text-dark);
 }
 
 .cancel-button:hover {
-  background-color: #e0e0e0;
+  background-color: var(--border-color);
 }
 
 .primary-button {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--info);
+  color: var(--white-pure);
 }
 
 .primary-button:hover {
-  background-color: #0056b3;
+  background-color: var(--info);
 }
 
 .danger-button {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--error);
+  color: var(--white-pure);
 }
 
 .danger-button:hover {
-  background-color: #c82333;
+  background-color: var(--error);
 }
 
 .confirm-info {
-  border-top: 3px solid #007bff;
+  border-top: 3px solid var(--info);
 }
 
 .confirm-warning {
-  border-top: 3px solid #ffc107;
+  border-top: 3px solid var(--warning);
 }
 
 .confirm-danger {
-  border-top: 3px solid #dc3545;
+  border-top: 3px solid var(--error);
 }
 

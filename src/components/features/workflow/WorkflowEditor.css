@@ -34,7 +34,7 @@
   border-top-right-radius: 4px;
   border: 1px solid #ccc;
   border-bottom: none;
-  background: #f5f5f5;
+  background: var(--bg-gray);
   padding: 8px;
 }
 

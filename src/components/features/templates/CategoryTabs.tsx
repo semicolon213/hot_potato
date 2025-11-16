@@ -259,7 +259,10 @@ export function CategoryTabs({
                     
                     {/* 개인 태그들 */}
                     {personalTagList.map(tab => renderTag(tab))}
+                </div>
                     
+                {/* 태그 추가 입력 및 태그 생성 버튼 (오른쪽 정렬) */}
+                <div className="tag-actions-container">
                     {/* 기본 태그 추가 입력 (관리자 전용) */}
                     {isAdmin && addStaticTag && isAddingStatic && (
                         <div className="new-tag-input-container">
@@ -327,7 +330,6 @@ export function CategoryTabs({
                             }} className="new-tag-button cancel">취소</button>
                         </div>
                     )}
-                </div>
 
                 {!isAdding && !isAddingStatic && (
                     <div className="tag-create-wrapper" ref={createMenuRef}>
@@ -373,6 +375,7 @@ export function CategoryTabs({
                         )}
                     </div>
                 )}
+                </div>
             </div>
 
             {/* 컨텍스트 메뉴 */}

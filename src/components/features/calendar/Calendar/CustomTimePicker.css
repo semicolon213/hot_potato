@@ -2,13 +2,13 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--white-pure);
+  border: 1px solid var(--border-color);
   border-radius: clamp(6px, 0.69vh, 8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: clamp(8px, 0.93vh, 10px);
   z-index: 1001;
-  min-width: clamp(160px, 20.83vw, 180px);
+  width: clamp(100px, 13.02vw, 120px);
   font-family: inherit;
 }
 
@@ -19,7 +19,7 @@
   margin-bottom: clamp(8px, 0.93vh, 10px);
   text-align: center;
   padding-bottom: clamp(6px, 0.69vh, 8px);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .time-picker-content {
@@ -65,7 +65,7 @@
 
 .time-picker-item.selected {
   background-color: var(--sidebar-primary);
-  color: #ffffff;
+  color: var(--white-pure);
   font-weight: var(--font-weight-semibold);
 }
 

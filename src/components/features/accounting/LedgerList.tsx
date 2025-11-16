@@ -47,73 +47,61 @@ export const LedgerList: React.FC<LedgerListProps> = ({
     return (
       <div className="ledger-list-empty">
         <p>등록된 장부가 없습니다.</p>
-        {onCreateLedger && (
-          <button onClick={onCreateLedger} className="create-ledger-btn">
-            + 새 장부 만들기
-          </button>
-        )}
       </div>
     );
   }
 
   return (
-    <div className="ledger-list">
-      <div className="ledger-list-header">
-        <h2>장부 목록</h2>
-        <div className="ledger-list-actions">
-          <button onClick={refreshLedgers} className="refresh-btn">
-            새로고침
-          </button>
-          {onCreateLedger && (
-            <button onClick={onCreateLedger} className="create-ledger-btn">
-              + 새 장부 만들기
-            </button>
-          )}
-        </div>
-      </div>
-      
-      <div className="ledger-grid">
-        {ledgers.map((ledger) => (
-          <div 
-            key={ledger.folderId} 
-            className="ledger-card"
-            onClick={() => onSelectLedger?.(ledger)}
-          >
-            <h3>{ledger.folderName}</h3>
-            <div className="ledger-info">
-              <p className="ledger-date">
-                생성일: {ledger.createdDate 
-                  ? new Date(ledger.createdDate).toLocaleDateString('ko-KR')
-                  : '알 수 없음'}
-              </p>
-              <div className="ledger-status">
-                <span className={`status-icon ${ledger.spreadsheetId ? 'success' : 'error'}`}>
-                  {ledger.spreadsheetId ? '✅' : '❌'}
-                </span>
-                <span>스프레드시트</span>
-              </div>
-              <div className="ledger-status">
-                <span className={`status-icon ${ledger.evidenceFolderId ? 'success' : 'error'}`}>
-                  {ledger.evidenceFolderId ? '✅' : '❌'}
-                </span>
-                <span>증빙 폴더</span>
-              </div>
-            </div>
-            {onSelectLedger && (
-              <button 
-                className="ledger-open-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectLedger(ledger);
-                }}
+    <>
+      <div className="post-list">
+        <table className="ledger-table">
+          <colgroup>
+            <col className="col-name-width" />
+            <col className="col-date-width" />
+            <col className="col-status-width" />
+            <col className="col-status-width" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th className="col-name">장부명</th>
+              <th className="col-date">생성일</th>
+              <th className="col-status">스프레드시트</th>
+              <th className="col-status">증빙 폴더</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ledgers.map((ledger) => (
+              <tr 
+                key={ledger.folderId} 
+                className="ledger-row"
+                onClick={() => onSelectLedger?.(ledger)}
               >
-                장부 열기
-              </button>
-            )}
-          </div>
-        ))}
+                <td className="col-name">
+                  <div className="title-cell-inner">
+                    <span className="title-ellipsis">{ledger.folderName}</span>
+                  </div>
+                </td>
+                <td className="col-date">
+                  {ledger.createdDate 
+                    ? new Date(ledger.createdDate).toLocaleDateString('ko-KR')
+                    : '알 수 없음'}
+                </td>
+                <td className="col-status">
+                  <span className={`tag-badge ${ledger.spreadsheetId ? 'status-connected' : 'status-disconnected'}`}>
+                    {ledger.spreadsheetId ? '연결' : '연결불가'}
+                  </span>
+                </td>
+                <td className="col-status">
+                  <span className={`tag-badge ${ledger.evidenceFolderId ? 'status-connected' : 'status-disconnected'}`}>
+                    {ledger.evidenceFolderId ? '연결' : '연결불가'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </>
   );
 };
 

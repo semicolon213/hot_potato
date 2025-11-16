@@ -2,33 +2,156 @@
 /* 문서 모달 스타일 재사용 및 워크플로우 전용 스타일 추가 */
 
 .workflow-request-modal {
-  max-width: 800px;
+  max-width: clamp(720px, 41.67vw, 960px);
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.checkbox-label {
+.workflow-request-modal .document-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(12px, 1.39vh, 18px) clamp(24px, 3.125vw, 32px);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--white-pure);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-height: clamp(44px, 5.09vh, 48px);
+}
+
+.workflow-request-modal .document-modal-header h2 {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(20px, 2.31vh, 24px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  margin-bottom: 8px;
+  text-align: left;
+  flex: 1;
 }
 
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+.workflow-request-modal .document-modal-close {
+  background: none;
+  border: none;
+  font-size: clamp(20px, 2.31vh, 24px);
   cursor: pointer;
+  color: var(--text-light);
+  transition: var(--transition-base);
+  width: clamp(32px, 3.7vw, 40px);
+  height: clamp(32px, 3.7vw, 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--sidebar-radius-sm);
+  padding: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-.checkbox-label span {
-  font-size: 15px;
-  font-weight: 500;
+.workflow-request-modal .document-modal-close:hover {
+  color: var(--text-dark);
+  background-color: var(--bg-gray-alt);
+}
+
+.workflow-request-modal .document-modal-close span {
+  font-size: clamp(20px, 2.31vh, 24px);
+  line-height: 1;
+}
+
+.workflow-request-modal .document-modal-body {
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.workflow-request-modal .form-section {
+  width: 100%;
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.workflow-request-modal .form-section:last-child {
+  border-bottom: none;
+}
+
+.workflow-request-modal .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.56vw, 16px);
+  cursor: pointer;
+  margin: 0;
+  padding: clamp(16px, 1.85vh, 20px) 0 clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+}
+
+.workflow-request-modal .checkbox-label input[type="checkbox"] {
+  width: clamp(20px, 2.6vw, 24px);
+  height: clamp(20px, 2.6vw, 24px);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 2px solid var(--border-color);
+  border-radius: 0;
+  background-color: var(--white-pure);
+  transition: var(--transition-base);
+  position: relative;
+}
+
+.workflow-request-modal .checkbox-label input[type="checkbox"]:checked {
+  background-color: var(--sidebar-primary);
+  border-color: var(--sidebar-primary);
+}
+
+.workflow-request-modal .checkbox-label input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--white-pure);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.workflow-request-modal .checkbox-label span {
+  font-size: clamp(16px, 1.85vh, 18px);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-dark);
 }
 
-.form-hint {
-  margin: 4px 0 0 28px;
-  font-size: 13px;
-  color: var(--text-medium);
+.workflow-request-modal .form-group .form-hint {
+  margin: clamp(8px, 0.93vh, 12px) 0 0 clamp(24px, 3.125vw, 32px);
+  padding: 0;
+  font-size: clamp(13px, 1.5vh, 15px);
+  color: var(--text-light);
+  line-height: 1.5;
+}
+
+.workflow-request-modal .form-group > div[style*="marginTop"],
+.workflow-request-modal .form-group > div[style*="margin-left"] {
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .document-info {
@@ -51,30 +174,74 @@
   font-family: monospace;
 }
 
-.form-group {
-  margin-bottom: 24px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-dark);
-}
-
-.form-input {
+.workflow-request-modal .form-group {
+  margin: 0;
+  padding: 0;
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  font-size: 14px;
-  transition: border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.form-input:focus {
+.workflow-request-modal .form-group {
+  border-top: 1px solid var(--border-color);
+  padding: clamp(16px, 1.85vh, 20px) 0;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.workflow-request-modal .form-group:first-child {
+  border-top: none;
+}
+
+.workflow-request-modal .form-group:has(.user-table-container) {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.workflow-request-modal .form-group:last-child {
+  border-bottom: none;
+}
+
+.workflow-request-modal .form-group > label:not(.checkbox-label) {
+  display: block;
+  margin: 0;
+  padding: 0 0 clamp(8px, 0.93vh, 12px) clamp(24px, 3.125vw, 32px);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.workflow-request-modal .form-group .form-input {
+  width: 100%;
+  padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+  border: none !important;
+  border-radius: 0;
+  font-size: clamp(14px, 1.62vh, 16px) !important;
+  font-family: inherit !important;
+  font-weight: var(--font-weight-normal) !important;
+  color: var(--text-dark) !important;
+  transition: var(--transition-base);
+  background-color: var(--white-pure);
+  box-sizing: border-box;
+  min-height: clamp(44px, 5.09vh, 48px);
+  line-height: 1.5 !important;
+  letter-spacing: -0.01em !important;
+  text-align: left !important;
+  margin: 0;
+}
+
+.workflow-request-modal .form-group .form-input:focus {
   outline: none;
-  border-color: var(--primary);
+  background-color: var(--white-pure);
+}
+
+.workflow-request-modal .form-input::placeholder {
+  color: var(--text-light);
+  opacity: 1;
 }
 
 .line-section {
@@ -135,19 +302,42 @@
   flex-shrink: 0;
 }
 
-.form-select {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  font-size: 14px;
-  background-color: white;
+.workflow-request-modal .form-select {
+  width: 100%;
+  padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+  border: none !important;
+  border-radius: 0;
+  font-size: clamp(14px, 1.62vh, 16px) !important;
+  font-family: inherit !important;
+  font-weight: var(--font-weight-normal) !important;
+  color: var(--text-dark) !important;
+  transition: var(--transition-base);
+  background-color: var(--white-pure);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right clamp(24px, 3.125vw, 32px) center;
+  background-repeat: no-repeat;
+  background-size: 16px;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-sizing: border-box;
+  min-height: clamp(44px, 5.09vh, 48px);
+  line-height: 1.5 !important;
+  letter-spacing: -0.01em !important;
+  text-align: left !important;
+  margin: 0;
+  padding-right: clamp(48px, 6.25vw, 64px) !important;
 }
 
-.form-select:focus {
+.workflow-request-modal .form-select:focus {
   outline: none;
-  border-color: var(--primary);
+  background-color: var(--white-pure);
+}
+
+.workflow-request-modal .form-select option {
+  color: var(--text-dark) !important;
+  background-color: var(--white-pure) !important;
 }
 
 .btn-remove-step {
@@ -166,55 +356,72 @@
   background-color: #d32f2f;
 }
 
-.modal-footer {
+.workflow-request-modal .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 32px;
-  padding-top: 20px;
+  gap: clamp(10px, 1.25vw, 12px);
+  margin: 0;
+  padding: clamp(20px, 2.31vh, 24px) clamp(24px, 3.125vw, 32px);
   border-top: 1px solid var(--border-color);
+  background-color: var(--white-pure);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-.btn-secondary {
-  padding: 10px 20px;
-  background-color: white;
+.workflow-request-modal .btn-secondary {
+  padding: clamp(10px, 1.16vh, 14px) clamp(16px, 2.08vw, 24px);
+  background-color: var(--white-pure);
   color: var(--text-dark);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(80px, 10.42vw, 100px);
+  box-sizing: border-box;
 }
 
-.btn-secondary:hover {
-  background-color: var(--bg-light);
+.workflow-request-modal .btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-gray-alt);
+  border-color: var(--border-color-alt);
 }
 
-.btn-secondary:disabled {
+.workflow-request-modal .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-primary {
-  padding: 10px 20px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-md);
-  font-size: 14px;
-  font-weight: 500;
+.workflow-request-modal .btn-primary {
+  padding: clamp(10px, 1.16vh, 14px) clamp(16px, 2.08vw, 24px);
+  background-color: var(--sidebar-primary);
+  color: var(--white-pure);
+  border: 1px solid var(--sidebar-primary);
+  border-radius: var(--sidebar-radius-sm);
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(80px, 10.42vw, 100px);
+  box-sizing: border-box;
 }
 
-.btn-primary:hover {
-  background-color: var(--primary-dark);
+.workflow-request-modal .btn-primary:hover:not(:disabled) {
+  background-color: var(--gray-dark);
+  border-color: var(--gray-dark);
+  transform: translateY(-1px);
 }
 
-.btn-primary:disabled {
+.workflow-request-modal .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .loading-documents {
@@ -225,76 +432,92 @@
 }
 
 /* 회원 목록 테이블 스타일 */
-.user-table-container {
-  margin-top: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
+.workflow-request-modal .user-table-container {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--white-pure);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.user-table-header {
+.workflow-request-modal .user-table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background-color: var(--bg-light);
+  padding: clamp(12px, 1.39vh, 16px) clamp(24px, 3.125vw, 32px);
+  background-color: var(--white-pure);
+  border: none;
   border-bottom: 1px solid var(--border-color);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-dark);
+  margin: 0;
 }
 
-.user-count {
-  color: var(--primary);
-  font-weight: 600;
+.workflow-request-modal .user-count {
+  color: var(--sidebar-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
-.user-table {
-  max-height: 300px;
+.workflow-request-modal .user-table {
+  max-height: clamp(200px, 23.15vh, 240px);
   overflow-y: auto;
-}
-
-.user-table-row {
+  background-color: var(--white-pure);
   display: flex;
-  border-bottom: 1px solid var(--border-light);
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
-.user-table-row:last-child {
-  border-bottom: none;
+.workflow-request-modal .user-table-row {
+  display: flex;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--white-pure);
 }
 
-.user-table-header-row {
-  background-color: var(--table-header-bg);
-  font-weight: 600;
-  font-size: 13px;
+.workflow-request-modal .user-table-row:last-child {
+  border-bottom: none !important;
+}
+
+.workflow-request-modal .user-table-header-row {
+  background-color: var(--white-pure);
+  font-weight: var(--font-weight-semibold);
+  font-size: clamp(13px, 1.5vh, 15px);
   color: var(--text-dark);
   position: sticky;
   top: 0;
   z-index: 1;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.user-table-data-row {
+.workflow-request-modal .user-table-data-row {
   cursor: pointer;
   transition: background-color 0.2s;
+  background-color: var(--white-pure);
 }
 
-.user-table-data-row:hover {
-  background-color: var(--bg-light);
+.workflow-request-modal .user-table-data-row:hover {
+  background-color: var(--bg-gray-alt);
 }
 
-.user-table-cell {
-  padding: 12px 16px;
-  font-size: 14px;
+.workflow-request-modal .user-table-cell {
+  padding: clamp(8px, 0.93vh, 12px) clamp(24px, 3.125vw, 32px);
+  font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-dark);
   display: flex;
   align-items: center;
+  background-color: transparent;
 }
 
-.user-table-header-row .user-table-cell {
-  color: var(--text-medium);
-  font-size: 13px;
-  padding: 10px 16px;
+.workflow-request-modal .user-table-header-row .user-table-cell {
+  color: var(--text-dark);
+  font-size: clamp(13px, 1.5vh, 15px);
+  padding: clamp(8px, 0.93vh, 12px) clamp(24px, 3.125vw, 32px);
 }
 
 /* 추가된 사용자 목록 스타일 */

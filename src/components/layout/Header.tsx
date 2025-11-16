@@ -112,6 +112,14 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
         </div>
       );
     }
+    // announcement-view 페이지인 경우 breadcrumb-child를 제거하고 상위 섹션만 표시
+    if (parts.length === 2 && currentPage === 'announcement-view') {
+      return (
+        <div className="page-section-label" data-oid="page-section-label">
+          <span className="breadcrumb-parent">{parts[0]}</span>
+        </div>
+      );
+    }
     // 하위 메뉴 탭이 없는 경우 기존대로 표시
     if (parts.length === 2) {
       return (
