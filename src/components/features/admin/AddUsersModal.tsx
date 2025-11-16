@@ -315,62 +315,60 @@ const AddUsersModal: React.FC<AddUsersModalProps> = ({
           {/* 직접 입력 탭 */}
           {activeTab === 'manual' && (
             <div className="manual-input-section">
-              <div className="section-header">
-                <button
-                  type="button"
-                  onClick={handleAddRow}
-                  className="add-row-btn"
-                  disabled={isLoading}
-                >
-                  + 행 추가
-                </button>
+              <div className="users-list-header">
+                <div className="header-col header-col-id">학번/교번</div>
+                <div className="header-col header-col-name">이름</div>
+                <div className="header-col header-col-action">작업</div>
+                <div className="header-col header-col-add">
+                  <button
+                    type="button"
+                    onClick={handleAddRow}
+                    className="add-row-btn"
+                    disabled={isLoading}
+                  >
+                    항목 추가
+                  </button>
+                </div>
               </div>
-
-              <div className="users-table">
-                <div className="table-header">
-                  <div className="table-cell">학번/교번</div>
-                  <div className="table-cell">이름</div>
-                  <div className="table-cell">작업</div>
-                </div>
-                <div className="table-body">
-                  {users.map((user, index) => (
-                    <div key={index} className="table-row">
-                      <div className="table-cell">
-                        <input
-                          type="text"
-                          value={user.no_member}
-                          onChange={(e) => handleUserChange(index, 'no_member', e.target.value)}
-                          placeholder="예: 20230701"
-                          disabled={isLoading}
-                          className={validationErrors[index] ? 'error' : ''}
-                        />
-                      </div>
-                      <div className="table-cell">
-                        <input
-                          type="text"
-                          value={user.name_member}
-                          onChange={(e) => handleUserChange(index, 'name_member', e.target.value)}
-                          placeholder="예: 홍길동"
-                          disabled={isLoading}
-                          className={validationErrors[index] ? 'error' : ''}
-                        />
-                      </div>
-                      <div className="table-cell">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRow(index)}
-                          disabled={isLoading || users.length === 1}
-                          className="remove-row-btn"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                      {validationErrors[index] && (
-                        <div className="row-error">{validationErrors[index]}</div>
-                      )}
+              <div className="users-list-body">
+                {users.map((user, index) => (
+                  <div key={index} className="user-row">
+                    <div className="user-col user-col-id">
+                      <input
+                        type="text"
+                        value={user.no_member}
+                        onChange={(e) => handleUserChange(index, 'no_member', e.target.value)}
+                        placeholder="예: 20230701"
+                        disabled={isLoading}
+                        className={validationErrors[index] ? 'error' : ''}
+                      />
                     </div>
-                  ))}
-                </div>
+                    <div className="user-col user-col-name">
+                      <input
+                        type="text"
+                        value={user.name_member}
+                        onChange={(e) => handleUserChange(index, 'name_member', e.target.value)}
+                        placeholder="예: 홍길동"
+                        disabled={isLoading}
+                        className={validationErrors[index] ? 'error' : ''}
+                      />
+                    </div>
+                    <div className="user-col user-col-action">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRow(index)}
+                        disabled={isLoading || users.length === 1}
+                        className="remove-row-btn"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                    <div className="user-col user-col-add"></div>
+                    {validationErrors[index] && (
+                      <div className="row-error">{validationErrors[index]}</div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}

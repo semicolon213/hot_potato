@@ -588,13 +588,13 @@
 }
 
 .modal-form-section {
-    padding: clamp(16px, 1.85vh, 20px) clamp(24px, 3.125vw, 32px);
+    padding: clamp(24px, 2.78vh, 32px) clamp(24px, 3.125vw, 32px);
     border-bottom: 1px solid var(--border-color);
     box-sizing: border-box;
 }
 
 .modal-form-section:first-child {
-    padding-top: 0;
+    padding-top: clamp(24px, 2.78vh, 32px);
 }
 
 .modal-form-section:last-child {
