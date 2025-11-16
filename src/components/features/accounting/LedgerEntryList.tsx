@@ -10,7 +10,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { getLedgerEntries, getAccounts, getCategories, deleteLedgerEntry, createLedgerEntry, updateLedgerEntry } from '../../../utils/database/accountingManager';
 import { LedgerExportModal } from './LedgerExportModal';
 import TableColumnFilter, { type SortDirection, type FilterOption } from '../../ui/common/TableColumnFilter';
-import { FaDownload, FaPlus, FaFilter, FaTimes, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaDownload, FaPlus, FaFilter, FaTimes, FaEdit, FaTrash, FaPaperclip } from 'react-icons/fa';
 import type { LedgerEntry, LedgerEntryFilter, Account, Category, CreateLedgerEntryRequest, UpdateLedgerEntryRequest } from '../../../types/features/accounting';
 import './accounting.css';
 
@@ -440,7 +440,28 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   };
 
   const formatMonthKey = (dateString: string) => {
-    const date = new Date(dateString);
+    if (!dateString) return '';
+    
+    // ISO 형식 또는 YYYY-MM-DD 형식 처리
+    let date: Date;
+    if (dateString.includes('T')) {
+      // ISO 형식: "2024-01-15T00:00:00.000Z"
+      date = new Date(dateString);
+    } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // YYYY-MM-DD 형식: "2024-01-15"
+      const [year, month, day] = dateString.split('-').map(Number);
+      date = new Date(year, month - 1, day);
+    } else {
+      // 기타 형식 시도
+      date = new Date(dateString);
+    }
+    
+    // 유효한 날짜인지 확인
+    if (isNaN(date.getTime())) {
+      console.warn('⚠️ 유효하지 않은 날짜:', dateString);
+      return '';
+    }
+    
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   };
 
@@ -570,6 +591,11 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   const groupedByMonth = useMemo(() => {
     const grouped = filteredEntries.reduce((acc, entry) => {
       const monthKey = formatMonthKey(entry.date);
+      // 빈 monthKey는 무시
+      if (!monthKey) {
+        console.warn('⚠️ 월별 그룹화 실패 - 유효하지 않은 날짜:', entry.date);
+        return acc;
+      }
       if (!acc[monthKey]) {
         acc[monthKey] = [];
       }
@@ -582,6 +608,9 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       grouped[monthKey].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
+        if (isNaN(dateA) || isNaN(dateB)) {
+          return 0;
+        }
         if (dateA !== dateB) {
           return dateA - dateB; // 날짜가 빠른 순서대로
         }
@@ -595,15 +624,25 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
     return grouped;
   }, [filteredEntries]);
 
-  // 현재 연도의 1월부터 12월까지 모든 월 생성
-  const currentYear = new Date().getFullYear();
+  // 항목이 있는 월만 포함한 월 목록 생성 (오름차순 정렬)
   const sortedMonths = useMemo(() => {
-    const months: string[] = [];
-    for (let month = 1; month <= 12; month++) {
-      months.push(`${currentYear}-${String(month).padStart(2, '0')}`);
-    }
+    // 실제 데이터에 있는 월만 포함
+    const monthsWithEntries = Object.keys(groupedByMonth).filter(monthKey => {
+      return monthKey && groupedByMonth[monthKey] && groupedByMonth[monthKey].length > 0;
+    });
+    
+    // 정렬: 연도 오름차순, 월 오름차순 (과거 월이 먼저)
+    const months = monthsWithEntries.sort((a, b) => {
+      const [yearA, monthA] = a.split('-').map(Number);
+      const [yearB, monthB] = b.split('-').map(Number);
+      if (yearA !== yearB) {
+        return yearA - yearB; // 연도 오름차순
+      }
+      return monthA - monthB; // 월 오름차순
+    });
+    
     return months;
-  }, [currentYear]);
+  }, [groupedByMonth]);
 
   // 선택된 탭이 없으면 첫 번째 월을 자동 선택
   useEffect(() => {
@@ -1150,7 +1189,12 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                             />
                           </td>
                           <td className="cell-evidence">
+                            <label htmlFor="new-entry-evidence-file" className="file-input-label">
+                              <FaPaperclip />
+                              <span>파일 선택</span>
+                            </label>
                             <input
+                              id="new-entry-evidence-file"
                               type="file"
                               onChange={(e) => setNewEntryEvidenceFile(e.target.files?.[0] || null)}
                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -1335,7 +1379,12 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
                             <td className="cell-evidence">
                               {isEditing ? (
                                 <>
+                                  <label htmlFor={`edit-entry-evidence-file-${entry.entryId}`} className="file-input-label">
+                                    <FaPaperclip />
+                                    <span>파일 선택</span>
+                                  </label>
                                   <input
+                                    id={`edit-entry-evidence-file-${entry.entryId}`}
                                     type="file"
                                     onChange={(e) => setEditingEntryEvidenceFile(e.target.files?.[0] || null)}
                                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"

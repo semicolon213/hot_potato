@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus } from 'react-icons/fa';
 import { LedgerEntryList } from './LedgerEntryList';
 import { CategoryManagement } from './CategoryManagement';
 import { AccountDisplay } from './AccountDisplay';
@@ -201,9 +201,10 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
                 const currentIndex = entryListControls.sortedMonths.findIndex(
                   m => m === entryListControls.selectedMonthTab
                 );
-                // 3개씩 앞으로 이동
-                const newIndex = Math.max(0, currentIndex - 3);
-                entryListControls.onMonthTabChange(entryListControls.sortedMonths[newIndex]);
+                // 1개씩 앞으로 이동 (이전 월)
+                if (currentIndex > 0) {
+                  entryListControls.onMonthTabChange(entryListControls.sortedMonths[currentIndex - 1]);
+                }
               }}
               disabled={entryListControls.sortedMonths.findIndex(m => m === entryListControls.selectedMonthTab) === 0}
             >
@@ -226,20 +227,32 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
                 const currentIndex = entryListControls.sortedMonths.findIndex(
                   m => m === entryListControls.selectedMonthTab
                 );
-                // 3개씩 뒤로 이동
-                const newIndex = Math.min(entryListControls.sortedMonths.length - 1, currentIndex + 3);
-                entryListControls.onMonthTabChange(entryListControls.sortedMonths[newIndex]);
+                // 1개씩 뒤로 이동 (다음 월)
+                if (currentIndex < entryListControls.sortedMonths.length - 1) {
+                  entryListControls.onMonthTabChange(entryListControls.sortedMonths[currentIndex + 1]);
+                }
               }}
               disabled={entryListControls.sortedMonths.findIndex(m => m === entryListControls.selectedMonthTab) === entryListControls.sortedMonths.length - 1}
             >
               <FaChevronRight />
             </button>
           </div>
-          {entryListControls.finalBalance !== undefined && (
-            <button className="tab-button final-balance-tab" disabled>
-              최종 잔액: {entryListControls.finalBalance.toLocaleString()}원
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            {entryListControls.finalBalance !== undefined && (
+              <button className="tab-button final-balance-tab" disabled>
+                최종 잔액: {entryListControls.finalBalance.toLocaleString()}원
+              </button>
+            )}
+            <button
+              className="add-entry-btn"
+              onClick={handleAddEntry}
+              disabled={isAddingNew}
+              title="항목 추가"
+            >
+              <FaPlus />
+              <span>항목 추가</span>
             </button>
-          )}
+          </div>
         </div>
       )}
 

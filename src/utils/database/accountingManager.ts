@@ -812,11 +812,19 @@ export const getLedgerEntries = async (
         if (filters.category && entry.category !== filters.category) {
           continue;
         }
-        if (filters.startDate && entry.date < filters.startDate) {
-          continue;
+        if (filters.startDate) {
+          const entryDate = new Date(entry.date).getTime();
+          const startDate = new Date(filters.startDate).getTime();
+          if (isNaN(entryDate) || isNaN(startDate) || entryDate < startDate) {
+            continue;
+          }
         }
-        if (filters.endDate && entry.date > filters.endDate) {
-          continue;
+        if (filters.endDate) {
+          const entryDate = new Date(entry.date).getTime();
+          const endDate = new Date(filters.endDate).getTime();
+          if (isNaN(entryDate) || isNaN(endDate) || entryDate > endDate) {
+            continue;
+          }
         }
         if (filters.transactionType && entry.transactionType !== filters.transactionType) {
           continue;
