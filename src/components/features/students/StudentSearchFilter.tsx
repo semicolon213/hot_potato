@@ -50,6 +50,13 @@ const StudentSearchFilter: React.FC<StudentSearchFilterProps> = ({
             placeholder={isStaffMode ? "이름, 교번, 구분으로 검색..." : "이름, 학번, 주소, 직책으로 검색..."}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter 키를 눌렀을 때 기본 동작(페이지 이동 등)을 막음
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
             className="search-input"
           />
           {searchTerm && (

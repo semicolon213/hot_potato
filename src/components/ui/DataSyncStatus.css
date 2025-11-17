@@ -3,84 +3,32 @@
  * @brief DataSyncStatus 컴포넌트 스타일
  */
 
-.data-sync-status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  color: #666;
-}
-
-.sync-time {
+.data-sync-container {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.sync-label {
-  font-weight: 500;
-  color: #888;
-}
-
-.sync-time-value {
-  color: #666;
-  cursor: help;
-  user-select: none;
-}
-
-.sync-time-value:hover {
-  color: #333;
-}
-
-.sync-refresh-btn {
+.data-sync-status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: white;
+  gap: 0;
+  font-size: 13px;
   color: #666;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
 }
 
-.sync-refresh-btn:hover:not(:disabled) {
-  background: #f5f5f5;
-  border-color: #bbb;
-  color: #333;
+.sync-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  color: #999;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
 }
 
-.sync-refresh-btn:active:not(:disabled) {
-  background: #eee;
-  transform: scale(0.95);
-}
-
-.sync-refresh-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.sync-refresh-btn.refreshing {
-  border-color: #4CAF50;
-  background: #f1f8f4;
-}
-
-.sync-refresh-btn.success {
-  border-color: #4CAF50;
-  background: #f1f8f4;
-}
-
-.refresh-icon {
-  font-size: 14px;
-  transition: transform 0.3s ease;
-}
-
-.refresh-icon.spinning {
+.sync-icon.spinning {
   animation: spin 1s linear infinite;
+  color: #4CAF50;
 }
 
 @keyframes spin {
@@ -92,18 +40,91 @@
   }
 }
 
-.success-icon {
-  position: absolute;
+.sync-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #666;
+  cursor: help;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sync-text:hover {
+  color: #333;
+}
+
+.sync-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.refresh-icon {
   font-size: 12px;
+  width: 12px;
+  height: 12px;
+  transition: transform 0.3s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-icon.spinning {
+  animation: spin 1s linear infinite;
   color: #4CAF50;
+}
+
+.sync-refresh-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+.sync-refresh-btn:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.sync-refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sync-refresh-btn.refreshing {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.sync-refresh-btn.success {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.success-icon,
+.error-icon {
+  font-size: 10px;
+  position: absolute;
   animation: fadeIn 0.3s ease;
 }
 
+.success-icon {
+  color: #4CAF50;
+}
+
 .error-icon {
-  position: absolute;
-  font-size: 12px;
   color: #f44336;
-  animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -117,33 +138,35 @@
   }
 }
 
-.sync-error-message {
-  font-size: 11px;
-  color: #f44336;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .data-sync-status {
-    font-size: 11px;
-    gap: 8px;
+  .data-sync-container {
+    gap: 5px;
   }
 
-  .sync-time {
-    gap: 4px;
+  .data-sync-status {
+    font-size: 12px;
+    gap: 0;
+  }
+
+  .sync-text {
+    font-size: 12px;
+  }
+
+  .sync-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
   }
 
   .sync-refresh-btn {
-    width: 28px;
-    height: 28px;
+    width: 18px;
+    height: 18px;
   }
 
   .refresh-icon {
     font-size: 12px;
+    width: 12px;
+    height: 12px;
   }
 }
-

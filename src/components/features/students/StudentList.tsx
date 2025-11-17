@@ -9,7 +9,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { StudentWithCouncil } from '../../../types/features/students/student';
 import TableColumnFilter, { type SortDirection, type FilterOption } from '../../../components/ui/common/TableColumnFilter';
-import { FaFilter, FaTimes, FaPlus } from 'react-icons/fa';
+import { FaFilter, FaTimes } from 'react-icons/fa';
 import '../../../styles/pages/DocumentManagement.css';
 import '../../../styles/pages/Students.css';
 
@@ -487,32 +487,6 @@ const StudentList: React.FC<StudentListProps> = ({
 
   return (
     <div className="student-list-section">
-      {/* 추가 버튼 */}
-      {(onAddStudent || onAddStaff || onAddCommittee) && (
-        <div className="student-list-add-button-container">
-          <button 
-            className="student-add-button"
-            onClick={() => {
-              if (isStaffMode) {
-                if (staffTabType === 'committee') {
-                  onAddCommittee?.();
-                } else {
-                  onAddStaff?.();
-                }
-              } else {
-                onAddStudent?.();
-              }
-            }}
-            title={isStaffMode ? (staffTabType === 'committee' ? '위원회 추가' : '교직원 추가') : '학생 추가'}
-          >
-            <FaPlus className="add-icon" />
-            <span className="add-button-text">
-              {isStaffMode ? (staffTabType === 'committee' ? '위원회 추가' : '교직원 추가') : '학생 추가'}
-            </span>
-          </button>
-        </div>
-      )}
-      
       <div className="student-table-container">
         <table className="document-table student-table">
           <colgroup>
@@ -646,6 +620,7 @@ const StudentList: React.FC<StudentListProps> = ({
             selectedFilters={config.selectedFilters || []}
             onFilterChange={(filters) => handleFilterChange(col.key, filters)}
             onClearFilters={() => handleClearFilters(col.key, { stopPropagation: () => {} } as React.MouseEvent)}
+            isStaffMode={isStaffMode}
           />
         );
       })}

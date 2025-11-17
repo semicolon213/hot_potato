@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { FaListUl, FaUsers, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus } from 'react-icons/fa';
 import { useStudentManagement } from '../hooks/features/students/useStudentManagement';
 import StudentDetailModal from '../components/ui/StudentDetailModal';
 import {
@@ -14,12 +14,13 @@ import '../styles/pages/Students.css';
 interface StudentsProps {
   onPageChange: (pageName: string) => void;
   studentSpreadsheetId: string | null;
+  initialTab?: 'list' | 'council';
   user?: {
     userType?: string;
   } | null;
 }
 
-const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
+const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user, initialTab = 'list', onPageChange }) => {
   const {
     students,
     filteredStudents,
@@ -44,7 +45,14 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
     fetchStudents
   } = useStudentManagement(studentSpreadsheetId);
 
-  const [activeTab, setActiveTab] = useState<'list' | 'council'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'council'>(initialTab);
+  
+  // initialTab이 변경되면 activeTab 업데이트
+  useEffect(() => {
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, activeTab]);
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedStudent, setSelectedStudent] = useState<StudentWithCouncil | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,22 +229,14 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
               />
             </div>
             <div className="action-right">
-              <div className="tab-buttons">
-                <button 
-                  className={`tab-button tab-button-list ${activeTab === 'list' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('list')}
-                >
-                  <FaListUl className="tab-icon" />
-                  <span className="btn-text">학생 목록</span>
-                </button>
-                <button 
-                  className={`tab-button tab-button-council ${activeTab === 'council' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('council')}
-                >
-                  <FaUsers className="tab-icon" />
-                  <span className="btn-text">학생회</span>
-                </button>
-              </div>
+              <button 
+                className="student-add-button"
+                onClick={handleAddStudent}
+                title="학생 추가"
+              >
+                <FaPlus className="add-icon" />
+                <span className="add-button-text">학생 추가</span>
+              </button>
             </div>
           </div>
 
@@ -263,62 +263,46 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user }) => {
                 totalCount={allCouncilData.length}
               />
             </div>
-            <div className="action-right">
-              <div className="tab-buttons">
-                <button 
-                  className={`tab-button tab-button-list ${activeTab === 'list' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('list')}
-                >
-                  <FaListUl className="tab-icon" />
-                  <span className="btn-text">학생 목록</span>
-                </button>
-                <button 
-                  className={`tab-button tab-button-council ${activeTab === 'council' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('council')}
-                >
-                  <FaUsers className="tab-icon" />
-                  <span className="btn-text">학생회</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 년도별 탭 (장부 항목 표기 방식과 동일) */}
-          {sortedYears.length > 0 && (
-            <div className="year-tabs" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 1.56vw, 16px)', marginBottom: 'clamp(16px, 1.85vh, 20px)', padding: 0 }}>
-              <button
-                className="year-nav-btn"
-                onClick={() => {
-                  const currentIndex = sortedYears.findIndex(y => y === selectedYear);
-                  if (currentIndex > 0) {
-                    setSelectedYear(sortedYears[currentIndex - 1]);
-                  }
-                }}
-                disabled={sortedYears.findIndex(y => y === selectedYear) === 0}
-              >
-                <FaChevronLeft />
-              </button>
-              {selectedYear && (
-                <div className="year-display">
-                  <span className="year-display-item active">
-                    {selectedYear}년 ({getYearStudentCount(selectedYear)})
-                  </span>
+            {sortedYears.length > 0 && (
+              <div className="action-right">
+                <div className="council-year-navigation">
+                  <button
+                    className="council-year-nav-btn"
+                    onClick={() => {
+                      const currentIndex = sortedYears.findIndex(y => y === selectedYear);
+                      if (currentIndex > 0) {
+                        setSelectedYear(sortedYears[currentIndex - 1]);
+                      }
+                    }}
+                    disabled={sortedYears.findIndex(y => y === selectedYear) === 0}
+                    title="이전 년도"
+                  >
+                    <FaChevronLeft />
+                  </button>
+                  {selectedYear && (
+                    <div className="council-year-display">
+                      <span className="council-year-text">
+                        {selectedYear}년 ({getYearStudentCount(selectedYear)})
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    className="council-year-nav-btn"
+                    onClick={() => {
+                      const currentIndex = sortedYears.findIndex(y => y === selectedYear);
+                      if (currentIndex < sortedYears.length - 1) {
+                        setSelectedYear(sortedYears[currentIndex + 1]);
+                      }
+                    }}
+                    disabled={sortedYears.findIndex(y => y === selectedYear) === sortedYears.length - 1}
+                    title="다음 년도"
+                  >
+                    <FaChevronRight />
+                  </button>
                 </div>
-              )}
-              <button
-                className="year-nav-btn"
-                onClick={() => {
-                  const currentIndex = sortedYears.findIndex(y => y === selectedYear);
-                  if (currentIndex < sortedYears.length - 1) {
-                    setSelectedYear(sortedYears[currentIndex + 1]);
-                  }
-                }}
-                disabled={sortedYears.findIndex(y => y === selectedYear) === sortedYears.length - 1}
-              >
-                <FaChevronRight />
-              </button>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           <StudentList
             students={filteredCouncilData}

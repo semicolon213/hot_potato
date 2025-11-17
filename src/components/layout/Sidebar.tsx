@@ -183,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
           </div>
 
           <div
-            className={`menu-item menu-item-with-submenu ${isParentActive("personnel", ["students", "staff"]) ? "active" : ""}`}
+            className={`menu-item menu-item-with-submenu ${isParentActive("personnel", ["students", "students_council", "staff", "staff_committee"]) ? "active" : ""}`}
             onClick={() => handleMenuClick("personnel", true)}
           >
             <UserIcon className="menu-icon" />

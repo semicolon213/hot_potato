@@ -274,9 +274,6 @@ const PageRenderer: React.FC<PageRendererProps> = ({
         return <Dashboard 
           hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
           user={user}
-          lastSyncTime={lastSyncTime || undefined}
-          onRefresh={onRefresh}
-          isRefreshing={isRefreshing}
         />;
       case 'accounting':
         return <Accounting />;
@@ -285,11 +282,23 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'students':
         return <Students
           onPageChange={onPageChange}
-          studentSpreadsheetId={studentSpreadsheetId} />;
+          studentSpreadsheetId={studentSpreadsheetId}
+          initialTab="list" />;
+      case 'students_council':
+        return <Students
+          onPageChange={onPageChange}
+          studentSpreadsheetId={studentSpreadsheetId}
+          initialTab="council" />;
       case 'staff':
         return <Staff
           onPageChange={onPageChange}
-          staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+          staffSpreadsheetId={hotPotatoDBSpreadsheetId}
+          initialTab="staff" />;
+      case 'staff_committee':
+        return <Staff
+          onPageChange={onPageChange}
+          staffSpreadsheetId={hotPotatoDBSpreadsheetId}
+          initialTab="committee" />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':

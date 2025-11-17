@@ -103,7 +103,7 @@
   background-color: var(--sidebar-primary, #1a1a1a);
   color: var(--white-pure, #fff);
   border: none;
-  border-radius: var(--sidebar-radius-sm, 6px);
+  border-radius: clamp(6px, 0.69vh, 8px);
   font-size: clamp(13px, 1.5vh, 14px);
   font-weight: var(--font-weight-medium, 500);
   cursor: pointer;
@@ -112,6 +112,7 @@
 
 .student-add-button:hover {
   background-color: var(--sidebar-hover-bg, #2a2a2a);
+  color: var(--text-dark, #000);
 }
 
 .student-add-button .add-icon {
@@ -771,7 +772,7 @@
   flex-wrap: wrap;
 }
 
-.export-btn, .template-btn, .import-btn {
+.export-btn, .template-btn, .import-btn, .add-btn {
   position: relative;
   padding: clamp(8px, 0.93vh, 12px) clamp(14px, 1.82vw, 20px);
   border: none !important;
@@ -925,6 +926,29 @@
   opacity: 0.6;
 }
 
+.add-btn::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background-color: var(--sidebar-primary);
+  transition: width 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
+}
+
+.add-btn:hover {
+  color: var(--text-dark);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.add-btn:hover::before {
+  width: calc(100% - clamp(28px, 3.65vw, 40px));
+  opacity: 0.6;
+}
+
 .btn-icon {
   font-size: clamp(14px, 1.62vh, 16px);
   color: inherit;
@@ -946,6 +970,7 @@
 .action-right {
   display: flex;
   align-items: center;
+  margin-left: auto;
 }
 
 .result-info {
@@ -1256,4 +1281,61 @@
   height: clamp(36px, 4.17vh, 44px);
   color: var(--text-medium);
   font-size: clamp(13px, 1.51vh, 15px);
+}
+
+/* 학생회 페이지 년도 이동 네비게이션 */
+.council-year-navigation {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.04vw, 12px);
+  padding: 0;
+  margin: 0;
+}
+
+.council-year-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(32px, 3.7vh, 36px);
+  height: clamp(32px, 3.7vh, 36px);
+  padding: 0;
+  border: none;
+  border-radius: clamp(6px, 0.69vh, 8px);
+  background-color: var(--bg-white);
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  box-sizing: border-box;
+}
+
+.council-year-nav-btn svg {
+  width: clamp(14px, 1.62vh, 16px);
+  height: clamp(14px, 1.62vh, 16px);
+  color: inherit;
+}
+
+.council-year-nav-btn:hover:not(:disabled) {
+  background-color: var(--bg-gray-alt);
+  color: var(--text-dark);
+}
+
+.council-year-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: var(--bg-gray);
+}
+
+.council-year-display {
+  display: flex;
+  align-items: center;
+  padding: clamp(6px, 0.69vh, 8px) clamp(12px, 1.56vw, 16px);
+  min-height: clamp(32px, 3.7vh, 36px);
+  box-sizing: border-box;
+}
+
+.council-year-text {
+  font-size: clamp(14px, 1.62vh, 16px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-dark);
+  white-space: nowrap;
 }

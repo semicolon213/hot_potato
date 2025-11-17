@@ -7,7 +7,6 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { FaListUl, FaUsers } from 'react-icons/fa';
 import { useStaffOnly } from '../hooks/features/staff/useStaffOnly';
 import { useCommitteeOnly } from '../hooks/features/staff/useCommitteeOnly';
 import StudentDetailModal from '../components/ui/StudentDetailModal';
@@ -50,9 +49,10 @@ interface ConvertedData {
 interface StaffProps {
   onPageChange: (pageName: string) => void;
   staffSpreadsheetId: string | null;
+  initialTab?: 'staff' | 'committee';
 }
 
-const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
+const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId, initialTab = 'staff', onPageChange }) => {
   // Modal states
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [isAddCommitteeModalOpen, setIsAddCommitteeModalOpen] = useState(false);
@@ -105,7 +105,14 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
   };
 
   // Tab and data conversion logic
-  const [activeTab, setActiveTab] = useState<'staff' | 'committee'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'committee'>(initialTab);
+  
+  // initialTab이 변경되면 activeTab 업데이트
+  React.useEffect(() => {
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, activeTab]);
   const currentHook = activeTab === 'staff' ? staffHook : committeeHook;
 
   const mainClassifications = useMemo(() => ["전임교수", "조교", "외부강사", "겸임교수", "시간강사"], []);
@@ -260,24 +267,6 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
                 totalCount={staffHook.totalStaff}
               />
             </div>
-            <div className="action-right">
-              <div className="tab-buttons">
-                <button 
-                  className={`tab-button tab-button-staff ${activeTab === 'staff' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('staff')}
-                >
-                  <FaListUl className="tab-icon" />
-                  <span className="btn-text">교직원 목록</span>
-                </button>
-                <button 
-                  className={`tab-button tab-button-committee ${activeTab === 'committee' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('committee')}
-                >
-                  <FaUsers className="tab-icon" />
-                  <span className="btn-text">학과 위원회</span>
-                </button>
-              </div>
-            </div>
           </div>
 
           <StudentList
@@ -304,24 +293,6 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId }) => {
                 filteredCount={committeeHook.filteredCommitteeCount}
                 totalCount={committeeHook.totalCommittee}
               />
-            </div>
-            <div className="action-right">
-              <div className="tab-buttons">
-                <button 
-                  className={`tab-button tab-button-staff ${activeTab === 'staff' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('staff')}
-                >
-                  <FaListUl className="tab-icon" />
-                  <span className="btn-text">교직원 목록</span>
-                </button>
-                <button 
-                  className={`tab-button tab-button-committee ${activeTab === 'committee' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('committee')}
-                >
-                  <FaUsers className="tab-icon" />
-                  <span className="btn-text">학과 위원회</span>
-                </button>
-              </div>
             </div>
           </div>
 

@@ -3,7 +3,6 @@ import "../styles/pages/Dashboard.css";
 import WidgetGrid from "../components/features/dashboard/WidgetGrid";
 import AddWidgetModal from "../components/features/dashboard/AddWidgetModal";
 import SheetSelectionModal from "../components/ui/SheetSelectionModal";
-import DataSyncStatus from "../components/ui/DataSyncStatus";
 import type { User } from '../../types/app';
 import { useWidgetManagement } from "../hooks/features/dashboard/useWidgetManagement";
 
@@ -13,9 +12,6 @@ interface DashboardProps {
   onPageChange?: (pageName: string, params?: Record<string, string>) => void;
   onSelectAnnouncement?: (post: { id: string; title: string }) => void;
   announcements?: Array<{ id: string; title: string }>;
-  lastSyncTime?: Date | null;
-  onRefresh?: () => Promise<void>;
-  isRefreshing?: boolean;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -23,10 +19,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   hotPotatoDBSpreadsheetId, 
   onPageChange, 
   onSelectAnnouncement, 
-  announcements,
-  lastSyncTime,
-  onRefresh,
-  isRefreshing
+  announcements
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const {
@@ -62,11 +55,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="main-content">
       <div className="dashboard-header">
-        <DataSyncStatus
-          lastSyncTime={lastSyncTime || null}
-          onRefresh={onRefresh || (async () => {})}
-          isRefreshing={isRefreshing || false}
-        />
         <button className="add-widget-btn" onClick={() => setIsModalOpen(true)}>
           위젯 추가
         </button>

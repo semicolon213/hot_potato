@@ -114,14 +114,12 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
   const isRefreshingState = isRefreshing || isRefreshingLocal;
 
   return (
-    <div className="data-sync-status">
-      <div className="sync-time">
-        <span className="sync-label">마지막 갱신:</span>
-        <span className="sync-time-value" title={formatAbsoluteTime(lastSyncTime)}>
+    <div className="data-sync-container">
+      <div className="data-sync-status">
+        <span className="sync-text" title={formatAbsoluteTime(lastSyncTime)}>
           {relativeTime}
         </span>
       </div>
-      
       <button
         className={`sync-refresh-btn ${isRefreshingState ? 'refreshing' : ''} ${showSuccess ? 'success' : ''}`}
         onClick={handleRefresh}
@@ -132,12 +130,6 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
         {showSuccess && <FaCheckCircle className="success-icon" />}
         {refreshError && <FaExclamationCircle className="error-icon" />}
       </button>
-
-      {refreshError && (
-        <div className="sync-error-message" title={refreshError}>
-          {refreshError}
-        </div>
-      )}
     </div>
   );
 };

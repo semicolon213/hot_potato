@@ -303,11 +303,12 @@
   margin-left: auto;
 }
 
-/* 토큰 만료 시간 표시 컨테이너 */
-.token-expiry-container {
+.header-status-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+  padding: 0;
+  background-color: transparent;
 }
 
 /* 토큰 만료 시간 표시 */
@@ -315,41 +316,45 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background-color: var(--white-pure, #fff);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 6px;
-  font-size: 12px;
-  color: var(--text-dark, #333);
+  font-size: 13px;
+  color: #666;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  position: relative;
 }
 
-.token-expiry-status:hover {
-  background-color: var(--bg-gray-alt, #f5f5f5);
-  border-color: var(--border-color-alt, #d0d0d0);
+.token-expiry-status::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 14px;
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .token-expiry-icon {
   font-size: 12px;
-  color: var(--text-light, #666);
+  width: 12px;
+  height: 12px;
+  color: #999;
   flex-shrink: 0;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .token-expiry-text {
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-dark, #333);
+  line-height: 1.2;
+  color: #666;
   user-select: none;
-  min-width: fit-content;
+  transition: color 0.2s ease;
 }
 
 /* 토큰 만료 임박 시 스타일 (5분 이내) */
-.token-expiry-status.expiring-soon {
-  border-color: #ff9800;
-  background-color: #fff3e0;
-  color: #e65100;
-}
-
 .token-expiry-status.expiring-soon .token-expiry-icon {
   color: #ff9800;
 }
@@ -360,12 +365,6 @@
 }
 
 /* 토큰 만료됨 스타일 */
-.token-expiry-status.expired {
-  border-color: #f44336;
-  background-color: #ffebee;
-  color: #c62828;
-}
-
 .token-expiry-status.expired .token-expiry-icon {
   color: #f44336;
 }

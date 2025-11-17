@@ -353,7 +353,9 @@ const App: React.FC = () => {
       timetable: '일정',
       // 학생 및 교직원 섹션
       students: '학생 및 교직원',
+      students_council: '학생 및 교직원',
       staff: '학생 및 교직원',
+      staff_committee: '학생 및 교직원',
       // 구글서비스 섹션
       google_appscript: '구글서비스',
       google_sheets: '구글서비스',
@@ -381,7 +383,9 @@ const App: React.FC = () => {
       timetable: '시간표',
       // 학생 및 교직원 하위 페이지
       students: '학생 관리',
+      students_council: '학생회',
       staff: '교직원 관리',
+      staff_committee: '학과 위원회',
       // 나머지
       dashboard: '대시보드',
       announcements: '공지사항',
@@ -1051,9 +1055,6 @@ const App: React.FC = () => {
               onPageChange={handlePageChange}
               userInfo={user}
               onLogout={handleLogout}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearch}
-              onSearchSubmit={handleSearchSubmit}
               pageSectionLabel={pageSectionLabel}
               currentPage={currentPage}
               lastSyncTime={lastSyncTime}

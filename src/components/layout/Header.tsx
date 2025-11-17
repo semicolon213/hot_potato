@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Header.css";
 import type { PageType } from "../../types/app";
-import { FaSearch, FaTimes, FaClock } from "react-icons/fa";
 import DataSyncStatus from "../ui/DataSyncStatus";
 import { tokenManager } from "../../utils/auth/tokenManager";
 
@@ -15,9 +14,6 @@ interface HeaderProps {
     isAdmin: boolean;
   };
   onLogout?: () => void;
-  searchTerm: string;
-  onSearchChange: (term: string) => void;
-  onSearchSubmit: () => void;
   pageSectionLabel?: string;
   currentPage?: PageType;
   lastSyncTime?: Date | null;
@@ -30,7 +26,7 @@ interface SubMenuTab {
   label: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, currentPage, searchTerm, onSearchChange, onSearchSubmit, lastSyncTime, onRefresh, isRefreshing, userInfo }) => {
+const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, currentPage, lastSyncTime, onRefresh, isRefreshing, userInfo }) => {
   // 토큰 만료까지 남은 시간 상태
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<number>(0);
 
@@ -73,34 +69,6 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
     }
   };
 
-  // 페이지별 검색 placeholder
-  const getSearchPlaceholder = (): string => {
-    if (!currentPage) return '검색하기';
-    
-    // 페이지별 검색 placeholder
-    if (['document_management', 'docbox', 'new_document', 'workflow_management'].includes(currentPage)) {
-      return '문서에서 검색하기';
-    }
-    if (['announcements', 'announcement-view'].includes(currentPage)) {
-      return '공지사항에서 검색하기';
-    }
-    if (['calendar', 'timetable'].includes(currentPage)) {
-      return '일정에서 검색하기';
-    }
-    if (['students', 'staff'].includes(currentPage)) {
-      return '학생에서 검색하기';
-    }
-    
-    return '검색하기';
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onSearchSubmit();
-    }
-  };
-
   // 하위 메뉴 탭 정의
   const getSubMenuTabs = (): SubMenuTab[] | null => {
     if (!currentPage) return null;
@@ -123,10 +91,12 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
     }
 
     // 학생 및 교직원 섹션
-    if (['students', 'staff'].includes(currentPage)) {
+    if (['students', 'students_council', 'staff', 'staff_committee'].includes(currentPage)) {
       return [
         { pageName: 'students', label: '학생' },
+        { pageName: 'students_council', label: '학생회' },
         { pageName: 'staff', label: '교직원' },
+        { pageName: 'staff_committee', label: '학과 위원회' },
       ];
     }
 
@@ -145,7 +115,6 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
   };
 
   const subMenuTabs = getSubMenuTabs();
-  const searchPlaceholder = getSearchPlaceholder();
 
   const renderBreadcrumb = () => {
     if (!pageSectionLabel) return null;
@@ -205,50 +174,20 @@ const Header: React.FC<HeaderProps> = ({ onPageChange, pageSectionLabel, current
           renderBreadcrumb()
         )}
         <div className="header-actions" data-oid="xq1uhkt">
-          {lastSyncTime !== undefined && onRefresh && (
-            <DataSyncStatus
-              lastSyncTime={lastSyncTime || null}
-              onRefresh={onRefresh}
-              isRefreshing={isRefreshing || false}
-            />
-          )}
-          {userInfo && (
-            <div className="token-expiry-container">
-              <div 
-                className={`token-expiry-status ${
-                  timeUntilExpiry <= 0 
-                    ? 'expired' 
-                    : timeUntilExpiry < 5 * 60 * 1000 
-                      ? 'expiring-soon' 
-                      : ''
-                }`}
-                title={`토큰 만료까지 ${formatTimeUntilExpiry(timeUntilExpiry)} 남음`}
-              >
-                <FaClock className="token-expiry-icon" />
+          <div className="header-status-group">
+            {userInfo && (
+              <div className="token-expiry-status">
                 <span className="token-expiry-text">
                   {timeUntilExpiry > 0 ? formatTimeUntilExpiry(timeUntilExpiry) : '만료됨'}
                 </span>
               </div>
-            </div>
-          )}
-          <div className="header-search-group">
-            <FaSearch className="header-search-icon" />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="header-search-input"
-            />
-            {searchTerm && (
-              <button 
-                className="header-clear-search-btn"
-                onClick={() => onSearchChange('')}
-                title="검색어 지우기"
-              >
-                <FaTimes />
-              </button>
+            )}
+            {lastSyncTime !== undefined && onRefresh && (
+              <DataSyncStatus
+                lastSyncTime={lastSyncTime || null}
+                onRefresh={onRefresh}
+                isRefreshing={isRefreshing || false}
+              />
             )}
           </div>
         </div>

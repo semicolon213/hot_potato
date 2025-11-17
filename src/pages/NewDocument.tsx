@@ -513,19 +513,60 @@ function NewDocument({
         const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
         const creatorEmail = userInfo.email || '';
 
-        // 선택된 그룹들의 이메일 수집
-        const groupEmails = selectedGroups.map(group => ENV_CONFIG.GROUP_EMAILS[group]).filter(Boolean);
-        
-        // 개별 이메일과 그룹 이메일 합치기
-        const allEditors = [...groupEmails, ...individualEmails.filter(email => email.trim())];
+        if (!creatorEmail) {
+            showNotification('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.', 'error');
+            return;
+        }
 
         try {
+            if (permissionType === 'private') {
+                // 나만 보기: 프론트엔드에서 직접 Google Drive API 사용
+                console.log('📄 개인 드라이브에 문서 생성:', selectedTemplate);
+                
+                // copyGoogleDocument 함수 import 필요
+                const { copyGoogleDocument } = await import('../utils/google/googleSheetUtils');
+                
+                if (selectedTemplate.documentId) {
+                    // 커스텀 템플릿 복사 (태그 포함)
+                    const copyResult = await copyGoogleDocument(selectedTemplate.documentId, documentTitle, selectedTemplate.tag);
+                    if (copyResult && copyResult.webViewLink) {
+                        window.open(copyResult.webViewLink, '_blank');
+                        showNotification('문서가 개인 드라이브에 생성되었습니다!', 'success');
+                        closePermissionModal();
+                        return;
+                    } else {
+                        showNotification('문서 생성에 실패했습니다.', 'error');
+                        return;
+                    }
+                } else {
+                    // 기본 템플릿 (빈 문서 등) - Google Docs 새 문서 생성 URL 사용
+                    try {
+                        // Google Docs의 새 문서 생성 URL을 사용
+                        const newDocUrl = 'https://docs.google.com/document/create';
+                        window.open(newDocUrl, '_blank');
+                        showNotification('새 문서가 생성되었습니다!', 'success');
+                        closePermissionModal();
+                        return;
+                    } catch (error) {
+                        console.error('📄 개인 문서 생성 오류:', error);
+                        showNotification('문서 생성 중 오류가 발생했습니다.', 'error');
+                        return;
+                    }
+                }
+            }
+
+            // 권한 부여 방식
             console.log('📄 권한 부여 문서 생성:', {
                 selectedTemplate,
                 selectedGroups,
-                individualEmails,
-                allEditors
+                individualEmails
             });
+
+            // 선택된 그룹들의 이메일 수집
+            const groupEmails = selectedGroups.map(group => ENV_CONFIG.GROUP_EMAILS[group]).filter(Boolean);
+            
+            // 개별 이메일과 그룹 이메일 합치기
+            const allEditors = [...groupEmails, ...individualEmails.filter(email => email.trim())];
             
             console.log('📄 권한 설정 상세 정보:', {
                 creatorEmail,
@@ -1356,7 +1397,6 @@ function NewDocument({
                         {templateError && !templateError.includes('개인 템플릿') && (
                             <div className="template-error-message">
                                 <div className="error-content">
-                                    <span className="error-icon">⚠️</span>
                                     <span className="error-text">{templateError}</span>
                                 </div>
                                 <div className="error-actions">
@@ -1468,7 +1508,6 @@ function NewDocument({
                         {(personalTemplateError || (templateError && templateError.includes('개인 템플릿'))) && (
                             <div className="template-error-message personal-template-error">
                                 <div className="error-content">
-                                    <span className="error-icon">⚠️</span>
                                     <div className="error-text-group">
                                         <strong>개인 템플릿 오류:</strong>
                                         <span className="error-text">{personalTemplateError || templateError}</span>
