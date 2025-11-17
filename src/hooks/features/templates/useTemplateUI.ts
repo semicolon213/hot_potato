@@ -90,7 +90,8 @@ export function useTemplateUI(
     error: personalTemplateError,
     convertToTemplates,
     togglePersonalTemplateFavorite,
-    generateFileNameFromTemplate
+    generateFileNameFromTemplate,
+    loadPersonalTemplates
   } = usePersonalTemplates();
   
   // 권한 설정 모달 상태
@@ -499,6 +500,7 @@ export function useTemplateUI(
         personalTemplateError, // 개인 템플릿 오류
         togglePersonalTemplateFavorite, // 개인 템플릿 즐겨찾기 토글
         generateFileNameFromTemplate, // 파일명 생성 함수
+        loadPersonalTemplates, // 개인 템플릿 다시 로드 함수
         // 기본 템플릿 즐겨찾기 관련
         defaultTemplateFavorites, // 기본 템플릿 즐겨찾기 목록
         isLoadingFavorites, // 즐겨찾기 로딩 상태

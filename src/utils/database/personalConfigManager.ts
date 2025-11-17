@@ -111,63 +111,93 @@ export const findPersonalConfigFile = async (): Promise<string | null> => {
  */
 export const findPersonalTemplateFolder = async (): Promise<string | null> => {
   try {
-    console.log('🔍 개인 템플릿 폴더 찾기 시작');
+    console.log('🔍 개인 템플릿 폴더 찾기/생성 시작');
     
     const rootFolderName = ENV_CONFIG.ROOT_FOLDER_NAME;
     const documentFolderName = ENV_CONFIG.DOCUMENT_FOLDER_NAME;
     const personalTemplateFolderName = ENV_CONFIG.PERSONAL_TEMPLATE_FOLDER_NAME;
 
-    // 1단계: 루트에서 루트 폴더 찾기
-    const hotPotatoResponse = await window.gapi.client.drive.files.list({
+    // 1단계: 루트에서 루트 폴더 찾기 또는 생성
+    let hotPotatoResponse = await window.gapi.client.drive.files.list({
       q: `'root' in parents and name='${rootFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
       orderBy: 'name'
     });
 
+    let hotPotatoFolder;
     if (!hotPotatoResponse.result.files || hotPotatoResponse.result.files.length === 0) {
-      console.log(`❌ ${rootFolderName} 폴더를 찾을 수 없습니다`);
-      return null;
+      console.log(`📁 ${rootFolderName} 폴더를 찾을 수 없습니다. 생성합니다.`);
+      const createResponse = await window.gapi.client.drive.files.create({
+        resource: {
+          name: rootFolderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: ['root']
+        },
+        fields: 'id,name'
+      });
+      hotPotatoFolder = { id: createResponse.result.id, name: createResponse.result.name };
+      console.log(`✅ ${rootFolderName} 폴더 생성 완료:`, hotPotatoFolder.id);
+    } else {
+      hotPotatoFolder = hotPotatoResponse.result.files[0];
+      console.log(`✅ ${rootFolderName} 폴더 찾음:`, hotPotatoFolder.id);
     }
 
-    const hotPotatoFolder = hotPotatoResponse.result.files[0];
-    console.log(`✅ ${rootFolderName} 폴더 찾음:`, hotPotatoFolder.id);
-
-    // 2단계: 루트 폴더에서 문서 폴더 찾기
-    const documentResponse = await window.gapi.client.drive.files.list({
+    // 2단계: 루트 폴더에서 문서 폴더 찾기 또는 생성
+    let documentResponse = await window.gapi.client.drive.files.list({
       q: `'${hotPotatoFolder.id}' in parents and name='${documentFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
       orderBy: 'name'
     });
 
+    let documentFolder;
     if (!documentResponse.result.files || documentResponse.result.files.length === 0) {
-      console.log(`❌ ${documentFolderName} 폴더를 찾을 수 없습니다`);
-      return null;
+      console.log(`📁 ${documentFolderName} 폴더를 찾을 수 없습니다. 생성합니다.`);
+      const createResponse = await window.gapi.client.drive.files.create({
+        resource: {
+          name: documentFolderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [hotPotatoFolder.id]
+        },
+        fields: 'id,name'
+      });
+      documentFolder = { id: createResponse.result.id, name: createResponse.result.name };
+      console.log(`✅ ${documentFolderName} 폴더 생성 완료:`, documentFolder.id);
+    } else {
+      documentFolder = documentResponse.result.files[0];
+      console.log(`✅ ${documentFolderName} 폴더 찾음:`, documentFolder.id);
     }
 
-    const documentFolder = documentResponse.result.files[0];
-    console.log(`✅ ${documentFolderName} 폴더 찾음:`, documentFolder.id);
-
-    // 3단계: 문서 폴더에서 개인 양식 폴더 찾기
-    const personalTemplateResponse = await window.gapi.client.drive.files.list({
+    // 3단계: 문서 폴더에서 개인 양식 폴더 찾기 또는 생성
+    let personalTemplateResponse = await window.gapi.client.drive.files.list({
       q: `'${documentFolder.id}' in parents and name='${personalTemplateFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
       orderBy: 'name'
     });
 
+    let personalTemplateFolder;
     if (!personalTemplateResponse.result.files || personalTemplateResponse.result.files.length === 0) {
-      console.log(`❌ ${personalTemplateFolderName} 폴더를 찾을 수 없습니다`);
-      return null;
+      console.log(`📁 ${personalTemplateFolderName} 폴더를 찾을 수 없습니다. 생성합니다.`);
+      const createResponse = await window.gapi.client.drive.files.create({
+        resource: {
+          name: personalTemplateFolderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [documentFolder.id]
+        },
+        fields: 'id,name'
+      });
+      personalTemplateFolder = { id: createResponse.result.id, name: createResponse.result.name };
+      console.log(`✅ ${personalTemplateFolderName} 폴더 생성 완료:`, personalTemplateFolder.id);
+    } else {
+      personalTemplateFolder = personalTemplateResponse.result.files[0];
+      console.log(`✅ ${personalTemplateFolderName} 폴더 찾음:`, personalTemplateFolder.id);
     }
-
-    const personalTemplateFolder = personalTemplateResponse.result.files[0];
-    console.log(`✅ ${personalTemplateFolderName} 폴더 찾음:`, personalTemplateFolder.id);
 
     return personalTemplateFolder.id;
   } catch (error) {
-    console.error('❌ 개인 템플릿 폴더 찾기 오류:', error);
+    console.error('❌ 개인 템플릿 폴더 찾기/생성 오류:', error);
     return null;
   }
 };
