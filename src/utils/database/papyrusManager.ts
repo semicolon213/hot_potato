@@ -63,6 +63,9 @@ export const clearSpreadsheetIds = (): void => {
     announcementSpreadsheetId = null;
     calendarProfessorSpreadsheetId = null;
     calendarStudentSpreadsheetId = null;
+    calendarCouncilSpreadsheetId = null;
+    calendarADProfessorSpreadsheetId = null;
+    calendarSuppSpreadsheetId = null;
     studentSpreadsheetId = null;
     staffSpreadsheetId = null;
     accountingFolderId = null;
@@ -174,6 +177,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
             ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
             ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
             ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_COUNCIL_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_ADPROFESSOR_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_SUPP_SPREADSHEET_NAME,
             ENV_CONFIG.STUDENT_SPREADSHEET_NAME,
             ENV_CONFIG.STAFF_SPREADSHEET_NAME
         ];
@@ -193,9 +199,13 @@ export const initializeSpreadsheetIds = async (): Promise<{
                 announcementSpreadsheetId: null,
                 calendarProfessorSpreadsheetId: null,
                 calendarStudentSpreadsheetId: null,
+                calendarCouncilSpreadsheetId: null,
+                calendarADProfessorSpreadsheetId: null,
+                calendarSuppSpreadsheetId: null,
                 hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
                 studentSpreadsheetId: null,
-                staffSpreadsheetId: null
+                staffSpreadsheetId: null,
+                accountingFolderId: null
             };
         }
 

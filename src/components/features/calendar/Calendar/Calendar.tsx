@@ -736,6 +736,7 @@ const Calendar: React.FC<CalendarProps> = ({ onAddEvent, onSelectEvent, onMoreCl
 
                             <div className="header-right-controls">
                                 <button className="today-button" onClick={handleTodayClick}>오늘</button>
+                                <button className="header-icon-button" onClick={() => setIsSearchVisible(true)}><BiSearchAlt2 /></button>
                                 <button className="header-icon-button add-event" onClick={onAddEvent}><BiPlus /></button>
                                 <button className="header-icon-button" onClick={() => setIsHelpModalOpen(true)}><BiHelpCircle /></button>
                                 {user && user.userType === 'admin' && (
