@@ -2,6 +2,13 @@ import React, { useEffect } from 'react';
 import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import './NotificationModal.css';
 
+// React 19 호환성을 위한 타입 단언
+const CheckCircleIcon = FaCheckCircle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const TimesCircleIcon = FaTimesCircle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const ExclamationTriangleIcon = FaExclamationTriangle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const InfoCircleIcon = FaInfoCircle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const TimesIcon = FaTimes as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
 interface NotificationModalProps {
   isOpen: boolean;
   message: string;
@@ -35,14 +42,14 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="notification-icon">
-          {type === 'success' && <FaCheckCircle />}
-          {type === 'error' && <FaTimesCircle />}
-          {type === 'warning' && <FaExclamationTriangle />}
-          {type === 'info' && <FaInfoCircle />}
+          {type === 'success' && <CheckCircleIcon />}
+          {type === 'error' && <TimesCircleIcon />}
+          {type === 'warning' && <ExclamationTriangleIcon />}
+          {type === 'info' && <InfoCircleIcon />}
         </div>
         <div className="notification-message">{message}</div>
         <button className="notification-close" onClick={onClose}>
-          <FaTimes />
+          <TimesIcon />
         </button>
       </div>
     </div>

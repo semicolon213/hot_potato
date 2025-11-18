@@ -10,6 +10,13 @@ import { useNotification } from '../../hooks/ui/useNotification';
 import { getDataSyncService } from '../../services/dataSyncService';
 import './DataSyncStatus.css';
 
+// React 19 호환성을 위한 타입 단언
+const SyncIcon = FaSync as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const CheckCircleIcon = FaCheckCircle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const ExclamationCircleIcon = FaExclamationCircle as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const PauseIcon = FaPause as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const PlayIcon = FaPlay as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
 interface DataSyncStatusProps {
   lastSyncTime: Date | null;
   onRefresh: () => Promise<void>;
@@ -164,7 +171,7 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
         onClick={handleToggleSync}
         title={isSyncPaused ? '자동 동기화 재개' : '자동 동기화 일시 중지 (429 에러 방지)'}
       >
-        {isSyncPaused ? <FaPlay /> : <FaPause />}
+        {isSyncPaused ? <PlayIcon /> : <PauseIcon />}
       </button>
       <button
         className={`sync-refresh-btn ${isRefreshingState ? 'refreshing' : ''} ${showSuccess ? 'success' : ''}`}
@@ -172,9 +179,9 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
         disabled={isRefreshingState}
         title="전체 데이터 새로고침"
       >
-        <FaSync className={`refresh-icon ${isRefreshingState ? 'spinning' : ''}`} />
-        {showSuccess && <FaCheckCircle className="success-icon" />}
-        {refreshError && <FaExclamationCircle className="error-icon" />}
+        <SyncIcon className={`refresh-icon ${isRefreshingState ? 'spinning' : ''}`} />
+        {showSuccess && <CheckCircleIcon className="success-icon" />}
+        {refreshError && <ExclamationCircleIcon className="error-icon" />}
       </button>
     </div>
   );

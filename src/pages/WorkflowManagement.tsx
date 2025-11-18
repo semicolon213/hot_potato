@@ -65,13 +65,22 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
         ]);
 
         if (requestedResponse.success && requestedResponse.data) {
-          setRequestedWorkflows(requestedResponse.data);
+          setRequestedWorkflows(requestedResponse.data.map(item => ({
+            success: true,
+            ...item
+          } as WorkflowInfoResponse)));
         }
         if (pendingResponse.success && pendingResponse.data) {
-          setPendingWorkflows(pendingResponse.data);
+          setPendingWorkflows(pendingResponse.data.map(item => ({
+            success: true,
+            ...item
+          } as WorkflowInfoResponse)));
         }
         if (completedResponse.success && completedResponse.data) {
-          setCompletedWorkflows(completedResponse.data);
+          setCompletedWorkflows(completedResponse.data.map(item => ({
+            success: true,
+            ...item
+          } as WorkflowInfoResponse)));
         }
       } catch (error) {
         console.error('❌ 워크플로우 데이터 로드 오류:', error);
@@ -159,13 +168,22 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
     ]);
     
     if (requestedRes.success && requestedRes.data) {
-      setRequestedWorkflows(requestedRes.data);
+      setRequestedWorkflows(requestedRes.data.map(item => ({
+        success: true,
+        ...item
+      } as WorkflowInfoResponse)));
     }
     if (pendingRes.success && pendingRes.data) {
-      setPendingWorkflows(pendingRes.data);
+      setPendingWorkflows(pendingRes.data.map(item => ({
+        success: true,
+        ...item
+      } as WorkflowInfoResponse)));
     }
     if (completedRes.success && completedRes.data) {
-      setCompletedWorkflows(completedRes.data);
+      setCompletedWorkflows(completedRes.data.map(item => ({
+        success: true,
+        ...item
+      } as WorkflowInfoResponse)));
     }
   };
 
@@ -187,13 +205,22 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
         ]);
 
         if (requestedResponse.success && requestedResponse.data) {
-          setRequestedWorkflows(requestedResponse.data);
+          setRequestedWorkflows(requestedResponse.data.map(item => ({
+            success: true,
+            ...item
+          } as WorkflowInfoResponse)));
         }
         if (pendingResponse.success && pendingResponse.data) {
-          setPendingWorkflows(pendingResponse.data);
+          setPendingWorkflows(pendingResponse.data.map(item => ({
+            success: true,
+            ...item
+          } as WorkflowInfoResponse)));
         }
         if (completedResponse.success && completedResponse.data) {
-          setCompletedWorkflows(completedResponse.data);
+          setCompletedWorkflows(completedResponse.data.map(item => ({
+            success: true,
+            ...item
+          } as WorkflowInfoResponse)));
         }
       } catch (error) {
         console.error('❌ 워크플로우 데이터 갱신 오류:', error);
@@ -447,13 +474,22 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
             apiClient.getCompletedWorkflows({ userEmail })
           ]).then(([requestedRes, pendingRes, completedRes]) => {
             if (requestedRes.success && requestedRes.data) {
-              setRequestedWorkflows(requestedRes.data);
+              setRequestedWorkflows(requestedRes.data.map(item => ({
+                success: true,
+                ...item
+              } as WorkflowInfoResponse)));
             }
             if (pendingRes.success && pendingRes.data) {
-              setPendingWorkflows(pendingRes.data);
+              setPendingWorkflows(pendingRes.data.map(item => ({
+                success: true,
+                ...item
+              } as WorkflowInfoResponse)));
             }
             if (completedRes.success && completedRes.data) {
-              setCompletedWorkflows(completedRes.data);
+              setCompletedWorkflows(completedRes.data.map(item => ({
+                success: true,
+                ...item
+              } as WorkflowInfoResponse)));
             }
           });
         }}

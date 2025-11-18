@@ -31,6 +31,8 @@ const ShieldIcon = HiMiniShieldCheck as React.ComponentType<React.SVGProps<SVGSV
 const GoogleIcon = HiMiniSquares2X2 as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const DashboardIcon = GoHomeFill as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 const AccountingIcon = HiMiniCurrencyDollar as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const UserIconFa = FaUser as React.ComponentType<React.SVGProps<SVGSVGElement>>;
+const SignOutIcon = FaSignOutAlt as React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 /**
  * @brief 사이드바 Props 타입 정의
@@ -71,8 +73,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
       if (!user?.email) return;
       try {
         const res = await apiClient.getUserNameByEmail(user.email);
-        if (res?.success && 'name' in res && res.name) {
-          setMemberName(res.name);
+        if (res?.success && res.data?.name) {
+          setMemberName(res.data.name);
         } else if (res?.data?.name) {
           setMemberName(res.data.name);
         }
@@ -262,12 +264,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
         <div className="menu-container">
           {user && (
             <div className="menu-item" onClick={() => onPageChange("mypage")}>
-              <FaUser className="menu-icon" />
+              <UserIconFa className="menu-icon" />
               <div className="menu-text">{memberName || user.name || "마이페이지"}</div>
             </div>
           )}
           <div className="menu-item" onClick={handleLogoutClick}>
-            <FaSignOutAlt className="menu-icon" />
+            <SignOutIcon className="menu-icon" />
             <div className="menu-text">로그아웃</div>
           </div>
         </div>

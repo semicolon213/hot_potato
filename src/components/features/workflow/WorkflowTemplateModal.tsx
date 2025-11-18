@@ -613,6 +613,7 @@ const WorkflowTemplateModal: React.FC<WorkflowTemplateModalProps> = ({
 
       {notification && (
         <NotificationModal
+          isOpen={true}
           message={notification.message}
           type={notification.type}
           onClose={() => setNotification(null)}

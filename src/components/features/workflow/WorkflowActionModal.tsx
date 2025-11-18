@@ -356,6 +356,7 @@ const WorkflowActionModal: React.FC<WorkflowActionModalProps> = ({
 
       {notification && (
         <NotificationModal
+          isOpen={true}
           message={notification.message}
           type={notification.type}
           onClose={() => setNotification(null)}

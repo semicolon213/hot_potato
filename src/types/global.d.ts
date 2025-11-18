@@ -16,7 +16,8 @@ import type {
   GoogleDriveFilesCopyParams,
   GoogleDriveFilesCopyResponse,
   GoogleDriveFilesGetParams,
-  GoogleDriveFilesGetResponse
+  GoogleDriveFilesGetResponse,
+  GoogleDriveFilesListParams
 } from './google';
 import type { GoogleCredentialResponse, GoogleCredential, GoogleCredentialCallback } from './google/gapi';
 
@@ -68,7 +69,7 @@ declare global {
         }) => Promise<{ result: Record<string, unknown> }>;
         drive: {
           files: {
-            list: (params: gapi.client.drive.files.list.Params) => Promise<gapi.client.drive.files.list.Response>;
+            list: (params: gapi.client.drive.files.list.Params | GoogleDriveFilesListParams) => Promise<gapi.client.drive.files.list.Response>;
             copy: (params: GoogleDriveFilesCopyParams) => Promise<GoogleDriveFilesCopyResponse>;
             create: (params: gapi.client.drive.files.create.Params) => Promise<gapi.client.drive.files.create.Response>;
             update: (params: gapi.client.drive.files.update.Params) => Promise<gapi.client.drive.files.update.Response>;
@@ -102,7 +103,7 @@ declare global {
             create: (params: { title: string; }) => Promise<{ result: { documentId: string } }>;
           }
         }
-      };
+      } & GoogleClient;
       auth2: {
         getAuthInstance: () => {
           isSignedIn: {

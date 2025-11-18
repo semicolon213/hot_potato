@@ -1,10 +1,10 @@
 // React 19 호환성을 위한 react-icons 타입 정의
 // React 19에서 ReactNode가 string을 포함할 수 있어서 JSX 컴포넌트로 사용할 수 없는 문제를 해결하기 위해
-// ReactElement를 반환하는 타입으로 명시적으로 정의
+// JSX.Element를 반환하는 타입으로 명시적으로 정의
 
-import type { ReactElement, SVGProps } from 'react';
+import type { JSX, SVGProps } from 'react';
 
-type IconComponent = (props: SVGProps<SVGSVGElement>) => ReactElement;
+type IconComponent = (props: SVGProps<SVGSVGElement>) => JSX.Element;
 
 declare module 'react-icons/fa' {
   export const FaUser: IconComponent;

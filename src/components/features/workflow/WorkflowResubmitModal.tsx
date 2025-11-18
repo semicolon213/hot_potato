@@ -355,6 +355,7 @@ const WorkflowResubmitModal: React.FC<WorkflowResubmitModalProps> = ({
 
       {notification && (
         <NotificationModal
+          isOpen={true}
           message={notification.message}
           type={notification.type}
           onClose={() => setNotification(null)}
