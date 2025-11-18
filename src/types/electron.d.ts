@@ -11,6 +11,7 @@ declare global {
     electronAPI?: {
       onAppBeforeQuit: (callback: () => void) => void;
       removeAppBeforeQuitListener: (callback: () => void) => void;
+      openExternal: (url: string) => void;
     };
   }
 }

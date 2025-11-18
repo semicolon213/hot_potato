@@ -12,17 +12,18 @@ interface NewBoardPostProps {
 const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, user, isAuthenticated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const { notification, showNotification, hideNotification } = useNotification();
 
   useEffect(() => {
     if (!isAuthenticated) {
-      alert('Google 인증이 필요합니다.');
+      showNotification('Google 인증이 필요합니다.', 'warning');
       onPageChange('board');
     }
-  }, [isAuthenticated, onPageChange]);
+  }, [isAuthenticated, onPageChange, showNotification]);
 
   const handleSavePost = () => {
     if (!title.trim() || !content.trim()) {
-      alert('제목과 내용을 모두 입력해주세요.');
+      showNotification('제목과 내용을 모두 입력해주세요.', 'warning');
       return;
     }
 
@@ -63,6 +64,14 @@ const NewBoardPost: React.FC<NewBoardPostProps> = ({ onPageChange, onAddPost, us
         ></textarea>
         {/* File upload is removed for simplicity as its data was not being used */}
       </div>
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        message={notification.message}
+        type={notification.type}
+        onClose={hideNotification}
+        duration={notification.duration}
+      />
     </div>
   );
 };

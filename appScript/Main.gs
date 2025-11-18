@@ -4,6 +4,77 @@
  * Hot Potato Admin Key Management System
  */
 
+// ===== Google 메뉴바 추가 =====
+/**
+ * 문서가 열릴 때 실행되는 함수
+ * Google Sheets/Docs 상단 메뉴바에 커스텀 메뉴 추가
+ */
+function onOpen() {
+  try {
+    var ui = SpreadsheetApp.getUi();
+    
+    ui.createMenu('Hot Potato')
+      .addItem('데이터 새로고침', 'refreshData')
+      .addSeparator()
+      .addItem('도움말', 'showHelp')
+      .addToUi();
+  } catch (error) {
+    // SpreadsheetApp이 없는 경우 (Docs 등) DocumentApp 시도
+    try {
+      var ui = DocumentApp.getUi();
+      ui.createMenu('Hot Potato')
+        .addItem('데이터 새로고침', 'refreshData')
+        .addSeparator()
+        .addItem('도움말', 'showHelp')
+        .addToUi();
+    } catch (docError) {
+      console.error('메뉴 추가 실패:', docError);
+    }
+  }
+}
+
+/**
+ * 데이터 새로고침 함수
+ */
+function refreshData() {
+  try {
+    var ui = SpreadsheetApp.getUi();
+    ui.alert('데이터 새로고침', '데이터 새로고침 기능은 개발 중입니다.', ui.ButtonSet.OK);
+  } catch (error) {
+    try {
+      var ui = DocumentApp.getUi();
+      ui.alert('데이터 새로고침', '데이터 새로고침 기능은 개발 중입니다.', ui.ButtonSet.OK);
+    } catch (docError) {
+      console.error('알림 표시 실패:', docError);
+    }
+  }
+}
+
+/**
+ * 도움말 표시 함수
+ */
+function showHelp() {
+  var message = 'Hot Potato ERP 시스템\n\n' +
+                '주요 기능:\n' +
+                '- 문서 관리\n' +
+                '- 공지사항\n' +
+                '- 캘린더\n' +
+                '- 학생/교직원 관리\n\n' +
+                '자세한 내용은 웹 애플리케이션을 참고하세요.';
+  
+  try {
+    var ui = SpreadsheetApp.getUi();
+    ui.alert('도움말', message, ui.ButtonSet.OK);
+  } catch (error) {
+    try {
+      var ui = DocumentApp.getUi();
+      ui.alert('도움말', message, ui.ButtonSet.OK);
+    } catch (docError) {
+      console.error('도움말 표시 실패:', docError);
+    }
+  }
+}
+
 // ===== 메인 엔트리 포인트 =====
 function doPost(e) {
   try {

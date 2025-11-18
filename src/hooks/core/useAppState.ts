@@ -67,6 +67,8 @@ const widgetOptions = [
  * @returns {Object} 애플리케이션 상태와 핸들러 함수들
  */
 export const useAppState = () => {
+    const { showNotification } = useNotification();
+    
     // User authentication state
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -78,9 +80,6 @@ export const useAppState = () => {
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
     const [hasInitialized, setHasInitialized] = useState(false); // 초기화 완료 플래그
     const dataSyncServiceRef = useRef(getDataSyncService());
-    
-    // 알림 훅
-    const { showNotification } = useNotification();
 
     // Original app state
     const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
@@ -667,11 +666,11 @@ export const useAppState = () => {
             }
         }
     }, [calendarEvents, widgets]);
-
+    
     const handleAddWidget = (type: string) => {
         const option = widgetOptions.find(opt => opt.type === type);
         if (!option || widgets.some(w => w.id === option.id)) {
-            if(option) alert("이미 추가된 위젯입니다.");
+            if(option) showNotification("이미 추가된 위젯입니다.", 'warning');
             return;
         }
         const newWidgetData = generateWidgetContent(type);

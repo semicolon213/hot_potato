@@ -517,7 +517,7 @@
   display: flex;
   align-items: center;
   gap: clamp(12px, 1.39vh, 16px);
-  width: 100%;
+  flex: 1;
   padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.39vw, 16px);
   background: var(--white-pure);
   border: 2px solid var(--border-color);
@@ -606,17 +606,12 @@
   cursor: pointer;
   transition: var(--transition-base);
   padding: 0;
-  margin-left: auto;
   opacity: 0; /* 기본적으로 숨김 */
   visibility: hidden; /* 기본적으로 숨김 */
-  position: absolute;
-  right: clamp(12px, 1.39vw, 16px);
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 /* 계정 버튼에 마우스를 가져가면 제거 버튼 표시 */
-.last-user-btn:hover:not(:disabled) .last-user-remove-btn {
+.last-user-item:hover .last-user-remove-btn {
   opacity: 1;
   visibility: visible;
 }

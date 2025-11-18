@@ -223,7 +223,7 @@ const App: React.FC = () => {
   // 세션 타임아웃 관리
   useSession(!!user, () => {
     handleLogout();
-    alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+    showNotification('세션이 만료되었습니다. 다시 로그인해주세요.', 'warning');
   });
 
   // 토큰 만료 체크 및 자동 갱신/로그아웃
@@ -255,7 +255,7 @@ const App: React.FC = () => {
         console.log('🔒 토큰이 만료되어 자동 로그아웃합니다.');
         clearInterval(checkInterval);
         handleLogout();
-        alert('토큰이 만료되었습니다. 다시 로그인해주세요.');
+        showNotification('토큰이 만료되었습니다. 다시 로그인해주세요.', 'warning');
       }
     }, 30 * 1000); // 30초마다 체크
 
@@ -442,11 +442,11 @@ const App: React.FC = () => {
     userType?: string;
   }) => {
     if (!announcementSpreadsheetId) {
-      alert("Announcement spreadsheet ID not found");
+      showNotification("공지사항 스프레드시트 ID를 찾을 수 없습니다.", 'error');
       return;
     }
     if (!user || !user.email || !user.studentId || !user.userType) {
-      alert("User information is incomplete for adding announcement.");
+      showNotification("공지사항 작성에 필요한 사용자 정보가 없습니다.", 'error');
       return;
     }
 
@@ -508,7 +508,7 @@ const App: React.FC = () => {
 
     } catch (error) {
       console.error('Error adding announcement:', error);
-      alert('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
       // 6. 오류 발생 시 UI를 이전 상태로 롤백
       setAnnouncements(originalAnnouncements);
     }
@@ -548,7 +548,7 @@ const App: React.FC = () => {
     isPinned?: boolean;
   }) => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -578,13 +578,13 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error updating announcement:', error);
       setAnnouncements(originalAnnouncements);
-      alert('공지사항 수정에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('공지사항 수정에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
     }
   };
 
   const handleUnpinAnnouncement = async (announcementId: string) => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -621,13 +621,13 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error unpinning announcement:', error);
       setAnnouncements(originalAnnouncements);
-      alert('고정 해제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('고정 해제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
     }
   };
 
   const handleDeleteAnnouncement = async (announcementId: string) => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -650,7 +650,7 @@ const App: React.FC = () => {
       console.error('Error deleting announcement:', error);
       // Revert the change if the delete fails
       setAnnouncements(originalAnnouncements);
-      alert('공지사항 삭제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('공지사항 삭제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
     }
   };
 
@@ -918,19 +918,19 @@ const App: React.FC = () => {
     customPeriods: CustomPeriod[];
   }) => {
     if (!activeCalendarSpreadsheetId) {
-      alert('캘린더가 설정되지 않아 저장할 수 없습니다.');
+      showNotification('캘린더가 설정되지 않아 저장할 수 없습니다.', 'error');
       console.error('Error saving academic schedule: No active calendar spreadsheet ID is set.');
       return;
     }
     try {
       await saveAcademicScheduleToSheet(scheduleData, activeCalendarSpreadsheetId);
-      alert('학사일정이 성공적으로 저장되었습니다.');
+      showNotification('학사일정이 성공적으로 저장되었습니다.', 'success');
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
     } catch (error) {
       console.error('Error saving academic schedule:', error);
-      alert('학사일정 저장 중 오류가 발생했습니다.');
+      showNotification('학사일정 저장 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -1170,19 +1170,17 @@ const App: React.FC = () => {
     <GoogleOAuthProvider clientId={ENV_CONFIG.GOOGLE_CLIENT_ID}>
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} onLogout={handleLogout} onFullLogout={handleFullLogout} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
-        <div className={`main-panel ${isGoogleServicePage ? 'no-header' : ''}`} data-oid="n9gxxwr">
-          {!isGoogleServicePage && (
-            <Header
-              onPageChange={handlePageChange}
-              userInfo={user}
-              onLogout={handleLogout}
-              pageSectionLabel={pageSectionLabel}
-              currentPage={currentPage}
-              lastSyncTime={lastSyncTime}
-              onRefresh={handleRefreshAllData}
-              isRefreshing={isInitializingData}
-            />
-          )}
+        <div className="main-panel" data-oid="n9gxxwr">
+          <Header
+            onPageChange={handlePageChange}
+            userInfo={user}
+            onLogout={handleLogout}
+            pageSectionLabel={pageSectionLabel}
+            currentPage={currentPage}
+            lastSyncTime={lastSyncTime}
+            onRefresh={handleRefreshAllData}
+            isRefreshing={isInitializingData}
+          />
           <div className="content" id="dynamicContent" data-oid="nn2e18p">
             <PageRenderer
               currentPage={currentPage}

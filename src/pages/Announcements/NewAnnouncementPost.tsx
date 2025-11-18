@@ -6,6 +6,8 @@ import TiptapEditor from '../../components/ui/TiptapEditor';
 import { apiClient } from '../../utils/api/apiClient';
 import type { UsersListResponse } from '../../types/api/apiResponses';
 import { API_ACTIONS } from '../../config/api';
+import { useNotification } from '../../hooks/ui/useNotification';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 
 interface NewAnnouncementPostProps {
     onPageChange: (pageName: string) => void;
@@ -45,12 +47,14 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
     const [showPermissionSettings, setShowPermissionSettings] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const { notification, showNotification, hideNotification } = useNotification();
+    
     useEffect(() => {
         if (!isAuthenticated) {
-            alert('Google 인증이 필요합니다.');
+            showNotification('Google 인증이 필요합니다.', 'warning');
             onPageChange('announcements');
         }
-    }, [isAuthenticated, onPageChange]);
+    }, [isAuthenticated, onPageChange, showNotification]);
 
     // 작성자 이름 로드
     useEffect(() => {
@@ -106,7 +110,7 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
 
     const handleSavePost = async () => {
         if (!title.trim() || !content.trim()) {
-            alert('제목과 내용을 모두 입력해주세요.');
+            showNotification('제목과 내용을 모두 입력해주세요.', 'warning');
             return;
         }
 
@@ -351,6 +355,14 @@ const NewAnnouncementPost: React.FC<NewAnnouncementPostProps> = ({
                     <span>작성자: {authorName || '이름 로딩 중...'}</span>
                 </div>
             </div>
+
+            <NotificationModal
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={hideNotification}
+                duration={notification.duration}
+            />
         </div>
     );
 };

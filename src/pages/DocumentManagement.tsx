@@ -24,6 +24,8 @@ import RightArrowIcon from "../assets/Icons/right_black.svg";
 import TableColumnFilter, { type SortDirection, type FilterOption } from "../components/ui/common/TableColumnFilter";
 import { FaFilter, FaTimes, FaFileAlt, FaUsers, FaLock, FaEdit, FaUpload, FaShare, FaTrash, FaPlus, FaFolderOpen, FaTag, FaFile } from "react-icons/fa";
 import { HiX } from "react-icons/hi";
+import { useNotification } from "../hooks/ui/useNotification";
+import { NotificationModal } from "../components/ui/NotificationModal";
 
 interface DocumentManagementProps {
   onPageChange: (pageName: string) => void;
@@ -91,6 +93,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   const [recentDocuments, setRecentDocuments] = useState<InfoCardItem[]>([]);
   const [favoriteTemplates, setFavoriteTemplates] = useState<InfoCardItem[]>([]);
   const { onUseTemplate, allDefaultTemplates, personalTemplates } = useTemplateUI(customTemplates, onPageChange, '', '전체');
+  const { notification, showNotification, hideNotification } = useNotification();
   
   // 검색 및 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -193,12 +196,12 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
   const handleUpload = async () => {
     if (!uploadFile || !uploadFileName.trim()) {
-      alert('파일과 파일명을 입력해주세요.');
+      showNotification('파일과 파일명을 입력해주세요.', 'warning');
       return;
     }
 
     if (permissionType === 'shared' && !uploadTag.trim()) {
-      alert('태그를 입력해주세요.');
+      showNotification('태그를 입력해주세요.', 'warning');
       return;
     }
 
@@ -231,7 +234,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       }
 
       if (result.success) {
-        alert('문서가 성공적으로 업로드되었습니다.');
+        showNotification('문서가 성공적으로 업로드되었습니다.', 'success');
         closeUploadModal();
 
         // 문서 목록 새로고침
@@ -255,11 +258,11 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         setDocuments(convertedDocs);
         setIsLoading(false);
       } else {
-        alert(`업로드 실패: ${result.message || '알 수 없는 오류'}`);
+        showNotification(`업로드 실패: ${result.message || '알 수 없는 오류'}`, 'error');
       }
     } catch (error) {
       console.error('업로드 오류:', error);
-      alert('업로드 중 오류가 발생했습니다.');
+      showNotification('업로드 중 오류가 발생했습니다.', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -267,14 +270,14 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
   const handleShare = () => {
     if (selectedDocs.length !== 1) {
-      alert("공유할 문서 1개를 선택하세요.");
+      showNotification("공유할 문서 1개를 선택하세요.", 'warning');
       return;
     }
     const docToShare = documents.find(doc => doc.id === selectedDocs[0] || doc.documentNumber === selectedDocs[0]);
     if (docToShare) {
       navigator.clipboard.writeText(docToShare.url)
-        .then(() => alert("문서 링크가 클립보드에 복사되었습니다."))
-        .catch(() => alert("링크 복사에 실패했습니다."));
+        .then(() => showNotification("문서 링크가 클립보드에 복사되었습니다.", 'success'))
+        .catch(() => showNotification("링크 복사에 실패했습니다.", 'error'));
     }
   };
 
@@ -317,7 +320,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
   // 문서 삭제 핸들러
   const handleDelete = async () => {
     if (selectedDocs.length === 0) {
-      alert('삭제할 문서를 선택하세요.');
+      showNotification('삭제할 문서를 선택하세요.', 'warning');
       return;
     }
 
@@ -325,7 +328,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     const userEmail = userInfo.email;
 
     if (!userEmail) {
-      alert('로그인이 필요합니다.');
+      showNotification('로그인이 필요합니다.', 'error');
       return;
     }
 
@@ -351,7 +354,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
 
     if (unauthorizedDocs.length > 0) {
       const docTitles = unauthorizedDocs.map(doc => doc.title).join(', ');
-      alert(`본인이 생성한 문서만 삭제할 수 있습니다.\n삭제할 수 없는 문서: ${docTitles}`);
+      showNotification(`본인이 생성한 문서만 삭제할 수 있습니다.\n삭제할 수 없는 문서: ${docTitles}`, 'error');
       return;
     }
 
@@ -391,7 +394,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
         }
       }
 
-      alert(`${selectedDocs.length}개의 문서가 삭제되었습니다.`);
+      showNotification(`${selectedDocs.length}개의 문서가 삭제되었습니다.`, 'success');
       setSelectedDocs([]);
 
       // 문서 목록 새로고침
@@ -414,7 +417,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       setDocuments(convertedDocs);
     } catch (error) {
       console.error('문서 삭제 오류:', error);
-      alert(`문서 삭제 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      showNotification(`문서 삭제 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -1734,6 +1737,14 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
           </div>
         </div>
       )}
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        message={notification.message}
+        type={notification.type}
+        onClose={hideNotification}
+        duration={notification.duration}
+      />
     </div>
   );
 };

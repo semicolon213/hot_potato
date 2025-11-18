@@ -1397,11 +1397,11 @@ function NewDocument({
                     console.log('✅ 개인 템플릿 즐겨찾기 업데이트 성공');
                 } else {
                     console.error('❌ 개인 템플릿 즐겨찾기 업데이트 실패:', result.error);
-                    alert('즐겨찾기 업데이트에 실패했습니다: ' + result.error);
+                    showNotification('즐겨찾기 업데이트에 실패했습니다: ' + result.error, 'error');
                 }
             } catch (error) {
                 console.error('❌ 개인 템플릿 즐겨찾기 토글 오류:', error);
-                alert('즐겨찾기 업데이트 중 오류가 발생했습니다.');
+                showNotification('즐겨찾기 업데이트 중 오류가 발생했습니다.', 'error');
             }
         } else {
             // 기본 템플릿은 즐겨찾기 기능 비활성화
@@ -1453,7 +1453,7 @@ function NewDocument({
         }
         
         console.warn('⚠️ 템플릿을 찾을 수 없습니다:', { type, title });
-        alert(`템플릿을 찾을 수 없습니다.\n타입: ${type}\n제목: ${title}`);
+        showNotification(`템플릿을 찾을 수 없습니다.\n타입: ${type}\n제목: ${title}`, 'error');
     }, [personalTemplates, defaultTemplateItems, allDefaultTemplates, openFileNameModal]);
 
     // 올바른 순서로 태그를 정렬합니다: 기본 태그를 먼저, 그 다음 커스텀 태그를 표시합니다.
@@ -1519,7 +1519,7 @@ function NewDocument({
                                         className="error-action-btn debug-btn"
                                         onClick={async () => {
                                             const result = await testDriveApi();
-                                            alert(result.message);
+                                            showNotification(result.message, result.success ? 'success' : 'error');
                                         }}
                                     >
                                         Drive API 테스트
@@ -1530,9 +1530,9 @@ function NewDocument({
                                             const result = await testTemplateFolderDebug();
                                             if (result.success && result.data) {
                                                 const debugInfo = result.data.debugInfo || [];
-                                                alert(`디버깅 결과:\n${debugInfo.join('\n')}`);
+                                                showNotification(`디버깅 결과:\n${debugInfo.join('\n')}`, 'info');
                                             } else {
-                                                alert(result.message);
+                                                showNotification(result.message, 'error');
                                             }
                                         }}
                                     >
@@ -1544,9 +1544,9 @@ function NewDocument({
                                             const result = await testSpecificFolder();
                                             if (result.success && result.data) {
                                                 const debugInfo = result.data.debugInfo || [];
-                                                alert(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`);
+                                                showNotification(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`, 'info');
                                             } else {
-                                                alert(result.message);
+                                                showNotification(result.message, 'error');
                                             }
                                         }}
                                     >
@@ -1634,7 +1634,7 @@ function NewDocument({
                                             className="error-action-btn debug-btn"
                                             onClick={async () => {
                                                 const result = await testDriveApi();
-                                                alert(result.message);
+                                                showNotification(result.message, result.success ? 'success' : 'error');
                                             }}
                                         >
                                             Drive API 테스트
@@ -1645,9 +1645,9 @@ function NewDocument({
                                                 const result = await testTemplateFolderDebug();
                                                 if (result.success && result.data) {
                                                     const debugInfo = result.data.debugInfo || [];
-                                                    alert(`디버깅 결과:\n${debugInfo.join('\n')}`);
+                                                    showNotification(`디버깅 결과:\n${debugInfo.join('\n')}`, 'info');
                                                 } else {
-                                                    alert(result.message);
+                                                    showNotification(result.message, 'error');
                                                 }
                                             }}
                                         >
@@ -1659,9 +1659,9 @@ function NewDocument({
                                                 const result = await testSpecificFolder();
                                                 if (result.success && result.data) {
                                                     const debugInfo = result.data.debugInfo || [];
-                                                    alert(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`);
+                                                    showNotification(`특정 폴더 테스트 결과:\n${debugInfo.join('\n')}`, 'info');
                                                 } else {
-                                                    alert(result.message);
+                                                    showNotification(result.message, 'error');
                                                 }
                                             }}
                                         >
@@ -2041,10 +2041,10 @@ function NewDocument({
                       if(!sharedUploadFile) return; 
                       const res = await uploadSharedTemplate(sharedUploadFile, { ...sharedMeta, creatorEmail: userInfo.email });
                       if(res.success){
-                        alert('업로드 완료');
+                        showNotification('업로드 완료', 'success');
                         resetSharedUpload();
                       } else {
-                        alert('업로드 실패: ' + (res.message||'알 수 없는 오류'));
+                        showNotification('업로드 실패: ' + (res.message||'알 수 없는 오류'), 'error');
                       }
                     }}>
                       <span>업로드</span>
