@@ -64,9 +64,9 @@ export class ApiClient {
   private dataSyncService: any = null; // DataSyncService 인스턴스 (나중에 주입)
 
   constructor() {
-    // CSP 문제 해결을 위해 Vite 프록시 사용
+    // 개발: Vite 프록시, 프로덕션: Netlify Functions 프록시
     const isDev = typeof window !== 'undefined' && import.meta && import.meta.env ? import.meta.env.DEV : false;
-    this.baseUrl = isDev ? '/api' : API_CONFIG.APP_SCRIPT_URL;
+    this.baseUrl = isDev ? '/api' : '/.netlify/functions/proxy';
     this.defaultTimeout = API_CONFIG.TIMEOUT;
     this.defaultRetries = API_CONFIG.MAX_RETRIES;
     

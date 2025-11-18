@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Netlify Functions 설정
+[functions]
+  directory = "netlify/functions"
+
+# 환경 변수는 Netlify 대시보드에서 설정하거나
+# 빌드 시 자동으로 VITE_ 접두사가 붙은 변수를 사용할 수 있습니다.
+# 하지만 Functions에서는 process.env를 직접 사용하므로
+# Netlify 대시보드에서 APP_SCRIPT_URL을 설정해야 합니다.
+
