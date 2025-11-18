@@ -29,11 +29,11 @@
     "strictPropertyInitialization": false,
     "noImplicitThis": false,
     "alwaysStrict": false,
-    "suppressImplicitAnyIndexErrors": true,
     "noImplicitReturns": false,
     "noUncheckedIndexedAccess": false,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "ignoreDeprecations": "5.0"
   },
   "include": ["src", "src/types/react-icons.d.ts"]
 }
