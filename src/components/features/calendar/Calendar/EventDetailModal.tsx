@@ -113,7 +113,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
     const canModifyEvent = () => {
         if (!user) return false;
 
-        if (user.userType === 'admin') {
+        if (user.isAdmin) {
             return true;
         }
 

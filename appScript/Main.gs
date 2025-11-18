@@ -2013,12 +2013,17 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
         
         // Drive API만 사용 (메일 알림 없이) - DriveApp.addEditor()는 메일을 보내므로 사용하지 않음
         try {
+          // sendNotificationEmails를 명시적으로 false로 설정
+          // 참고: Google Drive API v2에서는 sendNotificationEmails가 때때로 작동하지 않을 수 있음
           const permissionResult = Drive.Permissions.insert({
             role: 'writer',
             type: 'user',
             value: userEmail,
             sendNotificationEmails: false  // 메일 알림 없음
           }, documentId);
+          
+          // 권한 부여 결과 확인
+          console.log('📋 권한 부여 API 응답:', JSON.stringify(permissionResult));
           
           console.log('✅ Drive API로 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
           console.log('📋 권한 부여 결과:', permissionResult);

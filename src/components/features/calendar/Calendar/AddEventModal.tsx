@@ -315,7 +315,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
 
     if (isSelected) {
       // Before removing, check if it's the logged-in user and not an admin
-      if (user && user.userType !== 'admin' && member.no_member === String(user.studentId)) {
+      if (user && !user.isAdmin && member.no_member === String(user.studentId)) {
         return; // Don't allow removal
       }
       handleRemoveAttendee(person);
@@ -336,7 +336,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   };
 
   const handleRemoveAttendee = (personToRemove: Student | Staff) => {
-    if (user && user.userType !== 'admin' && ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no) === String(user.studentId)) {
+    if (user && !user.isAdmin && ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no) === String(user.studentId)) {
       // Prevent removal of self if not an admin
       return;
     }
@@ -408,7 +408,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   useEffect(() => {
     // 그룹이 선택되었거나 참석자가 있고 본인 외 다른 참석자가 있으면 공유 일정
     const hasOtherAttendees = selectedAttendees.some(a => {
-      if (user && user.userType !== 'admin') {
+      if (user && !user.isAdmin) {
         return ('no_student' in a ? a.no_student : a.no) !== String(user.studentId);
       }
       return true; // admin인 경우 참석자가 있으면 공유
@@ -1095,7 +1095,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                     })}
                     {/* 개별 참석자 표시 */}
                     {selectedAttendees.map(person => {
-                      const isCurrentUser = user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
+                      const isCurrentUser = user && !user.isAdmin && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
                       return (
                         <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
                           <span className="attendee-name">{person.name}{isCurrentUser ? '(본인)' : ''}</span>
@@ -1161,7 +1161,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                         const memberId = 'no_student' in a ? a.no_student : a.no;
                         return memberId === member.no_member;
                       });
-                      const isCurrentUser = user && user.userType !== 'admin' && member.no_member === String(user.studentId);
+                      const isCurrentUser = user && !user.isAdmin && member.no_member === String(user.studentId);
                       const userTypeLabels: {[key: string]: string} = {
                         student: '학생',
                         council: '집행부',
