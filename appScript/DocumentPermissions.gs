@@ -22,70 +22,15 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
       throw new Error('문서 ID가 필요합니다');
     }
     
-    // Drive API 사용 가능 여부 확인 (상세 디버깅)
-    console.log('🔍 Drive API 확인:', {
-      Drive_defined: typeof Drive !== 'undefined',
-      Drive_Permissions_defined: typeof Drive !== 'undefined' && typeof Drive.Permissions !== 'undefined',
-      Drive_Permissions_insert_defined: typeof Drive !== 'undefined' && typeof Drive.Permissions !== 'undefined' && typeof Drive.Permissions.insert !== 'undefined',
-      Drive_Permissions_insert_isFunction: typeof Drive !== 'undefined' && typeof Drive.Permissions !== 'undefined' && typeof Drive.Permissions.insert === 'function',
-      Drive_keys: typeof Drive !== 'undefined' ? Object.keys(Drive) : 'N/A',
-      Drive_Permissions_keys: typeof Drive !== 'undefined' && typeof Drive.Permissions !== 'undefined' ? Object.keys(Drive.Permissions) : 'N/A'
-    });
-    
-    if (typeof Drive === 'undefined') {
-      const errorMsg = 'Drive API가 활성화되지 않았습니다. Google Apps Script에서 "리소스" → "고급 Google 서비스" → "Drive API"를 활성화하고, Google Cloud Platform에서도 활성화해주세요.';
-      console.error('❌', errorMsg);
-      throw new Error(errorMsg);
-    }
-    
-    if (typeof Drive.Permissions === 'undefined') {
-      const errorMsg = 'Drive.Permissions가 정의되지 않았습니다. Google Cloud Platform에서 "Drive API"를 활성화하고, Apps Script 프로젝트를 저장한 후 다시 시도해주세요.';
-      console.error('❌', errorMsg);
-      throw new Error(errorMsg);
-    }
-    
-    if (typeof Drive.Permissions.insert !== 'function') {
-      const errorMsg = 'Drive.Permissions.insert가 함수가 아닙니다. Google Cloud Platform에서 "Drive API"를 활성화하고, Apps Script 프로젝트를 저장한 후 다시 시도해주세요.';
-      console.error('❌', errorMsg);
-      console.error('❌ Drive.Permissions 타입:', typeof Drive.Permissions);
-      console.error('❌ Drive.Permissions.insert 타입:', typeof Drive.Permissions.insert);
-      throw new Error(errorMsg);
-    }
-    
-    // 이메일 유효성 검증 및 정규화 함수
-    const normalizeEmail = function(email) {
-      if (!email || typeof email !== 'string') return null;
-      const trimmed = email.trim();
-      if (trimmed === '') return null;
-      // 기본 이메일 형식 검증 (@ 포함)
-      if (trimmed.indexOf('@') === -1) {
-        console.warn('⚠️ 유효하지 않은 이메일 형식:', trimmed);
-        return null;
-      }
-      return trimmed.toLowerCase(); // 소문자로 정규화
-    };
-    
     // 모든 사용자에게 편집 권한 부여 (생성자 + 편집자)
-    // editors 배열에 이미 creatorEmail이 포함될 수 있으므로 중복 제거
-    const allEmails = [];
-    if (creatorEmail) {
-      const normalizedCreator = normalizeEmail(creatorEmail);
-      if (normalizedCreator) allEmails.push(normalizedCreator);
-    }
+    const allUsers = [creatorEmail, ...(editors || [])].filter((email, index, arr) => 
+      email && email.trim() !== '' && arr.indexOf(email) === index // 중복 제거
+    );
     
-    if (editors && Array.isArray(editors)) {
-      for (let i = 0; i < editors.length; i++) {
-        const normalized = normalizeEmail(editors[i]);
-        if (normalized && allEmails.indexOf(normalized) === -1) {
-          allEmails.push(normalized);
-        }
-      }
-    }
+    console.log('🔐 권한 부여할 사용자 목록:', allUsers);
+    console.log('🔐 사용자 수:', allUsers.length);
     
-    console.log('🔐 권한 부여할 사용자 목록:', allEmails);
-    console.log('🔐 사용자 수:', allEmails.length);
-    
-    if (allEmails.length === 0) {
+    if (allUsers.length === 0) {
       console.warn('⚠️ 권한 부여할 사용자가 없습니다');
       return {
         success: true,
@@ -95,149 +40,57 @@ function setDocumentPermissions(documentId, creatorEmail, editors) {
       };
     }
     
-    // 문서 파일 가져오기 (DriveApp 사용)
-    let file;
-    try {
-      file = DriveApp.getFileById(documentId);
-      console.log('📄 문서 정보:', { id: file.getId(), name: file.getName() });
-    } catch (fileError) {
-      console.error('❌ 문서 파일 가져오기 실패:', fileError.message);
-      throw new Error('문서를 찾을 수 없습니다: ' + fileError.message);
-    }
-    
-    // 권한 설정 전 현재 상태 확인 (DriveApp 사용)
-    const beforeEditors = file.getEditors();
-    const beforeEmails = beforeEditors.map(editor => editor.getEmail().toLowerCase());
-    console.log('🔐 권한 설정 전 편집자:', beforeEmails);
+    // 권한 설정 전 현재 상태 확인
+    const permissions = Drive.Permissions.list(documentId);
+    const beforePermissions = permissions.items || [];
+    console.log('🔐 권한 설정 전 편집자:', beforePermissions.map(p => p.emailAddress));
     
     let successCount = 0;
     let failCount = 0;
-    const grantedUsers = [];
-    const failedUsers = [];
     
-    // 각 사용자에게 편집 권한 부여 (DriveApp 사용 - 더 안정적)
-    for (let i = 0; i < allEmails.length; i++) {
-      const userEmail = allEmails[i];
+    // 각 사용자에게 편집 권한 부여
+    for (const userEmail of allUsers) {
       try {
-        console.log('🔐 권한 부여 시도:', userEmail, `(${i + 1}/${allEmails.length})`);
+        console.log('🔐 권한 부여 시도:', userEmail);
         
-        // 이미 권한이 있는지 확인 (소문자로 비교)
-        const hasPermission = beforeEmails.indexOf(userEmail) !== -1;
+        // 이미 권한이 있는지 확인
+        const hasPermission = beforePermissions.some(p => p.emailAddress === userEmail && p.role === 'writer');
         if (hasPermission) {
           console.log('✅ 이미 권한이 있는 사용자:', userEmail);
           successCount++;
-          grantedUsers.push(userEmail);
           continue;
         }
         
-        // Drive API만 사용 (메일 알림 없이) - DriveApp.addEditor()는 메일을 보내므로 사용하지 않음
-        try {
-          // sendNotificationEmails를 명시적으로 false로 설정
-          // 참고: Google Drive API v2에서는 sendNotificationEmails가 때때로 작동하지 않을 수 있음
-          const permissionResult = Drive.Permissions.insert({
-            role: 'writer',
-            type: 'user',
-            value: userEmail,
-            sendNotificationEmails: false  // 메일 알림 없음
-          }, documentId);
-          
-          // 권한 부여 결과 확인
-          console.log('📋 권한 부여 API 응답:', JSON.stringify(permissionResult));
-          
-          console.log('✅ Drive API로 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
-          console.log('📋 권한 부여 결과:', permissionResult);
-          
-          successCount++;
-          grantedUsers.push(userEmail);
-          
-          // 권한 추가 후 beforeEmails에 추가하여 중복 체크 방지
-          beforeEmails.push(userEmail);
-          
-        } catch (driveApiError) {
-          // Drive API 실패 시 상세 에러 로깅
-          console.error('❌ Drive API 권한 설정 실패:', userEmail);
-          console.error('❌ 에러 메시지:', driveApiError.message);
-          console.error('❌ 에러 타입:', typeof driveApiError);
-          console.error('❌ 에러 객체:', JSON.stringify(driveApiError));
-          
-          // 에러 코드 확인
-          if (driveApiError.code) {
-            console.error('❌ 에러 코드:', driveApiError.code);
-          }
-          if (driveApiError.details) {
-            console.error('❌ 에러 상세:', JSON.stringify(driveApiError.details));
-          }
-          
-          failCount++;
-          failedUsers.push({ 
-            email: userEmail, 
-            error: driveApiError.message || String(driveApiError),
-            errorCode: driveApiError.code || null,
-            errorDetails: driveApiError.details || null,
-            errorString: driveApiError.toString()
-          });
-          
-          // DriveApp으로 대체하지 않음 (메일을 보내므로)
-          // 실패한 경우에도 계속 진행
-        }
+        // 권한 부여 (메일 알림 없이)
+        Drive.Permissions.insert({
+          role: 'writer',
+          type: 'user',
+          value: userEmail,
+          sendNotificationEmails: false
+        }, documentId);
+        console.log('✅ 편집 권한 부여 완료 (메일 알림 없음):', userEmail);
+        successCount++;
         
         // 잠시 대기 (API 제한 방지)
-        Utilities.sleep(200);
+        Utilities.sleep(100);
         
       } catch (permError) {
-        // 예상치 못한 에러
-        console.error('❌ 예상치 못한 권한 설정 실패:', userEmail, permError.message);
-        console.error('❌ 에러 상세:', JSON.stringify(permError));
+        console.error('❌ 권한 설정 실패:', userEmail, permError.message);
         failCount++;
-        failedUsers.push({ 
-          email: userEmail, 
-          error: permError.message || String(permError),
-          errorDetails: permError.toString()
-        });
       }
     }
     
-    // 권한 설정 후 결과 확인 (약간의 지연 후 확인)
-    Utilities.sleep(300);
-    // 문서 새로고침 후 편집자 목록 확인
-    let afterEmails = [];
-    try {
-      file = DriveApp.getFileById(documentId);
-      const afterEditors = file.getEditors();
-      afterEmails = afterEditors.map(editor => editor.getEmail().toLowerCase());
-      console.log('🔐 권한 설정 후 편집자:', afterEmails);
-      console.log('🔐 권한 설정 후 편집자 수:', afterEmails.length);
-    } catch (refreshError) {
-      console.warn('⚠️ 권한 확인 중 오류:', refreshError.message);
-      // Drive API로 대체 확인
-      try {
-        const afterPermissions = Drive.Permissions.list(documentId);
-        afterEmails = (afterPermissions.items || [])
-          .filter(p => p.emailAddress)
-          .map(p => p.emailAddress.toLowerCase());
-        console.log('🔐 권한 설정 후 편집자 (Drive API):', afterEmails);
-        console.log('🔐 권한 설정 후 편집자 수:', afterEmails.length);
-      } catch (apiError) {
-        console.error('❌ 권한 확인 실패:', apiError.message);
-        afterEmails = [];
-      }
-    }
-    
-    // 실제로 권한이 설정되었는지 확인
-    const missingPermissions = allEmails.filter(email => afterEmails.indexOf(email) === -1);
-    if (missingPermissions.length > 0) {
-      console.warn('⚠️ 권한이 설정되지 않은 사용자:', missingPermissions);
-    }
+    // 권한 설정 후 결과 확인
+    const afterPermissions = Drive.Permissions.list(documentId);
+    console.log('🔐 권한 설정 후 편집자:', afterPermissions.items.map(p => p.emailAddress));
     
     const result = {
       success: successCount > 0,
       message: `권한 설정 완료: 성공 ${successCount}명, 실패 ${failCount}명`,
-      grantedUsers: grantedUsers,
-      failedUsers: failedUsers,
-      currentEditors: afterEmails,
+      grantedUsers: allUsers,
+      currentEditors: afterPermissions.items.map(p => p.emailAddress),
       successCount: successCount,
-      failCount: failCount,
-      missingPermissions: missingPermissions
+      failCount: failCount
     };
     
     console.log('🔐 최종 권한 설정 결과:', result);

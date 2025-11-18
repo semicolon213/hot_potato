@@ -111,27 +111,9 @@ function handleCreateDocument(req) {
     }
     
     // 2. 문서 권한 설정 (소유자: 앱스크립트 소유자, 편집자: 요청자 + 지정된 편집자들)
-    let permissionResult = null;
-    try {
-      // DocumentPermissions 모듈이 있으면 사용, 없으면 직접 함수 호출
-      if (typeof DocumentPermissions !== 'undefined' && typeof DocumentPermissions.setDocumentPermissions === 'function') {
-        console.log('✅ DocumentPermissions 모듈 사용');
-        permissionResult = DocumentPermissions.setDocumentPermissions(documentId, creatorEmail, editors || []);
-      } else {
-        console.log('⚠️ DocumentPermissions 모듈 로드 실패, 직접 함수 호출');
-        permissionResult = setDocumentPermissions(documentId, creatorEmail, editors || []);
-      }
-    } catch (permError) {
-      console.error('❌ 문서 권한 설정 실패:', permError);
-      permissionResult = {
-        success: false,
-        message: '권한 설정 중 오류가 발생했습니다: ' + permError.message
-      };
-    }
-    
-    if (!permissionResult || !permissionResult.success) {
-      console.warn('⚠️ 권한 설정 실패 또는 결과 없음:', permissionResult);
-      // 권한 설정 실패해도 문서 생성은 성공으로 처리 (경고만 표시)
+    const permissionResult = setDocumentPermissions(documentId, creatorEmail, editors || []);
+    if (!permissionResult.success) {
+      return permissionResult;
     }
     
     // 3. 적절한 폴더에 문서 이동 (필요한 경우에만)
