@@ -12,6 +12,7 @@ import {ENV_CONFIG} from '../../config/environment';
 import {apiClient} from '../api/apiClient';
 import {tokenManager} from '../auth/tokenManager';
 import {getCacheManager} from '../cache/cacheManager';
+import {getDataSyncService} from '../../services/dataSyncService';
 import {generateCacheKey, getCacheTTL, getActionCategory} from '../cache/cacheUtils';
 import type {StaffMember, Committee as CommitteeType} from '../../types/features/staff';
 import type {SpreadsheetIdsResponse, AnnouncementsResponse, AnnouncementItem, StudentIssue} from '../../types/api/apiResponses';
@@ -946,6 +947,18 @@ export const addCalendarEvent = async (spreadsheetId: string, eventData: Omit<Ev
 
         await append(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [newEventForSheet]);
         console.log('일정이 성공적으로 추가되었습니다.');
+        
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
+                'calendar:fetchCalendarEvents:*' // 와일드카드로 모든 캘린더 이벤트 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
     } catch (error) {
         console.error('Error saving calendar event to Google Sheet:', error);
         throw error;
@@ -992,6 +1005,18 @@ export const updateCalendarEvent = async (spreadsheetId: string, eventId: string
 
         await update(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex + 1}:K${rowIndex + 1}`, [newRowData]);
         console.log('일정이 성공적으로 업데이트되었습니다.');
+        
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
+                'calendar:fetchCalendarEvents:*' // 와일드카드로 모든 캘린더 이벤트 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
     } catch (error) {
         console.error('Error updating calendar event in Google Sheet:', error);
         throw error;
@@ -1023,6 +1048,18 @@ export const deleteCalendarEvent = async (spreadsheetId: string, eventId: string
     const sheetId = 0; // Assuming the first sheet
     await deleteRow(spreadsheetId, sheetId, rowIndex);
     console.log('일정이 성공적으로 삭제되었습니다.');
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+        const dataSyncService = getDataSyncService();
+        const cacheKeys = [
+            generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
+            'calendar:fetchCalendarEvents:*' // 와일드카드로 모든 캘린더 이벤트 캐시 무효화
+        ];
+        await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+        console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
   } catch (error) {
     console.error('Error deleting calendar event from Google Sheet:', error);
     throw error;
@@ -1312,6 +1349,18 @@ export const addStudentIssue = async (issueData: {
 
         await append(studentSpreadsheetId, ENV_CONFIG.STUDENT_ISSUE_SHEET_NAME, [data]);
         console.log('Student issue added successfully');
+        
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('students', 'fetchStudentIssues', { spreadsheetId: studentSpreadsheetId }),
+                'students:fetchStudentIssues:*' // 와일드카드로 모든 학생 이슈 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
     } catch (error) {
         console.error('Error adding student issue:', error);
         throw error;
@@ -1792,6 +1841,18 @@ export const addStaff = async (spreadsheetId: string, staff: StaffMember): Promi
             staff.note
         ]];
         await addRow(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME, newRow);
+        
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('staff', 'fetchStaff', { spreadsheetId: staffSpreadsheetId }),
+                'staff:fetchStaff:*' // 와일드카드로 모든 교직원 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
     } catch (error) {
         console.error('Error adding staff:', error);
         throw error;
@@ -1847,6 +1908,18 @@ export const updateStaff = async (spreadsheetId: string, staffNo: string, staff:
                 values: values
             }
         });
+        
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('staff', 'fetchStaff', { spreadsheetId: effectiveSpreadsheetId }),
+                'staff:fetchStaff:*' // 와일드카드로 모든 교직원 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
 
     } catch (error) {
         console.error('Error updating staff in papyrusManager:', error);
@@ -1885,6 +1958,18 @@ export const deleteStaff = async (spreadsheetId: string, staffNo: string): Promi
 
         const sheetId = 0; // Assuming the first sheet
         await deleteRow(effectiveSpreadsheetId, sheetId, rowIndex);
+        
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('staff', 'fetchStaff', { spreadsheetId: effectiveSpreadsheetId }),
+                'staff:fetchStaff:*' // 와일드카드로 모든 교직원 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
 
     } catch (error) {
         console.error('Error deleting staff:', error);

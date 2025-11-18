@@ -9,6 +9,7 @@
 import { getSheetData, append, update } from 'papyrus-db';
 import { getCacheManager } from '../cache/cacheManager';
 import { generateCacheKey, getCacheTTL, getActionCategory } from '../cache/cacheUtils';
+import { getDataSyncService } from '../../services/dataSyncService';
 import type {
   Account,
   LedgerEntry,
@@ -461,6 +462,21 @@ export const createLedgerEntry = async (
     }
 
     console.log('✅ 장부 항목 추가 완료:', entryId);
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+      const dataSyncService = getDataSyncService();
+      const cacheKeys = [
+        generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId: entryData.accountId }),
+        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+        'accounting:getLedgerEntries:*', // 와일드카드로 모든 장부 항목 캐시 무효화
+        'accounting:getAccounts:*' // 와일드카드로 모든 통장 캐시 무효화
+      ];
+      await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+      console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
+    
     return newEntry;
 
   } catch (error) {
@@ -662,6 +678,21 @@ export const updateLedgerEntry = async (
     }
 
     console.log('✅ 장부 항목 수정 완료:', entryId);
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+      const dataSyncService = getDataSyncService();
+      const cacheKeys = [
+        generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId: entryData.accountId }),
+        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+        'accounting:getLedgerEntries:*', // 와일드카드로 모든 장부 항목 캐시 무효화
+        'accounting:getAccounts:*' // 와일드카드로 모든 통장 캐시 무효화
+      ];
+      await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+      console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
+    
     return updatedEntry;
 
   } catch (error) {
@@ -770,6 +801,20 @@ export const deleteLedgerEntry = async (
     }
 
     console.log('✅ 장부 항목 삭제 완료:', entryId);
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+      const dataSyncService = getDataSyncService();
+      const cacheKeys = [
+        generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId }),
+        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+        'accounting:getLedgerEntries:*', // 와일드카드로 모든 장부 항목 캐시 무효화
+        'accounting:getAccounts:*' // 와일드카드로 모든 통장 캐시 무효화
+      ];
+      await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+      console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
 
   } catch (error) {
     console.error('❌ 장부 항목 삭제 오류:', error);
@@ -1019,6 +1064,19 @@ export const createCategory = async (
     };
 
     console.log('✅ 카테고리 생성 완료:', categoryId);
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+      const dataSyncService = getDataSyncService();
+      const cacheKeys = [
+        generateCacheKey('accounting', 'getAccountingCategories', { spreadsheetId }),
+        'accounting:getAccountingCategories:*' // 와일드카드로 모든 카테고리 캐시 무효화
+      ];
+      await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+      console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
+    
     return newCategory;
 
   } catch (error: unknown) {
@@ -1156,6 +1214,19 @@ export const updateCategory = async (
     await update(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY, `C${actualRowNumber}`, [[newDescription.trim()]]);
 
     console.log('✅ 카테고리 수정 완료:', categoryId);
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+      const dataSyncService = getDataSyncService();
+      const cacheKeys = [
+        generateCacheKey('accounting', 'getAccountingCategories', { spreadsheetId }),
+        'accounting:getAccountingCategories:*', // 와일드카드로 모든 카테고리 캐시 무효화
+        'accounting:getLedgerEntries:*' // 카테고리 이름이 변경되면 장부 항목도 영향받을 수 있음
+      ];
+      await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+      console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
   } catch (error: unknown) {
     console.error('❌ 카테고리 수정 오류:', error);
     throw error;
@@ -1202,6 +1273,18 @@ export const deleteCategory = async (
     await update(spreadsheetId, ACCOUNTING_SHEETS.CATEGORY, `F${actualRowNumber}`, [['FALSE']]);
 
     console.log('✅ 카테고리 삭제 완료:', categoryId);
+    
+    // 캐시 무효화 및 백그라운드 갱신
+    try {
+      const dataSyncService = getDataSyncService();
+      const cacheKeys = [
+        generateCacheKey('accounting', 'getAccountingCategories', { spreadsheetId }),
+        'accounting:getAccountingCategories:*' // 와일드카드로 모든 카테고리 캐시 무효화
+      ];
+      await dataSyncService.invalidateAndRefresh(cacheKeys);
+    } catch (cacheError) {
+      console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+    }
   } catch (error: unknown) {
     console.error('❌ 카테고리 삭제 오류:', error);
     throw error;
