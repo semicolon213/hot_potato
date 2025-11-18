@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Sidebar.css";
 import { GoHomeFill } from "react-icons/go";
 import { FaSignOutAlt } from "react-icons/fa";
@@ -20,6 +20,7 @@ import {
   HiMiniSquares2X2,
   HiMiniCurrencyDollar
 } from "react-icons/hi2";
+import { apiClient } from "../../utils/api/apiClient";
 
 // React 19 호환성을 위한 타입 단언
 const MessageIcon = HiMiniMegaphone as React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -60,7 +61,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
   const [activePage, setActivePage] = useState<string | null>(currentPage ?? null);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [memberName, setMemberName] = useState<string>(""); // 회원정보명
   const { logout } = useAuthStore();
+
+  // 회원정보명 가져오기 (Apps Script에서)
+  useEffect(() => {
+    const fetchMemberName = async () => {
+      if (!user?.email) return;
+      try {
+        const res = await apiClient.getUserNameByEmail(user.email);
+        if (res?.success && 'name' in res && res.name) {
+          setMemberName(res.name);
+        } else if (res?.data?.name) {
+          setMemberName(res.data.name);
+        }
+      } catch (e) {
+        // 실패 시 구글 계정명 사용
+        console.warn('회원정보명 가져오기 실패:', e);
+      }
+    };
+    fetchMemberName();
+  }, [user?.email]);
 
   // 외부에서 currentPage 변경 시 동기화
   React.useEffect(() => {
@@ -241,7 +262,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
           {user && (
             <div className="menu-item" onClick={() => onPageChange("mypage")}>
               <FaUser className="menu-icon" />
-              <div className="menu-text">{user.name || "마이페이지"}</div>
+              <div className="menu-text">{memberName || user.name || "마이페이지"}</div>
             </div>
           )}
           <div className="menu-item" onClick={handleLogoutClick}>
