@@ -61,31 +61,15 @@ interface RegistrationResponse {
   };
 }
 
-// API 함수 - 기존 authApi 사용
+// API 함수 - apiClient 사용 (환경에 따라 올바른 URL 사용)
 const checkUserStatus = async (email: string): Promise<LoginResponse> => {
-  // checkApprovalStatus 함수가 authApi에 없으므로 직접 구현
   try {
     console.log('사용자 상태 확인 요청:', email);
 
-    // Vite 프록시 사용
-    const response = await fetch('/api', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: 'checkUserStatus',
-        email: email
-      })
-    });
+    // apiClient를 사용하여 환경에 맞는 URL 자동 선택 (개발: /api, 프로덕션: 직접 URL)
+    const { apiClient } = await import('../../utils/api/apiClient');
+    const data = await apiClient.checkApprovalStatus(email);
 
-    console.log('API 응답 상태:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
     console.log('사용자 등록 상태 확인 응답:', data);
 
     // 디버그 정보 출력
@@ -94,15 +78,17 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
     }
 
     // 응답 구조 변환 (UserManagement.gs의 응답을 LoginResponse 형식으로)
+    // apiClient.checkApprovalStatus는 ApprovalStatusResponse를 반환하므로 변환 필요
+    const responseData = data.data || data;
     return {
       success: data.success || false,
-      isRegistered: data.isRegistered || false,
-      isApproved: data.isApproved || false,
-      approvalStatus: data.approvalStatus || 'not_requested',
-      studentId: data.user?.no_member || '',
-      isAdmin: data.user?.isAdmin || false, // is_admin에서 isAdmin으로 변경
-      userType: data.user?.user_type || '',
-      error: data.error,
+      isRegistered: responseData.status !== 'not_registered' || false,
+      isApproved: responseData.user?.isApproved || responseData.isApproved || false,
+      approvalStatus: responseData.status || responseData.approvalStatus || 'not_requested',
+      studentId: responseData.user?.no_member || responseData.user?.studentId || '',
+      isAdmin: responseData.user?.isAdmin || false,
+      userType: responseData.user?.user_type || responseData.userType || '',
+      error: data.error || responseData.message,
       debug: data.debug
     } as LoginResponse;
   } catch (error) {
