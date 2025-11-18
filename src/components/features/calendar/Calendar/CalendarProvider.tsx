@@ -28,6 +28,7 @@ interface GoogleApiRequestBody {
   colorId?: string;
   start: { date?: string; dateTime?: string; timeZone: string };
   end: { date?: string; dateTime?: string; timeZone: string };
+  recurrence?: string[];
 }
 
 const eventTypeStyles: { [key: string]: { color: string; icon: string } } = {
@@ -279,11 +280,39 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
         return true; // Public event, visible to all
       }
 
-            // Private event, visible only to attendees
-            const attendeeIds = attendees.split(',').map((id: string) => id.trim());
-            // Assuming user.studentId holds the unique ID for both students and staff
-            return user ? attendeeIds.includes(String(user.studentId)) : false;
-        });
+      // Private event, visible only to attendees
+      if (!user) return false;
+      
+      const attendeeItems = attendees.split(',').map((id: string) => id.trim());
+      const userStudentId = String(user.studentId);
+      const userType = user.userType;
+      
+      // 그룹 선택 여부 확인
+      const isInGroup = attendeeItems.some(item => {
+        if (item.startsWith('group:')) {
+          const groupType = item.replace('group:', '');
+          return groupType === userType;
+        }
+        return false;
+      });
+      
+      // 개별 참석자 여부 확인
+      const isInAttendees = attendeeItems.some(item => {
+        if (item.startsWith('group:')) {
+          return false; // 그룹은 이미 확인했으므로 제외
+        } else if (item.includes(':')) {
+          // 개별 참석자: student:123 -> 사용자 ID가 123이면 표시
+          const [itemUserType, attendeeId] = item.split(':');
+          return (itemUserType === userType && attendeeId === userStudentId) || attendeeId === userStudentId;
+        } else {
+          // 기존 형식 (호환성): 참석자ID만 있는 경우
+          return item === userStudentId;
+        }
+      });
+      
+      // 그룹에 속하거나 개별 참석자로 포함되어 있으면 표시
+      return isInGroup || isInAttendees;
+    });
 
         const combinedEvents = [...visibleSheetEvents, ...googleEvents];
 
@@ -462,6 +491,13 @@ const CalendarProvider: React.FC<CalendarProviderProps> = ({
                 exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
                 requestBody.start = {date: event.startDate};
                 requestBody.end = {date: exclusiveEndDate.toISOString().split('T')[0]};
+            }
+
+            // 반복 일정 설정 (Google Calendar API 형식)
+            if (event.rrule) {
+                // RRule을 Google Calendar recurrence 형식으로 변환
+                // RRule.toString()은 "FREQ=DAILY;INTERVAL=1" 형식이므로 "RRULE:"을 앞에 붙임
+                requestBody.recurrence = [`RRULE:${event.rrule}`];
             }
 
             const response = await fetch(

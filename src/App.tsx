@@ -684,16 +684,73 @@ const App: React.FC = () => {
       let targetSpreadsheetId = activeCalendarSpreadsheetId; // Initialize here
 
       if (eventData.attendees) {
-        const attendeeIds = eventData.attendees.split(',');
-        const attendeeUserTypes = attendeeIds.map(getAttendeeUserType).filter(Boolean) as string[];
+        const attendeeItems = eventData.attendees.split(',');
+        const groupTypes: string[] = [];
+        const individualUserTypes: string[] = [];
+        
+        // 새로운 형식 파싱: "group:권한" 또는 "권한:참석자ID" 또는 "참석자ID" (기존 형식)
+        attendeeItems.forEach(item => {
+          const trimmed = item.trim();
+          if (trimmed.startsWith('group:')) {
+            // 그룹 선택: group:student -> student
+            const groupType = trimmed.replace('group:', '');
+            if (groupType && !groupTypes.includes(groupType)) {
+              groupTypes.push(groupType);
+            }
+          } else if (trimmed.includes(':')) {
+            // 개별 참석자: student:123 -> student
+            const [userType] = trimmed.split(':');
+            if (userType && !individualUserTypes.includes(userType)) {
+              individualUserTypes.push(userType);
+            }
+          } else {
+            // 기존 형식 (호환성): 참석자ID만 있는 경우
+            const userType = getAttendeeUserType(trimmed);
+            if (userType && !individualUserTypes.includes(userType)) {
+              individualUserTypes.push(userType);
+            }
+          }
+        });
 
-        if (attendeeUserTypes.length > 0) {
-          const lowestPermissionType = attendeeUserTypes.reduce((lowest, current) => {
+        // 개별 참석자가 있으면 개별 참석자 중 가장 낮은 권한 사용
+        // 개별 참석자가 없으면 그룹 선택 중 가장 낮은 권한 사용
+        let lowestPermissionType: string | null = null;
+        
+        if (individualUserTypes.length > 0) {
+          // 개별 참석자 목록에서 가장 낮은 권한 찾기
+          lowestPermissionType = individualUserTypes.reduce((lowest, current) => {
             const lowestIndex = permissionHierarchy.indexOf(lowest);
             const currentIndex = permissionHierarchy.indexOf(current);
             return currentIndex < lowestIndex ? current : lowest;
-          }, attendeeUserTypes[0]);
+          }, individualUserTypes[0]);
+          console.log('📅 개별 참석자 권한 목록:', individualUserTypes);
+          console.log('📅 개별 참석자 중 가장 낮은 권한:', lowestPermissionType);
+        } else if (groupTypes.length > 0) {
+          // 그룹 선택 중 가장 낮은 권한 찾기
+          lowestPermissionType = groupTypes.reduce((lowest, current) => {
+            const lowestIndex = permissionHierarchy.indexOf(lowest);
+            const currentIndex = permissionHierarchy.indexOf(current);
+            return currentIndex < lowestIndex ? current : lowest;
+          }, groupTypes[0]);
+          console.log('📅 그룹 권한 목록:', groupTypes);
+          console.log('📅 그룹 중 가장 낮은 권한:', lowestPermissionType);
+        }
 
+        // 본인 권한도 고려 (개별 참석자나 그룹에 본인이 없을 경우)
+        if (user?.userType) {
+          const isInIndividual = individualUserTypes.includes(user.userType);
+          const isInGroup = groupTypes.includes(user.userType);
+          
+          if (!isInIndividual && !isInGroup) {
+            // 본인이 참석자 목록에 없으면 본인 권한도 비교
+            if (!lowestPermissionType || permissionHierarchy.indexOf(user.userType) < permissionHierarchy.indexOf(lowestPermissionType)) {
+              lowestPermissionType = user.userType;
+              console.log('📅 본인 권한이 가장 낮음:', lowestPermissionType);
+            }
+          }
+        }
+
+        if (lowestPermissionType) {
           eventOwnerType = lowestPermissionType;
 
           switch (lowestPermissionType) {
@@ -716,6 +773,32 @@ const App: React.FC = () => {
             default:
               targetSpreadsheetId = activeCalendarSpreadsheetId;
           }
+        }
+      }
+
+      // 참석자가 없거나 targetSpreadsheetId가 null인 경우, 사용자 타입에 따라 기본 스프레드시트 ID 선택
+      if (!targetSpreadsheetId && user.userType) {
+        switch (user.userType) {
+          case 'professor':
+            targetSpreadsheetId = calendarProfessorSpreadsheetId;
+            break;
+          case 'student':
+            targetSpreadsheetId = calendarStudentSpreadsheetId;
+            break;
+          case 'council':
+            targetSpreadsheetId = calendarCouncilSpreadsheetId;
+            break;
+          case 'ADprofessor':
+            targetSpreadsheetId = calendarADProfessorSpreadsheetId;
+            break;
+          case 'supp':
+          case 'support':
+            targetSpreadsheetId = calendarSuppSpreadsheetId;
+            break;
+          default:
+            // 기본값으로 student 캘린더 사용
+            targetSpreadsheetId = calendarStudentSpreadsheetId;
+            break;
         }
       }
 
