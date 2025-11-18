@@ -280,6 +280,7 @@ export interface RegistrationData {
   userType: string;
   isAdmin: boolean;
   adminKey?: string;
+  [key: string]: unknown;
 }
 
 /**

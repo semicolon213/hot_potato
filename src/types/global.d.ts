@@ -53,10 +53,11 @@ declare global {
         init: (config: {
           clientId: string;
           discoveryDocs: string[];
-          scope: string;
+          scope?: string;
         }) => Promise<void>;
         load: (api: string, version: string) => Promise<void>;
         setApiKey: (apiKey: string) => void;
+        setToken: (token: { access_token: string }) => void;
         getToken: () => GoogleToken | null;
         request: (args: {
           path: string;
@@ -72,6 +73,17 @@ declare global {
             create: (params: gapi.client.drive.files.create.Params) => Promise<gapi.client.drive.files.create.Response>;
             update: (params: gapi.client.drive.files.update.Params) => Promise<gapi.client.drive.files.update.Response>;
             get: (params: GoogleDriveFilesGetParams) => Promise<GoogleDriveFilesGetResponse>;
+            delete: (params: { fileId: string }) => Promise<void>;
+          };
+          permissions: {
+            create: (params: {
+              fileId: string;
+              resource: {
+                role: string;
+                type: string;
+                emailAddress?: string;
+              };
+            }) => Promise<{ result: { id: string } }>;
           };
         };
         sheets: {
@@ -126,6 +138,10 @@ declare global {
         fields: string;
         spaces?: string;
         orderBy?: string;
+        includeItemsFromAllDrives?: boolean;
+        supportsAllDrives?: boolean;
+        corpora?: string;
+        pageSize?: number;
       }
       interface Response {
         result: {

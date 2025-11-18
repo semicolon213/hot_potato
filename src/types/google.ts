@@ -70,6 +70,7 @@ export interface GoogleDriveClient {
     create: (params: GoogleDriveFilesCreateParams) => Promise<GoogleDriveFilesCreateResponse>;
     update: (params: GoogleDriveFilesUpdateParams) => Promise<GoogleDriveFilesUpdateResponse>;
     copy: (params: GoogleDriveFilesCopyParams) => Promise<GoogleDriveFilesCopyResponse>;
+    delete: (params: { fileId: string }) => Promise<void>;
   };
   permissions: {
     create: (params: GoogleDrivePermissionsCreateParams) => Promise<GoogleDrivePermissionsCreateResponse>;
@@ -257,6 +258,9 @@ export interface GoogleDriveFilesListParams {
   orderBy?: string;
   pageSize?: number;
   pageToken?: string;
+  includeItemsFromAllDrives?: boolean;
+  supportsAllDrives?: boolean;
+  corpora?: string;
 }
 
 export interface GoogleDriveFilesListResponse {

@@ -45,6 +45,7 @@ interface SidebarProps {
     name?: string;
     userType?: string;
     user_type?: string;
+    email?: string;
   };
   currentPage?: string;
 }
