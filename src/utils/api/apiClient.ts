@@ -158,19 +158,27 @@ export class ApiClient {
         // 429 (Too Many Requests) 에러 처리
         if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After');
-          // 429 에러 시 더 긴 대기 시간 (최소 5초, 최대 60초)
-          const waitTime = retryAfter 
-            ? Math.min(parseInt(retryAfter, 10) * 1000, 60000)
-            : Math.min(Math.pow(2, attempt + 2) * 1000, 60000);
+          // Retry-After 헤더가 있으면 그 시간 사용, 없으면 기본값 사용
+          let waitTime: number;
+          if (retryAfter) {
+            const retrySeconds = parseInt(retryAfter, 10);
+            waitTime = retrySeconds * 1000; // 초를 밀리초로 변환
+            console.warn(`⚠️ API 호출 제한 초과 (429). 서버 권장 대기 시간: ${retrySeconds}초 (약 ${Math.round(retrySeconds / 60)}분)`);
+          } else {
+            // Retry-After가 없으면 지수 백오프 사용 (최소 5초, 최대 60초)
+            waitTime = Math.min(Math.pow(2, attempt + 2) * 1000, 60000);
+            console.warn(`⚠️ API 호출 제한 초과 (429). ${Math.round(waitTime / 1000)}초 후 재시도...`);
+          }
           
           if (attempt < retries) {
-            console.warn(`⚠️ API 호출 제한 초과 (429). ${Math.round(waitTime / 1000)}초 후 재시도...`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue; // 재시도
           } else {
-            // 최종 실패 시 조용히 처리 (콘솔 에러만, 사용자에게는 알림 안 함)
-            console.warn(`⚠️ API 호출 제한 초과 (429). 잠시 후 다시 시도해주세요.`);
-            throw new Error(`HTTP 429: API 호출 제한 초과. 잠시 후 다시 시도해주세요.`);
+            // 최종 실패 시 안내 메시지
+            const waitMinutes = retryAfter ? Math.round(parseInt(retryAfter, 10) / 60) : 60;
+            const errorMsg = `HTTP 429: API 호출 제한 초과. ${waitMinutes}분 후 다시 시도해주세요.`;
+            console.warn(`⚠️ ${errorMsg}`);
+            throw new Error(errorMsg);
           }
         }
 

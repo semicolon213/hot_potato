@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { FaPlus } from 'react-icons/fa';
 import { useStaffOnly } from '../hooks/features/staff/useStaffOnly';
 import { useCommitteeOnly } from '../hooks/features/staff/useCommitteeOnly';
 import StudentDetailModal from '../components/ui/StudentDetailModal';
@@ -267,6 +268,16 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId, initialTab = 'staff',
                 totalCount={staffHook.totalStaff}
               />
             </div>
+            <div className="action-right">
+              <button 
+                className="student-add-button"
+                onClick={handleAddStaff}
+                title="교직원 추가"
+              >
+                <FaPlus className="add-icon" />
+                <span className="add-button-text">교직원 추가</span>
+              </button>
+            </div>
           </div>
 
           <StudentList
@@ -293,6 +304,16 @@ const Staff: React.FC<StaffProps> = ({ staffSpreadsheetId, initialTab = 'staff',
                 filteredCount={committeeHook.filteredCommitteeCount}
                 totalCount={committeeHook.totalCommittee}
               />
+            </div>
+            <div className="action-right">
+              <button 
+                className="student-add-button"
+                onClick={handleAddCommittee}
+                title="학과 위원회 추가"
+              >
+                <FaPlus className="add-icon" />
+                <span className="add-button-text">학과 위원회 추가</span>
+              </button>
             </div>
           </div>
 

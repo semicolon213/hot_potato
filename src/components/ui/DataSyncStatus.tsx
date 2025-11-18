@@ -5,8 +5,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FaSync, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaSync, FaCheckCircle, FaExclamationCircle, FaPause, FaPlay } from 'react-icons/fa';
 import { useNotification } from '../../hooks/ui/useNotification';
+import { getDataSyncService } from '../../services/dataSyncService';
 import './DataSyncStatus.css';
 
 interface DataSyncStatusProps {
@@ -69,6 +70,7 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
   const [relativeTime, setRelativeTime] = useState(formatRelativeTime(lastSyncTime));
   const [showSuccess, setShowSuccess] = useState(false);
   const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+  const [isSyncPaused, setIsSyncPaused] = useState(false);
   const { showNotification } = useNotification();
 
   // 상대 시간 실시간 업데이트 (1초마다)
@@ -105,9 +107,41 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
     } catch (error) {
       console.error('데이터 갱신 실패:', error);
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
-      showNotification(`데이터 갱신에 실패했습니다: ${errorMessage}`, 'error', 5000);
+      
+      // 429 에러인 경우 특별한 안내 메시지
+      if (errorMessage.includes('429') || errorMessage.includes('호출 제한')) {
+        const waitTimeMatch = errorMessage.match(/(\d+)분/);
+        const waitTime = waitTimeMatch ? waitTimeMatch[1] : '60';
+        showNotification(
+          `API 호출 제한에 도달했습니다. ${waitTime}분 후 자동으로 재시도됩니다.`,
+          'warning',
+          8000
+        );
+      } else {
+        showNotification(`데이터 갱신에 실패했습니다: ${errorMessage}`, 'error', 5000);
+      }
     } finally {
       setIsRefreshingLocal(false);
+    }
+  };
+
+  // 동기화 일시 중지/재개 핸들러
+  const handleToggleSync = () => {
+    const syncService = getDataSyncService();
+    if (isSyncPaused) {
+      syncService.startPeriodicSync();
+      setIsSyncPaused(false);
+      showNotification('자동 동기화가 재개되었습니다.', 'success');
+    } else {
+      syncService.stopPeriodicSync();
+      setIsSyncPaused(true);
+      showNotification('자동 동기화가 일시 중지되었습니다. 429 에러 방지를 위해 1시간 후 자동으로 재개됩니다.', 'warning', 8000);
+      // 1시간 후 자동 재개
+      setTimeout(() => {
+        syncService.startPeriodicSync();
+        setIsSyncPaused(false);
+        showNotification('자동 동기화가 재개되었습니다.', 'success');
+      }, 60 * 60 * 1000); // 1시간
     }
   };
 
@@ -119,7 +153,19 @@ export const DataSyncStatus: React.FC<DataSyncStatusProps> = ({
         <span className="sync-text" title={formatAbsoluteTime(lastSyncTime)}>
           {relativeTime}
         </span>
+        {isSyncPaused && (
+          <span className="sync-paused-indicator" title="자동 동기화 일시 중지됨">
+            (일시 중지)
+          </span>
+        )}
       </div>
+      <button
+        className={`sync-pause-btn ${isSyncPaused ? 'paused' : ''}`}
+        onClick={handleToggleSync}
+        title={isSyncPaused ? '자동 동기화 재개' : '자동 동기화 일시 중지 (429 에러 방지)'}
+      >
+        {isSyncPaused ? <FaPlay /> : <FaPause />}
+      </button>
       <button
         className={`sync-refresh-btn ${isRefreshingState ? 'refreshing' : ''} ${showSuccess ? 'success' : ''}`}
         onClick={handleRefresh}

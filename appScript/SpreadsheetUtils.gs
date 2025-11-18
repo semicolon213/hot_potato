@@ -15,22 +15,71 @@ function getSheetIdByName(sheetName) {
   try {
     console.log('📊 스프레드시트 ID 찾기 시작:', sheetName);
 
-    const query = `name='${sheetName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
-    console.log('📊 스프레드시트 검색 쿼리:', query);
-
-    const files = Drive.Files.list({
-      q: query,
-      fields: 'files(id,name)'
-    });
-
-    if (files.files && files.files.length > 0) {
-      const spreadsheetId = files.files[0].id;
-      console.log('📊 스프레드시트 ID 찾기 성공:', spreadsheetId);
-      return spreadsheetId;
-    } else {
-      console.warn('📊 스프레드시트를 찾을 수 없습니다:', sheetName);
-      return null;
+    // 방법 1: DriveApp 사용 (내장 서비스, 429 에러 없음)
+    try {
+      const escapedName = sheetName.replace(/'/g, "\\'");
+      const query = `title = '${escapedName}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
+      console.log('📊 DriveApp 검색 쿼리:', query);
+      
+      const files = DriveApp.searchFiles(query);
+      const fileIterator = files;
+      
+      if (fileIterator.hasNext()) {
+        const file = fileIterator.next();
+        const spreadsheetId = file.getId();
+        console.log('✅ DriveApp으로 스프레드시트 ID 찾기 성공:', spreadsheetId);
+        return spreadsheetId;
+      }
+    } catch (driveAppError) {
+      console.warn('⚠️ DriveApp 검색 실패, Drive API로 재시도:', driveAppError.message);
     }
+
+    // 방법 2: Drive API 사용 (fallback, 429 에러 처리 포함)
+    try {
+      const query = `name='${sheetName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+      console.log('📊 Drive API 검색 쿼리:', query);
+
+      let retries = 3;
+      let waitTime = 1000; // 1초부터 시작
+      
+      while (retries > 0) {
+        try {
+          const files = Drive.Files.list({
+            q: query,
+            fields: 'files(id,name)'
+          });
+
+          if (files.files && files.files.length > 0) {
+            const spreadsheetId = files.files[0].id;
+            console.log('✅ Drive API로 스프레드시트 ID 찾기 성공:', spreadsheetId);
+            return spreadsheetId;
+          } else {
+            console.warn('📊 스프레드시트를 찾을 수 없습니다:', sheetName);
+            return null;
+          }
+        } catch (apiError) {
+          // 429 에러인 경우 재시도
+          if (apiError.toString().includes('429') || apiError.toString().includes('rate limit')) {
+            retries--;
+            if (retries > 0) {
+              console.warn(`⚠️ API 호출 제한 (429). ${waitTime}ms 후 재시도... (남은 시도: ${retries})`);
+              Utilities.sleep(waitTime);
+              waitTime *= 2; // 지수 백오프
+            } else {
+              console.error('❌ Drive API 재시도 실패:', apiError);
+            }
+          } else {
+            // 429가 아닌 다른 에러는 즉시 throw
+            throw apiError;
+          }
+        }
+      }
+    } catch (driveApiError) {
+      console.error('❌ Drive API 검색 실패:', driveApiError.message);
+    }
+
+    console.warn('📊 모든 방법으로 스프레드시트를 찾을 수 없습니다:', sheetName);
+    return null;
 
   } catch (error) {
     console.error('📊 스프레드시트 ID 찾기 오류:', error);
@@ -59,12 +108,17 @@ function getSpreadsheetIds(req) {
     const result = {};
     const notFound = [];
     
-    // 각 스프레드시트 이름으로 ID 찾기
-    spreadsheetNames.forEach(name => {
+    // 각 스프레드시트 이름으로 ID 찾기 (429 에러 방지를 위해 간격 두기)
+    spreadsheetNames.forEach((name, index) => {
       if (!name || typeof name !== 'string') {
         console.warn('📊 유효하지 않은 스프레드시트 이름:', name);
         result[name] = null;
         return;
+      }
+      
+      // 429 에러 방지를 위해 각 요청 사이에 짧은 대기 시간 추가
+      if (index > 0) {
+        Utilities.sleep(200); // 200ms 대기
       }
       
       const id = getSheetIdByName(name);
@@ -89,6 +143,17 @@ function getSpreadsheetIds(req) {
     
   } catch (error) {
     console.error('📊 스프레드시트 ID 목록 조회 오류:', error);
+    
+    // 429 에러인 경우 특별 처리
+    if (error.toString().includes('429') || error.toString().includes('rate limit')) {
+      return {
+        success: false,
+        message: 'API 호출 제한에 도달했습니다. 잠시 후 다시 시도해주세요.',
+        data: {},
+        errorCode: 429
+      };
+    }
+    
     return {
       success: false,
       message: '스프레드시트 ID 조회 중 오류가 발생했습니다: ' + error.message,

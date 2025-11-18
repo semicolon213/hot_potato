@@ -54,6 +54,56 @@
   color: #333;
 }
 
+.sync-paused-indicator {
+  font-size: 11px;
+  color: #ff9800;
+  font-weight: 500;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.sync-pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.sync-pause-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+.sync-pause-btn:active {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.sync-pause-btn.paused {
+  color: #ff9800;
+}
+
+.sync-pause-btn.paused:hover {
+  color: #f57c00;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.sync-pause-btn svg {
+  font-size: 10px;
+  width: 10px;
+  height: 10px;
+}
+
 .sync-refresh-btn {
   display: flex;
   align-items: center;
