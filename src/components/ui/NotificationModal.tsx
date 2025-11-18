@@ -102,16 +102,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="confirm-modal-message">{message}</div>
         <div className="confirm-modal-buttons">
           <button 
+            className={`confirm-button confirm-primary ${type === 'danger' ? 'danger-button' : 'primary-button'}`}
+            onClick={handleConfirm}
+          >
+            {confirmText}
+          </button>
+          <button 
             className="confirm-button cancel-button" 
             onClick={handleCancel}
           >
             {cancelText}
-          </button>
-          <button 
-            className={`confirm-button ${type === 'danger' ? 'danger-button' : 'primary-button'}`}
-            onClick={handleConfirm}
-          >
-            {confirmText}
           </button>
         </div>
       </div>

@@ -206,11 +206,19 @@ export class ApiClient {
           }
         }
         
-        console.log(`API 응답 성공:`, {
-          action,
-          success: result.success,
-          message: result.message
-        });
+        // 성공/실패 여부에 따라 적절한 로그 출력
+        if (result.success) {
+          console.log(`✅ API 응답 성공:`, {
+            action,
+            message: result.message
+          });
+        } else {
+          console.warn(`⚠️ API 응답 실패:`, {
+            action,
+            message: result.message,
+            error: result.error
+          });
+        }
 
         return result as ApiResponse<T>;
       } catch (error) {

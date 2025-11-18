@@ -129,7 +129,7 @@ function getTemplatesFromFolder() {
       
       allFiles = Drive.Files.list({
         q: allFilesQuery,
-        fields: 'files(id,name,mimeType,description,modifiedTime,owners)',
+        fields: 'files(id,name,mimeType,modifiedTime)',
         orderBy: 'name'
       });
       
@@ -141,7 +141,7 @@ function getTemplatesFromFolder() {
         debugInfo.push('📄 방법 2 - 쿼리 없이 직접 검색 시도');
         try {
           const directFiles = Drive.Files.list({
-            fields: 'files(id,name,mimeType,description,modifiedTime,owners,parents)',
+            fields: 'files(id,name,mimeType,modifiedTime,parents)',
             orderBy: 'name'
           });
           

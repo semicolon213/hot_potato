@@ -416,10 +416,19 @@ export class DataSyncService {
           break;
 
         case 'templates':
-          await Promise.all([
-            apiClient.getTemplates(),
-            apiClient.getSharedTemplates(),
-            apiClient.getStaticTags()
+          await Promise.allSettled([
+            apiClient.getTemplates().catch((error) => {
+              console.error('❌ getTemplates 실패:', error);
+              return { success: false, error: error.message };
+            }),
+            apiClient.getSharedTemplates().catch((error) => {
+              console.error('❌ getSharedTemplates 실패:', error);
+              return { success: false, error: error.message };
+            }),
+            apiClient.getStaticTags().catch((error) => {
+              console.error('❌ getStaticTags 실패:', error);
+              return { success: false, error: error.message };
+            })
           ]);
           break;
 

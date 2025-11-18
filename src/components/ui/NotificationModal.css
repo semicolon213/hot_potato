@@ -163,26 +163,33 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+  flex-direction: row-reverse; /* 확인 버튼을 오른쪽에, 취소 버튼을 왼쪽에 */
 }
 
 .confirm-button {
-  padding: 10px 20px;
+  padding: 10px 24px;
   border: none;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  min-width: 80px;
+  min-width: 90px;
 }
 
 .cancel-button {
   background-color: var(--border-light);
   color: var(--text-dark);
+  border: 1px solid var(--border-color);
 }
 
 .cancel-button:hover {
   background-color: var(--border-color);
+}
+
+.confirm-primary {
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .primary-button {
@@ -191,7 +198,8 @@
 }
 
 .primary-button:hover {
-  background-color: var(--info);
+  background-color: #1976d2;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
 .danger-button {
@@ -200,7 +208,8 @@
 }
 
 .danger-button:hover {
-  background-color: var(--error);
+  background-color: #d32f2f;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
 }
 
 .confirm-info {
