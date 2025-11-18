@@ -216,7 +216,7 @@ export interface WorkflowHistory {
 /**
  * 워크플로우 요청 데이터
  */
-export interface WorkflowRequestData {
+export interface WorkflowRequestData extends Record<string, unknown> {
   createWorkflowDocument: boolean;
   attachDocument: boolean;
   documentId?: string;              // 결재할 문서 ID (문서 직접 결재 시)
@@ -255,7 +255,7 @@ export interface WorkflowRequestResponse {
 /**
  * 라인 설정 요청 데이터
  */
-export interface SetWorkflowLineData {
+export interface SetWorkflowLineData extends Record<string, unknown> {
   documentId?: string;
   workflowDocumentId?: string;
   userEmail: string;
@@ -267,7 +267,7 @@ export interface SetWorkflowLineData {
 /**
  * 권한 부여 요청 데이터
  */
-export interface GrantWorkflowPermissionsData {
+export interface GrantWorkflowPermissionsData extends Record<string, unknown> {
   documentId?: string;
   workflowDocumentId?: string;
   attachedDocumentId?: string;
@@ -278,7 +278,7 @@ export interface GrantWorkflowPermissionsData {
 /**
  * 승인/반려 요청 데이터
  */
-export interface ReviewActionData {
+export interface ReviewActionData extends Record<string, unknown> {
   documentId?: string;
   workflowDocumentId?: string;
   userEmail: string;
@@ -291,7 +291,7 @@ export interface ReviewActionData {
 /**
  * 결재 승인/반려 요청 데이터
  */
-export interface PaymentActionData {
+export interface PaymentActionData extends Record<string, unknown> {
   documentId?: string;
   workflowDocumentId?: string;
   userEmail: string;
@@ -304,7 +304,7 @@ export interface PaymentActionData {
 /**
  * 내 담당 워크플로우 조회 파라미터
  */
-export interface MyPendingWorkflowsParams {
+export interface MyPendingWorkflowsParams extends Record<string, unknown> {
   userEmail: string;
   lineType?: LineType;
   status?: WorkflowStatus;
@@ -313,7 +313,7 @@ export interface MyPendingWorkflowsParams {
 /**
  * 워크플로우 이력 조회 파라미터
  */
-export interface WorkflowHistoryParams {
+export interface WorkflowHistoryParams extends Record<string, unknown> {
   workflowId?: string;
   documentId?: string;
   userEmail?: string;

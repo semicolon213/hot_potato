@@ -9,7 +9,7 @@ import { getCacheManager } from '../utils/cache/cacheManager';
 import { generateCacheKey, getActionCategory, CACHEABLE_ACTIONS } from '../utils/cache/cacheUtils';
 import { tokenManager } from '../utils/auth/tokenManager';
 import { initializeSpreadsheetIds } from '../utils/database/papyrusManager';
-import type { User } from '../types/auth';
+import type { User } from '../types/app';
 
 /**
  * 데이터 동기화 진행률 콜백

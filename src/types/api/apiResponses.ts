@@ -23,6 +23,7 @@ export interface SpreadsheetIdsResponse {
     staffSpreadsheetId?: string;
     accountingFolderId?: string;
   };
+  notFound?: string[];
   error?: string;
 }
 
@@ -169,3 +170,247 @@ export interface WorkflowTemplatesListResponse {
   }>;
   error?: string;
 }
+
+/**
+ * @brief 정적 태그 응답 타입
+ */
+export interface StaticTagsResponse {
+  success: boolean;
+  data?: string[];
+  tags?: string[];
+  error?: string;
+}
+
+/**
+ * @brief 영향받는 템플릿 응답 타입
+ */
+export interface AffectedTemplatesResponse {
+  success: boolean;
+  data?: Array<{
+    templateId: string;
+    templateName: string;
+    tag: string;
+  }>;
+  affectedTemplates?: Array<{
+    templateId: string;
+    templateName: string;
+    tag: string;
+  }>;
+  error?: string;
+}
+
+/**
+ * @brief 태그 삭제 응답 타입
+ */
+export interface DeleteTagResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * @brief 태그 영향 확인 응답 타입
+ */
+export interface TagImpactCheckResponse {
+  success: boolean;
+  data?: {
+    affectedTemplates: Array<{
+      templateId: string;
+      templateName: string;
+      tag: string;
+    }>;
+    canDelete: boolean;
+  };
+  error?: string;
+}
+
+/**
+ * @brief 공유 템플릿 응답 타입
+ */
+export interface SharedTemplatesResponse {
+  success: boolean;
+  data?: Array<{
+    id: string;
+    name: string;
+    tag?: string;
+    description?: string;
+    createdDate?: string;
+    updatedDate?: string;
+    createdBy?: string;
+  }>;
+  templates?: Array<{
+    id: string;
+    name: string;
+    tag?: string;
+    description?: string;
+    createdDate?: string;
+    updatedDate?: string;
+    createdBy?: string;
+  }>;
+  error?: string;
+}
+
+/**
+ * @brief 문서 생성 응답 타입
+ */
+export interface CreateDocumentResponse {
+  success: boolean;
+  data?: {
+    id: string;
+    documentId: string;
+    fileId: string;
+    name: string;
+    title: string;
+    url: string;
+    webViewLink: string;
+    mimeType: string;
+    createdTime: string;
+    modifiedTime: string;
+  };
+  error?: string;
+}
+
+/**
+ * @brief 사용자 등록 데이터 타입
+ */
+export interface RegistrationData {
+  email: string;
+  name: string;
+  studentId: string;
+  userType: string;
+  isAdmin: boolean;
+  adminKey?: string;
+}
+
+/**
+ * @brief 문서 목록 응답 타입
+ */
+export interface DocumentsListResponse {
+  success: boolean;
+  data?: Array<{
+    id?: string;
+    documentId?: string;
+    fileId?: string;
+    name?: string;
+    title?: string;
+    creator?: string;
+    author?: string;
+    createdTime?: string;
+    created_at?: string;
+    modifiedTime?: string;
+    lastModified?: string;
+    url?: string;
+    webViewLink?: string;
+    mimeType?: string;
+    type?: string;
+    tag?: string;
+    documentType?: 'shared' | 'personal';
+    [key: string]: unknown;
+  }>;
+  documents?: Array<{
+    id?: string;
+    documentId?: string;
+    fileId?: string;
+    name?: string;
+    title?: string;
+    creator?: string;
+    author?: string;
+    createdTime?: string;
+    created_at?: string;
+    modifiedTime?: string;
+    lastModified?: string;
+    url?: string;
+    webViewLink?: string;
+    mimeType?: string;
+    type?: string;
+    tag?: string;
+    documentType?: 'shared' | 'personal';
+    [key: string]: unknown;
+  }>;
+  error?: string;
+}
+
+/**
+ * @brief 문서 정보 응답 타입
+ */
+export interface DocumentInfoResponse {
+  id?: string;
+  documentId?: string;
+  fileId?: string;
+  name?: string;
+  title?: string;
+  creator?: string;
+  author?: string;
+  createdTime?: string;
+  created_at?: string;
+  modifiedTime?: string;
+  lastModified?: string;
+  url?: string;
+  webViewLink?: string;
+  mimeType?: string;
+  type?: string;
+  tag?: string;
+  documentType?: 'shared' | 'personal';
+  [key: string]: unknown;
+}
+
+/**
+ * @brief 워크플로우 정보 응답 타입
+ */
+export interface WorkflowInfoResponse {
+  success: boolean;
+  data?: {
+    workflowId: string;
+    documentId?: string;
+    workflowDocumentId?: string;
+    status: string;
+    requesterEmail: string;
+    requesterName?: string;
+    reviewLine?: Array<{ step: number; email: string; name: string; status?: string }>;
+    paymentLine?: Array<{ step: number; email: string; name: string; status?: string }>;
+    createdDate?: string;
+    updatedDate?: string;
+  };
+  error?: string;
+}
+
+/**
+ * @brief 워크플로우 목록 응답 타입
+ */
+export interface WorkflowListResponse {
+  success: boolean;
+  data?: Array<{
+    workflowId: string;
+    documentId?: string;
+    workflowDocumentId?: string;
+    status: string;
+    requesterEmail: string;
+    requesterName?: string;
+    createdDate?: string;
+    updatedDate?: string;
+  }>;
+  workflows?: Array<{
+    workflowId: string;
+    documentId?: string;
+    workflowDocumentId?: string;
+    status: string;
+    requesterEmail: string;
+    requesterName?: string;
+    createdDate?: string;
+    updatedDate?: string;
+  }>;
+  error?: string;
+}
+
+/**
+ * @brief 템플릿 정보 타입
+ */
+export interface TemplateInfo {
+  name: string;
+  id?: string;
+  tag?: string;
+  [key: string]: unknown;
+}
+
+// documents.ts에서 re-export
+export type { WorkflowRequestResponse } from '../documents';
