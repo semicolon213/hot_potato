@@ -49,6 +49,11 @@ export class DataSyncService {
     'students': 30 * 60 * 1000,       // 30분 (페이지 활성 시에만)
     'staff': 30 * 60 * 1000,          // 30분 (페이지 활성 시에만)
   };
+  
+  // 429 에러 발생 시 카테고리별 일시 중지 시간 (밀리초)
+  private pausedCategories: Map<string, number> = new Map();
+  // 429 에러 발생 횟수 추적
+  private error429Count: Map<string, number> = new Map();
 
   // 페이지별 활성화 카테고리 매핑 (해당 페이지에 있을 때만 갱신)
   private readonly PAGE_CATEGORY_MAP: Record<string, string[]> = {
@@ -306,6 +311,21 @@ export class DataSyncService {
    * 특정 카테고리만 갱신 (백그라운드에서 실제 데이터 가져오기)
    */
   async refreshCategory(category: string, background: boolean = true): Promise<void> {
+    // 429 에러로 인해 일시 중지된 카테고리인지 확인
+    const pausedUntil = this.pausedCategories.get(category);
+    if (pausedUntil && Date.now() < pausedUntil) {
+      const remainingMinutes = Math.ceil((pausedUntil - Date.now()) / (60 * 1000));
+      console.log(`⏸️ ${category} 카테고리는 429 에러로 인해 ${remainingMinutes}분 동안 일시 중지됩니다.`);
+      return;
+    }
+
+    // 일시 중지 시간이 지났으면 해제
+    if (pausedUntil && Date.now() >= pausedUntil) {
+      this.pausedCategories.delete(category);
+      this.error429Count.delete(category);
+      console.log(`▶️ ${category} 카테고리 일시 중지 해제`);
+    }
+
     // 토큰 유효성 확인
     if (!tokenManager.isValid()) {
       console.warn('⚠️ 토큰이 만료되어 갱신을 건너뜁니다.');
@@ -319,15 +339,54 @@ export class DataSyncService {
     if (background) {
       // 비동기로 백그라운드에서 실행 (응답 지연 없음)
       this.fetchCategoryDataInBackground(category).catch((error) => {
-        console.error(`❌ ${category} 백그라운드 갱신 실패:`, error);
+        this.handle429Error(category, error);
       });
     } else {
       // 동기 실행 (즉시 데이터 가져오기)
-      await this.fetchCategoryDataInBackground(category);
+      try {
+        await this.fetchCategoryDataInBackground(category);
+      } catch (error) {
+        this.handle429Error(category, error);
+        throw error;
+      }
     }
 
     this.lastSyncTime = new Date();
     this.lastSyncByCategory.set(category, Date.now());
+  }
+
+  /**
+   * 429 에러 처리: 카테고리별 일시 중지
+   */
+  private handle429Error(category: string, error: any): void {
+    const errorMessage = error?.message || error?.toString() || '';
+    const is429Error = error?.status === 429 || 
+                      error?.code === 429 || 
+                      errorMessage.includes('429') ||
+                      errorMessage.includes('호출 제한') ||
+                      errorMessage.includes('Quota exceeded');
+
+    if (is429Error) {
+      const currentCount = (this.error429Count.get(category) || 0) + 1;
+      this.error429Count.set(category, currentCount);
+
+      // 연속 발생 횟수에 따라 일시 중지 시간 증가 (최소 30분, 최대 2시간)
+      const pauseMinutes = Math.min(30 + (currentCount - 1) * 15, 120);
+      const pauseUntil = Date.now() + (pauseMinutes * 60 * 1000);
+      this.pausedCategories.set(category, pauseUntil);
+
+      console.warn(`⚠️ ${category} 카테고리에서 429 에러 발생 (${currentCount}회). ${pauseMinutes}분 동안 일시 중지됩니다.`);
+      
+      // 사용자에게 알림 (DataSyncStatus 컴포넌트에서 처리)
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('sync429Error', {
+          detail: { category, pauseMinutes }
+        }));
+      }
+    } else {
+      // 429가 아니면 에러 카운터 리셋
+      this.error429Count.delete(category);
+    }
   }
 
   /**
@@ -585,6 +644,12 @@ export class DataSyncService {
         if (tokenManager.isExpiringSoon()) {
           console.warn(`⚠️ 토큰이 곧 만료되어 ${category} 갱신을 건너뜁니다.`);
           return;
+        }
+
+        // 429 에러로 인해 일시 중지된 카테고리인지 확인
+        const pausedUntil = this.pausedCategories.get(category);
+        if (pausedUntil && Date.now() < pausedUntil) {
+          return; // 일시 중지 중이면 스킵
         }
 
         // 마지막 갱신 시간 확인 (중복 갱신 방지)

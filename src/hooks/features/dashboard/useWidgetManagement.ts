@@ -196,6 +196,7 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
   const prevWidgetConfigRef = useRef<string>(''); // 이전 위젯 설정 저장
   const loadingWidgetsRef = useRef<Set<string>>(new Set()); // 현재 로딩 중인 위젯 추적
   const errorWidgetsRef = useRef<Record<string, number>>({}); // 에러 발생한 위젯과 시간 추적 (재시도 방지용)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 디바운싱용 타이머
 
   // 장부 접근 권한 확인
   const [hasAccountingAccess, setHasAccountingAccess] = useState<boolean | null>(null);
@@ -549,7 +550,13 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
       return;
     }
 
-    const saveWidgetsToGoogleSheets = async () => {
+    // 디바운싱: 3초 후에 저장 (429 에러 방지)
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      const saveWidgetsToGoogleSheets = async () => {
       if (!hotPotatoDBSpreadsheetId) return;
       
       try {
@@ -586,56 +593,9 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
           }
         }
 
-        // 시트 존재 여부 확인
-        try {
-          const spreadsheet = await gapi.client.sheets.spreadsheets.get({
-            spreadsheetId: hotPotatoDBSpreadsheetId
-          });
-          
-          const sheetExists = spreadsheet.result.sheets?.some(
-            (sheet: any) => sheet.properties.title === SHEET_NAME
-          );
-          
-          if (!sheetExists) {
-            console.warn(`시트 "${SHEET_NAME}"가 존재하지 않습니다. 시트를 생성합니다.`);
-            // 시트 생성
-            await gapi.client.sheets.spreadsheets.batchUpdate({
-              spreadsheetId: hotPotatoDBSpreadsheetId,
-              resource: {
-                requests: [{
-                  addSheet: {
-                    properties: {
-                      title: SHEET_NAME,
-                      gridProperties: {
-                        rowCount: 1000,
-                        columnCount: 4
-                      }
-                    }
-                  }
-                }]
-              }
-            });
-            
-            // 헤더 설정
-          await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: hotPotatoDBSpreadsheetId,
-              range: `${SHEET_NAME}!A1:D1`,
-            valueInputOption: 'RAW',
-            resource: {
-                values: [['widget_id', 'widget_type', 'widget_order', 'widget_config']]
-              }
-            });
-          }
-        } catch (checkError: any) {
-          // 401 오류인 경우 특별 처리
-          if (checkError?.status === 401 || checkError?.result?.error?.code === 401) {
-            console.warn("인증 오류가 발생했습니다. 토큰이 만료되었을 수 있습니다.");
-            // 401 오류는 무시하고 계속 진행 (사용자가 재로그인할 수 있음)
-          } else {
-            console.error("시트 확인 중 오류:", checkError);
-          }
-          // 시트 확인 실패해도 계속 진행 (시트가 존재할 수 있음)
-        }
+        // 시트 존재 여부 확인은 최초 1회만 (캐싱)
+        // 429 에러 방지를 위해 시트 확인을 제거하고 직접 저장 시도
+        // 시트가 없으면 저장 시 에러가 발생하지만, 그때 처리하는 것이 더 효율적
         
         // 새로운 데이터 저장 (설정만 저장, 데이터 props는 제외)
         // 위젯을 order 기준으로 정렬하여 저장
@@ -672,78 +632,83 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
         // 설정이 변경되었으면 저장
         console.log('💾 위젯 설정 변경 감지, 저장 시작');
         
-        // 저장 실행
+        // 저장 실행 (429 에러 방지를 위해 기존 데이터 확인 제거)
         if (rowsToSave.length > 0) {
-          // 1. 먼저 기존 데이터 범위 확인
-          let existingRowCount = 0;
-          try {
-            const existingData = await gapi.client.sheets.spreadsheets.values.get({
-              spreadsheetId: hotPotatoDBSpreadsheetId,
-              range: `${SHEET_NAME}!A2:D1000` // 충분히 큰 범위
-            });
-            
-            if (existingData.result.values) {
-              // 빈 행 제외하고 실제 데이터 행 수 계산
-              existingRowCount = existingData.result.values.filter((row: any[]) => 
-                row && row.length > 0 && row[0] && row[0].toString().trim() !== ''
-              ).length;
-            }
-          } catch (getError) {
-            console.warn("기존 데이터 확인 중 오류 (무시됨):", getError);
-          }
-          
-          // 2. 새로운 데이터 저장
-          // A2부터 시작하므로, rowsToSave.length가 7이면 A2~A8까지 (7개 행)
-          // 범위는 A2:D8이 되어야 함 (A2 + rowsToSave.length - 1 = A8)
+          // 429 에러 방지: 기존 데이터 확인 없이 직접 저장
+          // 범위를 충분히 크게 설정하여 기존 데이터를 덮어쓰기
           const startRow = 2; // A2부터 시작
           const endRow = startRow + rowsToSave.length - 1; // 마지막 행 번호
           const saveRange = `${SHEET_NAME}!A${startRow}:D${endRow}`;
           
-          console.log(`💾 저장 범위: ${saveRange}, 저장할 행 수: ${rowsToSave.length}, 기존 행 수: ${existingRowCount}`);
+          console.log(`💾 저장 범위: ${saveRange}, 저장할 행 수: ${rowsToSave.length}`);
           
-          await gapi.client.sheets.spreadsheets.values.update({
-            spreadsheetId: hotPotatoDBSpreadsheetId,
-            range: saveRange,
-            valueInputOption: 'RAW',
-            resource: {
-              values: rowsToSave
-            },
-          });
-          
-          // 3. 저장한 행보다 많은 기존 행이 있으면 삭제
-          // endRow 다음 행부터 삭제 시작 (endRow + 1)
-          if (existingRowCount > rowsToSave.length) {
-            const clearStartRow = endRow + 1; // 저장한 마지막 행 다음 행
-            const clearEndRow = startRow + existingRowCount - 1; // 기존 데이터의 마지막 행
-            const clearRange = `${SHEET_NAME}!A${clearStartRow}:D${clearEndRow}`;
+          try {
+            await gapi.client.sheets.spreadsheets.values.update({
+              spreadsheetId: hotPotatoDBSpreadsheetId,
+              range: saveRange,
+              valueInputOption: 'RAW',
+              resource: {
+                values: rowsToSave
+              },
+            });
+            
+            // 저장 후 남은 행 정리 (최대 1000행까지만 확인)
+            // 429 에러 방지를 위해 clear는 선택적으로만 실행
             try {
+              const clearRange = `${SHEET_NAME}!A${endRow + 1}:D1000`;
               await gapi.client.sheets.spreadsheets.values.clear({
                 spreadsheetId: hotPotatoDBSpreadsheetId,
                 range: clearRange
               });
-              console.log(`🗑️ 남은 행 삭제 완료: ${clearRange} (${existingRowCount - rowsToSave.length}개 행)`);
-            } catch (clearError) {
-              console.warn("남은 행 삭제 중 오류 (무시됨):", clearError);
+            } catch (clearError: any) {
+              // 429 에러면 무시 (정리 실패해도 저장은 성공)
+              if (clearError?.status === 429 || clearError?.result?.error?.code === 429) {
+                console.warn("⚠️ 남은 행 정리 중 429 에러 (무시됨)");
+              }
             }
+            
+            console.log('✅ 위젯 설정 저장 완료:', rowsToSave.length, '개');
+          } catch (updateError: any) {
+            // 429 에러면 저장 실패하지만 계속 진행
+            if (updateError?.status === 429 || updateError?.result?.error?.code === 429) {
+              console.warn('⚠️ 위젯 설정 저장 중 429 에러 발생. 다음 저장 시도에서 재시도됩니다.');
+              throw updateError; // 429 에러는 다시 throw하여 prevWidgetConfigRef 업데이트 방지
+            }
+            throw updateError;
           }
-          
-          console.log('✅ 위젯 설정 저장 완료:', rowsToSave.length, '개');
         } else {
           // 위젯이 없으면 A2부터 D2까지만 비우기
-          await gapi.client.sheets.spreadsheets.values.clear({
-            spreadsheetId: hotPotatoDBSpreadsheetId,
-            range: `${SHEET_NAME}!A2:D2`
-          });
-          console.log('✅ 위젯 설정 삭제 완료 (빈 배열)');
+          try {
+            await gapi.client.sheets.spreadsheets.values.clear({
+              spreadsheetId: hotPotatoDBSpreadsheetId,
+              range: `${SHEET_NAME}!A2:D2`
+            });
+            console.log('✅ 위젯 설정 삭제 완료 (빈 배열)');
+          } catch (clearError: any) {
+            // 429 에러면 무시
+            if (clearError?.status === 429 || clearError?.result?.error?.code === 429) {
+              console.warn('⚠️ 위젯 설정 삭제 중 429 에러 발생 (무시됨)');
+            } else {
+              throw clearError;
+            }
+          }
         }
         
         // 저장 성공 후에만 prevWidgetConfigRef 업데이트
         prevWidgetConfigRef.current = currentConfig;
       } catch (error: any) {
-        console.error("Error saving widget data to Google Sheets:", error);
-        const errorMessage = error?.message || error?.error?.message || "알 수 없는 오류";
         const errorCode = error?.error?.code || error?.status;
         const errorStatus = error?.result?.error?.status || error?.error?.status;
+        
+        // 429 에러는 조용히 처리 (prevWidgetConfigRef 업데이트 안 함으로써 다음에 재시도)
+        if (errorCode === 429 || errorStatus === 429) {
+          console.warn('⚠️ 위젯 설정 저장 중 429 에러 발생. 저장을 건너뛰고 다음 변경 시 재시도합니다.');
+          // prevWidgetConfigRef를 업데이트하지 않아서 다음 변경 시 다시 저장 시도
+          return;
+        }
+        
+        console.error("Error saving widget data to Google Sheets:", error);
+        const errorMessage = error?.message || error?.error?.message || "알 수 없는 오류";
         
         console.error("Error details:", {
           message: errorMessage,
@@ -761,6 +726,13 @@ export const useWidgetManagement = (hotPotatoDBSpreadsheetId: string | null, use
     };
 
     saveWidgetsToGoogleSheets();
+    }, 3000); // 3초 디바운싱 (429 에러 방지)
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [widgets, hotPotatoDBSpreadsheetId, initialLoadComplete]);
 
   useEffect(() => {

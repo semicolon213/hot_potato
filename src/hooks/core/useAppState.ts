@@ -594,8 +594,7 @@ export const useAppState = () => {
                         return;
                     }
                     
-                    // 설정이 변경되었으면 저장
-                    prevWidgetConfigRef.current = currentConfig;
+                    // 설정이 변경되었으면 저장 (prevWidgetConfigRef는 저장 성공 후 업데이트)
                     
                     try {
                         await gapi.client.sheets.spreadsheets.values.update({
@@ -605,11 +604,14 @@ export const useAppState = () => {
                             resource: { values: dataToSave },
                         });
                         console.log('📝 위젯 설정 저장 완료');
+                        // 저장 성공 후에만 prevWidgetConfigRef 업데이트
+                        prevWidgetConfigRef.current = currentConfig;
                     } catch (apiError: any) {
                         // 429 에러 (Too Many Requests) 처리
                         if (apiError.status === 429 || apiError.result?.error?.code === 429) {
-                            console.warn('⚠️ API 호출 제한 초과. 잠시 후 재시도하세요.');
-                            // 에러를 무시하고 계속 진행 (다음 저장 시도에서 처리)
+                            console.warn('⚠️ API 호출 제한 초과. 저장을 건너뛰고 다음 변경 시 재시도합니다.');
+                            // prevWidgetConfigRef를 업데이트하지 않아서 다음 변경 시 다시 저장 시도
+                            return;
                         } else {
                             throw apiError;
                         }
@@ -618,7 +620,7 @@ export const useAppState = () => {
             } catch (error) {
                 console.error("Error saving widget data to Google Sheets:", error);
             }
-        }, 1000); // 1초 디바운싱
+        }, 3000); // 3초 디바운싱 (429 에러 방지)
         
         return () => {
             if (saveTimeoutRef.current) {
