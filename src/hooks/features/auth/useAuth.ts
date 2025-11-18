@@ -3,6 +3,7 @@ import { registerUser, verifyAdminKey } from '../../../utils/api/authApi';
 import { tokenManager } from '../../../utils/auth/tokenManager';
 import { lastUserManager } from '../../../utils/auth/lastUserManager';
 import { ENV_CONFIG } from '../../../config/environment';
+import { apiClient } from '../../../utils/api/apiClient';
 
 // 타입 정의
 interface User {
@@ -67,7 +68,6 @@ const checkUserStatus = async (email: string): Promise<LoginResponse> => {
     console.log('사용자 상태 확인 요청:', email);
 
     // apiClient를 사용하여 환경에 맞는 URL 자동 선택 (개발: /api, 프로덕션: 직접 URL)
-    const { apiClient } = await import('../../utils/api/apiClient');
     const data = await apiClient.checkApprovalStatus(email);
 
     console.log('사용자 등록 상태 확인 응답:', data);
