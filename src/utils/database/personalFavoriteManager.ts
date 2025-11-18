@@ -10,9 +10,11 @@ import { getSheetData, append, update } from 'papyrus-db';
 import { deleteRow } from 'papyrus-db/dist/sheets/delete';
 import { getCacheManager } from '../cache/cacheManager';
 import { generateCacheKey } from '../cache/cacheUtils';
+import { tokenManager } from '../auth/tokenManager';
 import { 
   getPersonalConfigSpreadsheetId,
-  initializePersonalConfigFile
+  initializePersonalConfigFile,
+  setPersonalConfigSpreadsheetId
 } from './personalConfigManager';
 
 /**
@@ -37,11 +39,28 @@ const getSheetId = async (spreadsheetId: string, sheetName: string): Promise<num
 };
 
 // papyrus-db에 Google API 인증 설정
-const setupPapyrusAuth = () => {
+const setupPapyrusAuth = (): void => {
   if (window.gapi && window.gapi.client) {
+    // tokenManager를 사용하여 올바른 토큰 가져오기 (만료 체크 포함)
+    const token = tokenManager.get();
+    
+    if (token) {
+      try {
+        window.gapi.client.setToken({ access_token: token });
+        console.log('✅ 토큰이 gapi client에 설정되었습니다.');
+      } catch (tokenError) {
+        console.warn('토큰 설정 실패:', tokenError);
+      }
+    } else {
+      console.warn('⚠️ Google API 인증 토큰이 없거나 만료되었습니다.');
+    }
+    
+    // papyrus-db가 gapi.client를 사용하도록 설정
     window.papyrusAuth = {
       client: window.gapi.client
     };
+  } else {
+    console.warn('⚠️ Google API가 초기화되지 않았습니다.');
   }
 };
 
@@ -73,7 +92,7 @@ export const fetchFavorites = async (): Promise<FavoriteData[]> => {
   try {
     setupPapyrusAuth();
     
-    const spreadsheetId = getPersonalConfigSpreadsheetId();
+    let spreadsheetId = getPersonalConfigSpreadsheetId();
     if (!spreadsheetId) {
       console.warn('개인 설정 파일 ID를 찾을 수 없습니다. 초기화를 시도합니다.');
       const newId = await initializePersonalConfigFile();
@@ -81,10 +100,13 @@ export const fetchFavorites = async (): Promise<FavoriteData[]> => {
         console.error('개인 설정 파일 초기화 실패');
         return [];
       }
+      // 초기화된 ID를 사용
+      spreadsheetId = newId;
+      setPersonalConfigSpreadsheetId(newId);
     }
 
     console.log('⭐ 즐겨찾기 로드 시작 (캐시 미스)...');
-    const data = await getSheetData(spreadsheetId || '', 'favorite');
+    const data = await getSheetData(spreadsheetId, 'favorite');
     
     if (!data || !data.values || data.values.length <= 1) {
       console.log('즐겨찾기 데이터가 없습니다.');
@@ -116,10 +138,13 @@ export const fetchFavorites = async (): Promise<FavoriteData[]> => {
  * @returns {Promise<boolean>} 성공 여부
  */
 export const addFavorite = async (favoriteData: FavoriteData): Promise<boolean> => {
+  const cacheManager = getCacheManager();
+  const category = 'personalFavorites';
+  
   try {
     setupPapyrusAuth();
     
-    const spreadsheetId = getPersonalConfigSpreadsheetId();
+    let spreadsheetId = getPersonalConfigSpreadsheetId();
     if (!spreadsheetId) {
       console.warn('개인 설정 파일 ID를 찾을 수 없습니다. 초기화를 시도합니다.');
       const newId = await initializePersonalConfigFile();
@@ -127,6 +152,9 @@ export const addFavorite = async (favoriteData: FavoriteData): Promise<boolean> 
         console.error('개인 설정 파일 초기화 실패');
         return false;
       }
+      // 초기화된 ID를 사용
+      spreadsheetId = newId;
+      setPersonalConfigSpreadsheetId(newId);
     }
 
     // 중복 확인
@@ -140,8 +168,13 @@ export const addFavorite = async (favoriteData: FavoriteData): Promise<boolean> 
       return true;
     }
 
-    await append(spreadsheetId || '', 'favorite', [[favoriteData.type, favoriteData.favorite]]);
+    await append(spreadsheetId, 'favorite', [[favoriteData.type, favoriteData.favorite]]);
     console.log('✅ 즐겨찾기 추가 완료:', favoriteData);
+    
+    // 캐시 무효화
+    await cacheManager.invalidate(`${category}:*`);
+    console.log('✅ 즐겨찾기 캐시 무효화 완료');
+    
     return true;
   } catch (error) {
     console.error('❌ 즐겨찾기 추가 오류:', error);
@@ -155,6 +188,9 @@ export const addFavorite = async (favoriteData: FavoriteData): Promise<boolean> 
  * @returns {Promise<boolean>} 성공 여부
  */
 export const removeFavorite = async (favoriteData: FavoriteData): Promise<boolean> => {
+  const cacheManager = getCacheManager();
+  const category = 'personalFavorites';
+  
   try {
     setupPapyrusAuth();
     
@@ -172,6 +208,7 @@ export const removeFavorite = async (favoriteData: FavoriteData): Promise<boolea
     }
 
     // 해당 즐겨찾기 찾기
+    // findIndex는 헤더를 포함한 전체 배열에서 찾으므로, rowIndex는 헤더 포함 인덱스
     const rowIndex = data.values.findIndex(
       (row: string[], index: number) => 
         index > 0 && row[0] === favoriteData.type && row[1] === favoriteData.favorite
@@ -189,8 +226,18 @@ export const removeFavorite = async (favoriteData: FavoriteData): Promise<boolea
       return false;
     }
 
+    // deleteRow는 0-based 인덱스를 사용합니다
+    // data.values[0] = 헤더 (시트 1행, API 인덱스 0)
+    // data.values[rowIndex] = 찾은 행 (시트 rowIndex + 1행, API 인덱스 rowIndex)
+    // findIndex는 헤더를 포함한 전체 배열에서 찾으므로, rowIndex는 이미 헤더 포함 인덱스입니다
+    // 따라서 rowIndex를 그대로 사용하면 됩니다 (personalTagManager.ts와 동일한 패턴)
     await deleteRow(spreadsheetId, sheetId, rowIndex);
     console.log('✅ 즐겨찾기 삭제 완료:', favoriteData);
+    
+    // 캐시 무효화
+    await cacheManager.invalidate(`${category}:*`);
+    console.log('✅ 즐겨찾기 캐시 무효화 완료');
+    
     return true;
   } catch (error) {
     console.error('❌ 즐겨찾기 삭제 오류:', error);

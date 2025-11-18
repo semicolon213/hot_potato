@@ -231,14 +231,23 @@ export const useAppState = () => {
         const dataSyncService = dataSyncServiceRef.current;
         apiClient.setDataSyncService(dataSyncService);
         
-        // 주기적 백그라운드 동기화 시작
+        // 주기적 백그라운드 동기화 시작 (스마트 갱신)
         dataSyncService.startPeriodicSync();
+        
+        // 현재 페이지 설정
+        dataSyncService.setCurrentPage(currentPage);
         
         // 정리 함수
         return () => {
             dataSyncService.stopPeriodicSync();
         };
     }, []);
+
+    // 페이지 변경 시 DataSyncService에 알림
+    useEffect(() => {
+        const dataSyncService = dataSyncServiceRef.current;
+        dataSyncService.setCurrentPage(currentPage);
+    }, [currentPage]);
 
     // 사용자 로그인 시 데이터 자동 로딩 (새로 로그인한 경우) - 한 번만 실행
     useEffect(() => {

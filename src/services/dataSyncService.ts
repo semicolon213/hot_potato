@@ -31,19 +31,35 @@ export class DataSyncService {
   private syncIntervals: Map<string, NodeJS.Timeout> = new Map();
   private isInitializing = false;
   private cacheManager = getCacheManager();
+  private isAppActive = true; // 앱 활성 상태
+  private currentPage: string | null = null; // 현재 페이지
+  private lastSyncByCategory: Map<string, number> = new Map(); // 카테고리별 마지막 갱신 시간
 
-  // 주기적 갱신 주기 설정 (토큰 만료 시간 고려)
+  // 주기적 갱신 주기 설정 (스마트 갱신: 페이지 활성 시에만 갱신)
+  // 스마트 갱신 전략으로 실제 호출은 훨씬 적으므로 주기를 줄여도 안전함
   private readonly SYNC_INTERVALS: Record<string, number> = {
-    'workflow': 2 * 60 * 1000,        // 2분 (자주 변경되는 데이터)
-    'accounting': 3 * 60 * 1000,      // 3분
-    'announcements': 5 * 60 * 1000,   // 5분
-    'documents': 5 * 60 * 1000,       // 5분
-    'users': 15 * 60 * 1000,          // 15분
-    'templates': 15 * 60 * 1000,      // 15분
-    'spreadsheetIds': 30 * 60 * 1000, // 30분
-    'calendar': 10 * 60 * 1000,       // 10분
-    'students': 15 * 60 * 1000,       // 15분
-    'staff': 15 * 60 * 1000,          // 15분
+    'workflow': 2 * 60 * 1000,        // 2분 (페이지 활성 시에만, 실시간성 중요)
+    'accounting': 5 * 60 * 1000,      // 5분 (페이지 활성 시에만)
+    'announcements': 10 * 60 * 1000,  // 10분 (페이지 활성 시에만)
+    'documents': 10 * 60 * 1000,      // 10분 (페이지 활성 시에만)
+    'users': 20 * 60 * 1000,          // 20분 (관리자용, 항상 갱신)
+    'templates': 20 * 60 * 1000,      // 20분 (페이지 활성 시에만)
+    'spreadsheetIds': 30 * 60 * 1000, // 30분 (시스템 데이터, 항상 갱신)
+    'calendar': 10 * 60 * 1000,       // 10분 (페이지 활성 시에만)
+    'students': 20 * 60 * 1000,       // 20분 (페이지 활성 시에만)
+    'staff': 20 * 60 * 1000,          // 20분 (페이지 활성 시에만)
+  };
+
+  // 페이지별 활성화 카테고리 매핑 (해당 페이지에 있을 때만 갱신)
+  private readonly PAGE_CATEGORY_MAP: Record<string, string[]> = {
+    'dashboard': ['announcements', 'calendar', 'workflow'],
+    'workflow': ['workflow'],
+    'accounting': ['accounting'],
+    'announcements': ['announcements'],
+    'documents': ['documents', 'templates'],
+    'students': ['students'],
+    'staff': ['staff'],
+    'calendar': ['calendar'],
   };
 
   /**
@@ -287,9 +303,9 @@ export class DataSyncService {
   }
 
   /**
-   * 특정 카테고리만 갱신
+   * 특정 카테고리만 갱신 (백그라운드에서 실제 데이터 가져오기)
    */
-  async refreshCategory(category: string): Promise<void> {
+  async refreshCategory(category: string, background: boolean = true): Promise<void> {
     // 토큰 유효성 확인
     if (!tokenManager.isValid()) {
       console.warn('⚠️ 토큰이 만료되어 갱신을 건너뜁니다.');
@@ -299,20 +315,121 @@ export class DataSyncService {
     // 카테고리별 캐시 무효화
     await this.cacheManager.invalidate(`${category}:*`);
 
-    // 카테고리별 데이터 다시 로딩
+    // 백그라운드에서 실제 데이터 가져오기
+    if (background) {
+      // 비동기로 백그라운드에서 실행 (응답 지연 없음)
+      this.fetchCategoryDataInBackground(category).catch((error) => {
+        console.error(`❌ ${category} 백그라운드 갱신 실패:`, error);
+      });
+    } else {
+      // 동기 실행 (즉시 데이터 가져오기)
+      await this.fetchCategoryDataInBackground(category);
+    }
+
+    this.lastSyncTime = new Date();
+    this.lastSyncByCategory.set(category, Date.now());
+  }
+
+  /**
+   * 백그라운드에서 카테고리별 데이터 가져오기
+   */
+  private async fetchCategoryDataInBackground(category: string): Promise<void> {
     const userInfo = typeof window !== 'undefined' 
       ? JSON.parse(localStorage.getItem('user') || '{}') 
       : {};
 
-    // 카테고리별 데이터 페칭 로직 (간단한 버전)
-    // 실제로는 각 카테고리에 맞는 API 호출 필요
-    console.log(`🔄 ${category} 카테고리 갱신 중...`);
+    try {
+      switch (category) {
+        case 'users':
+          if (userInfo.isAdmin) {
+            await Promise.all([
+              apiClient.getAllUsers(),
+              apiClient.getPendingUsers()
+            ]);
+          }
+          break;
 
-    this.lastSyncTime = new Date();
+        case 'documents':
+          {
+            const { loadAllDocuments } = await import('../utils/helpers/loadDocumentsFromDrive');
+            await loadAllDocuments();
+          }
+          break;
+
+        case 'templates':
+          await Promise.all([
+            apiClient.getTemplates(),
+            apiClient.getSharedTemplates(),
+            apiClient.getStaticTags()
+          ]);
+          break;
+
+        case 'workflow':
+          if (userInfo.email) {
+            await Promise.all([
+              apiClient.getMyRequestedWorkflows(userInfo.email),
+              apiClient.getMyPendingWorkflows({ userEmail: userInfo.email }),
+              apiClient.getCompletedWorkflows({ userEmail: userInfo.email }),
+              apiClient.getWorkflowTemplates()
+            ]);
+          }
+          break;
+
+        case 'accounting':
+          await apiClient.getLedgerList();
+          break;
+
+        case 'announcements':
+          {
+            const { fetchAnnouncements } = await import('../utils/database/papyrusManager');
+            if (userInfo.studentId && userInfo.userType) {
+              await fetchAnnouncements(userInfo.studentId, userInfo.userType);
+            }
+          }
+          break;
+
+        case 'calendar':
+          {
+            const { fetchCalendarEvents } = await import('../utils/database/papyrusManager');
+            await fetchCalendarEvents();
+          }
+          break;
+
+        case 'students':
+          {
+            const { fetchStudents } = await import('../utils/database/papyrusManager');
+            await fetchStudents();
+          }
+          break;
+
+        case 'staff':
+          {
+            const { fetchStaff, fetchAttendees } = await import('../utils/database/papyrusManager');
+            await Promise.all([
+              fetchStaff(),
+              fetchAttendees()
+            ]);
+          }
+          break;
+
+        case 'spreadsheetIds':
+          await initializeSpreadsheetIds();
+          break;
+
+        default:
+          console.log(`⚠️ ${category} 카테고리에 대한 백그라운드 갱신 로직이 없습니다.`);
+      }
+
+      console.log(`✅ ${category} 백그라운드 갱신 완료`);
+    } catch (error) {
+      console.error(`❌ ${category} 백그라운드 갱신 중 오류:`, error);
+      throw error;
+    }
   }
 
   /**
-   * 쓰기 작업 후 관련 캐시 무효화 및 갱신
+   * 쓰기 작업 후 관련 캐시 무효화 및 백그라운드 갱신
+   * 비동기로 실행되어 응답 지연 없음
    */
   async invalidateAndRefresh(cacheKeys: string[]): Promise<void> {
     try {
@@ -337,13 +454,18 @@ export class DataSyncService {
         }
       });
 
-      // 각 카테고리별로 갱신
-      for (const category of categories) {
-        await this.refreshCategory(category);
-      }
+      // 각 카테고리별로 백그라운드 갱신 (비동기, 응답 지연 없음)
+      const refreshPromises = Array.from(categories).map(category => 
+        this.refreshCategory(category, true).catch((error) => {
+          console.error(`❌ ${category} 백그라운드 갱신 실패:`, error);
+        })
+      );
 
-      this.lastSyncTime = new Date();
-      console.log('✅ 캐시 무효화 및 갱신 완료:', cacheKeys);
+      // 모든 갱신을 백그라운드에서 병렬로 실행 (응답 대기 안 함)
+      Promise.allSettled(refreshPromises).then(() => {
+        this.lastSyncTime = new Date();
+        console.log('✅ 캐시 무효화 및 백그라운드 갱신 완료:', cacheKeys);
+      });
 
     } catch (error) {
       console.error('❌ 캐시 무효화 및 갱신 실패:', error);
@@ -352,15 +474,107 @@ export class DataSyncService {
   }
 
   /**
-   * 주기적 백그라운드 동기화 시작
+   * 앱 활성 상태 설정
+   */
+  setAppActive(isActive: boolean): void {
+    this.isAppActive = isActive;
+    if (!isActive) {
+      console.log('⏸️ 앱이 비활성화되어 백그라운드 갱신을 일시 중지합니다.');
+    } else {
+      console.log('▶️ 앱이 활성화되어 백그라운드 갱신을 재개합니다.');
+      // 활성화 시 즉시 갱신 (필요한 카테고리만)
+      this.syncActivePageCategories();
+    }
+  }
+
+  /**
+   * 현재 페이지 설정
+   */
+  setCurrentPage(page: string | null): void {
+    this.currentPage = page;
+    // 페이지 변경 시 해당 페이지의 카테고리 즉시 갱신
+    if (page) {
+      this.syncActivePageCategories();
+    }
+  }
+
+  /**
+   * 현재 활성 페이지의 카테고리만 갱신
+   */
+  private async syncActivePageCategories(): Promise<void> {
+    if (!this.currentPage || !this.isAppActive) {
+      return;
+    }
+
+    const categories = this.PAGE_CATEGORY_MAP[this.currentPage] || [];
+    const now = Date.now();
+
+    for (const category of categories) {
+      const interval = this.SYNC_INTERVALS[category];
+      const lastSync = this.lastSyncByCategory.get(category) || 0;
+      
+      // 마지막 갱신 후 충분한 시간이 지났는지 확인
+      if (now - lastSync >= interval) {
+        try {
+          // 백그라운드로 갱신 (응답 대기 안 함)
+          this.refreshCategory(category, true);
+          this.lastSyncByCategory.set(category, now);
+        } catch (error) {
+          console.error(`❌ ${category} 갱신 실패:`, error);
+        }
+      }
+    }
+  }
+
+  /**
+   * 주기적 백그라운드 동기화 시작 (스마트 갱신: 페이지 활성 시에만)
    */
   startPeriodicSync(): void {
     // 기존 인터벌 정리
     this.stopPeriodicSync();
 
-    // 카테고리별로 주기적 갱신 설정
+    // 앱 포커스/블러 이벤트 리스너 등록
+    if (typeof window !== 'undefined') {
+      const handleFocus = () => {
+        this.setAppActive(true);
+      };
+      const handleBlur = () => {
+        this.setAppActive(false);
+      };
+      const handleVisibilityChange = () => {
+        this.setAppActive(!document.hidden);
+      };
+
+      window.addEventListener('focus', handleFocus);
+      window.addEventListener('blur', handleBlur);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      // 정리 함수 저장 (나중에 제거하기 위해)
+      (this as any)._cleanupListeners = () => {
+        window.removeEventListener('focus', handleFocus);
+        window.removeEventListener('blur', handleBlur);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
+
+    // 카테고리별로 주기적 갱신 설정 (스마트 갱신)
     Object.entries(this.SYNC_INTERVALS).forEach(([category, interval]) => {
       const timerId = setInterval(async () => {
+        // 앱이 비활성화되어 있으면 스킵
+        if (!this.isAppActive) {
+          return;
+        }
+
+        // 현재 페이지에서 사용하는 카테고리인지 확인
+        const shouldSync = !this.currentPage || 
+          (this.PAGE_CATEGORY_MAP[this.currentPage]?.includes(category) ?? false) ||
+          category === 'spreadsheetIds' || // 시스템 데이터는 항상 갱신
+          category === 'users'; // 사용자 데이터는 항상 갱신 (관리자용)
+
+        if (!shouldSync) {
+          return; // 해당 페이지에서 사용하지 않는 카테고리는 스킵
+        }
+
         // 토큰 만료 체크
         if (!tokenManager.isValid()) {
           console.warn(`⚠️ 토큰이 만료되어 ${category} 갱신을 건너뜁니다.`);
@@ -373,9 +587,19 @@ export class DataSyncService {
           return;
         }
 
+        // 마지막 갱신 시간 확인 (중복 갱신 방지)
+        const lastSync = this.lastSyncByCategory.get(category) || 0;
+        const now = Date.now();
+        if (now - lastSync < interval * 0.8) {
+          // 아직 갱신 주기가 지나지 않았으면 스킵 (80% 이상 경과해야 갱신)
+          return;
+        }
+
         try {
-          await this.refreshCategory(category);
-          console.log(`🔄 ${category} 백그라운드 갱신 완료`);
+          // 백그라운드로 갱신 (응답 대기 안 함)
+          this.refreshCategory(category, true);
+          this.lastSyncByCategory.set(category, now);
+          console.log(`🔄 ${category} 백그라운드 갱신 시작`);
         } catch (error) {
           console.error(`❌ ${category} 백그라운드 갱신 실패:`, error);
         }
@@ -384,7 +608,7 @@ export class DataSyncService {
       this.syncIntervals.set(category, timerId);
     });
 
-    console.log('✅ 주기적 백그라운드 동기화 시작');
+    console.log('✅ 스마트 주기적 백그라운드 동기화 시작 (페이지 활성 시에만 갱신)');
   }
 
   /**
@@ -395,6 +619,13 @@ export class DataSyncService {
       clearInterval(timerId);
     });
     this.syncIntervals.clear();
+
+    // 이벤트 리스너 정리
+    if ((this as any)._cleanupListeners) {
+      (this as any)._cleanupListeners();
+      (this as any)._cleanupListeners = null;
+    }
+
     console.log('⏹️ 주기적 백그라운드 동기화 중지');
   }
 
