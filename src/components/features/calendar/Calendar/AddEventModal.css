@@ -1092,6 +1092,56 @@
     gap: clamp(8px, 1.04vw, 12px);
 }
 
+.schedule-time-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: clamp(8px, 0.93vh, 12px);
+    padding: clamp(6px, 0.69vh, 8px) 0;
+}
+
+.schedule-time-toggle-label {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: clamp(6px, 0.78vw, 8px) !important;
+    cursor: pointer;
+    user-select: none;
+    font-size: clamp(13px, 1.51vh, 15px);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-dark);
+    transition: var(--transition-base);
+    white-space: nowrap;
+    flex-wrap: nowrap;
+}
+
+.schedule-time-toggle-label:hover {
+    color: var(--sidebar-primary);
+}
+
+.schedule-time-checkbox {
+    width: clamp(16px, 1.85vh, 18px) !important;
+    height: clamp(16px, 1.85vh, 18px) !important;
+    cursor: pointer;
+    accent-color: var(--sidebar-primary);
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.schedule-time-toggle-label span {
+    letter-spacing: -0.01em;
+    display: inline-block;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.schedule-section-header-right {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.04vw, 12px);
+}
+
 .schedule-section-title {
     font-size: clamp(14px, 1.62vh, 16px);
     font-weight: var(--font-weight-semibold);

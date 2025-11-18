@@ -533,30 +533,31 @@ function NewDocument({
                 // 나만 보기: 프론트엔드에서 직접 Google Drive API 사용
                 console.log('📄 개인 드라이브에 문서 생성:', selectedTemplate);
                 
-                // copyGoogleDocument 함수 import 필요
-                const { copyGoogleDocument } = await import('../utils/google/googleSheetUtils');
-                
-                // documentId가 있으면 복사, 없으면 빈 문서 생성
-                // 기본 템플릿도 documentId를 가질 수 있음 (동적 템플릿의 경우)
-                const templateDocumentId = selectedTemplate.documentId || (selectedTemplate.type && selectedTemplate.type.length > 20 ? selectedTemplate.type : null);
-                
-                if (templateDocumentId) {
-                    // 템플릿 복사 (기본 템플릿 또는 개인 템플릿)
-                    const copyResult = await copyGoogleDocument(templateDocumentId, documentTitle, selectedTemplate.tag);
-                    if (copyResult && copyResult.webViewLink) {
-                        window.open(copyResult.webViewLink, '_blank');
-                        showNotification('문서가 개인 드라이브에 생성되었습니다!', 'success');
-                        closePermissionModal();
-                        setIsCreating(false);
-                        return;
+                try {
+                    // copyGoogleDocument 함수 import (내부에서 Google API 초기화 처리)
+                    const { copyGoogleDocument } = await import('../utils/google/googleSheetUtils');
+                    
+                    // documentId가 있으면 복사, 없으면 빈 문서 생성
+                    // 기본 템플릿도 documentId를 가질 수 있음 (동적 템플릿의 경우)
+                    const templateDocumentId = selectedTemplate.documentId || (selectedTemplate.type && selectedTemplate.type.length > 20 ? selectedTemplate.type : null);
+                    
+                    if (templateDocumentId) {
+                        // 템플릿 복사 (기본 템플릿 또는 개인 템플릿)
+                        console.log('📄 템플릿 복사 시작:', { templateDocumentId, documentTitle, tag: selectedTemplate.tag });
+                        const copyResult = await copyGoogleDocument(templateDocumentId, documentTitle, selectedTemplate.tag);
+                        
+                        if (copyResult && copyResult.webViewLink) {
+                            window.open(copyResult.webViewLink, '_blank');
+                            showNotification('문서가 개인 드라이브에 생성되었습니다!', 'success');
+                            closePermissionModal();
+                            setIsCreating(false);
+                            return;
+                        } else {
+                            throw new Error('문서 복사에 실패했습니다. 템플릿 ID를 확인해주세요.');
+                        }
                     } else {
-                        showNotification('문서 생성에 실패했습니다.', 'error');
-                        setIsCreating(false);
-                        return;
-                    }
-                } else {
-                    // 빈 문서 생성 (documentId가 없는 경우)
-                    try {
+                        // 빈 문서 생성 (documentId가 없는 경우)
+                        console.log('📄 빈 문서 생성 (documentId 없음)');
                         // Google Docs의 새 문서 생성 URL을 사용
                         const newDocUrl = 'https://docs.google.com/document/create';
                         window.open(newDocUrl, '_blank');
@@ -564,12 +565,13 @@ function NewDocument({
                         closePermissionModal();
                         setIsCreating(false);
                         return;
-                    } catch (error) {
-                        console.error('📄 개인 문서 생성 오류:', error);
-                        showNotification('문서 생성 중 오류가 발생했습니다.', 'error');
-                        setIsCreating(false);
-                        return;
                     }
+                } catch (error) {
+                    console.error('📄 개인 문서 생성 오류:', error);
+                    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+                    showNotification(`문서 생성 중 오류가 발생했습니다: ${errorMessage}`, 'error');
+                    setIsCreating(false);
+                    return;
                 }
             }
 
@@ -583,8 +585,13 @@ function NewDocument({
             // 선택된 그룹들의 이메일 수집
             const groupEmails = selectedGroups.map(group => ENV_CONFIG.GROUP_EMAILS[group]).filter(Boolean);
             
-            // 개별 이메일과 그룹 이메일 합치기
-            const allEditors = [...groupEmails, ...individualEmails.filter(email => email.trim())];
+            // 개별 이메일과 그룹 이메일 합치기 (생성자 이메일도 포함)
+            const validIndividualEmails = individualEmails.filter(email => email && email.trim() !== '');
+            const allEditors = [
+                creatorEmail, // 생성자 이메일 명시적으로 포함
+                ...groupEmails.filter(email => email && email.trim() !== ''), // 그룹 이메일
+                ...validIndividualEmails // 개별 이메일
+            ].filter((email, index, arr) => arr.indexOf(email) === index); // 중복 제거
             
             console.log('📄 권한 설정 상세 정보:', {
                 creatorEmail,

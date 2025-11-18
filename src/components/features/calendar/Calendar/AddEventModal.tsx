@@ -609,11 +609,29 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                   <div className="schedule-section">
                       <div className="schedule-section-header">
                           <span className="schedule-section-title">일정 기간</span>
-                          {dateDifferenceInDays > 0 && (
-                              <span className="schedule-duration-badge">
-                                  {dateDifferenceInDays}일
-                              </span>
-                          )}
+                          <div className="schedule-section-header-right">
+                              <label className="schedule-time-toggle-label">
+                                  <input
+                                      type="checkbox"
+                                      checked={showTime}
+                                      onChange={(e) => {
+                                          setShowTime(e.target.checked);
+                                          if (!e.target.checked) {
+                                              // 체크 해제 시 시간을 00:00으로 초기화
+                                              setStartTime('00:00');
+                                              setEndTime('00:00');
+                                          }
+                                      }}
+                                      className="schedule-time-checkbox"
+                                  />
+                                  <span>시간 설정</span>
+                              </label>
+                              {dateDifferenceInDays > 0 && (
+                                  <span className="schedule-duration-badge">
+                                      {dateDifferenceInDays}일
+                                  </span>
+                              )}
+                          </div>
                       </div>
                       <div className="schedule-time-grid">
                           <div className="schedule-time-item">
@@ -681,6 +699,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       />,
                                       document.body
                                   )}
+                                  {showTime && (
                                   <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={startTimeButtonRef}
@@ -734,7 +753,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                           </button>
                                       </div>
                                   </div>
-                                  {showStartTimePicker && startTimeButtonRef.current && createPortal(
+                                  )}
+                                  {showTime && showStartTimePicker && startTimeButtonRef.current && createPortal(
                                       <CustomTimePicker
                                           value={startTime}
                                           onChange={(value) => {
@@ -818,6 +838,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       />,
                                       document.body
                                   )}
+                                  {showTime && (
                                   <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={endTimeButtonRef}
@@ -871,7 +892,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                           </button>
                                       </div>
                                   </div>
-                                  {showEndTimePicker && endTimeButtonRef.current && createPortal(
+                                  )}
+                                  {showTime && showEndTimePicker && endTimeButtonRef.current && createPortal(
                                       <CustomTimePicker
                                           value={endTime}
                                           onChange={(value) => {

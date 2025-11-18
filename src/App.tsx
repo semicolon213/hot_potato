@@ -681,12 +681,17 @@ const App: React.FC = () => {
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
     try {
       let eventOwnerType = user.userType;
-      let targetSpreadsheetId = activeCalendarSpreadsheetId; // Initialize here
+      let targetSpreadsheetId: string | null = null; // null로 초기화하여 참석자 권한 계산이 제대로 실행되도록 함
+
+      console.log('📅 일정 추가 시작 - 참석자:', eventData.attendees);
+      console.log('📅 현재 사용자 타입:', user.userType);
 
       if (eventData.attendees) {
         const attendeeItems = eventData.attendees.split(',');
         const groupTypes: string[] = [];
         const individualUserTypes: string[] = [];
+        
+        console.log('📅 참석자 항목 파싱 시작:', attendeeItems);
         
         // 새로운 형식 파싱: "group:권한" 또는 "권한:참석자ID" 또는 "참석자ID" (기존 형식)
         attendeeItems.forEach(item => {
@@ -696,18 +701,23 @@ const App: React.FC = () => {
             const groupType = trimmed.replace('group:', '');
             if (groupType && !groupTypes.includes(groupType)) {
               groupTypes.push(groupType);
+              console.log('📅 그룹 타입 추가:', groupType);
             }
           } else if (trimmed.includes(':')) {
             // 개별 참석자: student:123 -> student
             const [userType] = trimmed.split(':');
             if (userType && !individualUserTypes.includes(userType)) {
               individualUserTypes.push(userType);
+              console.log('📅 개별 참석자 타입 추가:', userType, 'from', trimmed);
             }
           } else {
             // 기존 형식 (호환성): 참석자ID만 있는 경우
             const userType = getAttendeeUserType(trimmed);
             if (userType && !individualUserTypes.includes(userType)) {
               individualUserTypes.push(userType);
+              console.log('📅 참석자ID로부터 타입 추출:', userType, 'from', trimmed);
+            } else {
+              console.warn('📅 참석자ID로부터 타입을 찾을 수 없음:', trimmed);
             }
           }
         });
@@ -721,6 +731,10 @@ const App: React.FC = () => {
           lowestPermissionType = individualUserTypes.reduce((lowest, current) => {
             const lowestIndex = permissionHierarchy.indexOf(lowest);
             const currentIndex = permissionHierarchy.indexOf(current);
+            if (lowestIndex === -1 || currentIndex === -1) {
+              console.warn('📅 권한 계층에서 찾을 수 없는 타입:', { lowest, current });
+              return lowestIndex === -1 ? current : lowest;
+            }
             return currentIndex < lowestIndex ? current : lowest;
           }, individualUserTypes[0]);
           console.log('📅 개별 참석자 권한 목록:', individualUserTypes);
@@ -730,6 +744,10 @@ const App: React.FC = () => {
           lowestPermissionType = groupTypes.reduce((lowest, current) => {
             const lowestIndex = permissionHierarchy.indexOf(lowest);
             const currentIndex = permissionHierarchy.indexOf(current);
+            if (lowestIndex === -1 || currentIndex === -1) {
+              console.warn('📅 권한 계층에서 찾을 수 없는 타입:', { lowest, current });
+              return lowestIndex === -1 ? current : lowest;
+            }
             return currentIndex < lowestIndex ? current : lowest;
           }, groupTypes[0]);
           console.log('📅 그룹 권한 목록:', groupTypes);
@@ -748,6 +766,12 @@ const App: React.FC = () => {
               console.log('📅 본인 권한이 가장 낮음:', lowestPermissionType);
             }
           }
+        }
+
+        // 참석자가 있는데도 lowestPermissionType이 null인 경우 경고
+        if (!lowestPermissionType && (individualUserTypes.length > 0 || groupTypes.length > 0)) {
+          console.warn('⚠️ 참석자가 있지만 권한 타입을 결정할 수 없습니다. 사용자 타입을 사용합니다:', user.userType);
+          lowestPermissionType = user.userType || 'student';
         }
 
         if (lowestPermissionType) {
@@ -771,13 +795,19 @@ const App: React.FC = () => {
               targetSpreadsheetId = calendarProfessorSpreadsheetId;
               break;
             default:
+              console.warn('⚠️ 알 수 없는 권한 타입:', lowestPermissionType, '- 기본 캘린더 사용');
               targetSpreadsheetId = activeCalendarSpreadsheetId;
           }
+          console.log('✅ 권한별 스프레드시트 선택:', { 
+            권한: lowestPermissionType, 
+            스프레드시트ID: targetSpreadsheetId?.substring(0, 20) + '...' 
+          });
         }
       }
 
       // 참석자가 없거나 targetSpreadsheetId가 null인 경우, 사용자 타입에 따라 기본 스프레드시트 ID 선택
       if (!targetSpreadsheetId && user.userType) {
+        console.log('📅 참석자가 없거나 권한 계산 실패 - 사용자 타입으로 기본 캘린더 선택:', user.userType);
         switch (user.userType) {
           case 'professor':
             targetSpreadsheetId = calendarProfessorSpreadsheetId;
@@ -797,6 +827,7 @@ const App: React.FC = () => {
             break;
           default:
             // 기본값으로 student 캘린더 사용
+            console.warn('⚠️ 알 수 없는 사용자 타입:', user.userType, '- student 캘린더 사용');
             targetSpreadsheetId = calendarStudentSpreadsheetId;
             break;
         }
@@ -808,6 +839,13 @@ const App: React.FC = () => {
       if (!eventOwnerType) {
         throw new Error("Event owner type not found");
       }
+      
+      console.log('📅 최종 저장 정보:', {
+        스프레드시트ID: targetSpreadsheetId.substring(0, 20) + '...',
+        이벤트소유자타입: eventOwnerType,
+        참석자: eventData.attendees
+      });
+      
       await addCalendarEvent(targetSpreadsheetId, eventData, eventOwnerType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
