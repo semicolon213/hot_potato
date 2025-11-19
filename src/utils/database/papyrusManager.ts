@@ -1085,16 +1085,45 @@ export const addCalendarEvent = async (spreadsheetId: string, eventData: Omit<Ev
             eventData.attendees || ''
         ];
 
-        await append(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [newEventForSheet]);
-        console.log('일정이 성공적으로 추가되었습니다.');
+        // 낙관적 업데이트: 캐시에 먼저 추가
+        const fullEventId = `${spreadsheetId}-${newEventId}`;
+        const cacheKeys = [
+            generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
+            'calendar:fetchCalendarEvents:*'
+        ];
         
-        // 캐시 무효화 및 백그라운드 갱신
+        const newEvent: Event = {
+            id: fullEventId,
+            ...eventData
+        };
+        
+        let rollback: (() => Promise<void>) | null = null;
+        try {
+            rollback = await apiClient.optimisticUpdate<Event[]>('addCalendarEvent', cacheKeys, (cachedData) => {
+                if (!cachedData || !Array.isArray(cachedData)) {
+                    return [newEvent];
+                }
+                return [...cachedData, newEvent];
+            });
+        } catch (optimisticError) {
+            console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+        }
+
+        // API 호출
+        try {
+            await append(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, [newEventForSheet]);
+            console.log('일정이 성공적으로 추가되었습니다.');
+        } catch (apiError) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
+            throw apiError;
+        }
+        
+        // 성공 시 캐시 무효화 및 백그라운드 갱신 (서버 데이터로 동기화)
         try {
             const dataSyncService = getDataSyncService();
-            const cacheKeys = [
-                generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
-                'calendar:fetchCalendarEvents:*' // 와일드카드로 모든 캘린더 이벤트 캐시 무효화
-            ];
             await dataSyncService.invalidateAndRefresh(cacheKeys);
         } catch (cacheError) {
             console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
@@ -1143,16 +1172,45 @@ export const updateCalendarEvent = async (spreadsheetId: string, eventId: string
             eventData.attendees || ''
         ];
 
-        await update(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex + 1}:K${rowIndex + 1}`, [newRowData]);
-        console.log('일정이 성공적으로 업데이트되었습니다.');
+        // 낙관적 업데이트: 캐시에 먼저 반영
+        const cacheKeys = [
+            generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
+            'calendar:fetchCalendarEvents:*'
+        ];
         
-        // 캐시 무효화 및 백그라운드 갱신
+        let rollback: (() => Promise<void>) | null = null;
+        try {
+            rollback = await apiClient.optimisticUpdate<Event[]>('updateCalendarEvent', cacheKeys, (cachedData) => {
+                if (!cachedData || !Array.isArray(cachedData)) return cachedData;
+                return cachedData.map(event => {
+                    if (event.id === eventId) {
+                        return {
+                            ...event,
+                            ...eventData
+                        };
+                    }
+                    return event;
+                });
+            });
+        } catch (optimisticError) {
+            console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+        }
+
+        // API 호출
+        try {
+            await update(spreadsheetId, ENV_CONFIG.CALENDAR_SHEET_NAME, `A${rowIndex + 1}:K${rowIndex + 1}`, [newRowData]);
+            console.log('일정이 성공적으로 업데이트되었습니다.');
+        } catch (apiError) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
+            throw apiError;
+        }
+        
+        // 성공 시 캐시 무효화 및 백그라운드 갱신 (서버 데이터로 동기화)
         try {
             const dataSyncService = getDataSyncService();
-            const cacheKeys = [
-                generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
-                'calendar:fetchCalendarEvents:*' // 와일드카드로 모든 캘린더 이벤트 캐시 무효화
-            ];
             await dataSyncService.invalidateAndRefresh(cacheKeys);
         } catch (cacheError) {
             console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
@@ -1185,17 +1243,38 @@ export const deleteCalendarEvent = async (spreadsheetId: string, eventId: string
       throw new Error(`Event with ID ${eventId} not found in sheet.`);
     }
 
-    const sheetId = 0; // Assuming the first sheet
-    await deleteRow(spreadsheetId, sheetId, rowIndex);
-    console.log('일정이 성공적으로 삭제되었습니다.');
+    // 낙관적 업데이트: 캐시에서 먼저 제거
+    const cacheKeys = [
+        generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
+        'calendar:fetchCalendarEvents:*'
+    ];
     
-    // 캐시 무효화 및 백그라운드 갱신
+    let rollback: (() => Promise<void>) | null = null;
+    try {
+        rollback = await apiClient.optimisticUpdate<Event[]>('deleteCalendarEvent', cacheKeys, (cachedData) => {
+            if (!cachedData || !Array.isArray(cachedData)) return cachedData;
+            return cachedData.filter(event => event.id !== eventId);
+        });
+    } catch (optimisticError) {
+        console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+    }
+
+    // API 호출
+    try {
+        const sheetId = 0; // Assuming the first sheet
+        await deleteRow(spreadsheetId, sheetId, rowIndex);
+        console.log('일정이 성공적으로 삭제되었습니다.');
+    } catch (apiError) {
+        // API 실패 시 롤백
+        if (rollback) {
+            await rollback();
+        }
+        throw apiError;
+    }
+    
+    // 성공 시 캐시 무효화 및 백그라운드 갱신 (서버 데이터로 동기화)
     try {
         const dataSyncService = getDataSyncService();
-        const cacheKeys = [
-            generateCacheKey('calendar', 'fetchCalendarEvents', { spreadsheetId }),
-            'calendar:fetchCalendarEvents:*' // 와일드카드로 모든 캘린더 이벤트 캐시 무효화
-        ];
         await dataSyncService.invalidateAndRefresh(cacheKeys);
     } catch (cacheError) {
         console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);

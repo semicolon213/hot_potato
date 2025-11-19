@@ -10,6 +10,7 @@ import { getSheetData, append, update } from 'papyrus-db';
 import { getCacheManager } from '../cache/cacheManager';
 import { generateCacheKey, getCacheTTL, getActionCategory } from '../cache/cacheUtils';
 import { getDataSyncService } from '../../services/dataSyncService';
+import { apiClient } from '../api/apiClient';
 import type {
   Account,
   LedgerEntry,
@@ -408,11 +409,67 @@ export const createLedgerEntry = async (
       newEntry.budgetPlanTitle || ''       // budget_plan_title
     ];
     
-    // 배열 형식으로 append (papyrus-db는 2차원 배열을 기대함)
-    await append(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, [ledgerRow]);
+    // 낙관적 업데이트: 캐시에 먼저 추가
+    const cacheKeys = [
+      generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId: entryData.accountId }),
+      generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+      'accounting:getLedgerEntries:*',
+      'accounting:getAccounts:*'
+    ];
+    
+    let rollback: (() => Promise<void>) | null = null;
+    try {
+      rollback = await apiClient.optimisticUpdate<LedgerEntry[]>('createLedger', cacheKeys, (cachedData) => {
+        if (!cachedData || !Array.isArray(cachedData)) {
+          return [newEntry];
+        }
+        // 날짜순으로 정렬하여 삽입
+        const sorted = [...cachedData, newEntry].sort((a, b) => {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          const createdA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+          const createdB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+          return createdA - createdB;
+        });
+        return sorted;
+      });
+      
+      // 통장 잔액도 낙관적 업데이트
+      const accountCacheKeys = [
+        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+        'accounting:getAccounts:*'
+      ];
+      await apiClient.optimisticUpdate<Account[]>('createLedger', accountCacheKeys, (cachedAccounts) => {
+        if (!cachedAccounts || !Array.isArray(cachedAccounts)) return cachedAccounts;
+        return cachedAccounts.map(acc => {
+          if (acc.accountId === entryData.accountId) {
+            return {
+              ...acc,
+              currentBalance: balanceAfter
+            };
+          }
+          return acc;
+        });
+      });
+    } catch (optimisticError) {
+      console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+    }
 
-    // 카테고리 사용 횟수 증가
-    await updateCategoryUsageCount(spreadsheetId, entryData.category, 1);
+    // API 호출
+    try {
+      // 배열 형식으로 append (papyrus-db는 2차원 배열을 기대함)
+      await append(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, [ledgerRow]);
+
+      // 카테고리 사용 횟수 증가
+      await updateCategoryUsageCount(spreadsheetId, entryData.category, 1);
+    } catch (apiError) {
+      // API 실패 시 롤백
+      if (rollback) {
+        await rollback();
+      }
+      throw apiError;
+    }
 
     // 저장 후 정렬 및 잔액 재계산
     try {
@@ -463,15 +520,9 @@ export const createLedgerEntry = async (
 
     console.log('✅ 장부 항목 추가 완료:', entryId);
     
-    // 캐시 무효화 및 백그라운드 갱신
+    // 성공 시 캐시 무효화 및 백그라운드 갱신 (서버 데이터로 동기화)
     try {
       const dataSyncService = getDataSyncService();
-      const cacheKeys = [
-        generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId: entryData.accountId }),
-        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
-        'accounting:getLedgerEntries:*', // 와일드카드로 모든 장부 항목 캐시 무효화
-        'accounting:getAccounts:*' // 와일드카드로 모든 통장 캐시 무효화
-      ];
       await dataSyncService.invalidateAndRefresh(cacheKeys);
     } catch (cacheError) {
       console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
@@ -584,22 +635,72 @@ export const updateLedgerEntry = async (
       evidenceFileName
     };
 
-    // 시트 헤더 순서: entry_id, account_id, date, category, description, amount, balance_after,
-    // source, transaction_type, evidence_file_id, evidence_file_name, created_by, created_date,
-    // is_budget_executed, budget_plan_id
-    // papyrus-db update는 두 번째 인자로 시트명을 받으므로, range에는 셀 주소만 포함
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `C${actualRowNumber}`, [[updatedDate]]);
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `D${actualRowNumber}`, [[updatedCategory]]);
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `E${actualRowNumber}`, [[updatedDescription]]);
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `F${actualRowNumber}`, [[updatedAmount]]);
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `G${actualRowNumber}`, [[balanceAfter]]);
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `H${actualRowNumber}`, [[updatedSource]]);
-    await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `I${actualRowNumber}`, [[updatedTransactionType]]);
+    // 낙관적 업데이트: 캐시에 먼저 반영
+    const cacheKeys = [
+      generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId: entryData.accountId }),
+      generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+      'accounting:getLedgerEntries:*',
+      'accounting:getAccounts:*'
+    ];
     
-    // 증빙 문서 정보 업데이트 (있는 경우)
-    if (evidenceFileId) {
-      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `J${actualRowNumber}`, [[evidenceFileId]]);
-      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `K${actualRowNumber}`, [[evidenceFileName || '']]);
+    let rollback: (() => Promise<void>) | null = null;
+    try {
+      rollback = await apiClient.optimisticUpdate<LedgerEntry[]>('updateLedger', cacheKeys, (cachedData) => {
+        if (!cachedData || !Array.isArray(cachedData)) return cachedData;
+        return cachedData.map(entry => {
+          if (entry.entryId === entryId) {
+            return updatedEntry;
+          }
+          return entry;
+        });
+      });
+      
+      // 통장 잔액도 낙관적 업데이트
+      const accountCacheKeys = [
+        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+        'accounting:getAccounts:*'
+      ];
+      await apiClient.optimisticUpdate<Account[]>('updateLedger', accountCacheKeys, (cachedAccounts) => {
+        if (!cachedAccounts || !Array.isArray(cachedAccounts)) return cachedAccounts;
+        return cachedAccounts.map(acc => {
+          if (acc.accountId === entryData.accountId) {
+            return {
+              ...acc,
+              currentBalance: balanceAfter
+            };
+          }
+          return acc;
+        });
+      });
+    } catch (optimisticError) {
+      console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+    }
+
+    // API 호출
+    try {
+      // 시트 헤더 순서: entry_id, account_id, date, category, description, amount, balance_after,
+      // source, transaction_type, evidence_file_id, evidence_file_name, created_by, created_date,
+      // is_budget_executed, budget_plan_id
+      // papyrus-db update는 두 번째 인자로 시트명을 받으므로, range에는 셀 주소만 포함
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `C${actualRowNumber}`, [[updatedDate]]);
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `D${actualRowNumber}`, [[updatedCategory]]);
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `E${actualRowNumber}`, [[updatedDescription]]);
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `F${actualRowNumber}`, [[updatedAmount]]);
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `G${actualRowNumber}`, [[balanceAfter]]);
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `H${actualRowNumber}`, [[updatedSource]]);
+      await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `I${actualRowNumber}`, [[updatedTransactionType]]);
+      
+      // 증빙 문서 정보 업데이트 (있는 경우)
+      if (evidenceFileId) {
+        await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `J${actualRowNumber}`, [[evidenceFileId]]);
+        await update(spreadsheetId, ACCOUNTING_SHEETS.LEDGER, `K${actualRowNumber}`, [[evidenceFileName || '']]);
+      }
+    } catch (apiError) {
+      // API 실패 시 롤백
+      if (rollback) {
+        await rollback();
+      }
+      throw apiError;
     }
 
     // 통장 잔액 업데이트
@@ -679,15 +780,9 @@ export const updateLedgerEntry = async (
 
     console.log('✅ 장부 항목 수정 완료:', entryId);
     
-    // 캐시 무효화 및 백그라운드 갱신
+    // 성공 시 캐시 무효화 및 백그라운드 갱신 (서버 데이터로 동기화)
     try {
       const dataSyncService = getDataSyncService();
-      const cacheKeys = [
-        generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId: entryData.accountId }),
-        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
-        'accounting:getLedgerEntries:*', // 와일드카드로 모든 장부 항목 캐시 무효화
-        'accounting:getAccounts:*' // 와일드카드로 모든 통장 캐시 무효화
-      ];
       await dataSyncService.invalidateAndRefresh(cacheKeys);
     } catch (cacheError) {
       console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
@@ -750,12 +845,59 @@ export const deleteLedgerEntry = async (
       throw new Error('장부 시트 ID를 찾을 수 없습니다.');
     }
 
-    // 카테고리 사용 횟수 감소 (삭제 전에 수행)
-    await updateCategoryUsageCount(spreadsheetId, entry.category, -1);
+    // 낙관적 업데이트: 캐시에서 먼저 제거
+    const cacheKeys = [
+      generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId }),
+      generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+      'accounting:getLedgerEntries:*',
+      'accounting:getAccounts:*'
+    ];
+    
+    let rollback: (() => Promise<void>) | null = null;
+    try {
+      rollback = await apiClient.optimisticUpdate<LedgerEntry[]>('deleteLedger', cacheKeys, (cachedData) => {
+        if (!cachedData || !Array.isArray(cachedData)) return cachedData;
+        return cachedData.filter(e => e.entryId !== entryId);
+      });
+      
+      // 통장 잔액도 낙관적 업데이트 (삭제된 항목의 금액을 되돌림)
+      const accountCacheKeys = [
+        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
+        'accounting:getAccounts:*'
+      ];
+      await apiClient.optimisticUpdate<Account[]>('deleteLedger', accountCacheKeys, (cachedAccounts) => {
+        if (!cachedAccounts || !Array.isArray(cachedAccounts)) return cachedAccounts;
+        return cachedAccounts.map(acc => {
+          if (acc.accountId === accountId) {
+            // 삭제된 항목의 금액을 되돌림
+            const newBalance = acc.currentBalance - entry.amount;
+            return {
+              ...acc,
+              currentBalance: newBalance
+            };
+          }
+          return acc;
+        });
+      });
+    } catch (optimisticError) {
+      console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+    }
 
-    // 행 삭제
-    const { deleteRow } = await import('papyrus-db');
-    await deleteRow(spreadsheetId, sheetId, rowIndex + 1);
+    // API 호출
+    try {
+      // 카테고리 사용 횟수 감소 (삭제 전에 수행)
+      await updateCategoryUsageCount(spreadsheetId, entry.category, -1);
+
+      // 행 삭제
+      const { deleteRow } = await import('papyrus-db');
+      await deleteRow(spreadsheetId, sheetId, rowIndex + 1);
+    } catch (apiError) {
+      // API 실패 시 롤백
+      if (rollback) {
+        await rollback();
+      }
+      throw apiError;
+    }
 
     // 삭제 후 남은 항목들의 balanceAfter 재계산
     const remainingEntries = await getLedgerEntries(spreadsheetId, accountId);
@@ -802,15 +944,9 @@ export const deleteLedgerEntry = async (
 
     console.log('✅ 장부 항목 삭제 완료:', entryId);
     
-    // 캐시 무효화 및 백그라운드 갱신
+    // 성공 시 캐시 무효화 및 백그라운드 갱신 (서버 데이터로 동기화)
     try {
       const dataSyncService = getDataSyncService();
-      const cacheKeys = [
-        generateCacheKey('accounting', 'getLedgerEntries', { spreadsheetId, accountId }),
-        generateCacheKey('accounting', 'getAccounts', { spreadsheetId }),
-        'accounting:getLedgerEntries:*', // 와일드카드로 모든 장부 항목 캐시 무효화
-        'accounting:getAccounts:*' // 와일드카드로 모든 통장 캐시 무효화
-      ];
       await dataSyncService.invalidateAndRefresh(cacheKeys);
     } catch (cacheError) {
       console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
