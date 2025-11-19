@@ -47,6 +47,8 @@ export default defineConfig({
           'google-vendor': ['gapi-script'],
           // Papyrus DB
           'papyrus-vendor': ['papyrus-db'],
+          // 그래프 라이브러리 (네트리파이 배포 호환성)
+          'chart-vendor': ['recharts'],
           // 기타 유틸리티
           'utils-vendor': ['rrule']
         }

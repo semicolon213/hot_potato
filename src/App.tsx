@@ -1181,7 +1181,7 @@ const App: React.FC = () => {
             onRefresh={handleRefreshAllData}
             isRefreshing={isInitializingData}
           />
-          <div className="content" id="dynamicContent" data-oid="nn2e18p">
+          <div className={`content ${isGoogleServicePage ? 'google-service-content' : ''}`} id="dynamicContent" data-oid="nn2e18p">
             <PageRenderer
               currentPage={currentPage}
               user={user}

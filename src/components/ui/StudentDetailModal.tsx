@@ -530,6 +530,11 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     }
 
     try {
+      if (!studentSpreadsheetId) {
+        alert('학생 스프레드시트 ID를 찾을 수 없습니다.');
+        return;
+      }
+
       const issueData = {
         no_member: newIssue.no_member,
         date_issue: newIssue.date_issue || new Date().toISOString().split('T')[0],
@@ -538,7 +543,7 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         content_issue: newIssue.content_issue
       };
 
-      await addStudentIssue(issueData);
+      await addStudentIssue(studentSpreadsheetId, issueData);
       
       const newIssueWithId: StudentIssue = {
         ...issueData,

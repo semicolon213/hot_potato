@@ -37,6 +37,7 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isBudgetCreateModalOpen, setIsBudgetCreateModalOpen] = useState(false);
   const [entryListControls, setEntryListControls] = useState<{
     sortedMonths: string[];
     selectedMonthTab: string | null;
@@ -83,6 +84,15 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
   // 항목 추가 핸들러
   const handleAddEntry = () => {
     setIsAddingNew(true);
+    // 첫 번째 페이지로 이동하여 인라인 추가 행이 보이도록 함
+    if (entryListControls && entryListControls.selectedMonthTab) {
+      // 현재 선택된 월 탭의 첫 번째 페이지로 이동
+      const currentMonth = entryListControls.selectedMonthTab;
+      entryListControls.onMonthTabChange(currentMonth);
+    } else if (entryListControls && entryListControls.sortedMonths.length > 0) {
+      // 월 탭이 있으면 첫 번째 월 탭 선택
+      entryListControls.onMonthTabChange(entryListControls.sortedMonths[0]);
+    }
   };
 
   // 외부 클릭 시 드롭다운 닫기
@@ -186,7 +196,17 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
           </div>
         )}
         {activeTab !== 'entries' && (
-          <button onClick={onBack} className="back-btn" style={{ marginLeft: 'auto' }}>목록으로</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            {activeTab === 'budgets' && (
+              <button 
+                onClick={() => setIsBudgetCreateModalOpen(true)}
+                className="back-btn"
+              >
+                예산안 생성
+              </button>
+            )}
+            <button onClick={onBack} className="back-btn">목록으로</button>
+          </div>
         )}
       </div>
 
@@ -272,7 +292,11 @@ export const LedgerDetail: React.FC<LedgerDetailProps> = ({
           <AccountDisplay spreadsheetId={ledger.spreadsheetId} />
         )}
         {activeTab === 'budgets' && (
-          <BudgetPlanList spreadsheetId={ledger.spreadsheetId} />
+          <BudgetPlanList 
+            spreadsheetId={ledger.spreadsheetId}
+            isCreateModalOpen={isBudgetCreateModalOpen}
+            onCloseCreateModal={() => setIsBudgetCreateModalOpen(false)}
+          />
         )}
         {activeTab === 'categories' && (
           <CategoryManagement spreadsheetId={ledger.spreadsheetId} />
