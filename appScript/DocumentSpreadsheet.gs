@@ -96,6 +96,133 @@ function getSheetIdByName(sheetName) {
 }
 
 /**
+ * 공유 문서 폴더에서 파일 목록 가져오기 (기본 템플릿처럼 파일 목록 + 메타데이터 따로 조회)
+ * @returns {Object} 파일 목록 (메타데이터 포함)
+ */
+function getSharedDocumentsFromFolder() {
+  try {
+    // Drive API 확인
+    if (typeof Drive === 'undefined') {
+      return {
+        success: false,
+        message: 'Drive API가 활성화되지 않았습니다.'
+      };
+    }
+    
+    // 스크립트 속성에서 폴더 이름 가져오기
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
+    const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
+    
+    // 폴더 경로 결정
+    var folderPath;
+    if (typeof getSharedDocumentFolderPath === 'function') {
+      folderPath = getSharedDocumentFolderPath();
+    } else {
+      folderPath = rootFolderName + '/' + documentFolderName + '/' + sharedFolderName;
+    }
+    
+    // 폴더 찾기/생성
+    var folderResult = null;
+    try {
+      folderResult = findOrCreateFolder(folderPath);
+    } catch (findErr) {
+      console.error('📁 폴더 탐색 오류:', findErr);
+      folderResult = { success: false };
+    }
+    
+    if (!folderResult || !folderResult.success || !folderResult.data || !folderResult.data.id) {
+      return {
+        success: false,
+        message: '공유 문서 폴더를 찾을 수 없습니다.'
+      };
+    }
+    
+    const targetFolderId = folderResult.data.id;
+    
+    // 1단계: 파일 목록 먼저 조회 (기본 템플릿처럼)
+    var files;
+    var maxRetries = 3;
+    var retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        files = Drive.Files.list({
+          q: '\'' + targetFolderId + '\' in parents and trashed=false',
+          maxResults: 1000
+        });
+        break; // 성공하면 루프 종료
+      } catch (listError) {
+        retryCount++;
+        console.warn('📄 공유 문서 목록 조회 재시도 ' + retryCount + '/' + maxRetries + ':', listError.message);
+        
+        // 사용량 제한 오류인지 확인
+        if (listError.message && (listError.message.indexOf('429') !== -1 || 
+            listError.message.indexOf('quota') !== -1 || 
+            listError.message.indexOf('rate limit') !== -1)) {
+          console.warn('⚠️ API 사용량 제한 감지. 잠시 대기 후 재시도합니다.');
+          Utilities.sleep(Math.pow(2, retryCount) * 2000); // 지수적 백오프
+          continue;
+        }
+        
+        if (retryCount >= maxRetries) {
+          return { success: false, message: '공유 문서 조회 실패: ' + listError.message };
+        }
+        
+        Utilities.sleep(Math.pow(2, retryCount) * 1000);
+      }
+    }
+    
+    // 2단계: 각 파일의 메타데이터(properties) 따로 조회 (기본 템플릿처럼)
+    var fileArray = files.items || files.files || [];
+    
+    for (var i = 0; i < fileArray.length; i++) {
+      try {
+        // properties만 가져오기 위해 fields 지정
+        var fileDetail = Drive.Files.get(fileArray[i].id, { fields: 'properties' });
+        
+        if (fileDetail && fileDetail.properties) {
+          // properties 객체를 직접 할당
+          fileArray[i].properties = fileDetail.properties;
+        } else {
+          // properties가 없으면 빈 객체로 초기화
+          fileArray[i].properties = {};
+        }
+        
+        // API 제한 방지를 위해 잠시 대기
+        if (i % 10 === 0 && i > 0) {
+          Utilities.sleep(100);
+        }
+      } catch (getError) {
+        // 에러 발생 시에도 빈 객체로 초기화하여 계속 진행
+        fileArray[i].properties = {};
+        console.warn('파일 상세 정보 가져오기 실패:', fileArray[i].id, getError.message);
+      }
+    }
+    
+    // properties를 가져온 후 files 객체에 다시 할당
+    if (files.items) {
+      files.items = fileArray;
+    } else if (files.files) {
+      files.files = fileArray;
+    }
+    
+    // 기존 형식 유지하여 반환
+    return {
+      success: true,
+      files: fileArray
+    };
+    
+  } catch (error) {
+    console.error('❌ 공유 문서 목록 가져오기 오류:', error);
+    return {
+      success: false,
+      message: '공유 문서 목록을 가져오는 중 오류가 발생했습니다: ' + error.message
+    };
+  }
+}
+
+/**
  * 문서 목록 조회
  * @param {Object} req - 요청 데이터
  * @returns {Object} 응답 결과
@@ -109,61 +236,71 @@ function handleGetDocuments(req) {
     const page = req.page ? Number(req.page) : 1;
     const limit = req.limit ? Number(req.limit) : 100;
 
-    // 1) Drive 폴더 기반 조회 (공유 전용)
+    // 1) Drive 폴더 기반 조회 (공유 전용) - 기본 템플릿처럼 폴더에서 가져오기
     if (role === 'shared') {
       console.log('📁 Drive 폴더 기반 조회 모드:', role);
-
-      // 폴더 경로 결정 (스크립트 속성 사용)
-      var folderPath;
-      if (typeof getSharedDocumentFolderPath === 'function') {
-        folderPath = getSharedDocumentFolderPath();
-      } else {
-        // 스크립트 속성에서 폴더 이름 가져오기
-        const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
-        const documentFolderName = PropertiesService.getScriptProperties().getProperty('DOCUMENT_FOLDER_NAME') || '문서';
-        const sharedFolderName = PropertiesService.getScriptProperties().getProperty('SHARED_DOCUMENT_FOLDER_NAME') || '공유 문서';
-        folderPath = rootFolderName + '/' + documentFolderName + '/' + sharedFolderName;
+      
+      // 기본 템플릿처럼 폴더에서 파일 목록 가져오기
+      var folderResult = getSharedDocumentsFromFolder();
+      
+      if (!folderResult.success || !folderResult.files || folderResult.files.length === 0) {
+        return {
+          success: true,
+          data: [],
+          total: 0,
+          message: folderResult.message || '공유 문서를 가져올 수 없습니다.'
+        };
       }
-
-      // 폴더 찾기/생성
-      var folderResult = null;
-      try {
-        folderResult = findOrCreateFolder(folderPath);
-      } catch (findErr) {
-        console.error('📁 폴더 탐색 오류:', findErr);
-        folderResult = { success: false };
-      }
-
-      if (!folderResult || !folderResult.success || !folderResult.data || !folderResult.data.id) {
-        return { success: true, data: [], total: 0, message: '대상 폴더를 찾을 수 없습니다.' };
-      }
-
-      const targetFolderId = folderResult.data.id;
-      console.log('📁 대상 폴더 ID:', targetFolderId);
-
-      // 폴더 내 파일 조회
-      var files;
-      try {
-        files = Drive.Files.list({
-          q: "'" + targetFolderId + "' in parents and trashed=false",
-          fields: 'files(id,name,mimeType,modifiedTime,createdTime,owners,webViewLink,properties)',
-          orderBy: 'modifiedTime desc'
-        });
-      } catch (listErr) {
-        console.error('📁 파일 목록 조회 오류:', listErr);
-        files = { files: [] };
-      }
-
-      var items = (files.files || []).map(function(file, index) {
-        var creatorRaw = (file.properties && file.properties.creator) 
-          || (file.owners && file.owners.length > 0 && (file.owners[0].displayName || file.owners[0].emailAddress))
-          || '';
+      
+      // 기존 형식으로 변환 (메타데이터 사용) - 기본 템플릿처럼 properties에서 추출
+      var items = folderResult.files.map(function(file, index) {
+        // properties에서 메타데이터 추출 (기본 템플릿처럼)
+        var p = file.properties || {};
+        var creatorRaw = '';
+        var creatorEmail = '';
+        var tag = '공용';
+        
+        // properties가 배열인 경우 (v2)
+        if (Array.isArray(p)) {
+          for (var j = 0; j < p.length; j++) {
+            var prop = p[j];
+            if (prop && prop.key && prop.value !== undefined) {
+              switch(prop.key) {
+                case 'creator':
+                  creatorRaw = prop.value || '';
+                  break;
+                case 'creatorEmail':
+                  creatorEmail = prop.value || '';
+                  break;
+                case 'tag':
+                  tag = prop.value || '공용';
+                  break;
+              }
+            }
+          }
+        } else if (p && typeof p === 'object') {
+          // 객체 형태인 경우 (v3)
+          creatorRaw = p.creator || p['creator'] || '';
+          creatorEmail = p.creatorEmail || p['creatorEmail'] || '';
+          tag = p.tag || p['tag'] || '공용';
+        }
+        
+        // creatorRaw가 없으면 owners에서 가져오기
+        if (!creatorRaw) {
+          creatorRaw = (file.owners && file.owners.length > 0 && (file.owners[0].displayName || file.owners[0].emailAddress)) || '';
+        }
+        
         // 이메일이면 이름 변환 시도
         var creator = creatorRaw;
-        var creatorEmail = '';
+        if (!creatorEmail && creatorRaw && creatorRaw.indexOf('@') !== -1) {
+          creatorEmail = creatorRaw;
+        }
+        
         try {
           if (creatorRaw && typeof creatorRaw === 'string' && creatorRaw.indexOf('@') !== -1) {
-            creatorEmail = creatorRaw;
+            if (!creatorEmail) {
+              creatorEmail = creatorRaw;
+            }
             var nameResult = getUserNameByEmail(creatorRaw);
             if (nameResult && nameResult.success && nameResult.name) {
               creator = nameResult.name;
@@ -172,16 +309,16 @@ function handleGetDocuments(req) {
         } catch (nameErr) {
           // 변환 실패 시 원본 유지
         }
-        var tag = (file.properties && file.properties.tag) || '공용';
+        
         return {
           id: file.id,
           documentNumber: '', // 프론트에서 보완 생성 가능
-          title: file.name || '',
+          title: file.title || file.name || '',
           author: creator,
           authorEmail: creatorEmail,
-          createdTime: file.createdTime || '',
-          lastModified: file.modifiedTime || '',
-          url: file.webViewLink || '',
+          createdTime: file.createdDate || file.createdTime || '',
+          lastModified: file.modifiedDate || file.modifiedTime || '',
+          url: file.webViewLink || file.alternateLink || '',
           mimeType: file.mimeType || '',
           tag: tag,
           originalIndex: index

@@ -113,18 +113,37 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
     const canModifyEvent = () => {
         if (!user) return false;
 
+        // 관리자는 항상 편집/삭제 가능
         if (user.isAdmin) {
             return true;
         }
 
+        // attendees가 없으면 작성자 확인 불가
         if (!event.attendees || event.attendees.trim() === '') {
             return false;
         }
 
-        const firstAttendee = event.attendees.split(',')[0].trim();
+        // attendees 파싱: "professor:202207037,202107034" 형식
+        const attendeeItems = event.attendees.split(',').map(item => item.trim());
+        
+        // 마지막 항목이 작성자
+        const lastItem = attendeeItems[attendeeItems.length - 1];
+        
+        // 마지막 항목에서 학번 추출
+        let creatorId = '';
+        if (lastItem.includes(':')) {
+            // "professor:202107034" 형식 -> 콜론 뒤의 학번
+            const parts = lastItem.split(':');
+            creatorId = parts[parts.length - 1];
+        } else {
+            // 기존 형식 (호환성): 학번만 있는 경우
+            creatorId = lastItem;
+        }
+        
         const userId = String(user.studentId).trim();
         
-        return userId === firstAttendee;
+        // 작성자인지 확인
+        return userId === creatorId;
     };
 
     const modalContent = (

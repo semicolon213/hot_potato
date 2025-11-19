@@ -65,13 +65,34 @@ async function convertEmailToName(email: string): Promise<string> {
  */
 export const loadSharedDocuments = async (): Promise<DocumentInfo[]> => {
   try {
+    console.log('📄 공유 문서 로드 시작...');
     const result = await apiClient.getDocuments({ role: 'shared' });
+    console.log('📄 공유 문서 API 응답:', result);
+    
     if (!result.success) {
       console.warn('공유 문서 API 실패:', result.message || result.error);
       return [];
     }
 
-    const rows = (result.data || []) as DocumentInfoResponse[];
+    // 응답 구조 확인: result.data가 배열인지 확인
+    if (!result.data) {
+      console.warn('📄 공유 문서 API 응답에 data가 없습니다:', result);
+      return [];
+    }
+
+    // result.data가 배열이 아닌 경우 처리
+    let rows: DocumentInfoResponse[];
+    if (Array.isArray(result.data)) {
+      rows = result.data;
+    } else if (result.data && typeof result.data === 'object' && 'data' in result.data) {
+      // 중첩된 구조인 경우 (result.data.data)
+      rows = Array.isArray(result.data.data) ? result.data.data : [];
+    } else {
+      console.warn('📄 공유 문서 API 응답 data가 배열이 아닙니다:', result.data);
+      return [];
+    }
+    
+    console.log('📄 공유 문서 개수:', rows.length);
     const documents: DocumentInfo[] = await Promise.all(
       rows.map(async (row: DocumentInfoResponse, index: number) => {
         const mimeType = row.mimeType || row.type || '';
@@ -266,19 +287,26 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
 
 /**
  * 모든 문서 로드 (공유 + 개인) - 캐싱 지원
+ * @param forceRefresh - 캐시를 무시하고 강제로 새로고침할지 여부
  * @returns 문서 목록
  */
-export const loadAllDocuments = async (): Promise<DocumentInfo[]> => {
+export const loadAllDocuments = async (forceRefresh: boolean = false): Promise<DocumentInfo[]> => {
   const cacheManager = getCacheManager();
   const action = 'getAllDocuments';
   const category = getActionCategory(action);
   const cacheKey = generateCacheKey(category, action, {});
   
-  // 캐시에서 먼저 확인
-  const cachedData = await cacheManager.get<DocumentInfo[]>(cacheKey);
-  if (cachedData) {
-    console.log('📄 캐시에서 문서 로드:', cachedData.length, '개');
-    return cachedData;
+  // 강제 새로고침이 아닐 때만 캐시에서 확인
+  if (!forceRefresh) {
+    const cachedData = await cacheManager.get<DocumentInfo[]>(cacheKey);
+    if (cachedData) {
+      console.log('📄 캐시에서 문서 로드:', cachedData.length, '개');
+      return cachedData;
+    }
+  } else {
+    console.log('📄 강제 새로고침 모드 - 캐시 무시');
+    // 캐시 무효화
+    await cacheManager.delete(cacheKey);
   }
 
   // 캐시 미스 시 실제 로드
@@ -289,7 +317,7 @@ export const loadAllDocuments = async (): Promise<DocumentInfo[]> => {
   ]);
 
   const allDocs = [...sharedDocs, ...personalDocs];
-  console.log('📄 전체 문서 로드 완료:', allDocs.length, '개');
+  console.log('📄 전체 문서 로드 완료:', allDocs.length, '개 (공유:', sharedDocs.length, '개, 개인:', personalDocs.length, '개)');
   
   // 캐시에 저장
   const ttl = getCacheTTL(action);
