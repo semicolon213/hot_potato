@@ -10,6 +10,8 @@ import { API_ACTIONS } from '../../config/api';
 import { ENV_CONFIG } from '../../config/environment';
 import { incrementViewCount } from '../../utils/database/papyrusManager';
 import { formatDateToYYYYMMDD } from '../../utils/helpers/timeUtils';
+import { useNotification } from '../../hooks/ui/useNotification';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 
 const GROUP_TYPES = [
   { value: 'student', label: '학생' },
