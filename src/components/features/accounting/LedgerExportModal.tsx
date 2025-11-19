@@ -168,7 +168,22 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       }
 
       // Google API 초기화
-      await initializeGoogleAPIOnce();
+      try {
+        await initializeGoogleAPIOnce();
+      } catch (initError: any) {
+        // idpiframe_initialization_failed 에러인 경우 특별 처리 (이미 초기화되었을 수 있음)
+        if (initError?.error === 'idpiframe_initialization_failed' || 
+            initError?.result?.error?.error === 'idpiframe_initialization_failed' ||
+            (initError && typeof initError === 'object' && 'error' in initError && initError.error === 'idpiframe_initialization_failed')) {
+          console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+          // gapi가 이미 로드되어 있는지 확인
+          if (!window.gapi?.client?.sheets) {
+            throw new Error('Google Sheets API가 초기화되지 않았습니다.');
+          }
+        } else {
+          throw initError;
+        }
+      }
       const gapi = window.gapi;
       if (!gapi?.client?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
@@ -193,9 +208,40 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       }
 
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('템플릿 파일 선택 오류:', err);
-      setError(errorMessage || '템플릿에서 양식을 불러올 수 없습니다.');
+      
+      // 에러 메시지 추출
+      let errorMessage = '템플릿에서 양식을 불러올 수 없습니다.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message || errorMessage;
+      } else if (err && typeof err === 'object') {
+        // Google API 에러 구조 확인
+        const errorObj = err as any;
+        if (errorObj.result?.error?.message) {
+          errorMessage = errorObj.result.error.message;
+        } else if (errorObj.body?.error?.message) {
+          errorMessage = errorObj.body.error.message;
+        } else if (errorObj.error?.message) {
+          errorMessage = errorObj.error.message;
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+        } else if (errorObj.statusText) {
+          errorMessage = errorObj.statusText;
+        } else {
+          // 객체인 경우 JSON으로 변환 시도
+          try {
+            const errorStr = JSON.stringify(err, null, 2);
+            errorMessage = `오류가 발생했습니다: ${errorStr}`;
+          } catch {
+            errorMessage = '알 수 없는 오류가 발생했습니다.';
+          }
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoadingTemplate(false);
     }
@@ -203,7 +249,22 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
 
   const loadSheetData = async (spreadsheetId: string, sheetName: string) => {
     try {
-      await initializeGoogleAPIOnce();
+      try {
+        await initializeGoogleAPIOnce();
+      } catch (initError: any) {
+        // idpiframe_initialization_failed 에러인 경우 특별 처리 (이미 초기화되었을 수 있음)
+        if (initError?.error === 'idpiframe_initialization_failed' || 
+            initError?.result?.error?.error === 'idpiframe_initialization_failed' ||
+            (initError && typeof initError === 'object' && 'error' in initError && initError.error === 'idpiframe_initialization_failed')) {
+          console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+          // gapi가 이미 로드되어 있는지 확인
+          if (!window.gapi?.client?.sheets) {
+            throw new Error('Google Sheets API가 초기화되지 않았습니다.');
+          }
+        } else {
+          throw initError;
+        }
+      }
       const gapi = window.gapi;
       if (!(gapi?.client as any)?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
@@ -431,7 +492,38 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       setSheetHtml(table.outerHTML);
     } catch (err: unknown) {
       console.error('시트 데이터 로드 오류:', err);
-      const errorMessage = err instanceof Error ? err.message : '시트 데이터를 불러올 수 없습니다.';
+      
+      // 에러 메시지 추출
+      let errorMessage = '시트 데이터를 불러올 수 없습니다.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message || errorMessage;
+      } else if (err && typeof err === 'object') {
+        // Google API 에러 구조 확인
+        const errorObj = err as any;
+        if (errorObj.result?.error?.message) {
+          errorMessage = errorObj.result.error.message;
+        } else if (errorObj.body?.error?.message) {
+          errorMessage = errorObj.body.error.message;
+        } else if (errorObj.error?.message) {
+          errorMessage = errorObj.error.message;
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+        } else if (errorObj.statusText) {
+          errorMessage = errorObj.statusText;
+        } else {
+          // 객체인 경우 JSON으로 변환 시도
+          try {
+            const errorStr = JSON.stringify(err, null, 2);
+            errorMessage = `오류가 발생했습니다: ${errorStr}`;
+          } catch {
+            errorMessage = '알 수 없는 오류가 발생했습니다.';
+          }
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       setError(errorMessage);
     }
   };
@@ -801,7 +893,22 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     departmentOptions?: DepartmentOptions,
     titleOptions?: TitleOptions
   ) => {
-    await initializeGoogleAPIOnce();
+    try {
+      await initializeGoogleAPIOnce();
+    } catch (initError: any) {
+      // idpiframe_initialization_failed 에러인 경우 특별 처리 (이미 초기화되었을 수 있음)
+      if (initError?.error === 'idpiframe_initialization_failed' || 
+          initError?.result?.error?.error === 'idpiframe_initialization_failed' ||
+          (initError && typeof initError === 'object' && 'error' in initError && initError.error === 'idpiframe_initialization_failed')) {
+        console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+        // gapi가 이미 로드되어 있는지 확인
+        if (!window.gapi?.client?.sheets) {
+          throw new Error('Google Sheets API가 초기화되지 않았습니다.');
+        }
+      } else {
+        throw initError;
+      }
+    }
     const gapi = window.gapi;
     if (!(gapi?.client as any)?.sheets) {
       throw new Error('Google Sheets API가 초기화되지 않았습니다.');
@@ -1302,13 +1409,32 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     }
 
     // 타이틀 작성 (날짜 포맷팅 포함)
-    if (titleOptions && titleOptions.enabled && titleOptions.cell && titleOptions.value && actualEntries.length > 0) {
+    if (titleOptions && titleOptions.enabled && titleOptions.cell && titleOptions.value) {
       // 타이틀 문자열에서 날짜 패턴을 실제 날짜로 변환하는 함수
-      const formatTitleWithDate = (titleTemplate: string, entries: LedgerEntry[]): string => {
-        const firstEntryDate = new Date(entries[0].date);
-        const year = firstEntryDate.getFullYear();
-        const month = firstEntryDate.getMonth() + 1;
-        const monthStr = String(month).padStart(2, '0');
+      const formatTitleWithDate = (titleTemplate: string, entries: LedgerEntry[], monthKeyParam?: string): string => {
+        let year: number;
+        let month: number;
+        let monthStr: string;
+        
+        // 월별 모드이고 monthKey가 있으면 해당 월의 날짜 사용
+        if (exportMode === 'monthly' && monthKeyParam) {
+          const [yearStr, monthStrFromKey] = monthKeyParam.split('-');
+          year = parseInt(yearStr, 10);
+          month = parseInt(monthStrFromKey, 10);
+          monthStr = monthStrFromKey;
+        } else if (entries.length > 0 && entries[0].date) {
+          // 일반 모드: 첫 번째 항목의 날짜 사용
+          const firstEntryDate = new Date(entries[0].date);
+          year = firstEntryDate.getFullYear();
+          month = firstEntryDate.getMonth() + 1;
+          monthStr = String(month).padStart(2, '0');
+        } else {
+          // 항목이 없으면 현재 날짜 사용
+          const now = new Date();
+          year = now.getFullYear();
+          month = now.getMonth() + 1;
+          monthStr = String(month).padStart(2, '0');
+        }
         
         let formattedTitle = titleTemplate;
         
@@ -1331,10 +1457,12 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         });
         
         // 다양한 날짜 패턴 처리
+        // 주의: MM월, M월 패턴만 처리하고 MM 단독은 처리하지 않음
         formattedTitle = formattedTitle.replace(/YYYY년/g, `${year}년`);
         formattedTitle = formattedTitle.replace(/YY년/g, String(year).slice(-2) + '년');
-        formattedTitle = formattedTitle.replace(/MM월/g, `${monthStr}월`);
-        formattedTitle = formattedTitle.replace(/M월/g, `${month}월`);
+        formattedTitle = formattedTitle.replace(/MM월/g, `${monthStr}월`); // MM월 패턴만 처리
+        formattedTitle = formattedTitle.replace(/M월/g, `${month}월`); // M월 패턴만 처리
+        // YYYY-MM, YYYY/MM 형식은 MM이 월을 의미하므로 처리 (하지만 단독 MM은 처리하지 않음)
         formattedTitle = formattedTitle.replace(/YYYY-MM/g, `${year}-${monthStr}`);
         formattedTitle = formattedTitle.replace(/YYYY\/MM/g, `${year}/${monthStr}`);
         
@@ -1346,7 +1474,7 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         return formattedTitle;
       };
       
-      const formattedTitle = formatTitleWithDate(titleOptions.value, actualEntries);
+      const formattedTitle = formatTitleWithDate(titleOptions.value, actualEntries, monthKey);
       const titleRange = parseCellRange(titleOptions.cell);
       const titleCellAddr = getCellAddress(titleRange.startRow, titleRange.startCol);
       data.push({
@@ -1394,7 +1522,22 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
     setError(null);
 
     try {
-      await initializeGoogleAPIOnce();
+      try {
+        await initializeGoogleAPIOnce();
+      } catch (initError: any) {
+        // idpiframe_initialization_failed 에러인 경우 특별 처리 (이미 초기화되었을 수 있음)
+        if (initError?.error === 'idpiframe_initialization_failed' || 
+            initError?.result?.error?.error === 'idpiframe_initialization_failed' ||
+            (initError && typeof initError === 'object' && 'error' in initError && initError.error === 'idpiframe_initialization_failed')) {
+          console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+          // gapi가 이미 로드되어 있는지 확인
+          if (!window.gapi?.client?.sheets) {
+            throw new Error('Google Sheets API가 초기화되지 않았습니다.');
+          }
+        } else {
+          throw initError;
+        }
+      }
       const gapi = window.gapi;
       if (!gapi?.client?.sheets) {
         throw new Error('Google Sheets API가 초기화되지 않았습니다.');
@@ -1591,7 +1734,38 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
       }
     } catch (err: unknown) {
       console.error('내보내기 오류:', err);
-      const errorMessage = err instanceof Error ? err.message : '내보내기 중 오류가 발생했습니다.';
+      
+      // 에러 메시지 추출
+      let errorMessage = '내보내기 중 오류가 발생했습니다.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message || errorMessage;
+      } else if (err && typeof err === 'object') {
+        // Google API 에러 구조 확인
+        const errorObj = err as any;
+        if (errorObj.result?.error?.message) {
+          errorMessage = errorObj.result.error.message;
+        } else if (errorObj.body?.error?.message) {
+          errorMessage = errorObj.body.error.message;
+        } else if (errorObj.error?.message) {
+          errorMessage = errorObj.error.message;
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+        } else if (errorObj.statusText) {
+          errorMessage = errorObj.statusText;
+        } else {
+          // 객체인 경우 JSON으로 변환 시도
+          try {
+            const errorStr = JSON.stringify(err, null, 2);
+            errorMessage = `오류가 발생했습니다: ${errorStr}`;
+          } catch {
+            errorMessage = '알 수 없는 오류가 발생했습니다.';
+          }
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       setError(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -1619,7 +1793,8 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
         </div>
 
         <div className="modal-body">
-          <div className="form-group">
+          <div className="export-settings-container">
+            <div className="form-group">
               {/* 템플릿 선택 */}
               {excelTemplates.length > 0 && (
                 <select
@@ -2314,12 +2489,13 @@ export const LedgerExportModal: React.FC<LedgerExportModalProps> = ({
               </div>
             )}
 
-          {error && (
-            <div className="form-error">
-              <span className="error-icon">⚠️</span>
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="form-error">
+                <span className="error-icon">⚠️</span>
+                {error}
+              </div>
+            )}
+          </div>
 
           {/* 엑셀 미리보기 */}
           <div className="excel-preview-container">

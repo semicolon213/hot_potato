@@ -662,6 +662,89 @@ export class ApiClient {
   }
 
   /**
+   * 낙관적 업데이트: 캐시에 먼저 데이터를 업데이트하여 UI가 즉시 반영되도록 함
+   * @param action - API 액션
+   * @param cacheKeys - 업데이트할 캐시 키 목록
+   * @param updateFn - 캐시 데이터를 업데이트하는 함수
+   * @returns 롤백 함수 (실패 시 호출)
+   */
+  async optimisticUpdate<T = unknown>(
+    action: string,
+    cacheKeys: string[],
+    updateFn: (cachedData: T | null) => T | null
+  ): Promise<() => Promise<void>> {
+    const cacheManager = this.cacheManager;
+    const backups: Map<string, T | null> = new Map();
+    const processedKeys: string[] = [];
+
+    // 각 캐시 키에 대해 백업 및 업데이트
+    for (const key of cacheKeys) {
+      try {
+        if (key.includes('*')) {
+          // 와일드카드 패턴인 경우: 모든 매칭되는 키 찾기
+          const regex = new RegExp('^' + key.replace(/\*/g, '.*') + '$');
+          const cacheStats = cacheManager.getStats();
+          
+          // 메모리 캐시에서 매칭되는 키 찾기
+          cacheStats.memoryCacheKeys.forEach(matchedKey => {
+            if (regex.test(matchedKey) && !processedKeys.includes(matchedKey)) {
+              processedKeys.push(matchedKey);
+            }
+          });
+        } else {
+          // 정확한 키인 경우
+          if (!processedKeys.includes(key)) {
+            processedKeys.push(key);
+          }
+        }
+      } catch (error) {
+        console.warn(`⚠️ 캐시 키 처리 실패 (${key}):`, error);
+      }
+    }
+
+    // 처리된 키들에 대해 백업 및 업데이트
+    for (const key of processedKeys) {
+      try {
+        // 기존 데이터 백업
+        const existingData = await cacheManager.get<T>(key);
+        backups.set(key, existingData);
+
+        // 낙관적 업데이트 적용
+        const updatedData = updateFn(existingData);
+        if (updatedData !== null) {
+          const category = getActionCategory(action);
+          const ttl = getCacheTTL(action);
+          await cacheManager.set(key, updatedData, ttl);
+          console.log(`✨ 낙관적 업데이트 적용: ${key}`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ 낙관적 업데이트 실패 (${key}):`, error);
+      }
+    }
+
+    // 롤백 함수 반환
+    return async () => {
+      console.log('🔄 낙관적 업데이트 롤백 시작');
+      for (const [key, backup] of backups.entries()) {
+        try {
+          if (backup === null) {
+            // 원래 데이터가 없었으면 캐시에서 제거
+            await cacheManager.invalidate(key);
+          } else {
+            // 원래 데이터로 복원
+            const category = getActionCategory(action);
+            const ttl = getCacheTTL(action);
+            await cacheManager.set(key, backup, ttl);
+          }
+          console.log(`✅ 롤백 완료: ${key}`);
+        } catch (error) {
+          console.error(`❌ 롤백 실패 (${key}):`, error);
+        }
+      }
+    };
+  }
+
+  /**
    * 액션별 무효화할 캐시 키 매핑
    */
   private getCacheKeysToInvalidate(action: string, data: any): string[] {

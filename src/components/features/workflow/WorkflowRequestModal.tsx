@@ -299,6 +299,8 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
           if (documentId && !selectedAttachDocumentIds.includes(documentId)) {
             finalAttachDocumentIds = [...finalAttachDocumentIds, documentId];
           }
+          // 첫 번째 문서를 documentId로도 설정 (Apps Script 호환성)
+          finalDocumentId = finalAttachDocumentIds[0] || documentId || undefined;
         } else {
           // 단일 문서 선택 (기존 방식 호환)
           finalDocumentId = selectedDocumentId || documentId || undefined;

@@ -449,6 +449,19 @@ export const WeatherWidget = ({ today, forecast }: {
  */
 export const PieChartComponent = ({ data, onButtonClick, spreadsheetId }: { data: { category: string; amount: number }[], onButtonClick?: () => void, spreadsheetId?: string }) => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  // 컨테이너 크기 감지를 위한 ref
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    // 마운트 후 짧은 지연으로 크기 감지 (ResizeObserver 무한 루프 방지)
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // 장부가 선택되지 않은 경우 장부 선택 버튼 표시
   if (!spreadsheetId) {
@@ -486,28 +499,46 @@ export const PieChartComponent = ({ data, onButtonClick, spreadsheetId }: { data
   }
 
   return (
-    <div className="widget-content" style={{ width: '100%', height: '300px', minHeight: '300px', position: 'relative' }}>
-      <ResponsiveContainer width="100%" height={300} minHeight={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="amount"
-            nameKey="category"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value: number) => `${value.toLocaleString()}원`} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
+    <div 
+      ref={containerRef}
+      className="widget-content" 
+      style={{ 
+        width: '100%', 
+        height: '300px', 
+        minHeight: '300px', 
+        position: 'relative', 
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
+    >
+      {isMounted ? (
+        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="amount"
+              nameKey="category"
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value: number) => `${value.toLocaleString()}원`} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+          그래프를 로딩하는 중...
+        </div>
+      )}
     </div>
   );
 };
@@ -1073,6 +1104,8 @@ export const BudgetExecutionComponent = ({ items, onButtonClick }: { items: { la
 export const AccountingStatsComponent = ({ items, onButtonClick, spreadsheetId, rawData }: { items: { label: string; income: string; expense: string; balance: string; balanceValue?: number }[], onButtonClick?: () => void, spreadsheetId?: string, rawData?: { category: string; income: number; expense: number }[] }) => {
   const [viewMode, setViewMode] = React.useState<'category' | 'summary' | 'chart'>('category');
   const [loadedRawData, setLoadedRawData] = React.useState<{ category: string; income: number; expense: number }[] | null>(rawData || null);
+  const [isChartMounted, setIsChartMounted] = React.useState(false);
+  const chartContainerRef = React.useRef<HTMLDivElement>(null);
   
   // rawData가 없고 spreadsheetId가 있으면 데이터 다시 로드
   React.useEffect(() => {
@@ -1094,6 +1127,22 @@ export const AccountingStatsComponent = ({ items, onButtonClick, spreadsheetId, 
       setLoadedRawData(rawData);
     }
   }, [spreadsheetId, items, rawData, loadedRawData]);
+
+  // 차트 모드일 때 마운트 상태 관리 (ResizeObserver 무한 루프 방지)
+  React.useEffect(() => {
+    if (viewMode === 'chart') {
+      // 짧은 지연으로 마운트 상태 설정
+      const timer = setTimeout(() => {
+        setIsChartMounted(true);
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        setIsChartMounted(false);
+      };
+    } else {
+      setIsChartMounted(false);
+    }
+  }, [viewMode]);
   
   // 통합 보기를 위한 수입/지출 합계 계산
   let totalIncome = 0;
@@ -1217,9 +1266,13 @@ export const AccountingStatsComponent = ({ items, onButtonClick, spreadsheetId, 
             })
           ) : viewMode === 'chart' ? (
             /* 그래프 보기 */
-            <div style={{ width: '100%', height: '220px', minHeight: '220px', position: 'relative', marginTop: '-4px', overflow: 'hidden' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
+            <div 
+              ref={chartContainerRef}
+              style={{ width: '100%', height: '220px', minHeight: '220px', position: 'relative', marginTop: '-4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+            >
+              {isChartMounted ? (
+                <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+                  <BarChart 
                   data={dataToUse?.map(item => ({
                     name: item.category,
                     수입: item.income,
@@ -1263,8 +1316,13 @@ export const AccountingStatsComponent = ({ items, onButtonClick, spreadsheetId, 
                   />
                   <Bar dataKey="수입" fill="#10b981" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="지출" fill="#ef4444" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+                  그래프를 로딩하는 중...
+                </div>
+              )}
             </div>
           ) : (
             /* 통합 보기 */

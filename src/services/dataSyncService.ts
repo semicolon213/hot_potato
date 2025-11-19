@@ -338,21 +338,31 @@ export class DataSyncService {
     // 백그라운드에서 실제 데이터 가져오기
     if (background) {
       // 비동기로 백그라운드에서 실행 (응답 지연 없음)
-      this.fetchCategoryDataInBackground(category).catch((error) => {
-        this.handle429Error(category, error);
-      });
+      this.fetchCategoryDataInBackground(category)
+        .then(() => {
+          // 성공한 경우에만 갱신 시간 업데이트
+          this.lastSyncTime = new Date();
+          this.lastSyncByCategory.set(category, Date.now());
+          console.log(`✅ ${category} 갱신 완료 및 시간 업데이트`);
+        })
+        .catch((error) => {
+          // 에러 발생 시 갱신 시간 업데이트하지 않음 (다음 주기에 재시도)
+          console.error(`❌ ${category} 갱신 실패, 다음 주기에 재시도 예정`);
+          this.handle429Error(category, error);
+        });
     } else {
       // 동기 실행 (즉시 데이터 가져오기)
       try {
         await this.fetchCategoryDataInBackground(category);
+        // 성공한 경우에만 갱신 시간 업데이트
+        this.lastSyncTime = new Date();
+        this.lastSyncByCategory.set(category, Date.now());
       } catch (error) {
+        // 에러 발생 시 갱신 시간 업데이트하지 않음
         this.handle429Error(category, error);
         throw error;
       }
     }
-
-    this.lastSyncTime = new Date();
-    this.lastSyncByCategory.set(category, Date.now());
   }
 
   /**
@@ -671,8 +681,8 @@ export class DataSyncService {
 
         try {
           // 백그라운드로 갱신 (응답 대기 안 함)
+          // refreshCategory 내부에서 성공 시 lastSyncByCategory가 업데이트됨
           this.refreshCategory(category, true);
-          this.lastSyncByCategory.set(category, now);
           console.log(`🔄 ${category} 백그라운드 갱신 시작`);
         } catch (error) {
           console.error(`❌ ${category} 백그라운드 갱신 실패:`, error);

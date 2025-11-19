@@ -549,19 +549,70 @@ export const addAnnouncement = async (announcementSpreadsheetId: string, postDat
         // file_notice JSON 문자열
         const fileNotice = fileInfos.length > 0 ? JSON.stringify(fileInfos) : '';
 
-        // 앱스크립트 API 호출
-        const response = await apiClient.request('createAnnouncement', {
-            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
-            writerEmail: postData.writerEmail,
-            writerName: postData.author,
+        // 낙관적 업데이트: 캐시에 먼저 추가 (임시 ID 사용)
+        const tempId = `temp_${Date.now()}`;
+        const cacheKeys = [
+            generateCacheKey('announcements', 'getAnnouncements', { userId: postData.writer_id, userType: postData.userType || 'student' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId: postData.writer_id, userType: postData.userType || 'student' }),
+            'announcements:getAnnouncements:*',
+            'announcements:fetchAnnouncements:*'
+        ];
+        
+        const newPost: Post = {
+            id: tempId,
+            author: postData.author,
+            writer_id: postData.writer_id,
+            writer_email: postData.writerEmail,
             title: postData.title,
             content: finalContent,
-            fileNotice: fileNotice,
-            accessRights: postData.accessRights,
+            date: new Date().toISOString().slice(0, 10),
+            views: 0,
+            likes: 0,
+            file_notice: fileNotice,
+            access_rights: postData.accessRights ? JSON.stringify(postData.accessRights) : '',
+            fix_notice: postData.isPinned ? 'O' : '',
             isPinned: postData.isPinned || false
-        });
+        };
+        
+        let rollback: (() => Promise<void>) | null = null;
+        try {
+            rollback = await apiClient.optimisticUpdate<Post[]>('createAnnouncement', cacheKeys, (cachedData) => {
+                if (!cachedData || !Array.isArray(cachedData)) {
+                    return [newPost];
+                }
+                // 새 공지사항을 맨 앞에 추가
+                return [newPost, ...cachedData];
+            });
+        } catch (optimisticError) {
+            console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+        }
+
+        // 앱스크립트 API 호출
+        let response;
+        try {
+            response = await apiClient.request('createAnnouncement', {
+                spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+                writerEmail: postData.writerEmail,
+                writerName: postData.author,
+                title: postData.title,
+                content: finalContent,
+                fileNotice: fileNotice,
+                accessRights: postData.accessRights,
+                isPinned: postData.isPinned || false
+            });
+        } catch (apiError) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
+            throw apiError;
+        }
 
         if (!response.success) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
             throw new Error(response.message || '공지사항 작성에 실패했습니다.');
         }
 
@@ -663,17 +714,61 @@ export const updateAnnouncement = async (announcementId: string, userId: string,
 
         const fileNotice = allFileInfos.length > 0 ? JSON.stringify(allFileInfos) : '';
 
-        // 4. 앱스크립트 API 호출
-        const response = await apiClient.request('updateAnnouncement', {
-            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
-            announcementId: announcementId,
-            userId: userId,
-            title: postData.title,
-            content: finalContent,
-            fileNotice: fileNotice,
-            accessRights: postData.accessRights,
-            isPinned: postData.isPinned
-        });
+        // 4. 낙관적 업데이트: 캐시에 먼저 반영
+        const cacheKeys = [
+            generateCacheKey('announcements', 'getAnnouncements', { userId, userType: 'student' }),
+            generateCacheKey('announcements', 'getAnnouncements', { userId, userType: 'professor' }),
+            generateCacheKey('announcements', 'getAnnouncements', { userId, userType: 'council' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId, userType: 'student' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId, userType: 'professor' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId, userType: 'council' }),
+            'announcements:getAnnouncements:*',
+            'announcements:fetchAnnouncements:*'
+        ];
+        
+        let rollback: (() => Promise<void>) | null = null;
+        try {
+            rollback = await apiClient.optimisticUpdate<Post[]>('updateAnnouncement', cacheKeys, (cachedData) => {
+                if (!cachedData || !Array.isArray(cachedData)) return cachedData;
+                return cachedData.map(post => {
+                    if (post.id === announcementId) {
+                        return {
+                            ...post,
+                            title: postData.title,
+                            content: cleanContent, // 첨부파일 링크 제외한 깨끗한 내용
+                            file_notice: fileNotice,
+                            access_rights: postData.accessRights ? JSON.stringify(postData.accessRights) : post.access_rights,
+                            fix_notice: postData.isPinned ? 'O' : (post.fix_notice || ''),
+                            isPinned: postData.isPinned || false
+                        };
+                    }
+                    return post;
+                });
+            });
+        } catch (optimisticError) {
+            console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+        }
+
+        // 5. 앱스크립트 API 호출
+        let response;
+        try {
+            response = await apiClient.request('updateAnnouncement', {
+                spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+                announcementId: announcementId,
+                userId: userId,
+                title: postData.title,
+                content: finalContent,
+                fileNotice: fileNotice,
+                accessRights: postData.accessRights,
+                isPinned: postData.isPinned
+            });
+        } catch (apiError) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
+            throw apiError;
+        }
 
         // 고정 공지 요청 처리 (isPinned가 true이고 기존에 요청하지 않은 경우)
         if (postData.isPinned && response.success) {
@@ -690,6 +785,10 @@ export const updateAnnouncement = async (announcementId: string, userId: string,
         }
 
         if (!response.success) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
             throw new Error(response.message || '공지사항 수정에 실패했습니다.');
         }
 
@@ -710,13 +809,49 @@ export const deleteAnnouncement = async (spreadsheetId: string, announcementId: 
             throw new Error('User ID is required');
         }
 
-        const response = await apiClient.request('deleteAnnouncement', {
-            spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
-            announcementId: announcementId,
-            userId: userId
-        });
+        // 낙관적 업데이트: 캐시에서 먼저 제거
+        const cacheKeys = [
+            generateCacheKey('announcements', 'getAnnouncements', { userId, userType: 'student' }),
+            generateCacheKey('announcements', 'getAnnouncements', { userId, userType: 'professor' }),
+            generateCacheKey('announcements', 'getAnnouncements', { userId, userType: 'council' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId, userType: 'student' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId, userType: 'professor' }),
+            generateCacheKey('announcements', 'fetchAnnouncements', { userId, userType: 'council' }),
+            'announcements:getAnnouncements:*',
+            'announcements:fetchAnnouncements:*'
+        ];
+        
+        let rollback: (() => Promise<void>) | null = null;
+        try {
+            rollback = await apiClient.optimisticUpdate<Post[]>('deleteAnnouncement', cacheKeys, (cachedData) => {
+                if (!cachedData || !Array.isArray(cachedData)) return cachedData;
+                return cachedData.filter(post => post.id !== announcementId);
+            });
+        } catch (optimisticError) {
+            console.warn('⚠️ 낙관적 업데이트 실패 (계속 진행):', optimisticError);
+        }
+
+        // API 호출
+        let response;
+        try {
+            response = await apiClient.request('deleteAnnouncement', {
+                spreadsheetName: ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
+                announcementId: announcementId,
+                userId: userId
+            });
+        } catch (apiError) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
+            throw apiError;
+        }
 
         if (!response.success) {
+            // API 실패 시 롤백
+            if (rollback) {
+                await rollback();
+            }
             throw new Error(response.message || '공지사항 삭제에 실패했습니다.');
         }
 
