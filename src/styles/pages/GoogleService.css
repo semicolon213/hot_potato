@@ -1,86 +1,100 @@
-.google-service-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  background: var(--background);
-  position: relative;
-}
-
-.google-service-webview {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  border: none;
-  outline: none;
-  background: #f8f8f7;
-}
-
-.google-service-error {
-  position: absolute;
+/* GoogleService wrapper - 전체 화면 꽉 차게 */
+.google-service-wrapper {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #f8f8f7;
+  box-sizing: border-box;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--background);
-  z-index: 10;
+  flex-direction: column;
+  z-index: 1000;
 }
 
-.error-message {
-  text-align: center;
-  padding: 2rem;
-  max-width: 500px;
+/* GoogleService 페이지 컨테이너 - 전체 화면 꽉 차게 */
+.google-service-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #f8f8f7;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
 }
 
-.error-message h3 {
-  color: var(--error, #f44336);
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
-}
-
-.error-message p {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
-
-.open-browser-btn {
-  background: var(--primary, #007bff);
-  color: white;
+/* Webview 스타일 (Electron 전용) */
+.google-service-webview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100%;
+  min-height: 100%;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
+  outline: none;
+  background: #f8f8f7;
+  display: block;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 1;
 }
 
-.open-browser-btn:hover {
-  background: var(--primary-dark, #0056b3);
+/* Iframe 스타일 (웹 브라우저용) */
+.google-service-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100%;
+  min-height: 100%;
+  border: none;
+  outline: none;
+  background: #f8f8f7;
+  display: block;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 1;
 }
 
+/* 로딩 오버레이 */
 .google-service-loading {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--background);
-  z-index: 5;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 10;
+  pointer-events: none;
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid var(--border-light, #e0e0e0);
-  border-top: 4px solid var(--primary, #007bff);
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #007bff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -92,6 +106,89 @@
 }
 
 .google-service-loading p {
-  color: var(--text-secondary);
+  color: #666;
   font-size: 0.9rem;
+  margin: 0;
+}
+
+/* 에러 오버레이 */
+.google-service-error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.98);
+  z-index: 20;
+}
+
+.error-message {
+  text-align: center;
+  padding: 2rem;
+  max-width: 500px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.error-message h3 {
+  color: #f44336;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.error-message p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.open-browser-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.open-browser-btn:hover {
+  background: #0056b3;
+}
+
+.open-browser-btn:active {
+  background: #004085;
+}
+
+/* 반응형 대응 */
+@media (max-width: 768px) {
+  .google-service-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+}
+
+/* 크롬 브라우저 최적화 */
+@supports (-webkit-appearance: none) {
+  .google-service-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .google-service-iframe,
+  .google-service-webview {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
 }

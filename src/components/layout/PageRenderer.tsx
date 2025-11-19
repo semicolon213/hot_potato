@@ -306,15 +306,15 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'settings':
         return <div>설정 페이지 (구현 예정)</div>;
       case 'google_appscript':
-        return <GoogleServicePage service="appscript" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="appscript" /></div>;
       case 'google_sheets':
-        return <GoogleServicePage service="sheets" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="sheets" /></div>;
       case 'google_docs':
-        return <GoogleServicePage service="docs" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="docs" /></div>;
       case 'google_gemini':
-        return <GoogleServicePage service="gemini" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="gemini" /></div>;
       case 'google_groups':
-        return <GoogleServicePage service="groups" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="groups" /></div>;
       case 'google_calendar':
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       case 'google_chat':

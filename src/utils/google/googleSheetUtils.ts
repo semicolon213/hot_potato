@@ -269,6 +269,13 @@ export const getSheetData = async (spreadsheetId: string, sheetName: string, ran
   } catch (error: any) {
     console.error('Error getting sheet data:', error);
     
+    // 403 오류 처리 (권한 문제)
+    if (error.status === 403 || error.code === 403) {
+      console.warn(`403 권한 오류: 스프레드시트 ${spreadsheetId}에 접근 권한이 없습니다.`);
+      console.warn('오류 상세:', error.message || error.error?.message || '알 수 없는 오류');
+      return null;
+    }
+    
     // 401 오류인 경우 토큰 재설정 후 재시도
     if (error.status === 401 || error.code === 401) {
       console.log('401 오류 감지, 토큰 재설정 후 재시도...');

@@ -199,11 +199,6 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   };
 
   const handleStartAdd = () => {
-    if (onAddClick) {
-      onAddClick();
-      return;
-    }
-    setIsAddingNew(true);
     setEditingEntryId(null);
     setNewEntry({
       date: new Date().toISOString().split('T')[0],
@@ -213,6 +208,15 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
       amount: 0,
       source: ''
     });
+    // 첫 번째 페이지로 이동하여 인라인 추가 행이 보이도록 함
+    if (selectedMonthTab) {
+      setCurrentPage(prev => ({ ...prev, [selectedMonthTab]: 1 }));
+    }
+    if (onAddClick) {
+      onAddClick();
+    } else {
+      setIsAddingNew(true);
+    }
   };
 
   const handleCancelAdd = () => {
@@ -645,9 +649,15 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
   }, [groupedByMonth]);
 
   // 선택된 탭이 없으면 첫 번째 월을 자동 선택
+  // 항목이 없을 때는 현재 월을 기본으로 선택
   useEffect(() => {
     if (sortedMonths.length > 0 && !selectedMonthTab) {
       setSelectedMonthTab(sortedMonths[0]);
+    } else if (sortedMonths.length === 0 && !selectedMonthTab) {
+      // 항목이 없을 때 현재 월을 기본으로 선택
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      setSelectedMonthTab(currentMonth);
     }
   }, [sortedMonths, selectedMonthTab]);
 
@@ -859,11 +869,7 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
 
   // 항목 추가 핸들러
   const handleAdd = () => {
-    if (onAddClick) {
-      onAddClick();
-    } else {
-      handleStartAdd();
-    }
+    handleStartAdd();
   };
 
   return (
@@ -909,11 +915,19 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
         </div>
       ) : (
         <>
-          {/* 선택된 월의 데이터 표시 */}
-          {selectedMonthTab && (() => {
-            const monthEntries = groupedByMonth[selectedMonthTab] || [];
+          {/* 선택된 월의 데이터 표시 - 항목이 없을 때도 테이블 표시 */}
+          {(selectedMonthTab || (() => {
+            // 항목이 없을 때 현재 월을 기본으로 설정
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          })()) && (() => {
+            const activeMonthTab = selectedMonthTab || (() => {
+              const now = new Date();
+              return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            })();
+            const monthEntries = groupedByMonth[activeMonthTab] || [];
             const totalPages = Math.ceil(monthEntries.length / itemsPerPage) || 1;
-            const page = currentPage[selectedMonthTab] || 1;
+            const page = currentPage[activeMonthTab] || 1;
             const startIndex = (page - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
             const paginatedEntries = monthEntries.slice(startIndex, endIndex);
@@ -942,10 +956,12 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
               : createEmptyRows(10);
 
             // 새 항목 추가 행 표시
+            // 항목이 비어있을 때도 인라인 추가가 보이도록 함 (page === 1일 때)
+            // isAddingNew가 true이거나 항목이 없을 때 표시
             const shouldShowAddRow = isAddingNew && page === 1;
 
             return (
-              <React.Fragment key={selectedMonthTab}>
+              <React.Fragment key={activeMonthTab}>
                 <div className="ledger-entry-table-wrapper">
                   <table className="ledger-entry-table">
                     <thead>
@@ -1532,11 +1548,6 @@ export const LedgerEntryList: React.FC<LedgerEntryListProps> = ({
               </React.Fragment>
             );
           })()}
-          {!selectedMonthTab && sortedMonths.length === 0 && (
-            <div className="empty-message">
-              장부 항목이 없습니다. + 버튼을 눌러 월 탭을 추가하세요.
-            </div>
-          )}
         </>
       )}
 

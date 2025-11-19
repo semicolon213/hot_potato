@@ -899,8 +899,13 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
                     }));
                     allEvents.push(...events);
                 }
-            } catch (error) {
-                console.error(`Error fetching events from spreadsheet ${spreadsheetId}:`, error);
+            } catch (error: any) {
+                // 403 오류는 권한 문제이므로 경고만 출력하고 계속 진행
+                if (error?.status === 403 || error?.code === 403) {
+                    console.warn(`⚠️ 스프레드시트 ${spreadsheetId}에 접근 권한이 없습니다.`);
+                } else {
+                    console.error(`Error fetching events from spreadsheet ${spreadsheetId}:`, error);
+                }
                 // Continue to next spreadsheet even if one fails
             }
         }
@@ -1290,15 +1295,18 @@ export const fetchStudentIssues = async (studentNo: string): Promise<StudentIssu
     }
 };
 
-export const addStudentIssue = async (issueData: {
-    no_member: string;
-    date_issue: string;
-    type_issue: string;
-    level_issue: string;
-    content_issue: string;
-}): Promise<void> => {
+export const addStudentIssue = async (
+    spreadsheetId: string,
+    issueData: {
+        no_member: string;
+        date_issue: string;
+        type_issue: string;
+        level_issue: string;
+        content_issue: string;
+    }
+): Promise<void> => {
     try {
-        if (!studentSpreadsheetId) {
+        if (!spreadsheetId) {
             throw new Error('Student spreadsheet ID not found');
         }
 
@@ -1310,7 +1318,7 @@ export const addStudentIssue = async (issueData: {
             issueData.content_issue
         ];
 
-        await append(studentSpreadsheetId, ENV_CONFIG.STUDENT_ISSUE_SHEET_NAME, [data]);
+        await append(spreadsheetId, ENV_CONFIG.STUDENT_ISSUE_SHEET_NAME, [data]);
         console.log('Student issue added successfully');
     } catch (error) {
         console.error('Error adding student issue:', error);

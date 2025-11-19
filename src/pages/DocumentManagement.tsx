@@ -637,13 +637,13 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
     },
     {
       count: 0,
-      title: "새 문서 만들기",
+      title: "문서 업로드",
       backgroundColor: "#FCE4EC",
       textColor: "#000000",
-      icon: FaPlus,
+      icon: FaUpload,
       iconColor: "#C2185B",
       filterType: 'myCreated',
-      onClick: () => onPageChange('new_document'),
+      onClick: openUploadModal,
     },
   ];
 

@@ -229,6 +229,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
       </div>
 
       {/* GoogleService: 관리자 메뉴 바로 위에 위치 */}
+      {/* TODO: 나중에 다시 사용할 수 있도록 주석 처리됨 */}
+      {/* 
       <div className="menu-section">
         <div className="menu-container">
           <div
@@ -240,6 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onPageChange, onLogout, onFullLogout,
           </div>
         </div>
       </div>
+      */}
 
       {/* 관리자 메뉴 */}
       {user?.isAdmin && (

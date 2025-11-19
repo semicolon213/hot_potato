@@ -577,8 +577,23 @@ filter: brightness(1.1);
   padding: 0;
   margin: 0;
   width: 100%;
+  height: 100%;
   box-sizing: border-box;
   background: var(--bg-gray); /* 내부 페이지 배경 회색 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* GoogleService 페이지일 때 content의 overflow 제거 및 높이 명확히 설정 */
+.content.google-service-content {
+  overflow: hidden !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .main-panel.no-header .content {
