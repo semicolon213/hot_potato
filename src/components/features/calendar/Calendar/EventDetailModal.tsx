@@ -57,10 +57,13 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
         if (!event.attendees || !students || !staff) {
             return [];
         }
+        
         const allPeople = [...students, ...staff];
-        const attendeeIds = event.attendees.split(',').map(id => id.trim());
+        // Use regex to extract all numeric IDs from the string, making parsing more robust.
+        const attendeeIds = event.attendees.match(/\d+/g) || [];
+        
         return attendeeIds.map(id => {
-            return allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === id);
+            return allPeople.find(p => String('no_student' in p ? p.no_student : p.no) === id);
         }).filter(Boolean);
     }, [event.attendees, students, staff]);
 
@@ -113,37 +116,35 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose, onD
     const canModifyEvent = () => {
         if (!user) return false;
 
-        // 관리자는 항상 편집/삭제 가능
         if (user.isAdmin) {
             return true;
         }
 
-        // attendees가 없으면 작성자 확인 불가
         if (!event.attendees || event.attendees.trim() === '') {
             return false;
         }
 
-        // attendees 파싱: "professor:202207037,202107034" 형식
-        const attendeeItems = event.attendees.split(',').map(item => item.trim());
+        // Use regex to extract all numeric IDs, ensuring consistency with the attendees list logic.
+        const attendeeIds = event.attendees.match(/\d+/g) || [];
         
-        // 마지막 항목이 작성자
-        const lastItem = attendeeItems[attendeeItems.length - 1];
-        
-        // 마지막 항목에서 학번 추출
-        let creatorId = '';
-        if (lastItem.includes(':')) {
-            // "professor:202107034" 형식 -> 콜론 뒤의 학번
-            const parts = lastItem.split(':');
-            creatorId = parts[parts.length - 1];
-        } else {
-            // 기존 형식 (호환성): 학번만 있는 경우
-            creatorId = lastItem;
+        if (attendeeIds.length === 0) {
+            return false;
+        }
+
+        const authorId = attendeeIds[attendeeIds.length - 1];
+
+        // Check for student or staff ID on the user object to ensure correct user identification.
+        const currentUserId = ('no_student' in user)
+            ? user.no_student
+            : ('no' in user)
+                ? user.no
+                : null;
+
+        if (!currentUserId) {
+            return false;
         }
         
-        const userId = String(user.studentId).trim();
-        
-        // 작성자인지 확인
-        return userId === creatorId;
+        return String(currentUserId).trim() === authorId;
     };
 
     const modalContent = (
