@@ -1,0 +1,222 @@
+/**
+ * @file DataSyncStatus.css
+ * @brief DataSyncStatus 컴포넌트 스타일
+ */
+
+.data-sync-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.data-sync-status {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.sync-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  color: #999;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.sync-icon.spinning {
+  animation: spin 1s linear infinite;
+  color: #4CAF50;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sync-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #666;
+  cursor: help;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sync-text:hover {
+  color: #333;
+}
+
+.sync-paused-indicator {
+  font-size: 11px;
+  color: #ff9800;
+  font-weight: 500;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.sync-pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.sync-pause-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+.sync-pause-btn:active {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.sync-pause-btn.paused {
+  color: #ff9800;
+}
+
+.sync-pause-btn.paused:hover {
+  color: #f57c00;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.sync-pause-btn svg {
+  font-size: 10px;
+  width: 10px;
+  height: 10px;
+}
+
+.sync-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.refresh-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  transition: transform 0.3s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-icon.spinning {
+  animation: spin 1s linear infinite;
+  color: #4CAF50;
+}
+
+.sync-refresh-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+.sync-refresh-btn:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.sync-refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sync-refresh-btn.refreshing {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.sync-refresh-btn.success {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.success-icon,
+.error-icon {
+  font-size: 10px;
+  position: absolute;
+  animation: fadeIn 0.3s ease;
+}
+
+.success-icon {
+  color: #4CAF50;
+}
+
+.error-icon {
+  color: #f44336;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .data-sync-container {
+    gap: 5px;
+  }
+
+  .data-sync-status {
+    font-size: 12px;
+    gap: 0;
+  }
+
+  .sync-text {
+    font-size: 12px;
+  }
+
+  .sync-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+  }
+
+  .sync-refresh-btn {
+    width: 18px;
+    height: 18px;
+  }
+
+  .refresh-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+  }
+}

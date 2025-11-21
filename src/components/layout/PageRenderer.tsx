@@ -86,6 +86,10 @@ interface PageRendererProps {
   onAddTemplate: (newDocData: { title: string; description: string; tag: string; }) => Promise<void>;
   onUpdateTemplate: (rowIndex: number, newDocData: { title: string; description: string; tag: string; }, oldTitle: string) => Promise<void>;
   onUpdateTemplateFavorite: (rowIndex: number, favoriteStatus: string | undefined) => Promise<void>;
+  // DataSyncService 관련 props
+  lastSyncTime?: Date | null;
+  onRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 
 const PageRenderer: React.FC<PageRendererProps> = ({
@@ -136,7 +140,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
   onUpdateTag,
   onAddTemplate,
   onUpdateTemplate,
-  onUpdateTemplateFavorite
+  onUpdateTemplateFavorite,
+  lastSyncTime,
+  onRefresh,
+  isRefreshing
 }) => {
   const renderCurrentPage = () => {
     switch (currentPage) {
@@ -251,6 +258,8 @@ const PageRenderer: React.FC<PageRendererProps> = ({
           students={students}
           staff={staff}
         />;
+      case "timetable":
+        return <Timetable />;
       case "preferences":
         return (
           <div>환경설정 페이지 (구현 예정)</div>
@@ -262,7 +271,10 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case "proceedings":
         return <Proceedings />;
       case 'dashboard':
-        return <Dashboard hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+        return <Dashboard 
+          hotPotatoDBSpreadsheetId={hotPotatoDBSpreadsheetId}
+          user={user}
+        />;
       case 'accounting':
         return <Accounting />;
       case 'admin':
@@ -270,11 +282,23 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'students':
         return <Students
           onPageChange={onPageChange}
-          studentSpreadsheetId={studentSpreadsheetId} />;
+          studentSpreadsheetId={studentSpreadsheetId}
+          initialTab="list" />;
+      case 'students_council':
+        return <Students
+          onPageChange={onPageChange}
+          studentSpreadsheetId={studentSpreadsheetId}
+          initialTab="council" />;
       case 'staff':
         return <Staff
           onPageChange={onPageChange}
-          staffSpreadsheetId={hotPotatoDBSpreadsheetId} />;
+          staffSpreadsheetId={hotPotatoDBSpreadsheetId}
+          initialTab="staff" />;
+      case 'staff_committee':
+        return <Staff
+          onPageChange={onPageChange}
+          staffSpreadsheetId={hotPotatoDBSpreadsheetId}
+          initialTab="committee" />;
       case 'documents':
         return <div>문서 페이지 (구현 예정)</div>;
       case 'users':
@@ -282,15 +306,15 @@ const PageRenderer: React.FC<PageRendererProps> = ({
       case 'settings':
         return <div>설정 페이지 (구현 예정)</div>;
       case 'google_appscript':
-        return <GoogleServicePage service="appscript" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="appscript" /></div>;
       case 'google_sheets':
-        return <GoogleServicePage service="sheets" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="sheets" /></div>;
       case 'google_docs':
-        return <GoogleServicePage service="docs" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="docs" /></div>;
       case 'google_gemini':
-        return <GoogleServicePage service="gemini" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="gemini" /></div>;
       case 'google_groups':
-        return <GoogleServicePage service="groups" />;
+        return <div className="google-service-wrapper"><GoogleServicePage service="groups" /></div>;
       case 'google_calendar':
         return <div>해당 서비스는 더 이상 지원되지 않습니다.</div>;
       case 'google_chat':

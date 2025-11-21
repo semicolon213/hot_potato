@@ -5,7 +5,7 @@ import { BiTrash, BiDotsVerticalRounded, BiEdit, BiTable, BiFileBlank, BiStar } 
 
 interface Props {
     template: Template;
-    onUse: (type: string, title: string) => void;
+    onUse: ((type: string, title: string) => void) | ((template: Template) => void);
     onDelete: (rowIndex: number) => void;
     onDeleteTemplate?: (template: Template) => void; // 템플릿 삭제 함수 (기본/개인)
     onEdit?: (template: Template) => void; // Make optional
@@ -45,6 +45,8 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
         const [isSelected, setIsSelected] = useState(false);
+        const [isDragging, setIsDragging] = useState(false);
+        const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
         const menuRef = useRef<HTMLDivElement>(null);
         const contextMenuRef = useRef<HTMLDivElement>(null);
 
@@ -130,7 +132,35 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
             }
         };
 
+        const handleMouseDown = (e: React.MouseEvent) => {
+            // 드래그 시작 위치 저장
+            if (!isFixed && listeners) {
+                setDragStartPos({ x: e.clientX, y: e.clientY });
+                setIsDragging(false);
+            }
+        };
+
+        const handleMouseMove = (e: React.MouseEvent) => {
+            // 드래그가 실제로 시작되었는지 확인 (8px 이상 이동)
+            if (dragStartPos && !isFixed && listeners) {
+                const distance = Math.sqrt(
+                    Math.pow(e.clientX - dragStartPos.x, 2) + 
+                    Math.pow(e.clientY - dragStartPos.y, 2)
+                );
+                if (distance > 8) {
+                    setIsDragging(true);
+                }
+            }
+        };
+
         const handleCardClick = (e: React.MouseEvent) => {
+            // 드래그가 시작된 경우 클릭 무시
+            if (isDragging) {
+                setIsDragging(false);
+                setDragStartPos(null);
+                return;
+            }
+
             // 컨텍스트 메뉴가 열려있거나, 컨텍스트 메뉴 영역을 클릭한 경우 무시
             if (contextMenu || contextMenuRef.current?.contains(e.target as Node)) {
                 return;
@@ -151,8 +181,15 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                 setIsSelected(false);
             }, 300);
             
-            // 템플릿 사용
-            onUse(template.type, template.title);
+            // 템플릿 사용 - 템플릿 객체를 직접 전달
+            // handleUseTemplateClick이 템플릿 객체를 받을 수 있으므로 직접 전달
+            console.log('📄 TemplateCard 클릭:', template);
+            const onUseFn = onUse as any;
+            // 템플릿 객체를 직접 전달 (handleUseTemplateClick이 객체인지 확인함)
+            onUseFn(template);
+            
+            // 클릭 후 상태 초기화
+            setDragStartPos(null);
         };
 
         return (
@@ -161,6 +198,8 @@ export const TemplateCard = React.forwardRef<HTMLDivElement, Props>(
                 style={style} 
                 className={`new-template-card ${contextMenu ? 'context-menu-open' : ''} ${isSelected ? 'selected' : ''}`}
                 onContextMenu={handleContextMenu}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
                 onClick={handleCardClick}
                 onMouseEnter={(e) => {
                     // 컨텍스트 메뉴가 열려있을 때는 호버 효과로 인한 이벤트 무시

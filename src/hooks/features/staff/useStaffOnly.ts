@@ -92,65 +92,8 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
     }
   }, []);
 
-  // 전화번호 복호화 함수 (학생관리와 동일한 방식)
-  const decryptPhone = async (encryptedPhone: string): Promise<string> => {
-    if (!encryptedPhone || encryptedPhone.trim() === '') {
-      return '';
-    }
-
-    try {
-      const isDevelopment = import.meta.env.DEV;
-      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
-
-      const response = await fetch(baseUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'decryptEmail', data: encryptedPhone })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          return result.data;
-        }
-      }
-      return encryptedPhone;
-    } catch (error) {
-      console.warn('전화번호 복호화 실패:', error);
-      return encryptedPhone;
-    }
-  };
-
-  // 이메일 복호화 함수
-  const decryptEmail = async (encryptedEmail: string): Promise<string> => {
-    if (!encryptedEmail || encryptedEmail.trim() === '') {
-      return '';
-    }
-
-    try {
-      const isDevelopment = import.meta.env.DEV;
-      const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
-
-      const response = await fetch(baseUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'decryptEmail', data: encryptedEmail })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          return result.data;
-        }
-      }
-      return encryptedEmail;
-    } catch (error) {
-      console.warn('이메일 복호화 실패:', error);
-      return encryptedEmail;
-    }
-  };
-
   // 교직원 목록 조회
+  // 참고: fetchStaffFromPapyrus에서 이미 복호화된 데이터를 반환하므로 추가 복호화 불필요
   const fetchStaff = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -158,26 +101,9 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
       const staffData = await fetchStaffFromPapyrus(staffSpreadsheetId!);
       console.log('Papyrus DB에서 받은 교직원 데이터:', staffData);
       
-      // 전화번호와 이메일 복호화 처리 (학생관리와 동일한 방식)
-      const decryptedStaff = await Promise.all(
-        staffData.map(async (staff: StaffMember) => {
-          const decryptedTel = await decryptPhone(staff.tel || '');
-          const decryptedPhone = await decryptPhone(staff.phone || '');
-          const decryptedEmail = await decryptEmail(staff.email || '');
-          
-          console.log(`교직원 ${staff.name}: tel=${staff.tel} -> ${decryptedTel}, phone=${staff.phone} -> ${decryptedPhone}, email=${staff.email} -> ${decryptedEmail}`);
-          
-          return {
-            ...staff,
-            tel: decryptedTel,
-            phone: decryptedPhone,
-            email: decryptedEmail
-          };
-        })
-      );
-      
-      console.log('복호화된 교직원 데이터:', decryptedStaff);
-      setStaff(decryptedStaff);
+      // fetchStaffFromPapyrus에서 이미 복호화된 데이터를 반환하므로 복호화 불필요
+      console.log('교직원 데이터 (이미 복호화됨):', staffData);
+      setStaff(staffData);
     } catch (err) {
       setError(err instanceof Error ? err.message : '교직원 목록 조회 실패');
     } finally {
@@ -273,14 +199,154 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
   };
 
   // 엑셀 양식 다운로드
-  const downloadExcelTemplate = () => {
-    alert('엑셀 양식 다운로드 기능은 아직 구현되지 않았습니다.');
+  const downloadExcelTemplate = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const templateData = [
+        ['교번', '구분', '이름', '내선번호', '연락처', '이메일', '임용일', '비고'],
+        ['20240001', '전임교수', '홍길동', '7201', '010-1234-5678', 'hong@example.com', '2024-03-01', ''],
+        ['20240002', '조교', '김철수', '7202', '010-2345-6789', 'kim@example.com', '2024-03-01', ''],
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '교직원 목록');
+      XLSX.writeFile(wb, `교직원일괄입력_양식_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('양식 다운로드 실패:', error);
+      alert('양식 다운로드에 실패했습니다.');
+    }
   };
 
   // 파일 업로드
-  const handleFileUpload = async (file: File) => {
-    alert('파일 업로드 기능은 아직 구현되지 않았습니다.');
-    console.log('Uploaded file:', file);
+  const handleFileUpload = async (file: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const fileName = file.name.toLowerCase();
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+      const isCSV = fileName.endsWith('.csv');
+
+      if (!isExcel && !isCSV) {
+        reject(new Error('CSV 또는 Excel 파일(.xlsx, .xls)만 업로드 가능합니다.'));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          let rows: string[][] = [];
+
+          if (isExcel) {
+            const XLSX = await import('xlsx');
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+          } else {
+            const data = e.target?.result as string;
+            const lines = data.split('\n').filter(line => line.trim());
+            rows = lines.map(line => {
+              const values: string[] = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                  inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                  values.push(current.trim());
+                  current = '';
+                } else {
+                  current += char;
+                }
+              }
+              values.push(current.trim());
+              return values;
+            });
+          }
+
+          if (rows.length < 2) {
+            reject(new Error('파일에 데이터가 없습니다.'));
+            return;
+          }
+
+          const newStaffList: StaffMember[] = [];
+          const duplicates: string[] = [];
+          const errors: string[] = [];
+
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
+              continue;
+            }
+
+            const staffMember: StaffMember = {
+              no: (row[0] || '').toString().trim(),
+              pos: (row[1] || '').toString().trim(),
+              name: (row[2] || '').toString().trim(),
+              tel: (row[3] || '').toString().trim(),
+              phone: (row[4] || '').toString().trim(),
+              email: (row[5] || '').toString().trim(),
+              date: (row[6] || '').toString().trim(),
+              note: (row[7] || '').toString().trim()
+            };
+
+            if (!staffMember.no || !staffMember.name) {
+              errors.push(`${i + 1}행: 교번과 이름은 필수입니다.`);
+              continue;
+            }
+
+            if (staff.some(s => s.no === staffMember.no)) {
+              duplicates.push(staffMember.no);
+              continue;
+            }
+
+            newStaffList.push(staffMember);
+          }
+
+          if (errors.length > 0) {
+            alert(`오류가 발생했습니다:\n${errors.join('\n')}`);
+          }
+
+          if (duplicates.length > 0) {
+            alert(`중복된 교번이 발견되었습니다: ${duplicates.join(', ')}`);
+          }
+
+          if (newStaffList.length > 0 && staffSpreadsheetId) {
+            setIsLoading(true);
+            try {
+              // 각 교직원을 암호화하여 추가
+              for (const newStaff of newStaffList) {
+                const encryptedStaff = await encryptData(newStaff);
+                await addStaffToPapyrus(staffSpreadsheetId, encryptedStaff);
+              }
+              
+              await fetchStaff();
+              alert(`${newStaffList.length}명의 교직원이 추가되었습니다.`);
+            } catch (err) {
+              console.error('교직원 추가 실패:', err);
+              reject(err);
+              return;
+            } finally {
+              setIsLoading(false);
+            }
+          } else if (newStaffList.length === 0) {
+            alert('추가할 교직원이 없습니다.');
+          }
+
+          resolve();
+        } catch (error) {
+          console.error('파일 업로드 오류:', error);
+          reject(error);
+        }
+      };
+
+      if (isExcel) {
+        reader.readAsBinaryString(file);
+      } else {
+        reader.readAsText(file, 'UTF-8');
+      }
+    });
   };
 
   // 통계 계산

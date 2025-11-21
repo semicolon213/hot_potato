@@ -21,6 +21,9 @@ import { fetchTags as fetchPersonalTags } from '../../utils/database/personalTag
 import { ENV_CONFIG } from '../../config/environment';
 import { tokenManager } from '../../utils/auth/tokenManager';
 import { generateWidgetContent } from "../../utils/helpers/widgetContentGenerator";
+import { getDataSyncService } from '../../services/dataSyncService';
+import { apiClient } from '../../utils/api/apiClient';
+import { useNotification } from '../ui/useNotification';
 
 // Widget related interfaces and constants, moved from useWidgetManagement.ts
 interface WidgetData {
@@ -64,10 +67,19 @@ const widgetOptions = [
  * @returns {Object} 애플리케이션 상태와 핸들러 함수들
  */
 export const useAppState = () => {
+    const { showNotification } = useNotification();
+    
     // User authentication state
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isGapiReady, setIsGapiReady] = useState(false);
+    
+    // DataSyncService 관련 상태
+    const [isInitializingData, setIsInitializingData] = useState(false);
+    const [dataSyncProgress, setDataSyncProgress] = useState({ current: 0, total: 0, message: '' });
+    const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+    const [hasInitialized, setHasInitialized] = useState(false); // 초기화 완료 플래그
+    const dataSyncServiceRef = useRef(getDataSyncService());
 
     // Original app state
     const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
@@ -213,17 +225,51 @@ export const useAppState = () => {
         }
     }, [searchTerm]);
 
-    // 사용자 로그인 시 데이터 자동 로딩 (새로 로그인한 경우)
+    // DataSyncService 초기화 및 apiClient에 주입
     useEffect(() => {
-        if (user && user.isApproved && !isLoading) {
-            // console.log('새로운 로그인 감지 - 데이터 로딩 시작');
+        const dataSyncService = dataSyncServiceRef.current;
+        apiClient.setDataSyncService(dataSyncService);
+        
+        // 주기적 백그라운드 동기화 시작 (스마트 갱신)
+        dataSyncService.startPeriodicSync();
+        
+        // 현재 페이지 설정
+        dataSyncService.setCurrentPage(currentPage);
+        
+        // 정리 함수
+        return () => {
+            dataSyncService.stopPeriodicSync();
+        };
+    }, []);
 
+    // 페이지 변경 시 DataSyncService에 알림
+    useEffect(() => {
+        const dataSyncService = dataSyncServiceRef.current;
+        dataSyncService.setCurrentPage(currentPage);
+    }, [currentPage]);
+
+    // 사용자 로그인 시 데이터 자동 로딩 (새로 로그인한 경우) - 한 번만 실행
+    useEffect(() => {
+        if (user && user.isApproved && !isLoading && !isInitializingData && !hasInitialized) {
             const initAndFetch = async () => {
+                setIsInitializingData(true);
+                setDataSyncProgress({ current: 0, total: 0, message: '초기화 중...' });
+
                 try {
-                    // console.log("로그인 후 Google API 초기화 시작");
+                    // Google API 초기화
                     await initializeGoogleAPIOnce(hotPotatoDBSpreadsheetId);
 
-                    // 스프레드시트 ID들 초기화 및 상태 업데이트
+                    // DataSyncService를 통한 초기 데이터 로딩
+                    const dataSyncService = dataSyncServiceRef.current;
+                    await dataSyncService.initializeData(user, (progress) => {
+                        setDataSyncProgress({
+                            current: progress.current,
+                            total: progress.total,
+                            message: progress.message || ''
+                        });
+                    });
+
+                    // 스프레드시트 ID들 가져오기 (DataSyncService에서 이미 로딩했지만 상태 업데이트 필요)
                     const spreadsheetIds = await initializeSpreadsheetIds();
 
                     // 스프레드시트 ID들 상태 업데이트
@@ -241,25 +287,34 @@ export const useAppState = () => {
                     setIsGoogleAuthenticatedForAnnouncements(true);
                     setIsGoogleAuthenticatedForBoard(true);
 
-                    // console.log("✅ 로그인 후 Papyrus DB 연결 완료");
-                    // console.log("스프레드시트 ID들:", spreadsheetIds);
+                    // 마지막 동기화 시간 업데이트
+                    const lastSync = dataSyncService.getLastSyncTime();
+                    setLastSyncTime(lastSync);
+
+                    console.log("✅ 로그인 후 데이터 초기화 완료");
+                    setHasInitialized(true); // 초기화 완료 플래그 설정
+                    showNotification('데이터 초기화가 완료되었습니다.', 'success');
                 } catch (error) {
                     console.error("Error during login initialization", error);
+                    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
                     console.warn("Google API 초기화 실패했지만 앱을 계속 실행합니다.");
 
                     // Google API 초기화 실패해도 계속 진행
-                    setIsGapiReady(false); // 실제 상태 반영
+                    setIsGapiReady(false);
                     setIsGoogleAuthenticatedForAnnouncements(false);
                     setIsGoogleAuthenticatedForBoard(false);
 
-                    // 사용자에게 알림
                     console.log("⚠️ 일부 Google 서비스가 제한될 수 있습니다.");
+                    setHasInitialized(true); // 에러가 발생해도 플래그 설정하여 재시도 방지
+                    showNotification(`데이터 초기화 중 오류가 발생했습니다: ${errorMessage}`, 'error', 5000);
+                } finally {
+                    setIsInitializingData(false);
                 }
             };
 
             initAndFetch();
         }
-    }, [user, isLoading]);
+    }, [user, isLoading, isInitializingData, hasInitialized]);
 
     // 사용자 유형에 따라 활성 캘린더 스프레드시트 ID 설정
     useEffect(() => {
@@ -611,11 +666,11 @@ export const useAppState = () => {
             }
         }
     }, [calendarEvents, widgets]);
-
+    
     const handleAddWidget = (type: string) => {
         const option = widgetOptions.find(opt => opt.type === type);
         if (!option || widgets.some(w => w.id === option.id)) {
-            if(option) alert("이미 추가된 위젯입니다.");
+            if(option) showNotification("이미 추가된 위젯입니다.", 'warning');
             return;
         }
         const newWidgetData = generateWidgetContent(type);
@@ -695,8 +750,46 @@ export const useAppState = () => {
         setIsModalOpen(false);
         setInitialLoadComplete(false);
 
+        // DataSyncService 관련 상태 초기화
+        setIsInitializingData(false);
+        setDataSyncProgress({ current: 0, total: 0, message: '' });
+        setLastSyncTime(null);
+        setHasInitialized(false); // 초기화 플래그 리셋
+
         console.log('🧹 useAppState 상태 초기화 완료');
     }, []);
+
+    // 수동 데이터 갱신 함수
+    const handleRefreshAllData = useCallback(async () => {
+        if (!user) return;
+        
+        setIsInitializingData(true);
+        setDataSyncProgress({ current: 0, total: 0, message: '갱신 중...' });
+        
+        try {
+            const dataSyncService = dataSyncServiceRef.current;
+            await dataSyncService.refreshAllData((progress) => {
+                setDataSyncProgress({
+                    current: progress.current,
+                    total: progress.total,
+                    message: progress.message || ''
+                });
+            });
+            
+            const lastSync = dataSyncService.getLastSyncTime();
+            setLastSyncTime(lastSync);
+            
+            console.log('✅ 전체 데이터 갱신 완료');
+            showNotification('데이터 갱신이 완료되었습니다.', 'success');
+        } catch (error) {
+            console.error('❌ 전체 데이터 갱신 실패:', error);
+            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+            showNotification(`데이터 갱신에 실패했습니다: ${errorMessage}`, 'error', 5000);
+            throw error;
+        } finally {
+            setIsInitializingData(false);
+        }
+    }, [user, showNotification]);
 
     return {
         // User state
@@ -704,6 +797,12 @@ export const useAppState = () => {
         setUser,
         isLoading,
         isGapiReady,
+        
+        // DataSyncService 관련 상태
+        isInitializingData,
+        dataSyncProgress,
+        lastSyncTime,
+        handleRefreshAllData,
 
         // Page state
         currentPage,

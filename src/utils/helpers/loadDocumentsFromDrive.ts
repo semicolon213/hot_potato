@@ -9,6 +9,8 @@ import type { DocumentInfo, GoogleFile } from "../../types/documents";
 import { formatDateTime } from "./timeUtils";
 import { apiClient } from "../api/apiClient";
 import type { DocumentInfoResponse, DocumentsListResponse, UserNameResponse } from "../../types/api/apiResponses";
+import { getCacheManager } from "../cache/cacheManager";
+import { generateCacheKey, getCacheTTL, getActionCategory } from "../cache/cacheUtils";
 
 export interface FileWithDescription {
   id: string;
@@ -263,17 +265,37 @@ export const loadPersonalDocuments = async (): Promise<DocumentInfo[]> => {
 };
 
 /**
- * 모든 문서 로드 (공유 + 개인)
+ * 모든 문서 로드 (공유 + 개인) - 캐싱 지원
  * @returns 문서 목록
  */
 export const loadAllDocuments = async (): Promise<DocumentInfo[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'getAllDocuments';
+  const category = getActionCategory(action);
+  const cacheKey = generateCacheKey(category, action, {});
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<DocumentInfo[]>(cacheKey);
+  if (cachedData) {
+    console.log('📄 캐시에서 문서 로드:', cachedData.length, '개');
+    return cachedData;
+  }
+
+  // 캐시 미스 시 실제 로드
+  console.log('📄 문서 로드 시작 (캐시 미스)...');
   const [sharedDocs, personalDocs] = await Promise.all([
     loadSharedDocuments(),
     loadPersonalDocuments()
   ]);
 
   const allDocs = [...sharedDocs, ...personalDocs];
-  console.log('전체 문서 로드 완료:', allDocs.length, '개');
+  console.log('📄 전체 문서 로드 완료:', allDocs.length, '개');
+  
+  // 캐시에 저장
+  const ttl = getCacheTTL(action);
+  await cacheManager.set(cacheKey, allDocs, ttl);
+  console.log('📄 문서 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+  
   return allDocs;
 };
 

@@ -18,7 +18,7 @@
   padding: 0;
   border-radius: var(--sidebar-radius);
   border: 1px solid var(--border-color);
-  width: clamp(720px, 41.67vw, 960px);
+  width: clamp(680px, 39.58vw, 720px);
   max-width: 90vw;
   max-height: calc(100vh - clamp(80px, 9.26vh, 104px));
   height: auto;
@@ -99,7 +99,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(16px, 1.85vh, 20px);
   width: 100%;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto;
 }
 

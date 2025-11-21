@@ -186,6 +186,19 @@ export const useAuth = (onLogin: (user: User) => void) => {
         tokenManager.save(accessToken, 3600);
       }
       
+      // 팝업에서 호출된 경우 부모 창에 메시지 전송
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({
+          type: 'GOOGLE_TOKEN_RECEIVED',
+          accessToken,
+          expiresIn: expiresIn || '3600'
+        }, window.location.origin);
+        
+        // 팝업 닫기
+        window.close();
+        return accessToken;
+      }
+      
       return accessToken;
     }
     return null;
@@ -231,6 +244,17 @@ export const useAuth = (onLogin: (user: User) => void) => {
 
   // 컴포넌트 마운트 시 URL에서 토큰 확인 (리디렉션 후)
   useEffect(() => {
+    // 팝업 창인 경우 즉시 처리하고 닫기
+    if (window.opener && !window.opener.closed) {
+      const accessToken = extractTokenFromUrl();
+      if (accessToken) {
+        // extractTokenFromUrl에서 이미 postMessage를 보냈고 window.close()를 호출했으므로
+        // 여기서는 아무것도 하지 않음
+        return;
+      }
+    }
+    
+    // 일반 로그인 플로우 (메인 창)
     const accessToken = extractTokenFromUrl();
     if (accessToken) {
       handleGoogleLoginSuccess(accessToken);

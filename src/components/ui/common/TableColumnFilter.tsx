@@ -29,6 +29,7 @@ interface TableColumnFilterProps {
   selectedFilters: FilterValue[];
   onFilterChange: (filters: FilterValue[]) => void;
   onClearFilters: () => void;
+  isStaffMode?: boolean; // 교직원 모드 추가
 }
 
 const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
@@ -43,6 +44,7 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
   selectedFilters,
   onFilterChange,
   onClearFilters,
+  isStaffMode = false,
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -165,9 +167,16 @@ const TableColumnFilter: React.FC<TableColumnFilterProps> = ({
           <div className="filter-search">
             <input
               type="text"
-              placeholder="검색"
+              placeholder={isStaffMode ? "교직원 검색" : "학생 검색"}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter 키를 눌렀을 때 기본 동작(페이지 이동 등)을 막음
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
               className="filter-search-input"
             />
           </div>

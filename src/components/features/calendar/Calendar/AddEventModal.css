@@ -126,13 +126,44 @@
 .attendee-results-list li {
   display: flex;
   align-items: center;
-  height: clamp(40px, 4.63vh, 48px);
+  justify-content: space-between;
+  min-height: clamp(40px, 4.63vh, 48px);
   padding: clamp(10px, 1.16vh, 12px) clamp(12px, 1.56vw, 16px);
   font-size: clamp(14px, 1.62vh, 16px);
   color: var(--text-dark);
   cursor: pointer;
   border-bottom: 1px solid var(--border-color);
   transition: var(--transition-base);
+}
+
+.attendee-list-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.46vh, 6px);
+}
+
+.attendee-name-section {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.69vh, 8px);
+  flex-wrap: wrap;
+}
+
+.attendee-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-dark);
+}
+
+.attendee-info {
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: var(--text-light);
+}
+
+.attendee-email {
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: var(--text-light);
+  margin-top: clamp(2px, 0.23vh, 4px);
 }
 
 .checkmark-icon {
@@ -143,6 +174,60 @@
 
 .attendee-results-list li:last-child {
   border-bottom: none;
+}
+
+.group-selection-section {
+  margin-bottom: clamp(12px, 1.39vh, 16px);
+  padding-bottom: clamp(12px, 1.39vh, 16px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.group-selection-section label {
+  display: block;
+  font-size: clamp(13px, 1.51vh, 15px);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-dark);
+  margin-bottom: clamp(8px, 0.93vh, 10px);
+}
+
+.group-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 0.78vw, 8px);
+}
+
+.group-button {
+  padding: clamp(6px, 0.69vh, 8px) clamp(12px, 1.56vw, 16px);
+  border: 1px solid var(--border-color);
+  border-radius: clamp(4px, 0.46vh, 6px);
+  background-color: var(--white-pure);
+  cursor: pointer;
+  font-size: clamp(12px, 1.39vh, 14px);
+  color: var(--text-medium);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-base);
+  white-space: nowrap;
+}
+
+.group-button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-color: var(--sidebar-primary);
+  color: var(--text-dark);
+}
+
+.group-button.active {
+  background-color: var(--sidebar-primary);
+  color: var(--white-pure);
+  border-color: var(--sidebar-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.group-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: rgba(121, 134, 203, 0.1);
+  border-color: var(--sidebar-primary);
+  color: var(--sidebar-primary);
 }
 
 /* 태그 선택 패널 스타일 */
@@ -505,6 +590,11 @@
 
 .attendee-tag:hover {
   background-color: rgba(121, 134, 203, 0.15);
+}
+
+.attendee-tag.group-tag {
+  background-color: rgba(121, 134, 203, 0.2);
+  border: 1px solid var(--sidebar-primary);
 }
 
 .attendee-name {
@@ -999,6 +1089,56 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: clamp(8px, 1.04vw, 12px);
+}
+
+.schedule-time-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: clamp(8px, 0.93vh, 12px);
+    padding: clamp(6px, 0.69vh, 8px) 0;
+}
+
+.schedule-time-toggle-label {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: clamp(6px, 0.78vw, 8px) !important;
+    cursor: pointer;
+    user-select: none;
+    font-size: clamp(13px, 1.51vh, 15px);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-dark);
+    transition: var(--transition-base);
+    white-space: nowrap;
+    flex-wrap: nowrap;
+}
+
+.schedule-time-toggle-label:hover {
+    color: var(--sidebar-primary);
+}
+
+.schedule-time-checkbox {
+    width: clamp(16px, 1.85vh, 18px) !important;
+    height: clamp(16px, 1.85vh, 18px) !important;
+    cursor: pointer;
+    accent-color: var(--sidebar-primary);
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.schedule-time-toggle-label span {
+    letter-spacing: -0.01em;
+    display: inline-block;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.schedule-section-header-right {
+    display: flex;
+    align-items: center;
     gap: clamp(8px, 1.04vw, 12px);
 }
 

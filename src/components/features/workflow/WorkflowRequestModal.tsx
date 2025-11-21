@@ -11,6 +11,7 @@ import { grantPersonalDocumentPermissions, grantPermissionsToMultiplePersonalDoc
 import { loadAllDocuments } from '../../../utils/helpers/loadDocumentsFromDrive';
 import type { DocumentInfo } from '../../../types/documents';
 import WorkflowEditor from './WorkflowEditor';
+import WorkflowTemplateModal from './WorkflowTemplateModal';
 import type { WorkflowRequestData, ReviewLine, PaymentLine, WorkflowLineStep } from '../../../types/documents';
 import type { WorkflowRequestResponse, UsersListResponse } from '../../../types/api/apiResponses';
 import './WorkflowRequestModal.css';
@@ -53,6 +54,7 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
   const [isLoadingDocuments, setIsLoadingDocuments] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
 
   // 사용자 목록 로드
   useEffect(() => {
@@ -659,6 +661,20 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
 
             {step === 'lines' && (
               <div className="form-section">
+                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <p style={{ margin: 0, color: 'var(--text-medium)' }}>
+                    템플릿을 선택하여 검토 라인과 결재 라인을 자동으로 설정할 수 있습니다.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setIsTemplateModalOpen(true)}
+                    style={{ padding: '8px 16px', fontSize: '14px' }}
+                  >
+                    템플릿 선택
+                  </button>
+                </div>
+                
                 <div className="line-section">
                   <div className="line-header">
                     <h3>검토 라인 *</h3>
@@ -822,6 +838,18 @@ const WorkflowRequestModal: React.FC<WorkflowRequestModalProps> = ({
           duration={notification.type === 'success' ? 2000 : 3000}
         />
       )}
+      
+      <WorkflowTemplateModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onSelectTemplate={(template) => {
+          setReviewLine(template.reviewLine);
+          setPaymentLine(template.paymentLine);
+          setIsTemplateModalOpen(false);
+          setNotification({ message: '템플릿이 적용되었습니다.', type: 'success' });
+        }}
+        isAdmin={false}
+      />
     </>
   );
 };

@@ -7,6 +7,8 @@ import xIcon from '../../../../assets/Icons/x.svg';
 import { RRule } from 'rrule';
 import CustomDatePicker from './CustomDatePicker';
 import CustomTimePicker from './CustomTimePicker';
+import { apiClient } from '../../../../utils/api/apiClient';
+import type { UsersListResponse } from '../../../../types/api/apiResponses';
 
 interface AddEventModalProps {
   onClose: () => void;
@@ -55,6 +57,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const [attendeeSearchTerm, setAttendeeSearchTerm] = useState('');
   const [isLoadingAttendees, setIsLoadingAttendees] = useState(false);
   const [selectedAttendees, setSelectedAttendees] = useState<(Student | Staff)[]>([]);
+  const [allMembers, setAllMembers] = useState<Array<{no_member: string; name: string; userType: string; email: string}>>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]); // 선택된 권한 그룹
 
   const [recurrenceFreq, setRecurrenceFreq] = useState<RecurrenceFreq>('NONE');
   const [recurrenceDetails, setRecurrenceDetails] = useState({
@@ -102,9 +106,11 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       if (eventToEdit.startDateTime && eventToEdit.endDateTime) {
         setStartTime(eventToEdit.startDateTime.split('T')[1].substring(0, 5));
         setEndTime(eventToEdit.endDateTime.split('T')[1].substring(0, 5));
+        setShowTime(true);
       } else {
         setStartTime('00:00');
         setEndTime('00:00');
+        setShowTime(false);
       }
 
       if (eventToEdit.rrule) {
@@ -136,27 +142,61 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
       setStartDate(formatDate(initialDate));
       setEndDate(formatDate(initialDate));
 
-      // Default time values
+      // Default time values (시간은 기본적으로 비활성화)
       setStartTime('00:00');
       setEndTime('00:00');
+      setShowTime(false);
 
       setSaveTarget('google');
       setSelectedAttendees([]);
       setSelectedTags([]);
+      setSelectedGroups([]);
     }
   }, [eventToEdit, isEditMode, eventTypes]);
 
-  // Pre-populate selected attendees in edit mode once data is loaded
+  // Pre-populate selected attendees and groups in edit mode once data is loaded
   useEffect(() => {
-    if (isEditMode && eventToEdit && (students.length > 0 || staff.length > 0)) {
-        const attendeeIds = (eventToEdit as Event & { attendees?: string }).attendees?.split(',').filter(Boolean) || [];
-        if (attendeeIds.length > 0) {
-            const allPeople = [...students, ...staff];
-            const preselected = allPeople.filter(p => attendeeIds.includes('no_student' in p ? p.no_student : p.no));
-            setSelectedAttendees(preselected);
+    if (isEditMode && eventToEdit && allMembers.length > 0) {
+        const attendeeItems = (eventToEdit as Event & { attendees?: string }).attendees?.split(',').filter(Boolean) || [];
+        if (attendeeItems.length > 0) {
+            const preselectedAttendees: (Student | Staff)[] = [];
+            const preselectedGroups: string[] = [];
+            
+            attendeeItems.forEach(item => {
+              const trimmed = item.trim();
+              if (trimmed.startsWith('group:')) {
+                // 그룹 선택
+                const groupType = trimmed.replace('group:', '');
+                if (groupType && !preselectedGroups.includes(groupType)) {
+                  preselectedGroups.push(groupType);
+                }
+              } else if (trimmed.includes(':')) {
+                // 개별 참석자: 권한:참석자ID
+                const [, attendeeId] = trimmed.split(':');
+                const member = allMembers.find(m => m.no_member === attendeeId);
+                if (member) {
+                  const person: Student | Staff = member.userType === 'student' 
+                    ? { no_student: member.no_member, name: member.name, grade: 0, type: 'student' as const }
+                    : { no: member.no_member, name: member.name, pos: '', type: 'staff' as const };
+                  preselectedAttendees.push(person);
+                }
+              } else {
+                // 기존 형식 (호환성): 참석자ID만
+                const member = allMembers.find(m => m.no_member === trimmed);
+                if (member) {
+                  const person: Student | Staff = member.userType === 'student' 
+                    ? { no_student: member.no_member, name: member.name, grade: 0, type: 'student' as const }
+                    : { no: member.no_member, name: member.name, pos: '', type: 'staff' as const };
+                  preselectedAttendees.push(person);
+                }
+              }
+            });
+            
+            setSelectedAttendees(preselectedAttendees);
+            setSelectedGroups(preselectedGroups);
         }
     }
-  }, [isEditMode, eventToEdit, students, staff]);
+  }, [isEditMode, eventToEdit, allMembers]);
 
 
   useEffect(() => {
@@ -210,28 +250,72 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     }
   }, [dateDifferenceInDays, isSingleDayEvent, recurrenceFreq]);
 
+  // 회원 목록 로드
+  useEffect(() => {
+    const loadMembers = async () => {
+      if (isAttendeeSearchVisible && allMembers.length === 0) {
+        setIsLoadingAttendees(true);
+        try {
+          const response = await apiClient.getAllUsers() as UsersListResponse;
+          if (response.success && response.users && Array.isArray(response.users)) {
+            const members = response.users
+              .filter(u => u.isApproved || u.Approval === 'O')
+              .map(u => ({
+                no_member: u.no_member || u.studentId || '',
+                name: u.name || u.name_member || '',
+                userType: u.userType || u.user_type || 'student',
+                email: u.email || ''
+              }))
+              .filter(m => m.no_member && m.name);
+            setAllMembers(members);
+          }
+        } catch (error) {
+          console.error('회원 목록 로드 오류:', error);
+        } finally {
+          setIsLoadingAttendees(false);
+        }
+      }
+    };
+    loadMembers();
+  }, [isAttendeeSearchVisible, allMembers.length]);
+
   const filteredAttendees = useMemo(() => {
-    const allPeople = [
-        ...students.map(s => ({ ...s, type: 'student' as const })),
-        ...staff.map(s => ({ ...s, type: 'staff' as const }))
-    ];
+    // 선택된 그룹에 속한 회원은 개별 참석자 목록에서 제외
+    let filtered = allMembers;
+    
+    // 선택된 그룹에 속한 회원 필터링 (개별 참석자 목록에서 제외)
+    if (selectedGroups.length > 0) {
+      filtered = filtered.filter(m => !selectedGroups.includes(m.userType));
+    }
+
+    // 이미 선택된 개별 참석자는 제외
+    const selectedMemberIds = selectedAttendees.map(a => {
+      return 'no_student' in a ? a.no_student : a.no;
+    });
+    filtered = filtered.filter(m => !selectedMemberIds.includes(m.no_member));
 
     if (attendeeSearchTerm.trim() === '') {
-      return allPeople;
+      return filtered;
     }
 
     const lowercasedTerm = attendeeSearchTerm.toLowerCase();
-    return allPeople.filter(person =>
-      person.name.toLowerCase().includes(lowercasedTerm)
+    return filtered.filter(member =>
+      member.name.toLowerCase().includes(lowercasedTerm) ||
+      member.email.toLowerCase().includes(lowercasedTerm)
     );
-  }, [attendeeSearchTerm, students, staff]);
+  }, [attendeeSearchTerm, allMembers, selectedGroups, selectedAttendees]);
 
-  const handleSelectAttendee = (person: Student | Staff) => {
-    const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
+  const handleSelectAttendee = (member: {no_member: string; name: string; userType: string; email: string}) => {
+    // 회원을 Student/Staff 형식으로 변환
+    const person: Student | Staff = member.userType === 'student' 
+      ? { no_student: member.no_member, name: member.name, grade: 0, type: 'student' as const }
+      : { no: member.no_member, name: member.name, pos: '', type: 'staff' as const };
+    
+    const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === member.no_member);
 
     if (isSelected) {
       // Before removing, check if it's the logged-in user and not an admin
-      if (user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId)) {
+      if (user && !user.isAdmin && member.no_member === String(user.studentId)) {
         return; // Don't allow removal
       }
       handleRemoveAttendee(person);
@@ -241,8 +325,18 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     setAttendeeSearchTerm('');
   };
 
+  const handleToggleGroup = (groupType: string) => {
+    setSelectedGroups(prev => {
+      if (prev.includes(groupType)) {
+        return prev.filter(g => g !== groupType);
+      } else {
+        return [...prev, groupType];
+      }
+    });
+  };
+
   const handleRemoveAttendee = (personToRemove: Student | Staff) => {
-    if (user && user.userType !== 'admin' && ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no) === String(user.studentId)) {
+    if (user && !user.isAdmin && ('no_student' in personToRemove ? personToRemove.no_student : personToRemove.no) === String(user.studentId)) {
       // Prevent removal of self if not an admin
       return;
     }
@@ -254,26 +348,21 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   };
 
 
-  const handleSelectTag = (selectedTag: string, isCustom: boolean = false) => {
+  const handleSelectTag = (selectedTag: string, isCustom: boolean = false, tagColor?: string) => {
     const tagExists = selectedTags.some(t => t.type === selectedTag && t.isCustom === isCustom);
     if (tagExists) {
-      // 이미 선택된 태그면 제거
-      setSelectedTags(selectedTags.filter(t => !(t.type === selectedTag && t.isCustom === isCustom)));
+      // 이미 선택된 태그면 제거 (단일 선택이므로 빈 배열로)
+      setSelectedTags([]);
     } else {
-      // 선택되지 않은 태그면 추가
+      // 선택되지 않은 태그면 기존 선택을 모두 제거하고 새 태그만 선택 (단일 선택)
       if (isCustom) {
         // 커스텀 태그인 경우 색상 정보도 함께 가져오기
-        // selectedTags에서 찾거나, 모든 커스텀 태그 목록에서 찾기
-        const existingCustomTag = selectedTags.find(t => t.type === selectedTag && t.isCustom);
-        if (existingCustomTag) {
-          // 이미 존재하는 커스텀 태그면 색상 정보와 함께 추가
-          setSelectedTags([...selectedTags, { type: selectedTag, isCustom: true, color: existingCustomTag.color }]);
-        } else {
-          // 새로 추가된 커스텀 태그는 이미 selectedTags에 있으므로 추가하지 않음
-          // 이 경우는 발생하지 않아야 함
-        }
+        // tagColor가 전달되면 사용하고, 없으면 selectedTags에서 찾기
+        const color = tagColor || selectedTags.find(t => t.type === selectedTag && t.isCustom)?.color || customColor;
+        setSelectedTags([{ type: selectedTag, isCustom: true, color }]);
       } else {
-      setSelectedTags([...selectedTags, { type: selectedTag, isCustom: false }]);
+        // 기본 태그는 단일 선택
+        setSelectedTags([{ type: selectedTag, isCustom: false }]);
       }
     }
   };
@@ -281,19 +370,12 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
   const handleAddCustomTag = () => {
     if (customTag.trim()) {
       if (editingTag) {
-        // 편집 모드: 기존 태그 업데이트
-        setSelectedTags(selectedTags.map(t => 
-          t.type === editingTag.type && t.isCustom === editingTag.isCustom
-            ? { type: customTag.trim(), isCustom: true, color: customColor }
-            : t
-        ));
+        // 편집 모드: 기존 태그 업데이트 (단일 선택이므로 배열에 1개만)
+        setSelectedTags([{ type: customTag.trim(), isCustom: true, color: customColor }]);
         setEditingTag(null);
       } else {
-        // 추가 모드: 새 태그 추가
-        const tagExists = selectedTags.some(t => t.type === customTag.trim() && t.isCustom);
-        if (!tagExists) {
-          setSelectedTags([...selectedTags, { type: customTag.trim(), isCustom: true, color: customColor }]);
-        }
+        // 추가 모드: 새 태그 단일 선택 (기존 선택 제거)
+        setSelectedTags([{ type: customTag.trim(), isCustom: true, color: customColor }]);
       }
       setCustomTag('');
       setCustomColor('#7986CB');
@@ -321,36 +403,26 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
     setShowCustomTagInput(false);
   };
 
-  // Auto-add current user when opening attendee search for a new event
-  useEffect(() => {
-    if (isAttendeeSearchVisible && !isEditMode && selectedAttendees.length === 0 && (students.length > 0 || staff.length > 0)) {
-        if (user) {
-            const allPeople = [...students, ...staff];
-            const loggedInUserObject = allPeople.find(p => ('no_student' in p ? p.no_student : p.no) === user.studentId);
-            if (loggedInUserObject) {
-                setSelectedAttendees([loggedInUserObject]);
-            }
-        }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAttendeeSearchVisible, students, staff]);
 
   // 참석자 수에 따라 자동으로 개인/공유 결정
   useEffect(() => {
-    // 참석자가 없거나 본인만 있으면 개인 일정, 그 외에는 공유 일정
+    // 그룹이 선택되었거나 참석자가 있고 본인 외 다른 참석자가 있으면 공유 일정
     const hasOtherAttendees = selectedAttendees.some(a => {
-      if (user && user.userType !== 'admin') {
+      if (user && !user.isAdmin) {
         return ('no_student' in a ? a.no_student : a.no) !== String(user.studentId);
       }
       return true; // admin인 경우 참석자가 있으면 공유
     });
     
-    if (selectedAttendees.length === 0 || !hasOtherAttendees) {
+    const hasGroups = selectedGroups.length > 0;
+    const hasOtherGroups = selectedGroups.some(g => g !== user?.userType);
+    
+    if ((selectedAttendees.length === 0 && !hasGroups) || (!hasOtherAttendees && !hasOtherGroups)) {
       setSaveTarget('google');
     } else {
       setSaveTarget('sheet');
     }
-  }, [selectedAttendees, user]);
+  }, [selectedAttendees, selectedGroups, user]);
 
 
   const handleSave = () => {
@@ -373,7 +445,47 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           } else {
               eventData.type = tagLabels['event'] || 'event';
           }
-          eventData.attendees = selectedAttendees.map(a => 'no_student' in a ? a.no_student : a.no).join(',');
+          // 참석자 저장 형식: "group:권한" 또는 "권한:참석자ID" 또는 "참석자ID" (기존 형식)
+          const attendeeList: string[] = [];
+          
+          // 선택된 그룹 추가
+          selectedGroups.forEach(group => {
+            attendeeList.push(`group:${group}`);
+          });
+          
+          // 개별 참석자 추가
+          const currentUserMemberId = user ? String(user.studentId) : null;
+          selectedAttendees.forEach(a => {
+            const memberId = 'no_student' in a ? a.no_student : a.no;
+            const member = allMembers.find(m => m.no_member === memberId);
+            if (member) {
+              attendeeList.push(`${member.userType}:${memberId}`);
+            } else {
+              // 기존 형식 호환성 (회원 목록에 없는 경우)
+              attendeeList.push(memberId);
+            }
+          });
+          
+          // 본인이 그룹에도 개별 참석자에도 없으면 자동으로 추가
+          if (user && currentUserMemberId) {
+            const isInGroup = selectedGroups.includes(user.userType);
+            const isInAttendees = selectedAttendees.some(a => {
+              const memberId = 'no_student' in a ? a.no_student : a.no;
+              return memberId === currentUserMemberId;
+            });
+            
+            if (!isInGroup && !isInAttendees) {
+              const currentUserMember = allMembers.find(m => m.no_member === currentUserMemberId);
+              if (currentUserMember) {
+                attendeeList.push(`${currentUserMember.userType}:${currentUserMemberId}`);
+              } else {
+                // 회원 목록에 없으면 기본 형식으로 추가
+                attendeeList.push(currentUserMemberId);
+              }
+            }
+          }
+          
+          eventData.attendees = attendeeList.join(',');
       } else {
           // 개인 일정: 태그 정보를 description에 추가하거나 colorId 설정
           if (selectedTags.length > 0) {
@@ -393,12 +505,21 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           }
       }
 
-      eventData.startDateTime = `${startDate}T${startTime}:00`;
-      eventData.endDateTime = `${endDate}T${endTime}:00`;
+      // 시간이 활성화된 경우에만 startDateTime과 endDateTime 설정
+      if (showTime) {
+        eventData.startDateTime = `${startDate}T${startTime}:00`;
+        eventData.endDateTime = `${endDate}T${endTime}:00`;
+      } else {
+        // 시간이 없으면 전체 일정(all-day event)으로 처리
+        // startDateTime과 endDateTime을 설정하지 않음
+        delete eventData.startDateTime;
+        delete eventData.endDateTime;
+      }
       eventData.startDate = startDate;
       eventData.endDate = endDate;
 
-      if (saveTarget === 'sheet' && recurrenceFreq !== 'NONE') {
+      // 반복 일정 설정 (sheet와 google 모두 지원)
+      if (recurrenceFreq !== 'NONE') {
         const ruleOptions: {
             freq: number;
             interval: number;
@@ -488,11 +609,29 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                   <div className="schedule-section">
                       <div className="schedule-section-header">
                           <span className="schedule-section-title">일정 기간</span>
-                          {dateDifferenceInDays > 0 && (
-                              <span className="schedule-duration-badge">
-                                  {dateDifferenceInDays}일
-                              </span>
-                          )}
+                          <div className="schedule-section-header-right">
+                              <label className="schedule-time-toggle-label">
+                                  <input
+                                      type="checkbox"
+                                      checked={showTime}
+                                      onChange={(e) => {
+                                          setShowTime(e.target.checked);
+                                          if (!e.target.checked) {
+                                              // 체크 해제 시 시간을 00:00으로 초기화
+                                              setStartTime('00:00');
+                                              setEndTime('00:00');
+                                          }
+                                      }}
+                                      className="schedule-time-checkbox"
+                                  />
+                                  <span>시간 설정</span>
+                              </label>
+                              {dateDifferenceInDays > 0 && (
+                                  <span className="schedule-duration-badge">
+                                      {dateDifferenceInDays}일
+                                  </span>
+                              )}
+                          </div>
                       </div>
                       <div className="schedule-time-grid">
                           <div className="schedule-time-item">
@@ -560,6 +699,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       />,
                                       document.body
                                   )}
+                                  {showTime && (
                                   <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={startTimeButtonRef}
@@ -613,7 +753,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                           </button>
                                       </div>
                                   </div>
-                                  {showStartTimePicker && startTimeButtonRef.current && createPortal(
+                                  )}
+                                  {showTime && showStartTimePicker && startTimeButtonRef.current && createPortal(
                                       <CustomTimePicker
                                           value={startTime}
                                           onChange={(value) => {
@@ -697,6 +838,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                       />,
                                       document.body
                                   )}
+                                  {showTime && (
                                   <div className="schedule-input-with-buttons">
                                   <div 
                                       ref={endTimeButtonRef}
@@ -750,7 +892,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                                           </button>
                                       </div>
                                   </div>
-                                  {showEndTimePicker && endTimeButtonRef.current && createPortal(
+                                  )}
+                                  {showTime && showEndTimePicker && endTimeButtonRef.current && createPortal(
                                       <CustomTimePicker
                                           value={endTime}
                                           onChange={(value) => {
@@ -771,62 +914,60 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                       </div>
                   </div>
 
-                  {saveTarget === 'sheet' && (
-                      <div className="schedule-section">
-                          <div className="schedule-section-header">
-                              <span className="schedule-section-title">반복 설정</span>
-                              {dateDifferenceInDays > 7 && (
-                                  <span className="schedule-warning-badge">
-                                      장기 일정
-                                  </span>
-                              )}
-                          </div>
-                          <div className="schedule-recurrence-group">
-                              <select
-                                  id="recurrence"
-                                  value={recurrenceFreq}
-                                  onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
-                                  className="schedule-recurrence-select"
-                              >
-                                  {availableRecurrenceOptions.map(option => (
-                                      <option 
-                                          key={option.value} 
-                                          value={option.value}
-                                          disabled={option.disabled}
-                                      >
-                                          {option.label}
-                                      </option>
-                                  ))}
-                              </select>
-                              {recurrenceFreq !== 'NONE' && (
-                                  <div className="schedule-recurrence-details">
-                                      <div className="schedule-recurrence-interval">
-                                          <input
-                                              type="number"
-                                              min="1"
-                                              value={recurrenceDetails.interval}
-                                              onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
-                                              className="schedule-interval-input"
-                                          />
-                                          <span className="schedule-interval-label">
-                                              {recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}
-                                          </span>
-                                      </div>
-                                      <div className="schedule-recurrence-until">
-                                          <label className="schedule-until-label">반복 종료일</label>
-                                          <input
-                                              type="date"
-                                              value={recurrenceDetails.until}
-                                              onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
-                                              min={startDate}
-                                              className="schedule-until-input"
-                                          />
-                                      </div>
-                                  </div>
-                              )}
-                          </div>
+                  <div className="schedule-section">
+                      <div className="schedule-section-header">
+                          <span className="schedule-section-title">반복 설정</span>
+                          {dateDifferenceInDays > 7 && (
+                              <span className="schedule-warning-badge">
+                                  장기 일정
+                              </span>
+                          )}
                       </div>
-                  )}
+                      <div className="schedule-recurrence-group">
+                          <select
+                              id="recurrence"
+                              value={recurrenceFreq}
+                              onChange={(e) => setRecurrenceFreq(e.target.value as RecurrenceFreq)}
+                              className="schedule-recurrence-select"
+                          >
+                              {availableRecurrenceOptions.map(option => (
+                                  <option 
+                                      key={option.value} 
+                                      value={option.value}
+                                      disabled={option.disabled}
+                                  >
+                                      {option.label}
+                                  </option>
+                              ))}
+                          </select>
+                          {recurrenceFreq !== 'NONE' && (
+                              <div className="schedule-recurrence-details">
+                                  <div className="schedule-recurrence-interval">
+                                      <input
+                                          type="number"
+                                          min="1"
+                                          value={recurrenceDetails.interval}
+                                          onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, interval: parseInt(e.target.value, 10) || 1 })}
+                                          className="schedule-interval-input"
+                                      />
+                                      <span className="schedule-interval-label">
+                                          {recurrenceFreq === 'DAILY' ? '일마다' : recurrenceFreq === 'WEEKLY' ? '주마다' : '개월마다'}
+                                      </span>
+                                  </div>
+                                  <div className="schedule-recurrence-until">
+                                      <label className="schedule-until-label">반복 종료일</label>
+                                      <input
+                                          type="date"
+                                          value={recurrenceDetails.until}
+                                          onChange={(e) => setRecurrenceDetails({ ...recurrenceDetails, until: e.target.value })}
+                                          min={startDate}
+                                          className="schedule-until-input"
+                                      />
+                                  </div>
+                              </div>
+                          )}
+                      </div>
+                  </div>
               </div>
             </div>
 
@@ -894,8 +1035,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                             type="button" 
                           className={`tag-panel-button active`}
                           onClick={() => {
-                            // 커스텀 태그 클릭 시 선택/해제 토글
-                            handleSelectTag(tag.type, true);
+                            // 커스텀 태그 클릭 시 선택/해제 토글 (색상 정보 전달)
+                            handleSelectTag(tag.type, true, tag.color);
                           }}
                           onDoubleClick={(e) => {
                             e.stopPropagation();
@@ -931,10 +1072,30 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
                     {isAttendeeSearchVisible ? '닫기' : '추가'}
                   </button>
                 </div>
-                {selectedAttendees.length > 0 ? (
+                {(selectedAttendees.length > 0 || selectedGroups.length > 0) ? (
                   <div className="selected-attendees-list">
+                    {/* 선택된 그룹 표시 */}
+                    {selectedGroups.map(groupType => {
+                      const groupLabels: {[key: string]: string} = {
+                        student: '학생',
+                        council: '집행부',
+                        supp: '조교',
+                        ADprofessor: '겸임교원',
+                        professor: '교수'
+                      };
+                      const isCurrentUserGroup = user?.userType === groupType;
+                      return (
+                        <div key={`group-${groupType}`} className="attendee-tag group-tag">
+                          <span className="attendee-name">
+                            {groupLabels[groupType] || groupType} 그룹{isCurrentUserGroup ? ' (본인)' : ''}
+                          </span>
+                          <button type="button" className="remove-attendee-btn" onClick={() => handleToggleGroup(groupType)}>&times;</button>
+                        </div>
+                      );
+                    })}
+                    {/* 개별 참석자 표시 */}
                     {selectedAttendees.map(person => {
-                      const isCurrentUser = user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
+                      const isCurrentUser = user && !user.isAdmin && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
                       return (
                         <div key={'no_student' in person ? person.no_student : person.no} className="attendee-tag">
                           <span className="attendee-name">{person.name}{isCurrentUser ? '(본인)' : ''}</span>
@@ -951,9 +1112,40 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
           </div>
           <div className={`attendee-search-panel ${isAttendeeSearchVisible ? 'visible' : ''}`}>
             <h3>참석자 검색</h3>
+            
+            {/* 그룹 선택 버튼 */}
+            <div className="group-selection-section">
+              <label>권한 그룹 선택:</label>
+              <div className="group-buttons">
+                {['student', 'council', 'supp', 'ADprofessor', 'professor'].map(groupType => {
+                  const groupLabels: {[key: string]: string} = {
+                    student: '학생',
+                    council: '집행부',
+                    supp: '조교',
+                    ADprofessor: '겸임교원',
+                    professor: '교수'
+                  };
+                  const isSelected = selectedGroups.includes(groupType);
+                  const isCurrentUserGroup = user?.userType === groupType;
+                  return (
+                    <button
+                      key={groupType}
+                      type="button"
+                      className={`group-button ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleToggleGroup(groupType)}
+                      title={isCurrentUserGroup ? '본인 권한 그룹' : ''}
+                    >
+                      {groupLabels[groupType] || groupType}
+                      {isCurrentUserGroup && ' (본인)'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <input
               type="text"
-              placeholder="이름으로 검색..."
+              placeholder="이름 또는 이메일로 검색..."
               className="attendee-search-input"
               value={attendeeSearchTerm}
               onChange={(e) => setAttendeeSearchTerm(e.target.value)}
@@ -964,12 +1156,32 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, eventToEdit }) =
               ) : (
                 filteredAttendees.length > 0 ? (
                   <ul>
-                    {filteredAttendees.map(person => {
-                      const isSelected = selectedAttendees.some(a => ('no_student' in a ? a.no_student : a.no) === ('no_student' in person ? person.no_student : person.no));
-                      const isCurrentUser = user && user.userType !== 'admin' && ('no_student' in person ? person.no_student : person.no) === String(user.studentId);
+                    {filteredAttendees.map(member => {
+                      const isSelected = selectedAttendees.some(a => {
+                        const memberId = 'no_student' in a ? a.no_student : a.no;
+                        return memberId === member.no_member;
+                      });
+                      const isCurrentUser = user && !user.isAdmin && member.no_member === String(user.studentId);
+                      const userTypeLabels: {[key: string]: string} = {
+                        student: '학생',
+                        council: '집행부',
+                        supp: '조교',
+                        ADprofessor: '겸임교원',
+                        professor: '교수'
+                      };
                       return (
-                        <li key={`${person.type}-${'no_student' in person ? person.no_student : person.no}`} onClick={() => handleSelectAttendee(person as Student | Staff)}>
-                          {person.name}{isCurrentUser ? '(본인)' : ''} ({person.type === 'student' ? `${(person as Student).grade}학년` : (person as Staff).pos})
+                        <li key={member.no_member} onClick={() => handleSelectAttendee(member)}>
+                          <div className="attendee-list-item">
+                            <div className="attendee-name-section">
+                              <span className="attendee-name">{member.name}{isCurrentUser ? '(본인)' : ''}</span>
+                              <span className="attendee-info">
+                                ({userTypeLabels[member.userType] || member.userType} | {member.no_member})
+                              </span>
+                            </div>
+                            {member.email && (
+                              <div className="attendee-email">{member.email}</div>
+                            )}
+                          </div>
                           {isSelected && <span className="checkmark-icon">✓</span>}
                         </li>
                       );

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import './NotificationModal.css';
 
 interface NotificationModalProps {
@@ -34,14 +35,14 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="notification-icon">
-          {type === 'success' && '✅'}
-          {type === 'error' && '❌'}
-          {type === 'warning' && '⚠️'}
-          {type === 'info' && 'ℹ️'}
+          {type === 'success' && <FaCheckCircle />}
+          {type === 'error' && <FaTimesCircle />}
+          {type === 'warning' && <FaExclamationTriangle />}
+          {type === 'info' && <FaInfoCircle />}
         </div>
         <div className="notification-message">{message}</div>
         <button className="notification-close" onClick={onClose}>
-          ✕
+          <FaTimes />
         </button>
       </div>
     </div>

@@ -133,3 +133,39 @@ export interface UsersListResponse {
     classification?: unknown;
   };
 }
+
+/**
+ * @brief 워크플로우 템플릿 응답 타입
+ */
+export interface WorkflowTemplateResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    templateId: string;
+    templateName: string;
+    createdDate: string;
+    updatedDate?: string;
+  };
+  error?: string;
+}
+
+/**
+ * @brief 워크플로우 템플릿 목록 응답 타입
+ */
+export interface WorkflowTemplatesListResponse {
+  success: boolean;
+  message?: string;
+  data?: Array<{
+    templateId: string;
+    templateName: string;
+    documentTag: string;
+    reviewLine: Array<{ step: number; email: string; name: string }>;
+    paymentLine: Array<{ step: number; email: string; name: string }>;
+    isDefault: boolean;
+    createdDate: string;
+    updatedDate: string;
+    createdBy: string;
+    description?: string;
+  }>;
+  error?: string;
+}

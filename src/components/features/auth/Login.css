@@ -496,8 +496,9 @@
 .last-user-item {
   display: flex;
   align-items: center;
-  gap: clamp(8px, 0.93vw, 12px);
+  gap: 0; /* 계정 선택 버튼과 제거 버튼 사이 여백 제거 */
   position: relative;
+  width: 100%;
 }
 
 /* 마지막 로그인 사용자 섹션 (하위 호환성) */
@@ -517,15 +518,18 @@
   display: flex;
   align-items: center;
   gap: clamp(12px, 1.39vh, 16px);
-  width: 100%;
+  flex: 1;
+  min-width: 0; /* 텍스트 오버플로우 방지 */
   padding: clamp(12px, 1.39vh, 16px) clamp(12px, 1.39vw, 16px);
   background: var(--white-pure);
   border: 2px solid var(--border-color);
-  border-radius: var(--sidebar-radius-sm);
+  border-right: none; /* 제거 버튼과의 경계선 제거 */
+  border-radius: var(--sidebar-radius-sm) 0 0 var(--sidebar-radius-sm); /* 왼쪽만 둥글게 */
   cursor: pointer;
   transition: var(--transition-base);
   text-align: left;
   position: relative;
+  margin-right: 0; /* 제거 버튼과의 간격 확보 */
 }
 
 .last-user-btn:hover:not(:disabled) {
@@ -594,38 +598,42 @@
 /* 계정 제거 버튼 */
 .last-user-remove-btn {
   flex-shrink: 0;
-  width: clamp(28px, 3.24vh, 32px);
-  height: clamp(28px, 3.24vh, 32px);
+  align-self: stretch; /* 왼쪽 계정 선택 버튼과 높이 맞춤 */
+  aspect-ratio: 1; /* 정사각형 유지 (높이에 맞춰 가로 자동 조정) */
+  min-width: clamp(48px, 5.56vh, 64px); /* 최소 너비 설정 */
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
+  background: var(--white-pure);
+  border: 2px solid var(--border-color);
+  border-left: none; /* 계정 선택 버튼과의 경계선 제거 */
+  border-radius: 0 var(--sidebar-radius-sm) var(--sidebar-radius-sm) 0; /* 오른쪽만 둥글게 */
   color: #666;
   cursor: pointer;
   transition: var(--transition-base);
   padding: 0;
-  margin-left: auto;
-  opacity: 0; /* 기본적으로 숨김 */
-  visibility: hidden; /* 기본적으로 숨김 */
-}
-
-/* 계정 항목에 마우스를 가져가면 제거 버튼 표시 */
-.last-user-item:hover .last-user-remove-btn {
-  opacity: 1;
-  visibility: visible;
+  opacity: 1; /* 항상 표시 */
+  visibility: visible; /* 항상 표시 */
+  position: relative;
+  margin-left: auto; /* 오른쪽 정렬 */
 }
 
 .last-user-remove-btn:hover {
   background: #ffebee;
   border-color: #f44336;
   color: #f44336;
-  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
 }
 
 .last-user-remove-btn:active {
   transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(244, 67, 54, 0.3);
+}
+
+.last-user-remove-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
 }
 
 /* 로그인 구분선 */

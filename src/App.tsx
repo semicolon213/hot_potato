@@ -6,7 +6,7 @@
  * @date 2024
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import PageRenderer from "./components/layout/PageRenderer";
@@ -47,6 +47,10 @@ import { ENV_CONFIG } from './config/environment';
 import { tokenManager } from './utils/auth/tokenManager';
 import { lastUserManager } from './utils/auth/lastUserManager';
 import { useSession } from './hooks/features/auth/useSession';
+import { useNotification } from './hooks/ui/useNotification';
+import { NotificationModal, ConfirmModal } from './components/ui/NotificationModal';
+import LoadingProgress from './components/ui/LoadingProgress';
+import { useAuthStore } from './hooks/features/auth/useAuthStore';
 
 /**
  * @brief 메인 애플리케이션 컴포넌트
@@ -125,9 +129,24 @@ const App: React.FC = () => {
     handleDrop,
     widgetOptions,
 
+    // DataSyncService 관련 상태
+    isInitializingData,
+    dataSyncProgress,
+    lastSyncTime,
+    handleRefreshAllData,
+
     // State reset
     resetAllState
   } = useAppState();
+
+  // 알림 훅
+  const {
+    notification,
+    confirm,
+    hideNotification,
+    hideConfirm,
+    handleConfirm
+  } = useNotification();
 
   // 로그인 처리
   const handleLogin = (userData: User) => {
@@ -149,7 +168,7 @@ const App: React.FC = () => {
   };
 
   // 일반 로그아웃 처리 (기본 동작)
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUser(null);
     setCurrentPage("dashboard");
     setSearchTerm("");
@@ -162,9 +181,8 @@ const App: React.FC = () => {
       window.google.accounts.id.disableAutoSelect();
     }
 
-    // Zustand auth store도 초기화 (동기적으로)
+    // Zustand auth store도 초기화
     try {
-      const { useAuthStore } = require('./hooks/features/auth/useAuthStore');
       const authStoreLogout = useAuthStore.getState().logout;
       authStoreLogout();
     } catch (error) {
@@ -172,7 +190,7 @@ const App: React.FC = () => {
     }
 
     console.log('🚪 로그아웃 완료');
-  };
+  }, [setUser, setCurrentPage, setSearchTerm, setGoogleAccessToken]);
 
   // 완전 로그아웃 처리 (현재 로그인한 계정만 제거)
   const handleFullLogout = () => {
@@ -205,8 +223,47 @@ const App: React.FC = () => {
   // 세션 타임아웃 관리
   useSession(!!user, () => {
     handleLogout();
-    alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+    showNotification('세션이 만료되었습니다. 다시 로그인해주세요.', 'warning');
   });
+
+  // 토큰 만료 체크 및 자동 갱신/로그아웃
+  useEffect(() => {
+    if (!user) {
+      return; // 로그인하지 않은 경우 체크하지 않음
+    }
+
+    // 토큰 만료 체크 및 자동 갱신 간격 (30초마다 체크)
+    const checkInterval = setInterval(async () => {
+      // 토큰이 만료 임박 시 자동 갱신 시도
+      if (tokenManager.isExpiringSoon()) {
+        const refreshed = await tokenManager.autoRefresh();
+        if (refreshed) {
+          console.log('✅ 토큰이 자동으로 갱신되었습니다.');
+          // gapi에 새 토큰 설정
+          const newToken = tokenManager.get();
+          if (newToken && window.gapi?.client) {
+            window.gapi.client.setToken({ access_token: newToken });
+          }
+          return;
+        } else {
+          console.warn('⚠️ 토큰 자동 갱신 실패 (Refresh Token이 없을 수 있습니다)');
+        }
+      }
+
+      // 토큰이 완전히 만료된 경우
+      if (!tokenManager.isValid()) {
+        console.log('🔒 토큰이 만료되어 자동 로그아웃합니다.');
+        clearInterval(checkInterval);
+        handleLogout();
+        showNotification('토큰이 만료되었습니다. 다시 로그인해주세요.', 'warning');
+      }
+    }, 30 * 1000); // 30초마다 체크
+
+    // 컴포넌트 언마운트 시 인터벌 정리
+    return () => {
+      clearInterval(checkInterval);
+    };
+  }, [user, handleLogout]);
 
   // Electron 이벤트 처리 (자동 로그아웃)
   useEffect(() => {
@@ -296,7 +353,9 @@ const App: React.FC = () => {
       timetable: '일정',
       // 학생 및 교직원 섹션
       students: '학생 및 교직원',
+      students_council: '학생 및 교직원',
       staff: '학생 및 교직원',
+      staff_committee: '학생 및 교직원',
       // 구글서비스 섹션
       google_appscript: '구글서비스',
       google_sheets: '구글서비스',
@@ -324,7 +383,9 @@ const App: React.FC = () => {
       timetable: '시간표',
       // 학생 및 교직원 하위 페이지
       students: '학생 관리',
+      students_council: '학생회',
       staff: '교직원 관리',
+      staff_committee: '학과 위원회',
       // 나머지
       dashboard: '대시보드',
       announcements: '공지사항',
@@ -381,11 +442,11 @@ const App: React.FC = () => {
     userType?: string;
   }) => {
     if (!announcementSpreadsheetId) {
-      alert("Announcement spreadsheet ID not found");
+      showNotification("공지사항 스프레드시트 ID를 찾을 수 없습니다.", 'error');
       return;
     }
     if (!user || !user.email || !user.studentId || !user.userType) {
-      alert("User information is incomplete for adding announcement.");
+      showNotification("공지사항 작성에 필요한 사용자 정보가 없습니다.", 'error');
       return;
     }
 
@@ -447,7 +508,7 @@ const App: React.FC = () => {
 
     } catch (error) {
       console.error('Error adding announcement:', error);
-      alert('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('공지사항 작성에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
       // 6. 오류 발생 시 UI를 이전 상태로 롤백
       setAnnouncements(originalAnnouncements);
     }
@@ -487,7 +548,7 @@ const App: React.FC = () => {
     isPinned?: boolean;
   }) => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -517,13 +578,13 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error updating announcement:', error);
       setAnnouncements(originalAnnouncements);
-      alert('공지사항 수정에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('공지사항 수정에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
     }
   };
 
   const handleUnpinAnnouncement = async (announcementId: string) => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -560,13 +621,13 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error unpinning announcement:', error);
       setAnnouncements(originalAnnouncements);
-      alert('고정 해제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('고정 해제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
     }
   };
 
   const handleDeleteAnnouncement = async (announcementId: string) => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -589,7 +650,7 @@ const App: React.FC = () => {
       console.error('Error deleting announcement:', error);
       // Revert the change if the delete fails
       setAnnouncements(originalAnnouncements);
-      alert('공지사항 삭제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+      showNotification('공지사항 삭제에 실패했습니다: ' + (error instanceof Error ? error.message : '알 수 없는 오류'), 'error');
     }
   };
 
@@ -620,19 +681,100 @@ const App: React.FC = () => {
   const handleAddCalendarEvent = async (eventData: Omit<Event, 'id'>) => {
     try {
       let eventOwnerType = user.userType;
-      let targetSpreadsheetId = activeCalendarSpreadsheetId; // Initialize here
+      let targetSpreadsheetId: string | null = null; // null로 초기화하여 참석자 권한 계산이 제대로 실행되도록 함
+
+      console.log('📅 일정 추가 시작 - 참석자:', eventData.attendees);
+      console.log('📅 현재 사용자 타입:', user.userType);
 
       if (eventData.attendees) {
-        const attendeeIds = eventData.attendees.split(',');
-        const attendeeUserTypes = attendeeIds.map(getAttendeeUserType).filter(Boolean) as string[];
+        const attendeeItems = eventData.attendees.split(',');
+        const groupTypes: string[] = [];
+        const individualUserTypes: string[] = [];
+        
+        console.log('📅 참석자 항목 파싱 시작:', attendeeItems);
+        
+        // 새로운 형식 파싱: "group:권한" 또는 "권한:참석자ID" 또는 "참석자ID" (기존 형식)
+        attendeeItems.forEach(item => {
+          const trimmed = item.trim();
+          if (trimmed.startsWith('group:')) {
+            // 그룹 선택: group:student -> student
+            const groupType = trimmed.replace('group:', '');
+            if (groupType && !groupTypes.includes(groupType)) {
+              groupTypes.push(groupType);
+              console.log('📅 그룹 타입 추가:', groupType);
+            }
+          } else if (trimmed.includes(':')) {
+            // 개별 참석자: student:123 -> student
+            const [userType] = trimmed.split(':');
+            if (userType && !individualUserTypes.includes(userType)) {
+              individualUserTypes.push(userType);
+              console.log('📅 개별 참석자 타입 추가:', userType, 'from', trimmed);
+            }
+          } else {
+            // 기존 형식 (호환성): 참석자ID만 있는 경우
+            const userType = getAttendeeUserType(trimmed);
+            if (userType && !individualUserTypes.includes(userType)) {
+              individualUserTypes.push(userType);
+              console.log('📅 참석자ID로부터 타입 추출:', userType, 'from', trimmed);
+            } else {
+              console.warn('📅 참석자ID로부터 타입을 찾을 수 없음:', trimmed);
+            }
+          }
+        });
 
-        if (attendeeUserTypes.length > 0) {
-          const lowestPermissionType = attendeeUserTypes.reduce((lowest, current) => {
+        // 개별 참석자가 있으면 개별 참석자 중 가장 낮은 권한 사용
+        // 개별 참석자가 없으면 그룹 선택 중 가장 낮은 권한 사용
+        let lowestPermissionType: string | null = null;
+        
+        if (individualUserTypes.length > 0) {
+          // 개별 참석자 목록에서 가장 낮은 권한 찾기
+          lowestPermissionType = individualUserTypes.reduce((lowest, current) => {
             const lowestIndex = permissionHierarchy.indexOf(lowest);
             const currentIndex = permissionHierarchy.indexOf(current);
+            if (lowestIndex === -1 || currentIndex === -1) {
+              console.warn('📅 권한 계층에서 찾을 수 없는 타입:', { lowest, current });
+              return lowestIndex === -1 ? current : lowest;
+            }
             return currentIndex < lowestIndex ? current : lowest;
-          }, attendeeUserTypes[0]);
+          }, individualUserTypes[0]);
+          console.log('📅 개별 참석자 권한 목록:', individualUserTypes);
+          console.log('📅 개별 참석자 중 가장 낮은 권한:', lowestPermissionType);
+        } else if (groupTypes.length > 0) {
+          // 그룹 선택 중 가장 낮은 권한 찾기
+          lowestPermissionType = groupTypes.reduce((lowest, current) => {
+            const lowestIndex = permissionHierarchy.indexOf(lowest);
+            const currentIndex = permissionHierarchy.indexOf(current);
+            if (lowestIndex === -1 || currentIndex === -1) {
+              console.warn('📅 권한 계층에서 찾을 수 없는 타입:', { lowest, current });
+              return lowestIndex === -1 ? current : lowest;
+            }
+            return currentIndex < lowestIndex ? current : lowest;
+          }, groupTypes[0]);
+          console.log('📅 그룹 권한 목록:', groupTypes);
+          console.log('📅 그룹 중 가장 낮은 권한:', lowestPermissionType);
+        }
 
+        // 본인 권한도 고려 (개별 참석자나 그룹에 본인이 없을 경우)
+        if (user?.userType) {
+          const isInIndividual = individualUserTypes.includes(user.userType);
+          const isInGroup = groupTypes.includes(user.userType);
+          
+          if (!isInIndividual && !isInGroup) {
+            // 본인이 참석자 목록에 없으면 본인 권한도 비교
+            if (!lowestPermissionType || permissionHierarchy.indexOf(user.userType) < permissionHierarchy.indexOf(lowestPermissionType)) {
+              lowestPermissionType = user.userType;
+              console.log('📅 본인 권한이 가장 낮음:', lowestPermissionType);
+            }
+          }
+        }
+
+        // 참석자가 있는데도 lowestPermissionType이 null인 경우 경고
+        if (!lowestPermissionType && (individualUserTypes.length > 0 || groupTypes.length > 0)) {
+          console.warn('⚠️ 참석자가 있지만 권한 타입을 결정할 수 없습니다. 사용자 타입을 사용합니다:', user.userType);
+          lowestPermissionType = user.userType || 'student';
+        }
+
+        if (lowestPermissionType) {
           eventOwnerType = lowestPermissionType;
 
           switch (lowestPermissionType) {
@@ -653,8 +795,41 @@ const App: React.FC = () => {
               targetSpreadsheetId = calendarProfessorSpreadsheetId;
               break;
             default:
+              console.warn('⚠️ 알 수 없는 권한 타입:', lowestPermissionType, '- 기본 캘린더 사용');
               targetSpreadsheetId = activeCalendarSpreadsheetId;
           }
+          console.log('✅ 권한별 스프레드시트 선택:', { 
+            권한: lowestPermissionType, 
+            스프레드시트ID: targetSpreadsheetId?.substring(0, 20) + '...' 
+          });
+        }
+      }
+
+      // 참석자가 없거나 targetSpreadsheetId가 null인 경우, 사용자 타입에 따라 기본 스프레드시트 ID 선택
+      if (!targetSpreadsheetId && user.userType) {
+        console.log('📅 참석자가 없거나 권한 계산 실패 - 사용자 타입으로 기본 캘린더 선택:', user.userType);
+        switch (user.userType) {
+          case 'professor':
+            targetSpreadsheetId = calendarProfessorSpreadsheetId;
+            break;
+          case 'student':
+            targetSpreadsheetId = calendarStudentSpreadsheetId;
+            break;
+          case 'council':
+            targetSpreadsheetId = calendarCouncilSpreadsheetId;
+            break;
+          case 'ADprofessor':
+            targetSpreadsheetId = calendarADProfessorSpreadsheetId;
+            break;
+          case 'supp':
+          case 'support':
+            targetSpreadsheetId = calendarSuppSpreadsheetId;
+            break;
+          default:
+            // 기본값으로 student 캘린더 사용
+            console.warn('⚠️ 알 수 없는 사용자 타입:', user.userType, '- student 캘린더 사용');
+            targetSpreadsheetId = calendarStudentSpreadsheetId;
+            break;
         }
       }
 
@@ -664,6 +839,13 @@ const App: React.FC = () => {
       if (!eventOwnerType) {
         throw new Error("Event owner type not found");
       }
+      
+      console.log('📅 최종 저장 정보:', {
+        스프레드시트ID: targetSpreadsheetId.substring(0, 20) + '...',
+        이벤트소유자타입: eventOwnerType,
+        참석자: eventData.attendees
+      });
+      
       await addCalendarEvent(targetSpreadsheetId, eventData, eventOwnerType);
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
@@ -736,19 +918,19 @@ const App: React.FC = () => {
     customPeriods: CustomPeriod[];
   }) => {
     if (!activeCalendarSpreadsheetId) {
-      alert('캘린더가 설정되지 않아 저장할 수 없습니다.');
+      showNotification('캘린더가 설정되지 않아 저장할 수 없습니다.', 'error');
       console.error('Error saving academic schedule: No active calendar spreadsheet ID is set.');
       return;
     }
     try {
       await saveAcademicScheduleToSheet(scheduleData, activeCalendarSpreadsheetId);
-      alert('학사일정이 성공적으로 저장되었습니다.');
+      showNotification('학사일정이 성공적으로 저장되었습니다.', 'success');
       // 캘린더 이벤트 목록 새로고침
       const updatedEvents = await fetchCalendarEvents();
       setCalendarEvents(updatedEvents);
     } catch (error) {
       console.error('Error saving academic schedule:', error);
-      alert('학사일정 저장 중 오류가 발생했습니다.');
+      showNotification('학사일정 저장 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -988,20 +1170,18 @@ const App: React.FC = () => {
     <GoogleOAuthProvider clientId={ENV_CONFIG.GOOGLE_CLIENT_ID}>
       <div className="app-container" data-oid="g1w-gjq">
         <Sidebar onPageChange={handlePageChange} onLogout={handleLogout} onFullLogout={handleFullLogout} user={user} currentPage={currentPage} data-oid="7q1u3ax" />
-        <div className={`main-panel ${isGoogleServicePage ? 'no-header' : ''}`} data-oid="n9gxxwr">
-          {!isGoogleServicePage && (
-            <Header
-              onPageChange={handlePageChange}
-              userInfo={user}
-              onLogout={handleLogout}
-              searchTerm={searchTerm}
-              onSearchChange={handleSearch}
-              onSearchSubmit={handleSearchSubmit}
-              pageSectionLabel={pageSectionLabel}
-              currentPage={currentPage}
-            />
-          )}
-          <div className="content" id="dynamicContent" data-oid="nn2e18p">
+        <div className="main-panel" data-oid="n9gxxwr">
+          <Header
+            onPageChange={handlePageChange}
+            userInfo={user}
+            onLogout={handleLogout}
+            pageSectionLabel={pageSectionLabel}
+            currentPage={currentPage}
+            lastSyncTime={lastSyncTime}
+            onRefresh={handleRefreshAllData}
+            isRefreshing={isInitializingData}
+          />
+          <div className={`content ${isGoogleServicePage ? 'google-service-content' : ''}`} id="dynamicContent" data-oid="nn2e18p">
             <PageRenderer
               currentPage={currentPage}
               user={user}
@@ -1063,10 +1243,42 @@ const App: React.FC = () => {
               handleDragEnter={handleDragEnter}
               handleDrop={handleDrop}
               widgetOptions={widgetOptions}
+              // DataSyncService 관련 props
+              lastSyncTime={lastSyncTime}
+              onRefresh={handleRefreshAllData}
+              isRefreshing={isInitializingData}
             />
           </div>
         </div>
       </div>
+      
+      {/* 알림 모달 */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        message={notification.message}
+        type={notification.type}
+        onClose={hideNotification}
+        duration={notification.duration}
+      />
+      
+      {/* 확인 모달 */}
+      <ConfirmModal
+        isOpen={confirm.isOpen}
+        message={confirm.message}
+        title={confirm.title}
+        confirmText={confirm.confirmText}
+        cancelText={confirm.cancelText}
+        type={confirm.type}
+        onConfirm={handleConfirm}
+        onCancel={hideConfirm}
+        onCancelAction={confirm.onCancelAction}
+      />
+      
+      {/* 초기 로딩 진행률 */}
+      <LoadingProgress
+        isVisible={isInitializingData && dataSyncProgress.total > 0}
+        progress={dataSyncProgress}
+      />
     </GoogleOAuthProvider>
   );
 };

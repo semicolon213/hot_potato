@@ -18,13 +18,14 @@ import {
 import { ENV_CONFIG } from "../../../config/environment";
 import { apiClient } from "../../../utils/api/apiClient";
 import { usePersonalTemplates } from "./usePersonalTemplates";
-import type { CreateDocumentResponse } from "../../../types/api/apiResponses";
+import type { CreateDocumentResponse, SharedTemplatesResponse } from "../../../types/api/apiResponses";
 import { 
   addFavorite,
   removeFavorite,
   isFavorite as checkIsFavorite
 } from "../../../utils/database/personalFavoriteManager";
 import { initializePersonalConfigFile } from "../../../utils/database/personalConfigManager";
+import { useNotification } from "../../ui/useNotification";
 
 /**
  * @brief 템플릿 데이터 타입 정의
@@ -78,6 +79,7 @@ export function useTemplateUI(
     searchTerm: string,
     activeTab: string
 ) {
+    const { showNotification } = useNotification();
     // 동적 템플릿 상태
   const [dynamicTemplates, setDynamicTemplates] = useState<Template[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
@@ -90,7 +92,8 @@ export function useTemplateUI(
     error: personalTemplateError,
     convertToTemplates,
     togglePersonalTemplateFavorite,
-    generateFileNameFromTemplate
+    generateFileNameFromTemplate,
+    loadPersonalTemplates
   } = usePersonalTemplates();
   
   // 권한 설정 모달 상태
@@ -171,6 +174,42 @@ export function useTemplateUI(
         
         try {
             console.log('📄 동적 템플릿 로드 시작');
+            
+            // 캐시에서 먼저 확인
+            const { getCacheManager } = await import('../../../utils/cache/cacheManager');
+            const cacheManager = getCacheManager();
+            const { generateCacheKey, getActionCategory } = await import('../../../utils/cache/cacheUtils');
+            const action = 'getSharedTemplates';
+            const category = getActionCategory(action);
+            const cacheKey = generateCacheKey(category, action, {});
+            
+            // apiClient는 ApiResponse 형식으로 캐시에 저장하므로, ApiResponse 형식으로 조회
+            interface ApiResponse<T> {
+                success: boolean;
+                data?: T;
+                message?: string;
+            }
+            const cachedResponse = await cacheManager.get<ApiResponse<SharedTemplatesResponse>>(cacheKey);
+            console.log('📄 캐시 키:', cacheKey);
+            console.log('📄 캐시 응답:', cachedResponse);
+            
+            if (cachedResponse && cachedResponse.success && cachedResponse.data && Array.isArray(cachedResponse.data) && cachedResponse.data.length > 0) {
+                console.log('📄 캐시에서 동적 템플릿 로드:', cachedResponse.data.length, '개');
+                const processedTemplates = cachedResponse.data.map((t) => ({
+                  type: t.id,
+                  title: t.title,
+                  description: t.description,
+                  tag: t.tag || '기본',
+                  documentId: t.id,
+                  mimeType: t.mimeType || 'application/vnd.google-apps.document'
+                }));
+                setDynamicTemplates(processedTemplates);
+                setIsLoadingTemplates(false);
+                return;
+            }
+            
+            // 캐시에 없으면 API 호출
+            console.log('📄 캐시 미스 - API에서 동적 템플릿 로드');
             const result = await apiClient.getSharedTemplates();
             console.log('📄 API 응답:', result);
             
@@ -363,7 +402,7 @@ export function useTemplateUI(
         const creatorEmail = userInfo.email || '';
 
         if (!creatorEmail) {
-            alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+            showNotification('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.', 'error');
             return;
         }
 
@@ -377,7 +416,7 @@ export function useTemplateUI(
                     const copyResult = await copyGoogleDocument(selectedTemplate.documentId, selectedTemplate.title, selectedTemplate.tag);
                     if (copyResult && copyResult.webViewLink) {
                         window.open(copyResult.webViewLink, '_blank');
-                        alert('문서가 개인 드라이브에 생성되었습니다!');
+                        showNotification('문서가 개인 드라이브에 생성되었습니다!', 'success');
                     }
                 } else {
                     // 기본 템플릿 (빈 문서 등) - Google Docs 새 문서 생성 URL 사용
@@ -385,10 +424,10 @@ export function useTemplateUI(
                         // Google Docs의 새 문서 생성 URL을 사용
                         const newDocUrl = 'https://docs.google.com/document/create';
                         window.open(newDocUrl, '_blank');
-                        alert('새 문서가 생성되었습니다!');
+                        showNotification('새 문서가 생성되었습니다!', 'success');
                     } catch (error) {
                         console.error('📄 개인 문서 생성 오류:', error);
-                        alert('문서 생성 중 오류가 발생했습니다.');
+                        showNotification('문서 생성 중 오류가 발생했습니다.', 'error');
                     }
                 }
             } else {
@@ -425,14 +464,14 @@ export function useTemplateUI(
                 if (result.success && result.data) {
                     const createDocResponse = result.data as CreateDocumentResponse;
                     window.open(createDocResponse.documentUrl, '_blank');
-                    alert('문서가 생성되고 권한이 설정되었습니다!');
+                    showNotification('문서가 생성되고 권한이 설정되었습니다!', 'success');
                 } else {
-                    alert('문서 생성에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
+                    showNotification('문서 생성에 실패했습니다: ' + (result.message || '알 수 없는 오류'), 'error');
                 }
             }
         } catch (error) {
             console.error('📄 문서 생성 오류:', error);
-            alert('문서 생성 중 오류가 발생했습니다.');
+            showNotification('문서 생성 중 오류가 발생했습니다.', 'error');
         } finally {
             // 모달 닫기
             setIsPermissionModalOpen(false);
@@ -463,6 +502,7 @@ export function useTemplateUI(
         personalTemplateError, // 개인 템플릿 오류
         togglePersonalTemplateFavorite, // 개인 템플릿 즐겨찾기 토글
         generateFileNameFromTemplate, // 파일명 생성 함수
+        loadPersonalTemplates, // 개인 템플릿 다시 로드 함수
         // 기본 템플릿 즐겨찾기 관련
         defaultTemplateFavorites, // 기본 템플릿 즐겨찾기 목록
         isLoadingFavorites, // 즐겨찾기 로딩 상태

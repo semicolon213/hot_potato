@@ -19,17 +19,22 @@ import './accounting.css';
 interface BudgetPlanListProps {
   spreadsheetId: string;
   accountId?: string;
+  isCreateModalOpen?: boolean;
+  onCloseCreateModal?: () => void;
 }
 
 export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
   spreadsheetId,
-  accountId
+  accountId,
+  isCreateModalOpen: externalIsCreateModalOpen,
+  onCloseCreateModal
 }) => {
   const [budgetPlans, setBudgetPlans] = useState<BudgetPlan[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(accountId || '');
   const [statusFilter, setStatusFilter] = useState<'all' | BudgetPlan['status']>('all');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [internalIsCreateModalOpen, setInternalIsCreateModalOpen] = useState(false);
+  const isCreateModalOpen = externalIsCreateModalOpen !== undefined ? externalIsCreateModalOpen : internalIsCreateModalOpen;
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -607,10 +612,20 @@ export const BudgetPlanList: React.FC<BudgetPlanListProps> = ({
 
       <CreateBudgetPlanModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          if (onCloseCreateModal) {
+            onCloseCreateModal();
+          } else {
+            setInternalIsCreateModalOpen(false);
+          }
+        }}
         onSuccess={() => {
           loadBudgetPlans();
-          setIsCreateModalOpen(false);
+          if (onCloseCreateModal) {
+            onCloseCreateModal();
+          } else {
+            setInternalIsCreateModalOpen(false);
+          }
         }}
         spreadsheetId={spreadsheetId}
         accountId={selectedAccountId}

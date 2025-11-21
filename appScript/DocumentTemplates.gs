@@ -484,31 +484,160 @@ function getSharedTemplates() {
     if (!folderRes || !folderRes.success || !folderRes.data || !folderRes.data.id) {
       return { success: false, message: '양식 폴더를 찾을 수 없습니다.' };
     }
-    var files = Drive.Files.list({
-      q: '\'' + folderRes.data.id + '\' in parents and trashed=false',
-      fields: 'files(id,name,mimeType,modifiedTime,description,properties,owners)'
-    });
-    // 문서와 스프레드시트 모두 포함
-    var items = (files.files || []).filter(function(f){ 
+    
+    // 메타데이터(properties) 포함하여 API 호출 (Drive API v2 호환)
+    var files;
+    var maxRetries = 3;
+    var retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        // Drive API v2에서는 fields 파라미터 없이 모든 필드를 가져온 후 필요한 것만 사용
+        // 또는 올바른 형식으로 fields 사용
+        files = Drive.Files.list({
+          q: '\'' + folderRes.data.id + '\' in parents and trashed=false',
+          maxResults: 1000 // 최대 결과 수 제한
+        });
+        
+        // 각 파일의 properties를 별도로 가져오기 (v2에서는 list에서 properties를 직접 가져올 수 없을 수 있음)
+        // properties를 가져온 후 각 파일 객체에 확실하게 합치기
+        var fileArray = files.items || files.files || [];
+        
+        for (var i = 0; i < fileArray.length; i++) {
+          try {
+            // properties만 가져오기 위해 fields 지정
+            var fileDetail = Drive.Files.get(fileArray[i].id, { fields: 'properties' });
+            
+            if (fileDetail && fileDetail.properties) {
+              // properties 객체를 직접 할당 (확실하게)
+              fileArray[i].properties = fileDetail.properties;
+            } else {
+              // properties가 없으면 빈 배열로 초기화
+              fileArray[i].properties = [];
+            }
+            
+            // API 제한 방지를 위해 잠시 대기
+            if (i % 10 === 0 && i > 0) {
+              Utilities.sleep(100);
+            }
+          } catch (getError) {
+            // 에러 발생 시에도 빈 배열로 초기화하여 계속 진행
+            fileArray[i].properties = [];
+            console.warn('파일 상세 정보 가져오기 실패:', fileArray[i].id, getError.message);
+          }
+        }
+        
+        // properties를 가져온 후 files 객체에 다시 할당 (확실하게)
+        if (files.items) {
+          files.items = fileArray;
+        } else if (files.files) {
+          files.files = fileArray;
+        }
+        
+        break; // 성공하면 루프 종료
+      } catch (listError) {
+        retryCount++;
+        console.warn('📄 공유 템플릿 목록 조회 재시도 ' + retryCount + '/' + maxRetries + ':', listError.message);
+        
+        // 사용량 제한 오류인지 확인
+        if (listError.message && (listError.message.indexOf('429') !== -1 || 
+            listError.message.indexOf('quota') !== -1 || 
+            listError.message.indexOf('rate limit') !== -1)) {
+          console.warn('⚠️ API 사용량 제한 감지. 잠시 대기 후 재시도합니다.');
+          Utilities.sleep(Math.pow(2, retryCount) * 2000); // 지수적 백오프 (2초, 4초, 8초)
+          continue;
+        }
+        
+        if (retryCount >= maxRetries) {
+          return { success: false, message: '공유 템플릿 조회 실패: ' + listError.message };
+        }
+        
+        // 재시도 전 대기
+        Utilities.sleep(Math.pow(2, retryCount) * 1000);
+      }
+    }
+    
+    // 문서와 스프레드시트 모두 포함 (v2: files.items, v3: files.files 모두 지원)
+    // properties를 가져온 후 fileList 생성 (properties가 포함된 상태)
+    var fileList = files.items || files.files || [];
+    
+    var items = fileList.filter(function(f){ 
       return f.mimeType === 'application/vnd.google-apps.document' || 
              f.mimeType === 'application/vnd.google-apps.spreadsheet'; 
     }).map(function(file){
-      var p = file.properties || {};
+      // properties에서 메타데이터 추출
+      var p = file.properties || [];
+      var description = '';
+      var tag = '기본';
+      var creatorEmail = '';
+      var createdDate = '';
+      var modifiedDate = '';
+      
+      if (Array.isArray(p)) {
+        // properties 배열을 순회하며 key로 value 찾기
+        for (var j = 0; j < p.length; j++) {
+          var prop = p[j];
+          if (prop && prop.key && prop.value !== undefined) {
+            switch(prop.key) {
+              case 'description':
+                description = prop.value || '';
+                break;
+              case 'tag':
+                tag = prop.value || '기본';
+                break;
+              case 'creatorEmail':
+                creatorEmail = prop.value || '';
+                break;
+              case 'createdDate':
+                createdDate = prop.value || '';
+                break;
+              case 'modifiedDate':
+                modifiedDate = prop.value || '';
+                break;
+            }
+          }
+        }
+      } else if (p && typeof p === 'object') {
+        // 혹시 객체 형태로 반환되는 경우 대비 (v3 등)
+        description = p.description || p['description'] || '';
+        tag = p.tag || p['tag'] || '기본';
+        creatorEmail = p.creatorEmail || p['creatorEmail'] || '';
+        createdDate = p.createdDate || p['createdDate'] || '';
+        modifiedDate = p.modifiedDate || p['modifiedDate'] || '';
+      }
+      
+      // v2에서는 owners가 배열이 아닐 수 있으므로 처리
+      var ownerName = 'Unknown';
+      if (file.owners && Array.isArray(file.owners) && file.owners.length > 0) {
+        ownerName = file.owners[0].displayName || file.owners[0].emailAddress || 'Unknown';
+      } else if (file.ownerNames && file.ownerNames.length > 0) {
+        ownerName = file.ownerNames[0];
+      }
+      
+      // 응답에 포함할 템플릿 정보 (메타데이터 포함)
       return {
         id: file.id,
-        title: file.name,
-        description: p.description || file.description || '템플릿 파일',
-        tag: p.tag || '기본',
-        creatorEmail: p.creatorEmail || '',
-        createdDate: p.createdDate || '',
-        fullTitle: file.name,
-        modifiedDate: file.modifiedTime,
+        title: file.title || file.name,
+        description: description || '템플릿 파일',
+        tag: tag || '기본',
+        creatorEmail: creatorEmail,
+        createdDate: createdDate,
+        fullTitle: file.title || file.name,
+        modifiedDate: modifiedDate || file.modifiedDate || '',
         mimeType: file.mimeType || 'application/vnd.google-apps.document',
-        owner: file.owners && file.owners.length > 0 ? file.owners[0].displayName : 'Unknown'
+        owner: ownerName
       };
     });
-    return { success: true, data: items };
+    
+    console.log('✅ 공유 템플릿 조회 성공:', items.length, '개');
+    
+    // 응답에 모든 메타데이터가 포함된 템플릿 목록 리턴
+    return { 
+      success: true, 
+      data: items 
+    };
   } catch (e) {
+    console.error('❌ 공유 템플릿 조회 오류:', e);
     return { success: false, message: '공유 템플릿 조회 실패: ' + e.message };
   }
 }
@@ -716,6 +845,61 @@ function testTemplateFolderDebug() {
   }
 }
 
+/**
+ * 공유 템플릿 조회 함수 테스트
+ */
+function testGetSharedTemplates() {
+  console.log('🧪 공유 템플릿 조회 테스트 시작');
+  
+  try {
+    // Drive API 확인
+    if (typeof Drive === 'undefined') {
+      return {
+        success: false,
+        message: 'Drive API가 활성화되지 않았습니다.'
+      };
+    }
+    
+    console.log('✅ Drive API 사용 가능');
+    
+    // getSharedTemplates 함수 실행
+    const result = getSharedTemplates();
+    
+    console.log('🧪 공유 템플릿 조회 테스트 결과:');
+    console.log('- 성공 여부:', result.success);
+    console.log('- 메시지:', result.message);
+    console.log('- 템플릿 개수:', result.data ? result.data.length : 0);
+    
+    if (result.data && result.data.length > 0) {
+      console.log('\n📄 첫 번째 템플릿 정보:');
+      const firstTemplate = result.data[0];
+      console.log('- ID:', firstTemplate.id);
+      console.log('- 제목:', firstTemplate.title);
+      console.log('- 설명:', firstTemplate.description);
+      console.log('- 태그:', firstTemplate.tag);
+      console.log('- 생성자 이메일:', firstTemplate.creatorEmail);
+      console.log('- MIME 타입:', firstTemplate.mimeType);
+      console.log('- 소유자:', firstTemplate.owner);
+    }
+    
+    return {
+      success: result.success,
+      message: result.message,
+      templateCount: result.data ? result.data.length : 0,
+      templates: result.data || [],
+      testResult: result.success ? '✅ 성공' : '❌ 실패'
+    };
+    
+  } catch (error) {
+    console.error('🧪 공유 템플릿 조회 테스트 오류:', error);
+    return {
+      success: false,
+      message: '테스트 실패: ' + error.message,
+      error: error.toString()
+    };
+  }
+}
+
 // ===== 배포 정보 =====
 function getDocumentTemplatesInfo() {
   return {
@@ -723,8 +907,10 @@ function getDocumentTemplatesInfo() {
     description: '문서 템플릿 관리 관련 기능',
     functions: [
       'getTemplatesFromFolder',
+      'getSharedTemplates',
       'testSpecificFolder',
-      'testTemplateFolderDebug'
+      'testTemplateFolderDebug',
+      'testGetSharedTemplates'
     ],
     dependencies: ['CONFIG.gs']
   };

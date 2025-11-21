@@ -620,6 +620,7 @@ const StudentList: React.FC<StudentListProps> = ({
             selectedFilters={config.selectedFilters || []}
             onFilterChange={(filters) => handleFilterChange(col.key, filters)}
             onClearFilters={() => handleClearFilters(col.key, { stopPropagation: () => {} } as React.MouseEvent)}
+            isStaffMode={isStaffMode}
           />
         );
       })}

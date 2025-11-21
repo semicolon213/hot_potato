@@ -34,7 +34,8 @@ const Mypage: React.FC = () => {
         const rawUser = ('user' in res && res.user) || res?.data?.user;
         if (rawUser) {
           const sid = rawUser.no_member || rawUser.student_id || rawUser.no || rawUser.staff_no || rawUser.id || "";
-          if (sid && !appScriptStatus.studentId) {
+          // user 객체에 studentId가 없을 때만 API에서 가져온 값으로 보강
+          if (sid && !user?.studentId && !appScriptStatus.studentId) {
             setAppScriptStatus(prev => ({ ...prev, studentId: sid }));
           }
           // user_type / is_admin도 비어있으면 보강
@@ -63,10 +64,11 @@ const Mypage: React.FC = () => {
           const data = res.data;
           const u = data.user || {};
           const sid = u.no_member || u.student_id || u.no || u.staff_no || u.id || "";
+          // user 객체에 studentId가 없을 때만 API에서 가져온 값 사용
           setAppScriptStatus({
             isApproved: u.isApproved,
             isAdmin: u.isAdmin,
-            studentId: sid,
+            studentId: user?.studentId || sid, // user 객체의 studentId 우선 사용
             userType: u.user_type,
             status: data.status,
             message: data.message
@@ -75,7 +77,7 @@ const Mypage: React.FC = () => {
           setAppScriptStatus({
             isApproved: res.isApproved,
             isAdmin: res.isAdmin,
-            studentId: res.studentId,
+            studentId: user?.studentId || res.studentId, // user 객체의 studentId 우선 사용
             userType: res.userType,
             status: res.approvalStatus,
             message: res.error ? String(res.error) : undefined
@@ -92,7 +94,10 @@ const Mypage: React.FC = () => {
 
   const displayName = isLoadingName ? "불러오는 중..." : (appScriptName || user?.name || "");
   const displayEmail = user?.email || "";
-  const displayStudentId = statusLoading ? "불러오는 중..." : (appScriptStatus.studentId || "");
+  // user 객체의 studentId를 우선 사용, 없으면 API에서 가져온 값 사용
+  const displayStudentId = statusLoading 
+    ? "불러오는 중..." 
+    : (user?.studentId || appScriptStatus.studentId || "");
   const displayRole = statusLoading
     ? "불러오는 중..."
     : (

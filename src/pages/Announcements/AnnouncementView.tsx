@@ -40,6 +40,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [showPermissionSettings, setShowPermissionSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notification, showNotification, hideNotification } = useNotification();
 
   const [mainContent, setMainContent] = useState('');
   const [attachmentHtml, setAttachmentHtml] = useState<string | null>(null);
@@ -209,7 +210,7 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
   // 고정 공지 재요청
   const handleRequestPinnedAnnouncement = async () => {
     if (!user || !user.studentId) {
-      alert('사용자 정보가 없습니다.');
+      showNotification('사용자 정보가 없습니다.', 'error');
       return;
     }
 
@@ -225,16 +226,16 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
       });
 
       if (response.success) {
-        alert('고정 공지 승인 요청이 완료되었습니다.');
+        showNotification('고정 공지 승인 요청이 완료되었습니다.', 'success');
         if (onRefresh) {
           onRefresh();
         }
       } else {
-        alert('고정 공지 승인 요청에 실패했습니다: ' + (response.message || '알 수 없는 오류'));
+        showNotification('고정 공지 승인 요청에 실패했습니다: ' + (response.message || '알 수 없는 오류'), 'error');
       }
     } catch (error) {
       console.error('고정 공지 재요청 오류:', error);
-      alert('고정 공지 승인 요청 중 오류가 발생했습니다.');
+      showNotification('고정 공지 승인 요청 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -483,6 +484,14 @@ const AnnouncementView: React.FC<AnnouncementViewProps> = ({ post, user, onBack,
       )}
 
       <div className="post-view-body" dangerouslySetInnerHTML={{ __html: mainContent.replace(/\n/g, '<br />') }} />
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        message={notification.message}
+        type={notification.type}
+        onClose={hideNotification}
+        duration={notification.duration}
+      />
     </div>
   );
 };

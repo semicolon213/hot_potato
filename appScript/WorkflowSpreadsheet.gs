@@ -24,31 +24,117 @@ function getWorkflowSpreadsheet() {
     const spreadsheetName = getWorkflowSpreadsheetName();
     console.log('📊 워크플로우 스프레드시트 조회 시작:', spreadsheetName);
     
-    // 스프레드시트 ID 찾기
-    let spreadsheetId = getSheetIdByName(spreadsheetName);
+    // 루트 폴더에서 먼저 찾기
+    const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
+    const rootFolder = getFolderByName(rootFolderName);
+    let spreadsheetId = null;
     
+    if (rootFolder) {
+      // 루트 폴더에서 스프레드시트 찾기 (모든 파일 확인)
+      const files = rootFolder.getFilesByName(spreadsheetName);
+      const foundFiles = [];
+      while (files.hasNext()) {
+        const file = files.next();
+        if (file.getMimeType() === MimeType.GOOGLE_SHEETS) {
+          foundFiles.push(file);
+        }
+      }
+      
+      if (foundFiles.length > 0) {
+        // 첫 번째 파일 사용
+        spreadsheetId = foundFiles[0].getId();
+        console.log('📊 워크플로우 스프레드시트 찾음 (루트 폴더):', spreadsheetId);
+        
+        // 중복 파일이 있으면 경고
+        if (foundFiles.length > 1) {
+          console.warn('⚠️ 같은 이름의 워크플로우 스프레드시트가 여러 개 있습니다:', foundFiles.length);
+          console.warn('⚠️ 첫 번째 파일 사용:', spreadsheetId);
+        }
+      }
+    }
+    
+    // 루트 폴더에서 찾지 못했으면 전체 Drive에서 찾기 (fallback)
     if (!spreadsheetId) {
-      // 스프레드시트가 없으면 생성
+      console.log('📊 루트 폴더에서 찾지 못함, 전체 Drive에서 검색...');
+      const foundId = getSheetIdByName(spreadsheetName);
+      if (foundId) {
+        // 찾은 스프레드시트가 루트 폴더에 있는지 확인
+        if (rootFolder) {
+          try {
+            const file = DriveApp.getFileById(foundId);
+            const parents = file.getParents();
+            let isInRootFolder = false;
+            
+            while (parents.hasNext()) {
+              const parent = parents.next();
+              if (parent.getId() === rootFolder.getId()) {
+                isInRootFolder = true;
+                break;
+              }
+            }
+            
+            if (isInRootFolder) {
+              // 루트 폴더에 있으면 사용
+              spreadsheetId = foundId;
+              console.log('📊 워크플로우 스프레드시트 찾음 (전체 Drive, 루트 폴더):', spreadsheetId);
+            } else {
+              // 루트 폴더에 없으면 이동 후 사용
+              try {
+                file.moveTo(rootFolder);
+                spreadsheetId = foundId;
+                console.log('📊 워크플로우 스프레드시트를 루트 폴더로 이동:', rootFolderName);
+              } catch (error) {
+                console.warn('📊 워크플로우 스프레드시트 폴더 이동 실패:', error.message);
+                // 이동 실패해도 사용 (다른 폴더에 있을 수 있음)
+                spreadsheetId = foundId;
+                console.log('📊 워크플로우 스프레드시트 찾음 (다른 폴더):', spreadsheetId);
+              }
+            }
+          } catch (error) {
+            console.warn('📊 스프레드시트 확인 실패:', error.message);
+            // 확인 실패해도 사용
+            spreadsheetId = foundId;
+            console.log('📊 워크플로우 스프레드시트 찾음 (확인 실패):', spreadsheetId);
+          }
+        } else {
+          // 루트 폴더를 찾을 수 없으면 그냥 사용
+          spreadsheetId = foundId;
+          console.log('📊 워크플로우 스프레드시트 찾음 (루트 폴더 없음):', spreadsheetId);
+        }
+      }
+    }
+    
+    // 여전히 찾지 못했으면 생성
+    if (!spreadsheetId) {
       console.log('📊 워크플로우 스프레드시트 생성 시작:', spreadsheetName);
       const newSpreadsheet = SpreadsheetApp.create(spreadsheetName);
       spreadsheetId = newSpreadsheet.getId();
       console.log('📊 워크플로우 스프레드시트 생성 완료:', spreadsheetId);
       
-      // 루트 폴더 찾기 및 이동
+      // 기본 시트1 삭제 (필요한 시트는 나중에 생성됨)
       try {
-        const rootFolderName = PropertiesService.getScriptProperties().getProperty('ROOT_FOLDER_NAME') || 'hot potato';
-        const rootFolder = getFolderByName(rootFolderName);
+        const sheets = newSpreadsheet.getSheets();
+        if (sheets.length > 0 && sheets[0].getName() === '시트1') {
+          newSpreadsheet.deleteSheet(sheets[0]);
+          console.log('📊 기본 시트1 삭제 완료');
+        }
+      } catch (error) {
+        console.warn('📊 기본 시트1 삭제 실패 (무시됨):', error.message);
+      }
+      
+      // 루트 폴더로 이동
         if (rootFolder) {
+        try {
           const file = DriveApp.getFileById(spreadsheetId);
           const parents = file.getParents();
           if (parents.hasNext()) {
             const oldParent = parents.next();
             file.moveTo(rootFolder);
             console.log('📊 워크플로우 스프레드시트를 루트 폴더로 이동:', rootFolderName);
-          }
         }
       } catch (error) {
         console.warn('📊 워크플로우 스프레드시트 폴더 이동 실패 (무시됨):', error.message);
+        }
       }
     }
     

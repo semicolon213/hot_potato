@@ -82,7 +82,22 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                           >
                             <div className="last-user-avatar">
                               {user.picture ? (
-                                <img src={user.picture} alt={user.name} />
+                                <img 
+                                  src={user.picture} 
+                                  alt={user.name}
+                                  onError={(e) => {
+                                    // 이미지 로드 실패 시 (429 에러 등) 초기 이니셜 표시
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent && !parent.querySelector('.last-user-initial')) {
+                                      const initialDiv = document.createElement('div');
+                                      initialDiv.className = 'last-user-initial';
+                                      initialDiv.textContent = user.name.charAt(0);
+                                      parent.appendChild(initialDiv);
+                                    }
+                                  }}
+                                />
                               ) : (
                                 <div className="last-user-initial">{user.name.charAt(0)}</div>
                               )}
@@ -91,15 +106,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                               <div className="last-user-name">{user.name}</div>
                               <div className="last-user-email">{user.email}</div>
                             </div>
-                            <button
-                              onClick={(e) => handleRemoveAccount(user.email, e)}
-                              className="last-user-remove-btn"
-                              title="계정 제거"
-                            >
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              </svg>
-                            </button>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveAccount(user.email, e);
+                            }}
+                            className="last-user-remove-btn"
+                            title="계정 제거"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
                           </button>
                         </div>
                       ))}

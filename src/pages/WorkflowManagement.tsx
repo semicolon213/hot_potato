@@ -10,6 +10,7 @@ import WorkflowRequestModal from '../components/features/workflow/WorkflowReques
 import WorkflowActionModal from '../components/features/workflow/WorkflowActionModal';
 import WorkflowDetailModal from '../components/features/workflow/WorkflowDetailModal';
 import WorkflowResubmitModal from '../components/features/workflow/WorkflowResubmitModal';
+import WorkflowTemplateModal from '../components/features/workflow/WorkflowTemplateModal';
 import type { WorkflowInfoResponse, WorkflowListResponse, WorkflowRequestResponse } from '../types/api/apiResponses';
 import '../components/features/templates/TemplateUI.css';
 import './WorkflowManagement.css';
@@ -35,10 +36,13 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowInfoResponse | null>(null);
   const [actionType, setActionType] = useState<'review' | 'payment'>('review');
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
     const userInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
     setUserEmail(userInfo.email || '');
+    setIsAdmin(userInfo.is_admin === 'O' || userInfo.isAdmin === true);
   }, []);
 
   // 모든 탭 데이터 한번에 로드 (초기 로드 및 userEmail 변경 시)
@@ -291,7 +295,16 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
               {getTabLabel('completed')} ({getTabCount('completed')})
             </button>
           </div>
-          <div className="tag-create-wrapper">
+          <div className="tag-create-wrapper" style={{ display: 'flex', gap: '8px' }}>
+            {isAdmin && (
+              <button 
+                className="tag-create-toggle"
+                onClick={() => setIsTemplateModalOpen(true)}
+                style={{ background: 'var(--bg-medium)', color: 'var(--text-dark)' }}
+              >
+                템플릿 관리
+              </button>
+            )}
             <button 
               className="tag-create-toggle"
               onClick={() => {
@@ -477,6 +490,12 @@ const WorkflowManagement: React.FC<WorkflowManagementProps> = ({ onPageChange })
         }}
         workflow={selectedWorkflow}
         onSuccess={handleResubmitSuccess}
+      />
+      
+      <WorkflowTemplateModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        isAdmin={isAdmin}
       />
     </div>
   );

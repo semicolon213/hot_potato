@@ -269,6 +269,13 @@ export const getSheetData = async (spreadsheetId: string, sheetName: string, ran
   } catch (error: any) {
     console.error('Error getting sheet data:', error);
     
+    // 403 오류 처리 (권한 문제)
+    if (error.status === 403 || error.code === 403) {
+      console.warn(`403 권한 오류: 스프레드시트 ${spreadsheetId}에 접근 권한이 없습니다.`);
+      console.warn('오류 상세:', error.message || error.error?.message || '알 수 없는 오류');
+      return null;
+    }
+    
     // 401 오류인 경우 토큰 재설정 후 재시도
     if (error.status === 401 || error.code === 401) {
       console.log('401 오류 감지, 토큰 재설정 후 재시도...');
@@ -825,21 +832,67 @@ export const findPersonalDocumentFolder = async (): Promise<string | null> => {
 };
 
 export const copyGoogleDocument = async (fileId: string, newTitle: string, tag?: string): Promise<{ id: string, webViewLink: string } | null> => {
-  await initializeGoogleAPIOnce();
-  const gapi = window.gapi;
-  if (!gapi?.client?.drive) {
-    console.error('Google Drive API가 초기화되지 않았습니다.');
-    return null;
-  }
-
   try {
+    // 토큰 확인
+    const { tokenManager } = await import('../auth/tokenManager');
+    const token = tokenManager.get();
+    if (!token || !tokenManager.isValid()) {
+      const errorMsg = 'Google 인증 토큰이 없거나 만료되었습니다. 다시 로그인해주세요.';
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    console.log('📄 Google API 초기화 시작...');
+
+    // Google API 초기화 (googleApiInitializer의 개선된 버전 사용)
+    const { initializeGoogleAPIOnce: initAPI } = await import('./googleApiInitializer');
+    try {
+      await initAPI(null);
+      console.log('✅ Google API 초기화 완료');
+    } catch (initError: any) {
+      console.error('❌ Google API 초기화 실패:', initError);
+      // idpiframe_initialization_failed 에러인 경우 특별 처리
+      if (initError?.error === 'idpiframe_initialization_failed' || initError?.result?.error?.error === 'idpiframe_initialization_failed') {
+        console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+      } else {
+        // 다른 에러는 재시도
+        throw initError;
+      }
+    }
+    
+    // gapi 스크립트가 로드될 때까지 대기
+    let attempts = 0;
+    const maxAttempts = 50;
+    while (!window.gapi?.client?.drive && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    const gapi = window.gapi;
+    if (!gapi?.client?.drive) {
+      const errorMsg = 'Google Drive API가 초기화되지 않았습니다. 페이지를 새로고침해주세요.';
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // 토큰을 gapi client에 명시적으로 설정
+    try {
+      gapi.client.setToken({ access_token: token });
+      console.log('✅ 토큰이 gapi client에 설정되었습니다.');
+    } catch (tokenError) {
+      console.warn('⚠️ 토큰 설정 실패:', tokenError);
+      // 토큰 설정 실패해도 계속 진행 (이미 설정되었을 수 있음)
+    }
+
+    console.log('📄 문서 복사 시작:', { fileId, newTitle, tag });
+
     // 개인 문서 폴더 찾기
     const personalDocFolderId = await findPersonalDocumentFolder();
     
     if (!personalDocFolderId) {
-      console.error('❌ 개인 문서 폴더를 찾을 수 없습니다.');
-      alert('개인 문서 폴더를 찾을 수 없습니다.');
-      return null;
+      const errorMsg = '개인 문서 폴더를 찾을 수 없습니다. 폴더가 생성되어 있는지 확인해주세요.';
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
     }
 
     console.log('✅ 개인 문서 폴더 찾음:', personalDocFolderId);
@@ -864,13 +917,31 @@ export const copyGoogleDocument = async (fileId: string, newTitle: string, tag?:
     
     console.log('✅ 문서가 개인 문서 폴더에 복사되었습니다:', response.result.id);
     
-    // 문서명은 원래 제목 그대로 유지 (사용자가 변경 가능)
-    
     return response.result;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Google 문서 복사 오류:', error);
-    alert('Google 문서를 복사하는 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
-    return null;
+    
+    // 에러 상세 정보 로깅
+    if (error.result?.error) {
+      console.error('에러 상세:', error.result.error);
+    }
+    if (error.status) {
+      console.error('HTTP 상태 코드:', error.status);
+    }
+    
+    // 사용자 친화적인 에러 메시지
+    let errorMessage = 'Google 문서를 복사하는 중 오류가 발생했습니다.';
+    if (error.message) {
+      errorMessage = error.message;
+    } else if (error.result?.error?.message) {
+      errorMessage = error.result.error.message;
+    } else if (error.status === 403) {
+      errorMessage = 'Google Drive 접근 권한이 없습니다. 다시 로그인해주세요.';
+    } else if (error.status === 404) {
+      errorMessage = '템플릿 문서를 찾을 수 없습니다.';
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 

@@ -14,7 +14,13 @@ interface DashboardProps {
   announcements?: Array<{ id: string; title: string }>;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, hotPotatoDBSpreadsheetId, onPageChange, onSelectAnnouncement, announcements }) => {
+const Dashboard: React.FC<DashboardProps> = ({ 
+  user, 
+  hotPotatoDBSpreadsheetId, 
+  onPageChange, 
+  onSelectAnnouncement, 
+  announcements
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const {
     isModalOpen,

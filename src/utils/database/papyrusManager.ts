@@ -11,6 +11,8 @@ import {deleteRow} from 'papyrus-db/dist/sheets/delete';
 import {ENV_CONFIG} from '../../config/environment';
 import {apiClient} from '../api/apiClient';
 import {tokenManager} from '../auth/tokenManager';
+import {getCacheManager} from '../cache/cacheManager';
+import {generateCacheKey, getCacheTTL, getActionCategory} from '../cache/cacheUtils';
 import type {StaffMember, Committee as CommitteeType} from '../../types/features/staff';
 import type {SpreadsheetIdsResponse, AnnouncementsResponse, AnnouncementItem, StudentIssue} from '../../types/api/apiResponses';
 
@@ -61,6 +63,9 @@ export const clearSpreadsheetIds = (): void => {
     announcementSpreadsheetId = null;
     calendarProfessorSpreadsheetId = null;
     calendarStudentSpreadsheetId = null;
+    calendarCouncilSpreadsheetId = null;
+    calendarADProfessorSpreadsheetId = null;
+    calendarSuppSpreadsheetId = null;
     studentSpreadsheetId = null;
     staffSpreadsheetId = null;
     accountingFolderId = null;
@@ -172,6 +177,9 @@ export const initializeSpreadsheetIds = async (): Promise<{
             ENV_CONFIG.ANNOUNCEMENT_SPREADSHEET_NAME,
             ENV_CONFIG.CALENDAR_PROFESSOR_SPREADSHEET_NAME,
             ENV_CONFIG.CALENDAR_STUDENT_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_COUNCIL_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_ADPROFESSOR_SPREADSHEET_NAME,
+            ENV_CONFIG.CALENDAR_SUPP_SPREADSHEET_NAME,
             ENV_CONFIG.STUDENT_SPREADSHEET_NAME,
             ENV_CONFIG.STAFF_SPREADSHEET_NAME
         ];
@@ -191,9 +199,13 @@ export const initializeSpreadsheetIds = async (): Promise<{
                 announcementSpreadsheetId: null,
                 calendarProfessorSpreadsheetId: null,
                 calendarStudentSpreadsheetId: null,
+                calendarCouncilSpreadsheetId: null,
+                calendarADProfessorSpreadsheetId: null,
+                calendarSuppSpreadsheetId: null,
                 hotPotatoDBSpreadsheetId: personalConfigId, // 개인 설정 파일 ID
                 studentSpreadsheetId: null,
-                staffSpreadsheetId: null
+                staffSpreadsheetId: null,
+                accountingFolderId: null
             };
         }
 
@@ -837,6 +849,18 @@ export const updateTemplateFavorite = async (rowIndex: number, favoriteStatus: s
 
 // 캘린더 관련 함수들
 export const fetchCalendarEvents = async (): Promise<Event[]> => {
+    const cacheManager = getCacheManager();
+    const action = 'fetchCalendarEvents';
+    const category = getActionCategory(action);
+    const cacheKey = generateCacheKey(category, action, {});
+    
+    // 캐시에서 먼저 확인
+    const cachedData = await cacheManager.get<Event[]>(cacheKey);
+    if (cachedData) {
+        console.log('📅 캐시에서 캘린더 이벤트 로드:', cachedData.length, '개');
+        return cachedData;
+    }
+
     const allCalendarIds = [
         calendarProfessorSpreadsheetId,
         calendarStudentSpreadsheetId,
@@ -851,6 +875,7 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
     }
 
     try {
+        console.log('📅 캘린더 이벤트 로드 시작 (캐시 미스)...');
         const allEvents: Event[] = [];
         
         for (const spreadsheetId of allCalendarIds) {
@@ -874,13 +899,24 @@ export const fetchCalendarEvents = async (): Promise<Event[]> => {
                     }));
                     allEvents.push(...events);
                 }
-            } catch (error) {
-                console.error(`Error fetching events from spreadsheet ${spreadsheetId}:`, error);
+            } catch (error: any) {
+                // 403 오류는 권한 문제이므로 경고만 출력하고 계속 진행
+                if (error?.status === 403 || error?.code === 403) {
+                    console.warn(`⚠️ 스프레드시트 ${spreadsheetId}에 접근 권한이 없습니다.`);
+                } else {
+                    console.error(`Error fetching events from spreadsheet ${spreadsheetId}:`, error);
+                }
                 // Continue to next spreadsheet even if one fails
             }
         }
 
-        console.log('Loaded a total of', allEvents.length, 'calendar events from all sheets.');
+        console.log('📅 전체 캘린더 이벤트 로드 완료:', allEvents.length, '개');
+        
+        // 캐시에 저장
+        const ttl = getCacheTTL(action);
+        await cacheManager.set(cacheKey, allEvents, ttl);
+        console.log('📅 캘린더 이벤트 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+        
         return allEvents;
     } catch (error) {
         console.error('Error fetching calendar events from Google Sheets:', error);
@@ -1000,14 +1036,26 @@ export const deleteCalendarEvent = async (spreadsheetId: string, eventId: string
 
 // 학생 관련 함수들
 export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> => {
+    const cacheManager = getCacheManager();
+    const action = 'fetchStudents';
+    const category = getActionCategory(action);
+    const targetSpreadsheetId = spreadsheetId || studentSpreadsheetId;
+    const cacheKey = generateCacheKey(category, action, { spreadsheetId: targetSpreadsheetId });
+    
+    // 캐시에서 먼저 확인
+    const cachedData = await cacheManager.get<Student[]>(cacheKey);
+    if (cachedData) {
+        console.log('👥 캐시에서 학생 목록 로드 (복호화 완료):', cachedData.length, '명');
+        return cachedData;
+    }
+
     try {
-        const targetSpreadsheetId = spreadsheetId || studentSpreadsheetId;
         if (!targetSpreadsheetId) {
             console.warn('Student spreadsheet ID not found');
             return [];
         }
 
-        console.log(`Fetching students from spreadsheet: ${targetSpreadsheetId}, sheet: ${ENV_CONFIG.STUDENT_SHEET_NAME}`);
+        console.log(`👥 학생 목록 로드 시작 (캐시 미스): ${targetSpreadsheetId}, sheet: ${ENV_CONFIG.STUDENT_SHEET_NAME}`);
         const data = await getSheetData(targetSpreadsheetId, ENV_CONFIG.STUDENT_SHEET_NAME);
         console.log('Students data received:', data);
 
@@ -1016,19 +1064,36 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             return [];
         }
 
-        const students = data.values.slice(1).map((row: string[]) => ({
+        // 먼저 암호화된 데이터를 파싱
+        const rawStudents = data.values.slice(1).map((row: string[]) => ({
             no_student: row[0] || '', // 'no' 컬럼을 'no_student'로 매핑
             name: row[1] || '',
             address: row[2] || '',
-            phone_num: row[3] || '', // 암호화된 연락처 (복호화는 프론트엔드에서)
+            phone_num: row[3] || '', // 암호화된 연락처
             grade: row[4] || '',
             state: row[5] || '',
             council: row[6] || '',
             flunk: row[7] || '', // 유급 필드 (H열)
         }));
 
-        console.log(`Loaded ${students.length} students`);
-        return students;
+        console.log(`👥 학생 목록 파싱 완료: ${rawStudents.length}명, 복호화 시작...`);
+        
+        // 모든 학생의 암호화된 전화번호를 병렬로 복호화
+        const decryptedStudents: Student[] = await Promise.all(
+            rawStudents.map(async (student) => ({
+                ...student,
+                phone_num: await decryptValue(student.phone_num || '')
+            }))
+        );
+
+        console.log(`👥 학생 목록 복호화 완료: ${decryptedStudents.length}명`);
+        
+        // 복호화된 데이터를 캐시에 저장
+        const ttl = getCacheTTL(action);
+        await cacheManager.set(cacheKey, decryptedStudents, ttl);
+        console.log('👥 학생 목록 캐시 저장 완료 (복호화된 데이터, TTL:', ttl / 1000 / 60, '분)');
+        
+        return decryptedStudents;
     } catch (error) {
         console.error('Error fetching students from Google Sheet:', error);
         return [];
@@ -1083,19 +1148,32 @@ export const deleteStudent = async (spreadsheetId: string, studentNo: string): P
 };
 
 export const fetchStaff = async (): Promise<Staff[]> => {
+    const cacheManager = getCacheManager();
+    const action = 'fetchStaff';
+    const category = getActionCategory(action);
+    const cacheKey = generateCacheKey(category, action, {});
+    
+    // 캐시에서 먼저 확인
+    const cachedData = await cacheManager.get<Staff[]>(cacheKey);
+    if (cachedData) {
+        console.log('👨‍💼 캐시에서 교직원 목록 로드:', cachedData.length, '명');
+        return cachedData;
+    }
+
     try {
         if (!studentSpreadsheetId) {
             console.warn('Student spreadsheet ID not found');
             return [];
         }
 
+        console.log('👨‍💼 교직원 목록 로드 시작 (캐시 미스)...');
         const data = await getSheetData(studentSpreadsheetId, ENV_CONFIG.STUDENT_SHEET_NAME);
 
         if (!data || !data.values || data.values.length <= 1) {
             return [];
         }
 
-        return data.values.slice(1).map((row: string[]) => ({
+        const staff = data.values.slice(1).map((row: string[]) => ({
             no: row[0] || '',
             pos: row[1] || '',
             name: row[2] || '',
@@ -1105,6 +1183,15 @@ export const fetchStaff = async (): Promise<Staff[]> => {
             date: row[6] || '',
             note: row[7] || '',
         }));
+
+        console.log(`👨‍💼 교직원 목록 로드 완료: ${staff.length}명`);
+        
+        // 캐시에 저장
+        const ttl = getCacheTTL(action);
+        await cacheManager.set(cacheKey, staff, ttl);
+        console.log('👨‍💼 교직원 목록 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+        
+        return staff;
     } catch (error) {
         console.error('Error fetching staff from Google Sheet:', error);
         return [];
@@ -1112,12 +1199,34 @@ export const fetchStaff = async (): Promise<Staff[]> => {
 };
 
 export const fetchAttendees = async (): Promise<{ students: Student[], staff: Staff[] }> => {
+    const cacheManager = getCacheManager();
+    const action = 'fetchAttendees';
+    const category = getActionCategory(action);
+    const cacheKey = generateCacheKey(category, action, {});
+    
+    // 캐시에서 먼저 확인
+    const cachedData = await cacheManager.get<{ students: Student[], staff: Staff[] }>(cacheKey);
+    if (cachedData) {
+        console.log('👥 캐시에서 참석자 목록 로드:', cachedData.students.length, '명 학생,', cachedData.staff.length, '명 교직원');
+        return cachedData;
+    }
+
     try {
+        console.log('👥 참석자 목록 로드 시작 (캐시 미스)...');
         const [students, staff] = await Promise.all([
             fetchStudents(),
             fetchStaffFromPapyrus(staffSpreadsheetId || '')
         ]);
-        return {students, staff};
+        
+        const result = {students, staff};
+        console.log('👥 참석자 목록 로드 완료:', students.length, '명 학생,', staff.length, '명 교직원');
+        
+        // 캐시에 저장
+        const ttl = getCacheTTL(action);
+        await cacheManager.set(cacheKey, result, ttl);
+        console.log('👥 참석자 목록 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+        
+        return result;
     } catch (error) {
         console.error('Error fetching attendees:', error);
         return {students: [], staff: []};
@@ -1136,19 +1245,32 @@ export interface StudentIssue {
 
 // 학생 이슈 관련 함수들
 export const fetchStudentIssues = async (studentNo: string): Promise<StudentIssue[]> => {
+    const cacheManager = getCacheManager();
+    const action = 'fetchStudentIssues';
+    const category = getActionCategory(action);
+    const cacheKey = generateCacheKey(category, action, { studentNo });
+    
+    // 캐시에서 먼저 확인
+    const cachedData = await cacheManager.get<StudentIssue[]>(cacheKey);
+    if (cachedData) {
+        console.log('📋 캐시에서 학생 이슈 로드:', cachedData.length, '개');
+        return cachedData;
+    }
+
     try {
         if (!studentSpreadsheetId) {
             console.warn('Student spreadsheet ID not found');
             return [];
         }
 
+        console.log(`📋 학생 이슈 로드 시작 (캐시 미스): ${studentNo}`);
         const data = await getSheetData(studentSpreadsheetId, ENV_CONFIG.STUDENT_ISSUE_SHEET_NAME);
 
         if (!data || !data.values || data.values.length <= 1) {
             return [];
         }
 
-        return data.values.slice(1)
+        const issues = data.values.slice(1)
             .filter(row => row[0] === studentNo)
             .map((row, index) => ({
                 id: `issue_${index}`,
@@ -1158,21 +1280,33 @@ export const fetchStudentIssues = async (studentNo: string): Promise<StudentIssu
                 level_issue: row[3] || '',
                 content_issue: row[4] || ''
             }));
+
+        console.log(`📋 학생 이슈 로드 완료: ${issues.length}개`);
+        
+        // 캐시에 저장
+        const ttl = getCacheTTL(action);
+        await cacheManager.set(cacheKey, issues, ttl);
+        console.log('📋 학생 이슈 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+        
+        return issues;
     } catch (error) {
         console.error('Error fetching student issues:', error);
         return [];
     }
 };
 
-export const addStudentIssue = async (issueData: {
-    no_member: string;
-    date_issue: string;
-    type_issue: string;
-    level_issue: string;
-    content_issue: string;
-}): Promise<void> => {
+export const addStudentIssue = async (
+    spreadsheetId: string,
+    issueData: {
+        no_member: string;
+        date_issue: string;
+        type_issue: string;
+        level_issue: string;
+        content_issue: string;
+    }
+): Promise<void> => {
     try {
-        if (!studentSpreadsheetId) {
+        if (!spreadsheetId) {
             throw new Error('Student spreadsheet ID not found');
         }
 
@@ -1184,7 +1318,7 @@ export const addStudentIssue = async (issueData: {
             issueData.content_issue
         ];
 
-        await append(studentSpreadsheetId, ENV_CONFIG.STUDENT_ISSUE_SHEET_NAME, [data]);
+        await append(spreadsheetId, ENV_CONFIG.STUDENT_ISSUE_SHEET_NAME, [data]);
         console.log('Student issue added successfully');
     } catch (error) {
         console.error('Error adding student issue:', error);
@@ -1388,7 +1522,46 @@ export const updateTag = async (oldTag: string, newTag: string): Promise<void> =
  * @param {string} spreadsheetId - 스프레드시트 ID
  * @returns {Promise<Staff[]>} 교직원 목록
  */
+/**
+ * 복호화 헬퍼 함수
+ */
+const decryptValue = async (encryptedValue: string): Promise<string> => {
+  if (!encryptedValue || encryptedValue.trim() === '') {
+    return '';
+  }
+
+  try {
+    // 이미 복호화된 값인지 확인 (전화번호 형식: 010-XXXX-XXXX 또는 이메일 형식)
+    if (/^010-\d{4}-\d{4}$/.test(encryptedValue) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(encryptedValue)) {
+      return encryptedValue;
+    }
+
+    const { apiClient } = await import('../api/apiClient');
+    const response = await apiClient.request<{ success: boolean; data: string }>('decryptEmail', { data: encryptedValue });
+    
+    if (response.success && response.data) {
+      return response.data as string;
+    }
+    return encryptedValue;
+  } catch (error) {
+    console.warn('복호화 실패:', error);
+    return encryptedValue;
+  }
+};
+
 export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staff[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'fetchStaffFromPapyrus';
+  const category = getActionCategory(action);
+  const cacheKey = generateCacheKey(category, action, { spreadsheetId });
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<Staff[]>(cacheKey);
+  if (cachedData) {
+    console.log('👨‍💼 캐시에서 교직원 목록 로드 (Papyrus, 복호화 완료):', cachedData.length, '명');
+    return cachedData;
+  }
+
   try {
     setupPapyrusAuth();
 
@@ -1400,6 +1573,7 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
 
+    console.log('👨‍💼 교직원 목록 로드 시작 (Papyrus, 캐시 미스)...');
     const data = await getSheetData(staffSpreadsheetId, ENV_CONFIG.STAFF_INFO_SHEET_NAME);
 
     if (!data || !data.values || data.values.length === 0) {
@@ -1407,15 +1581,80 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
     }
 
     const headers = data.values[0] as string[];
-    const staffData: Staff[] = data.values.slice(1).map((row: string[]) => {
+    console.log('👨‍💼 교직원 스프레드시트 헤더:', headers);
+    
+    // 먼저 암호화된 데이터를 파싱
+    const rawStaffData: Staff[] = data.values.slice(1).map((row: string[], rowIndex: number) => {
       const staff: Partial<Staff> = {};
       headers.forEach((header: string, index: number) => {
-        (staff as Record<string, unknown>)[header] = row[index];
+        const value = row[index];
+        // 헤더 이름을 정규화 (공백 제거, 소문자 변환 등)
+        const normalizedHeader = header?.trim().toLowerCase();
+        
+        // 일반적인 필드명 매핑 (헤더 이름이 다를 수 있음)
+        if (normalizedHeader === 'tel' || normalizedHeader === '내선번호' || normalizedHeader === '전화번호') {
+          staff.tel = value || '';
+        } else if (normalizedHeader === 'phone' || normalizedHeader === '연락처' || normalizedHeader === '휴대폰') {
+          staff.phone = value || '';
+        } else if (normalizedHeader === 'email' || normalizedHeader === '이메일' || normalizedHeader === '메일') {
+          staff.email = value || '';
+        } else if (normalizedHeader === 'no' || normalizedHeader === '교번' || normalizedHeader === '번호') {
+          staff.no = value || '';
+        } else if (normalizedHeader === 'pos' || normalizedHeader === '구분' || normalizedHeader === '직위') {
+          staff.pos = value || '';
+        } else if (normalizedHeader === 'name' || normalizedHeader === '이름' || normalizedHeader === '성명') {
+          staff.name = value || '';
+        } else if (normalizedHeader === 'date' || normalizedHeader === '임용일' || normalizedHeader === '날짜') {
+          staff.date = value || '';
+        } else if (normalizedHeader === 'note' || normalizedHeader === '비고' || normalizedHeader === '메모') {
+          staff.note = value || '';
+        } else {
+          // 알 수 없는 헤더는 원본 헤더 이름으로 저장
+          (staff as Record<string, unknown>)[header] = value;
+        }
       });
+      
+      // 디버깅: 필드가 비어있는 경우 로그 출력
+      if (!staff.tel && !staff.phone && !staff.email && staff.name) {
+        console.warn(`⚠️ 교직원 "${staff.name}"의 연락처 정보가 비어있습니다.`, {
+          rowIndex: rowIndex + 2, // 실제 스프레드시트 행 번호 (헤더 + 1)
+          headers,
+          row,
+          staff
+        });
+      }
+      
       return staff as Staff;
     });
 
-    return staffData;
+    console.log(`👨‍💼 교직원 목록 파싱 완료: ${rawStaffData.length}명, 복호화 시작...`);
+    
+    // 모든 교직원의 암호화된 필드를 병렬로 복호화
+    const decryptedStaffData: Staff[] = await Promise.all(
+      rawStaffData.map(async (staff: Staff) => {
+        const [decryptedTel, decryptedPhone, decryptedEmail] = await Promise.all([
+          decryptValue(staff.tel || ''),
+          decryptValue(staff.phone || ''),
+          decryptValue(staff.email || '')
+        ]);
+        
+        return {
+          ...staff,
+          tel: decryptedTel,
+          phone: decryptedPhone,
+          email: decryptedEmail
+        };
+      })
+    );
+
+    console.log(`👨‍💼 교직원 목록 복호화 완료: ${decryptedStaffData.length}명`);
+    
+    // 복호화된 데이터를 캐시에 저장
+    const ttl = getCacheTTL(action);
+    await cacheManager.set(cacheKey, decryptedStaffData, ttl);
+    console.log('👨‍💼 교직원 목록 캐시 저장 완료 (복호화된 데이터, TTL:', ttl / 1000 / 60, '분)');
+    
+    return decryptedStaffData;
   } catch (error) {
     console.error('Error fetching staff from Papyrus DB:', error);
     throw error;
@@ -1428,6 +1667,18 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
  * @returns {Promise<Committee[]>} 학과 위원회 목록
  */
 export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<Committee[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'fetchCommitteeFromPapyrus';
+  const category = getActionCategory(action);
+  const cacheKey = generateCacheKey(category, action, { spreadsheetId });
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<Committee[]>(cacheKey);
+  if (cachedData) {
+    console.log('👥 캐시에서 위원회 목록 로드 (복호화 완료):', cachedData.length, '개');
+    return cachedData;
+  }
+
   try {
     setupPapyrusAuth();
 
@@ -1439,6 +1690,7 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
       throw new Error('교직원 스프레드시트를 찾을 수 없습니다.');
     }
 
+    console.log('👥 위원회 목록 로드 시작 (캐시 미스)...');
     const data = await getSheetData(staffSpreadsheetId, ENV_CONFIG.STAFF_COMMITTEE_SHEET_NAME);
 
     if (!data || !data.values || data.values.length === 0) {
@@ -1446,7 +1698,8 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
     }
 
     const headers = data.values[0] as string[];
-    const committeeData: Committee[] = data.values.slice(1).map((row: string[]) => {
+    // 먼저 암호화된 데이터를 파싱
+    const rawCommitteeData: Committee[] = data.values.slice(1).map((row: string[]) => {
       const committee: Record<string, unknown> = {};
       headers.forEach((header: string, index: number) => {
         committee[header] = row[index];
@@ -1470,7 +1723,32 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
             return committee as Committee;
         });
 
-        return committeeData;
+    console.log(`👥 위원회 목록 파싱 완료: ${rawCommitteeData.length}개, 복호화 시작...`);
+    
+    // 모든 위원회의 암호화된 필드를 병렬로 복호화
+    const decryptedCommitteeData: Committee[] = await Promise.all(
+      rawCommitteeData.map(async (committee: Committee) => {
+        const [decryptedTel, decryptedEmail] = await Promise.all([
+          decryptValue(committee.tel || ''),
+          decryptValue(committee.email || '')
+        ]);
+        
+        return {
+          ...committee,
+          tel: decryptedTel,
+          email: decryptedEmail
+        };
+      })
+    );
+
+    console.log(`👥 위원회 목록 복호화 완료: ${decryptedCommitteeData.length}개`);
+    
+    // 복호화된 데이터를 캐시에 저장
+    const ttl = getCacheTTL(action);
+    await cacheManager.set(cacheKey, decryptedCommitteeData, ttl);
+    console.log('👥 위원회 목록 캐시 저장 완료 (복호화된 데이터, TTL:', ttl / 1000 / 60, '분)');
+    
+    return decryptedCommitteeData;
     } catch (error) {
         console.error('Error fetching committee from Papyrus DB:', error);
         throw error;

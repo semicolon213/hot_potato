@@ -3,6 +3,8 @@ import '../../styles/pages/Board.css';
 import type { Post } from '../../types/app';
 import { deleteSheetRow } from '../../utils/google/googleSheetUtils';
 import { ENV_CONFIG } from '../../config/environment';
+import { useNotification } from '../../hooks/ui/useNotification';
+import { NotificationModal } from '../../components/ui/NotificationModal';
 
 interface BoardProps {
   onPageChange: (pageName: string) => void;
@@ -16,11 +18,12 @@ interface BoardProps {
 const Board: React.FC<BoardProps> = ({ onPageChange, posts, isAuthenticated, boardSpreadsheetId, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const { notification, showNotification, hideNotification } = useNotification();
 
   const handleDeletePost = async (id: string) => {
     if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
       if (!boardSpreadsheetId) {
-        alert('오류: 스프레드시트 ID를 찾을 수 없습니다.');
+        showNotification('오류: 스프레드시트 ID를 찾을 수 없습니다.', 'error');
         return;
       }
       if (isDeleting) return;
@@ -35,11 +38,11 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, isAuthenticated, boa
         const rowIndexToDelete = (posts.length - 1) - postIndex + 1;
 
         await deleteSheetRow(boardSpreadsheetId, ENV_CONFIG.BOARD_SHEET_NAME, rowIndexToDelete);
-        alert('게시글이 삭제되었습니다.');
+        showNotification('게시글이 삭제되었습니다.', 'success');
         window.location.reload();
       } catch (error) {
         console.error('Error deleting post:', error);
-        alert('게시글 삭제 중 오류가 발생했습니다.');
+        showNotification('게시글 삭제 중 오류가 발생했습니다.', 'error');
       } finally {
         setIsDeleting(false);
       }
@@ -98,6 +101,14 @@ const Board: React.FC<BoardProps> = ({ onPageChange, posts, isAuthenticated, boa
           <p className="no-results">{isAuthenticated ? '게시글이 없습니다.' : '데이터를 불러오는 중입니다. 잠시만 기다려주세요...'}</p>
         )}
       </div>
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        message={notification.message}
+        type={notification.type}
+        onClose={hideNotification}
+        duration={notification.duration}
+      />
     </div>
   );
 };

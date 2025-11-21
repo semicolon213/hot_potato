@@ -7,6 +7,8 @@
  */
 
 import { getSheetData, append, update } from 'papyrus-db';
+import { getCacheManager } from '../cache/cacheManager';
+import { generateCacheKey, getCacheTTL, getActionCategory } from '../cache/cacheUtils';
 import type { BudgetPlan, BudgetPlanDetail, CreateBudgetPlanRequest, UpdateBudgetPlanDetailsRequest, Account } from '../../types/features/accounting';
 import type { SheetInfo } from '../../types/google';
 import { getAccounts } from './accountingManager';
@@ -61,6 +63,18 @@ export const getBudgetPlans = async (
   spreadsheetId: string,
   accountId?: string
 ): Promise<BudgetPlan[]> => {
+  const cacheManager = getCacheManager();
+  const action = 'getPendingBudgetPlans';
+  const category = getActionCategory(action);
+  const cacheKey = generateCacheKey(category, action, { spreadsheetId, accountId });
+  
+  // 캐시에서 먼저 확인
+  const cachedData = await cacheManager.get<BudgetPlan[]>(cacheKey);
+  if (cachedData) {
+    console.log('💰 캐시에서 예산 계획 로드:', cachedData.length, '개');
+    return cachedData;
+  }
+
   try {
     ensureAuth();
     
@@ -70,6 +84,7 @@ export const getBudgetPlans = async (
       throw new Error('Google API 인증이 필요합니다. 페이지를 새로고침해주세요.');
     }
     
+    console.log('💰 예산 계획 로드 시작 (캐시 미스)...');
     const data = await getSheetData(spreadsheetId, ACCOUNTING_SHEETS.BUDGET_PLAN);
     
     if (!data || !data.values || data.values.length <= 1) {
@@ -182,12 +197,21 @@ export const getBudgetPlans = async (
     }
 
     // 필터링
-    return plans.filter((plan: BudgetPlan) => {
+    const filteredPlans = plans.filter((plan: BudgetPlan) => {
       if (accountId) {
         return plan.budgetId && plan.accountId === accountId;
       }
       return plan.budgetId;
     });
+
+    console.log(`💰 예산 계획 로드 완료: ${filteredPlans.length}개`);
+    
+    // 캐시에 저장
+    const ttl = getCacheTTL(action);
+    await cacheManager.set(cacheKey, filteredPlans, ttl);
+    console.log('💰 예산 계획 캐시 저장 완료 (TTL:', ttl / 1000 / 60, '분)');
+    
+    return filteredPlans;
     
   } catch (error: unknown) {
     console.error('❌ 예산 계획 목록 조회 오류:', error);

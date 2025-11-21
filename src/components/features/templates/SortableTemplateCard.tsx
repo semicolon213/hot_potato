@@ -6,7 +6,7 @@ import type { Template } from '../../../hooks/features/templates/useTemplateUI';
 interface Props {
     id: string;
     template: Template;
-    onUse: (type: string, title: string) => void;
+    onUse: ((type: string, title: string) => void) | ((template: Template) => void);
     onDelete: (rowIndex: number) => void;
     onDeleteTemplate?: (template: Template) => void; // 템플릿 삭제 함수 (기본/개인)
     onEdit?: (template: Template) => void; // Make optional

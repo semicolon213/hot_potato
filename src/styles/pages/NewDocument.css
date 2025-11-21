@@ -461,14 +461,14 @@
 
 .save-btn {
   background: var(--sidebar-primary);
-  color: var(--text-dark) !important;
+  color: var(--white-pure) !important;
   border: 1px solid var(--sidebar-primary);
 }
 
 .save-btn:hover:not(:disabled) {
   background-color: var(--gray-dark);
   border-color: var(--gray-dark);
-  color: var(--text-dark) !important;
+  color: var(--white-pure) !important;
 }
 
 .save-btn:disabled {
@@ -538,16 +538,16 @@
 
 /* 파일명 모달 헤더 */
 .filename-modal-header {
-  padding: 24px 32px 20px;
+  padding: 16px 32px;
   border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--white-pure, #ffffff);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .filename-modal-header h2 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 24px;
   font-weight: 700;
   color: #1e293b;
@@ -578,25 +578,37 @@
 
 /* 파일명 모달 바디 */
 .filename-modal-body {
-  padding: 32px;
+  padding: 24px 32px;
   flex: 1;
   overflow-y: auto;
 }
 
 /* 파일명 섹션 */
 .filename-section {
-  margin-top: 24px;
+  margin: 24px -32px 0 -32px;
+  padding: 24px 32px 0 32px;
+  border-top: 1px solid var(--border-color);
+}
+
+.filename-section .form-group-large {
+  border-top: none;
+  border-bottom: none;
+}
+
+.filename-section .form-input-large {
+  padding-left: 20px !important;
 }
 
 /* 파일명 모달 액션 */
 .filename-modal-actions {
-  padding: 24px 32px 32px;
+  padding: 16px 32px;
   border-top: 1px solid var(--border-color);
-  background-color: #f8fafc;
+  background-color: var(--white-pure, #ffffff);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   flex-shrink: 0;
+  align-items: center;
 }
 
 /* 반응형 디자인 */
@@ -995,10 +1007,10 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: var(--white-pure, #ffffff);
   border-radius: var(--sidebar-radius-sm);
-  margin-bottom: 24px;
-  border: 1px solid #bae6fd;
+  margin-bottom: 0;
+  border: none;
   grid-column: 1 / -1;
   overflow: visible;
   max-height: none;
@@ -1032,6 +1044,22 @@
 /* 권한 섹션 */
 .permission-section {
   margin-bottom: 24px;
+}
+
+/* 개인 템플릿 없음 메시지 */
+.no-personal-templates-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(48px, 5.56vh, 64px) clamp(24px, 3.125vw, 32px);
+  text-align: center;
+  color: var(--text-light, #666);
+  font-size: clamp(14px, 1.62vh, 16px);
+}
+
+.no-personal-templates-message p {
+  margin: 0;
+  color: var(--text-light, #666);
 }
 
 .section-title {

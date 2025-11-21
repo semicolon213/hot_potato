@@ -4,7 +4,7 @@ import { BiLoaderAlt } from "react-icons/bi";
 
 interface Props {
     templates: Template[];
-    onUseTemplate: (type: string, title: string) => void;
+    onUseTemplate: ((type: string, title: string) => void) | ((template: Template) => void);
     onDeleteTemplate: (template: Template) => void; // 템플릿 삭제 함수 (기본/개인)
     onEditTemplate?: (template: Template) => void;
     onEditPersonal?: (template: Template) => void; // 개인 템플릿 수정 함수
