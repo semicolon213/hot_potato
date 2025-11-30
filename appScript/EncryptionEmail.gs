@@ -280,10 +280,86 @@ function maskContactInfo(contact) {
   }
 }
 
+/**
+ * 배치 암호화 (여러 값 한 번에 암호화)
+ * @param {Array} values - 암호화할 값들의 배열
+ * @returns {Array} 암호화된 값들의 배열
+ */
+function batchEncryptEmail(values) {
+  try {
+    console.log('🔐 배치 암호화 시작:', values.length, '개');
+    
+    if (!Array.isArray(values)) {
+      console.warn('유효하지 않은 입력 (배열이 아님):', values);
+      return [];
+    }
+    
+    const encryptedValues = values.map((value, index) => {
+      try {
+        if (!value || typeof value !== 'string' || value.trim() === '') {
+          return value || '';
+        }
+        
+        const encrypted = encryptEmailMain(value);
+        console.log(`🔐 [${index + 1}/${values.length}] 암호화 완료`);
+        return encrypted;
+      } catch (error) {
+        console.error(`🔐 [${index + 1}/${values.length}] 암호화 오류:`, error);
+        return value || '';
+      }
+    });
+    
+    console.log('🔐 배치 암호화 완료:', encryptedValues.length, '개');
+    return encryptedValues;
+    
+  } catch (error) {
+    console.error('배치 암호화 오류:', error);
+    return values || [];
+  }
+}
+
+/**
+ * 배치 복호화 (여러 값 한 번에 복호화)
+ * @param {Array} encryptedValues - 복호화할 값들의 배열
+ * @returns {Array} 복호화된 값들의 배열
+ */
+function batchDecryptEmail(encryptedValues) {
+  try {
+    console.log('🔓 배치 복호화 시작:', encryptedValues.length, '개');
+    
+    if (!Array.isArray(encryptedValues)) {
+      console.warn('유효하지 않은 입력 (배열이 아님):', encryptedValues);
+      return [];
+    }
+    
+    const decryptedValues = encryptedValues.map((encryptedValue, index) => {
+      try {
+        if (!encryptedValue || typeof encryptedValue !== 'string' || encryptedValue.trim() === '') {
+          return encryptedValue || '';
+        }
+        
+        const decrypted = decryptEmailMain(encryptedValue);
+        console.log(`🔓 [${index + 1}/${encryptedValues.length}] 복호화 완료`);
+        return decrypted;
+      } catch (error) {
+        console.error(`🔓 [${index + 1}/${encryptedValues.length}] 복호화 오류:`, error);
+        return encryptedValue || '';
+      }
+    });
+    
+    console.log('🔓 배치 복호화 완료:', decryptedValues.length, '개');
+    return decryptedValues;
+    
+  } catch (error) {
+    console.error('배치 복호화 오류:', error);
+    return encryptedValues || [];
+  }
+}
+
 // ===== 배포 정보 =====
 function getEncryptionEmailInfo() {
   return {
-    version: '1.0.0',
+    version: '1.1.0',
     description: '이메일/연락처 암호화 관련 함수들',
     functions: [
       'encryptEmailMain',
@@ -295,7 +371,9 @@ function getEncryptionEmailInfo() {
       'encryptContactInfo',
       'decryptContactInfo',
       'validateContactInfo',
-      'maskContactInfo'
+      'maskContactInfo',
+      'batchEncryptEmail',
+      'batchDecryptEmail'
     ],
     dependencies: ['EncryptionCore.gs']
   };

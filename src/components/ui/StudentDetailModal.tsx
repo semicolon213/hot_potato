@@ -498,6 +498,17 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       );
     }
 
+    // 연락처 암호화
+    if (studentToSave.phone_num && studentToSave.phone_num.trim() !== '') {
+      try {
+        const encryptedPhone = await encryptPhone(studentToSave.phone_num);
+        studentToSave.phone_num = encryptedPhone;
+      } catch (error) {
+        console.error('연락처 암호화 실패:', error);
+        // 암호화 실패해도 계속 진행 (원본 데이터 사용)
+      }
+    }
+
     // The modal should not handle the update logic itself.
     // It should pass the cleaned data back to the parent component.
     onUpdate(studentToSave);

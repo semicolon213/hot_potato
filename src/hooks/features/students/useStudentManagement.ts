@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { fetchStudents as fetchStudentsFromPapyrus, deleteStudent as deleteStudentFromPapyrus } from '../../../utils/database/papyrusManager';
+import { fetchStudents as fetchStudentsFromPapyrus, deleteStudent as deleteStudentFromPapyrus, updateStudent as updateStudentInPapyrus } from '../../../utils/database/papyrusManager';
 import type { Student, StudentWithCouncil, CouncilPosition } from '../../../types/features/students/student';
 
 /**
@@ -520,12 +520,40 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
         return;
       }
 
+      // 연락처 암호화
+      let encryptedPhone = newStudent.phone_num;
+      if (newStudent.phone_num && newStudent.phone_num.trim() !== '') {
+        try {
+          const isDevelopment = import.meta.env.DEV;
+          const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+          
+          // 이미 암호화된 연락처인지 확인
+          if (newStudent.phone_num.length <= 20 && /^010-\d{4}-\d{4}$/.test(newStudent.phone_num)) {
+            const response = await fetch(baseUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'encryptEmail', data: newStudent.phone_num })
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success) {
+                encryptedPhone = result.data;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('연락처 암호화 실패:', error);
+          // 암호화 실패해도 계속 진행 (원본 데이터 사용)
+        }
+      }
+
       const values = [
         [
           newStudent.no_student,
           newStudent.name,
           newStudent.address,
-          newStudent.phone_num,
+          encryptedPhone,
           newStudent.grade,
           newStudent.state,
           newStudent.council
@@ -547,6 +575,37 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     } catch (error) {
       console.error('학생 추가 실패:', error);
       alert('학생 추가에 실패했습니다.');
+    }
+  };
+
+  const updateStudent = async (updatedStudent: StudentWithCouncil) => {
+    if (!studentSpreadsheetId) return;
+
+    try {
+      // StudentWithCouncil을 Student로 변환
+      const student: Student = {
+        no_student: updatedStudent.no_student,
+        name: updatedStudent.name,
+        address: updatedStudent.address,
+        phone_num: updatedStudent.phone_num, // 이미 암호화된 상태
+        grade: updatedStudent.grade,
+        state: updatedStudent.state,
+        council: updatedStudent.council,
+        flunk: ''
+      };
+
+      await updateStudentInPapyrus(studentSpreadsheetId, updatedStudent.no_student, student);
+      
+      // 로컬 상태 업데이트
+      setStudents(prev => prev.map(s => 
+        s.no_student === updatedStudent.no_student ? updatedStudent : s
+      ));
+      
+      await fetchStudents(); // 최신 데이터로 갱신
+      alert('학생 정보가 성공적으로 업데이트되었습니다.');
+    } catch (error) {
+      console.error('학생 업데이트 실패:', error);
+      alert('학생 정보 업데이트에 실패했습니다.');
     }
   };
 
@@ -585,6 +644,7 @@ export const useStudentManagement = (studentSpreadsheetId: string | null) => {
     downloadExcelTemplate,
     handleExcelUpload,
     addStudent, // addStudent 추가
+    updateStudent,
     deleteStudent,
     fetchStudents,
     getCouncilByYear,

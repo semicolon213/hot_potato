@@ -59,6 +59,47 @@ function doPost(e) {
       }
     }
     
+    // 배치 암호화 액션 처리
+    if (req.action === 'batchEncryptEmail') {
+      console.log('🔐 배치 암호화 요청 받음:', req.data);
+      try {
+        const values = Array.isArray(req.data) ? req.data : [req.data];
+        const encrypted = batchEncryptEmail(values);
+        console.log('🔐 배치 암호화 결과:', encrypted.length, '개');
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, data: encrypted }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔐 배치 암호화 오류:', error);
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: '배치 암호화 중 오류가 발생했습니다: ' + error.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // 배치 복호화 액션 처리
+    if (req.action === 'batchDecryptEmail') {
+      console.log('🔓 배치 복호화 요청 받음');
+      console.log('🔓 req.data 타입:', typeof req.data);
+      console.log('🔓 req.data가 배열인가?', Array.isArray(req.data));
+      console.log('🔓 req.data 길이:', Array.isArray(req.data) ? req.data.length : 'N/A');
+      try {
+        const encryptedValues = Array.isArray(req.data) ? req.data : [req.data];
+        console.log('🔓 복호화할 값 개수:', encryptedValues.length);
+        const decrypted = batchDecryptEmail(encryptedValues);
+        console.log('🔓 배치 복호화 결과:', decrypted.length, '개');
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, data: decrypted }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        console.error('🔓 배치 복호화 오류:', error);
+        console.error('🔓 오류 스택:', error.stack);
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: '배치 복호화 중 오류가 발생했습니다: ' + error.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
     // 문서 생성 액션 처리
     if (req.action === 'createDocument') {
       console.log('📄 문서 생성 요청 받음:', req);

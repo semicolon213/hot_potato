@@ -9,6 +9,7 @@
 import { apiClient } from '../api/apiClient';
 import { findPersonalDocumentFolder } from './googleSheetUtils';
 import { ENV_CONFIG } from '../../config/environment';
+import { tokenManager } from '../auth/tokenManager';
 
 /**
  * 파일을 Base64로 변환
@@ -167,12 +168,38 @@ export const uploadPersonalDocument = async (
       closeDelim
     ]);
 
-    // 토큰 가져오기
-    const token = localStorage.getItem('googleAccessToken');
+    // 토큰 가져오기 (gapi.client.getToken() 우선, 없으면 tokenManager 사용)
+    let token: string | null = null;
+    
+    // 먼저 gapi.client.getToken() 시도
+    try {
+      const gapiToken = gapi.client.getToken();
+      if (gapiToken && gapiToken.access_token) {
+        token = gapiToken.access_token;
+        console.log('✅ gapi.client.getToken()에서 토큰 가져옴');
+      }
+    } catch (error) {
+      console.warn('⚠️ gapi.client.getToken() 실패:', error);
+    }
+    
+    // gapi에서 토큰을 가져오지 못한 경우 tokenManager 사용
+    if (!token) {
+      token = tokenManager.get();
+      if (token) {
+        console.log('✅ tokenManager에서 토큰 가져옴');
+        // gapi.client에도 토큰 설정 (다음 요청을 위해)
+        try {
+          gapi.client.setToken({ access_token: token });
+        } catch (error) {
+          console.warn('⚠️ gapi.client.setToken() 실패:', error);
+        }
+      }
+    }
+    
     if (!token) {
       return {
         success: false,
-        message: 'Google 인증 토큰이 없습니다.'
+        message: 'Google 인증 토큰이 없습니다. 다시 로그인해주세요.'
       };
     }
 

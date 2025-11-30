@@ -205,8 +205,12 @@ export class DataSyncService {
         category: 'staff',
         action: 'fetchStaff',
         fn: async () => {
-          const { fetchStaff } = await import('../utils/database/papyrusManager');
-          return await fetchStaff();
+          const { initializeSpreadsheetIds, fetchStaffFromPapyrus } = await import('../utils/database/papyrusManager');
+          const ids = await initializeSpreadsheetIds();
+          if (ids.staffSpreadsheetId) {
+            return await fetchStaffFromPapyrus(ids.staffSpreadsheetId);
+          }
+          return [];
         }
       });
       tasks.push({
@@ -482,9 +486,10 @@ export class DataSyncService {
 
         case 'staff':
           {
-            const { fetchStaff, fetchAttendees } = await import('../utils/database/papyrusManager');
+            const { initializeSpreadsheetIds, fetchStaffFromPapyrus, fetchAttendees } = await import('../utils/database/papyrusManager');
+            const ids = await initializeSpreadsheetIds();
             await Promise.all([
-              fetchStaff(),
+              ids.staffSpreadsheetId ? fetchStaffFromPapyrus(ids.staffSpreadsheetId) : Promise.resolve([]),
               fetchAttendees()
             ]);
           }

@@ -1327,15 +1327,65 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             flunk: row[7] || '', // 유급 필드 (H열)
         }));
 
-        console.log(`👥 학생 목록 파싱 완료: ${rawStudents.length}명, 복호화 시작...`);
+        console.log(`👥 학생 목록 파싱 완료: ${rawStudents.length}명, 배치 복호화 시작...`);
         
-        // 모든 학생의 암호화된 전화번호를 병렬로 복호화
-        const decryptedStudents: Student[] = await Promise.all(
-            rawStudents.map(async (student) => ({
-                ...student,
-                phone_num: await decryptValue(student.phone_num || '')
-            }))
-        );
+        // 모든 암호화된 전화번호를 모아서 한 번에 복호화
+        const encryptedPhoneNums = rawStudents.map(student => student.phone_num || '');
+        
+        let decryptedPhoneNums: string[] = [];
+        if (encryptedPhoneNums.length > 0) {
+          console.log(`🔓 [학생] 배치 복호화 시작! ${encryptedPhoneNums.length}개 값`);
+          try {
+            // 배치 복호화 API 직접 호출 (apiClient는 객체를 받지만, 배치 API는 배열을 직접 받아야 함)
+            const isDevelopment = import.meta.env.DEV;
+            const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+            
+            console.log(`🔓 [학생] 배치 복호화 요청 전송:`, baseUrl, encryptedPhoneNums.length, '개');
+            const response = await fetch(baseUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'batchDecryptEmail', data: encryptedPhoneNums })
+            });
+            console.log(`🔓 [학생] 배치 복호화 응답 받음:`, response.status);
+            
+            if (response.ok) {
+              const result = await response.json();
+              console.log('🔍 배치 복호화 응답:', {
+                success: result.success,
+                hasData: !!result.data,
+                dataIsArray: Array.isArray(result.data),
+                dataLength: Array.isArray(result.data) ? result.data.length : 'N/A'
+              });
+              
+              if (result.success && Array.isArray(result.data)) {
+                decryptedPhoneNums = result.data;
+                console.log(`✅ 배치 복호화 성공: ${decryptedPhoneNums.length}개`);
+              } else {
+                console.error('❌ 배치 복호화 응답 형식 오류:', result);
+                throw new Error(`배치 복호화 응답 형식 오류: success=${result.success}, dataIsArray=${Array.isArray(result.data)}`);
+              }
+            } else {
+              const errorText = await response.text();
+              console.error('❌ HTTP 오류 응답:', response.status, errorText);
+              throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+            }
+          } catch (error) {
+            console.error('❌ 배치 복호화 오류:', error);
+            console.error('❌ 오류 상세:', {
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+              response: error instanceof Error ? undefined : error
+            });
+            console.warn('⚠️ 배치 복호화 실패, 개별 복호화로 전환...');
+            decryptedPhoneNums = await Promise.all(encryptedPhoneNums.map(phone => decryptValue(phone)));
+          }
+        }
+        
+        // 복호화된 값을 다시 학생 데이터에 매핑
+        const decryptedStudents: Student[] = rawStudents.map((student, index) => ({
+            ...student,
+            phone_num: decryptedPhoneNums[index] || student.phone_num || ''
+        }));
 
         console.log(`👥 학생 목록 복호화 완료: ${decryptedStudents.length}명`);
         
@@ -1348,6 +1398,70 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
     } catch (error) {
         console.error('Error fetching students from Google Sheet:', error);
         return [];
+    }
+};
+
+export const updateStudent = async (spreadsheetId: string, studentNo: string, student: Student): Promise<void> => {
+    try {
+        const targetSpreadsheetId = spreadsheetId || studentSpreadsheetId;
+        if (!targetSpreadsheetId) {
+            throw new Error('Student spreadsheet ID not found');
+        }
+
+        setupPapyrusAuth();
+
+        const sheetName = ENV_CONFIG.STUDENT_SHEET_NAME;
+        const data = await getSheetData(targetSpreadsheetId, sheetName);
+
+        if (!data || !data.values || data.values.length === 0) {
+            throw new Error('시트에서 데이터를 찾을 수 없습니다.');
+        }
+
+        const rowIndex = data.values.findIndex(row => row[0] === studentNo);
+
+        if (rowIndex === -1) {
+            throw new Error('해당 학생을 시트에서 찾을 수 없습니다.');
+        }
+
+        const range = `${sheetName}!A${rowIndex + 1}:H${rowIndex + 1}`;
+        const values = [[
+            student.no_student,
+            student.name,
+            student.address,
+            student.phone_num, // 이미 암호화된 상태
+            student.grade,
+            student.state,
+            student.council,
+            student.flunk || ''
+        ]];
+
+        const gapi = window.gapi;
+        await gapi.client.sheets.spreadsheets.values.update({
+            spreadsheetId: targetSpreadsheetId,
+            range: range,
+            valueInputOption: 'RAW',
+            resource: {
+                values: values
+            }
+        });
+
+        // 캐시 무효화 및 백그라운드 갱신
+        try {
+            const dataSyncService = getDataSyncService();
+            const cacheKeys = [
+                generateCacheKey('student', 'fetchStudents', { spreadsheetId: targetSpreadsheetId }),
+                'student:fetchStudents:*' // 와일드카드로 모든 학생 캐시 무효화
+            ];
+            await dataSyncService.invalidateAndRefresh(cacheKeys);
+        } catch (cacheError) {
+            console.warn('⚠️ 캐시 무효화 실패 (계속 진행):', cacheError);
+        }
+
+        console.log(`Student with number ${studentNo} updated successfully.`);
+
+    } catch (error) {
+        console.error('Error updating student:', error);
+        throw error;
     }
 };
 
@@ -1890,25 +2004,85 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
       return staff as Staff;
     });
 
-    console.log(`👨‍💼 교직원 목록 파싱 완료: ${rawStaffData.length}명, 복호화 시작...`);
+    console.log(`👨‍💼 교직원 목록 파싱 완료: ${rawStaffData.length}명, 배치 복호화 시작...`);
     
-    // 모든 교직원의 암호화된 필드를 병렬로 복호화
-    const decryptedStaffData: Staff[] = await Promise.all(
-      rawStaffData.map(async (staff: Staff) => {
-        const [decryptedTel, decryptedPhone, decryptedEmail] = await Promise.all([
-          decryptValue(staff.tel || ''),
-          decryptValue(staff.phone || ''),
-          decryptValue(staff.email || '')
-        ]);
+    // 모든 암호화된 값을 모아서 한 번에 복호화
+    const allEncryptedValues: string[] = [];
+    const valueIndices: Array<{ staffIndex: number; field: 'tel' | 'phone' | 'email' }> = [];
+    
+    rawStaffData.forEach((staff: Staff, staffIndex: number) => {
+      if (staff.tel && staff.tel.trim() !== '') {
+        valueIndices.push({ staffIndex, field: 'tel' });
+        allEncryptedValues.push(staff.tel);
+      } else {
+        valueIndices.push({ staffIndex, field: 'tel' });
+        allEncryptedValues.push(''); // 빈 값도 인덱스 유지
+      }
+      
+      if (staff.phone && staff.phone.trim() !== '') {
+        valueIndices.push({ staffIndex, field: 'phone' });
+        allEncryptedValues.push(staff.phone);
+      } else {
+        valueIndices.push({ staffIndex, field: 'phone' });
+        allEncryptedValues.push(''); // 빈 값도 인덱스 유지
+      }
+      
+      if (staff.email && staff.email.trim() !== '') {
+        valueIndices.push({ staffIndex, field: 'email' });
+        allEncryptedValues.push(staff.email);
+      } else {
+        valueIndices.push({ staffIndex, field: 'email' });
+        allEncryptedValues.push(''); // 빈 값도 인덱스 유지
+      }
+    });
+    
+    // 배치 복호화
+    let decryptedValues: string[] = [];
+    if (allEncryptedValues.length > 0) {
+      console.log(`🔓 [교직원] 배치 복호화 시작! ${allEncryptedValues.length}개 값`);
+      try {
+        // 배치 복호화 API 직접 호출 (apiClient는 객체를 받지만, 배치 API는 배열을 직접 받아야 함)
+        const isDevelopment = import.meta.env.DEV;
+        const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
         
-        return {
-          ...staff,
-          tel: decryptedTel,
-          phone: decryptedPhone,
-          email: decryptedEmail
-        };
-      })
-    );
+        console.log(`🔓 [교직원] 배치 복호화 요청 전송:`, baseUrl, allEncryptedValues.length, '개');
+        const response = await fetch(baseUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'batchDecryptEmail', data: allEncryptedValues })
+        });
+        console.log(`🔓 [교직원] 배치 복호화 응답 받음:`, response.status);
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && Array.isArray(result.data)) {
+            decryptedValues = result.data;
+            console.log(`✅ 배치 복호화 성공: ${decryptedValues.length}개`);
+          } else {
+            throw new Error('배치 복호화 응답 형식 오류');
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.warn('⚠️ 배치 복호화 오류, 개별 복호화로 전환:', error);
+        decryptedValues = await Promise.all(allEncryptedValues.map(value => decryptValue(value)));
+      }
+    }
+    
+    // 복호화된 값을 다시 교직원 데이터에 매핑
+    const decryptedStaffData: Staff[] = rawStaffData.map((staff: Staff, staffIndex: number) => {
+      const telIndex = staffIndex * 3;
+      const phoneIndex = staffIndex * 3 + 1;
+      const emailIndex = staffIndex * 3 + 2;
+      
+      return {
+        ...staff,
+        tel: decryptedValues[telIndex] || staff.tel || '',
+        phone: decryptedValues[phoneIndex] || staff.phone || '',
+        email: decryptedValues[emailIndex] || staff.email || ''
+      };
+    });
 
     console.log(`👨‍💼 교직원 목록 복호화 완료: ${decryptedStaffData.length}명`);
     
@@ -1986,23 +2160,67 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
             return committee as Committee;
         });
 
-    console.log(`👥 위원회 목록 파싱 완료: ${rawCommitteeData.length}개, 복호화 시작...`);
+    console.log(`👥 위원회 목록 파싱 완료: ${rawCommitteeData.length}개, 배치 복호화 시작...`);
     
-    // 모든 위원회의 암호화된 필드를 병렬로 복호화
-    const decryptedCommitteeData: Committee[] = await Promise.all(
-      rawCommitteeData.map(async (committee: Committee) => {
-        const [decryptedTel, decryptedEmail] = await Promise.all([
-          decryptValue(committee.tel || ''),
-          decryptValue(committee.email || '')
-        ]);
+    // 모든 암호화된 값을 모아서 한 번에 복호화
+    const allEncryptedValues: string[] = [];
+    
+    rawCommitteeData.forEach((committee: Committee) => {
+      allEncryptedValues.push(committee.tel || '');
+      allEncryptedValues.push(committee.email || '');
+    });
+    
+    // 배치 복호화
+    let decryptedValues: string[] = [];
+    if (allEncryptedValues.length > 0) {
+      console.log(`🔓 배치 복호화 준비: ${allEncryptedValues.length}개 값`);
+      try {
+        // 배치 복호화 API 직접 호출 (apiClient는 객체를 받지만, 배치 API는 배열을 직접 받아야 함)
+        const isDevelopment = import.meta.env.DEV;
+        const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
         
-        return {
-          ...committee,
-          tel: decryptedTel,
-          email: decryptedEmail
-        };
-      })
-    );
+        console.log(`🔓 배치 복호화 요청 전송: ${baseUrl}`, {
+          action: 'batchDecryptEmail',
+          dataLength: allEncryptedValues.length,
+          firstFew: allEncryptedValues.slice(0, 3)
+        });
+        
+        const response = await fetch(baseUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'batchDecryptEmail', data: allEncryptedValues })
+        });
+        
+        console.log(`🔓 배치 복호화 응답 받음:`, response.status, response.statusText);
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && Array.isArray(result.data)) {
+            decryptedValues = result.data;
+            console.log(`✅ 배치 복호화 성공: ${decryptedValues.length}개`);
+          } else {
+            throw new Error('배치 복호화 응답 형식 오류');
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.warn('⚠️ 배치 복호화 오류, 개별 복호화로 전환:', error);
+        decryptedValues = await Promise.all(allEncryptedValues.map(value => decryptValue(value)));
+      }
+    }
+    
+    // 복호화된 값을 다시 위원회 데이터에 매핑
+    const decryptedCommitteeData: Committee[] = rawCommitteeData.map((committee: Committee, index: number) => {
+      const telIndex = index * 2;
+      const emailIndex = index * 2 + 1;
+      
+      return {
+        ...committee,
+        tel: decryptedValues[telIndex] || committee.tel || '',
+        email: decryptedValues[emailIndex] || committee.email || ''
+      };
+    });
 
     console.log(`👥 위원회 목록 복호화 완료: ${decryptedCommitteeData.length}개`);
     

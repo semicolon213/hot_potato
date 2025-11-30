@@ -38,6 +38,7 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user, initial
     handleExcelUpload,
     getAllYears,
     addStudent, // 학생 추가 함수
+    updateStudent,
     deleteStudent,
     getCouncilTableData,
     studentColumns,
@@ -186,10 +187,9 @@ const Students: React.FC<StudentsProps> = ({ studentSpreadsheetId, user, initial
   };
 
   // 학생 정보 업데이트 핸들러
-  const handleStudentUpdate = async () => {
-    // 데이터 다시 로드
+  const handleStudentUpdate = async (updatedStudent: StudentWithCouncil) => {
     if (studentSpreadsheetId) {
-      await fetchStudents();
+      await updateStudent(updatedStudent);
     }
     setIsModalOpen(false);
     setSelectedStudent(null);

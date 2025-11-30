@@ -37,7 +37,7 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
   }>({ key: null, direction: 'asc' });
 
 
-  // 데이터 암호화 (통합 App Script API 사용)
+  // 데이터 암호화 (통합 App Script API 사용, 배치 처리)
   const encryptData = useCallback(async (dataItem: StaffMember) => {
     try {
       const isDevelopment = import.meta.env.DEV;
@@ -45,44 +45,90 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
 
       const encryptedStaff = { ...dataItem };
       
-      // 전화번호 암호화
+      // 암호화할 값들을 모아서 한 번에 처리
+      const valuesToEncrypt: string[] = [];
+      const valueKeys: Array<'tel' | 'phone' | 'email'> = [];
+      
       if (dataItem.tel && dataItem.tel.trim() !== '') {
-        try {
-          const response = await fetch(baseUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'encryptEmail', data: dataItem.tel })
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              encryptedStaff.tel = result.data;
-            }
-          }
-        } catch (error) {
-          console.warn('전화번호 암호화 실패:', error);
-        }
+        valuesToEncrypt.push(dataItem.tel);
+        valueKeys.push('tel');
+      } else {
+        valuesToEncrypt.push('');
+        valueKeys.push('tel');
       }
       
-      // 이메일 암호화
+      if (dataItem.phone && dataItem.phone.trim() !== '') {
+        valuesToEncrypt.push(dataItem.phone);
+        valueKeys.push('phone');
+      } else {
+        valuesToEncrypt.push('');
+        valueKeys.push('phone');
+      }
+      
       if (dataItem.email && dataItem.email.trim() !== '') {
-        try {
-          const response = await fetch(baseUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'encryptEmail', data: dataItem.email })
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              encryptedStaff.email = result.data;
+        valuesToEncrypt.push(dataItem.email);
+        valueKeys.push('email');
+      } else {
+        valuesToEncrypt.push('');
+        valueKeys.push('email');
+      }
+      
+      // 배치 암호화
+      try {
+        const response = await fetch(baseUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'batchEncryptEmail', data: valuesToEncrypt })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && Array.isArray(result.data)) {
+            result.data.forEach((encrypted: string, index: number) => {
+              if (encrypted && encrypted.trim() !== '') {
+                encryptedStaff[valueKeys[index]] = encrypted;
+              }
+            });
+          } else {
+            // 배치 암호화 실패 시 개별 암호화로 폴백
+            console.warn('⚠️ 배치 암호화 실패, 개별 암호화로 전환...');
+            if (dataItem.tel && dataItem.tel.trim() !== '') {
+              const telResponse = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'encryptEmail', data: dataItem.tel })
+              });
+              if (telResponse.ok) {
+                const telResult = await telResponse.json();
+                if (telResult.success) encryptedStaff.tel = telResult.data;
+              }
+            }
+            if (dataItem.phone && dataItem.phone.trim() !== '') {
+              const phoneResponse = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'encryptEmail', data: dataItem.phone })
+              });
+              if (phoneResponse.ok) {
+                const phoneResult = await phoneResponse.json();
+                if (phoneResult.success) encryptedStaff.phone = phoneResult.data;
+              }
+            }
+            if (dataItem.email && dataItem.email.trim() !== '') {
+              const emailResponse = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'encryptEmail', data: dataItem.email })
+              });
+              if (emailResponse.ok) {
+                const emailResult = await emailResponse.json();
+                if (emailResult.success) encryptedStaff.email = emailResult.data;
+              }
             }
           }
-        } catch (error) {
-          console.warn('이메일 암호화 실패:', error);
         }
+      } catch (error) {
+        console.warn('배치 암호화 실패:', error);
       }
       
       return encryptedStaff;
@@ -315,9 +361,13 @@ export const useStaffOnly = (staffSpreadsheetId?: string | null) => {
           if (newStaffList.length > 0 && staffSpreadsheetId) {
             setIsLoading(true);
             try {
-              // 각 교직원을 암호화하여 추가
-              for (const newStaff of newStaffList) {
-                const encryptedStaff = await encryptData(newStaff);
+              // 모든 교직원을 한 번에 암호화 (배치 처리)
+              const encryptedStaffList = await Promise.all(
+                newStaffList.map(staff => encryptData(staff))
+              );
+              
+              // 각 교직원을 추가
+              for (const encryptedStaff of encryptedStaffList) {
                 await addStaffToPapyrus(staffSpreadsheetId, encryptedStaff);
               }
               

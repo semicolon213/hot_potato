@@ -378,43 +378,85 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onPageChange, c
       }
 
       // 개인 문서 삭제 (Google Drive API 직접 사용)
-      if (personalDocs.length > 0 && gapi?.client?.drive) {
-        await initializeGoogleAPIOnce();
+      if (personalDocs.length > 0) {
+        // gapi.client.drive가 이미 존재하는지 확인
+        if (!gapi?.client?.drive) {
+          try {
+            await initializeGoogleAPIOnce();
+          } catch (initError: any) {
+            // idpiframe_initialization_failed 오류는 이미 초기화되었을 수 있으므로 무시
+            if (initError?.error === 'idpiframe_initialization_failed' || 
+                initError?.result?.error?.error === 'idpiframe_initialization_failed' ||
+                (initError && typeof initError === 'object' && 'error' in initError && initError.error === 'idpiframe_initialization_failed')) {
+              console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+              // gapi.client.drive가 이미 존재하는지 다시 확인
+              if (!gapi?.client?.drive) {
+                throw new Error('Google Drive API를 초기화할 수 없습니다.');
+              }
+            } else {
+              throw initError;
+            }
+          }
+        }
+        
+        // gapi.client.drive가 존재하는지 최종 확인
+        if (!gapi?.client?.drive) {
+          throw new Error('Google Drive API가 초기화되지 않았습니다.');
+        }
+        
         for (const doc of personalDocs) {
           if (doc.id) {
             try {
               await gapi.client.drive.files.delete({
                 fileId: doc.id
               });
-            } catch (error) {
-              console.error(`개인 문서 삭제 실패 (${doc.title}):`, error);
-              // 개별 문서 삭제 실패해도 계속 진행
+            } catch (error: any) {
+              // 404 오류는 이미 삭제된 파일이므로 무시
+              const status = error?.status || error?.result?.status || error?.body?.error?.code;
+              const errorMessage = error?.result?.error?.message || error?.body?.error?.message || error?.message || '';
+              
+              if (status === 404 || errorMessage.includes('File not found') || errorMessage.includes('not found')) {
+                console.warn(`⚠️ 문서가 이미 삭제되었거나 존재하지 않습니다 (${doc.title}):`, doc.id);
+                // 이미 삭제된 파일이므로 계속 진행
+              } else {
+                console.error(`❌ 개인 문서 삭제 실패 (${doc.title}):`, error);
+                // 다른 오류는 로그만 남기고 계속 진행
+              }
             }
           }
         }
       }
 
-      showNotification(`${selectedDocs.length}개의 문서가 삭제되었습니다.`, 'success');
+      // 낙관적 업데이트: 삭제된 문서를 즉시 UI에서 제거
+      const deletedDocIds = docsToDelete.map(doc => doc.id || doc.documentNumber);
+      setDocuments(prevDocs => prevDocs.filter(doc => !deletedDocIds.includes(doc.id || doc.documentNumber)));
       setSelectedDocs([]);
+      
+      showNotification(`${selectedDocs.length}개의 문서가 삭제되었습니다.`, 'success');
 
-      // 문서 목록 새로고침
-      const allDocs = await loadAllDocuments();
-      const convertedDocs: FetchedDocument[] = allDocs.map((doc, index) => ({
-        id: doc.id,
-        title: doc.title,
-        author: doc.creator || '알 수 없음',
-        lastModified: doc.lastModified,
-        url: doc.url,
-        documentNumber: doc.documentNumber,
-        approvalDate: '',
-        status: 'active',
-        originalIndex: index,
-        documentType: doc.documentType || 'shared',
-        creator: doc.creator,
-        creatorEmail: doc.creatorEmail,
-        tag: doc.tag
-      }));
-      setDocuments(convertedDocs);
+      // 문서 목록 새로고침 (캐시 무시)
+      try {
+        const allDocs = await loadAllDocuments(true); // forceRefresh: true로 캐시 무시
+        const convertedDocs: FetchedDocument[] = allDocs.map((doc, index) => ({
+          id: doc.id,
+          title: doc.title,
+          author: doc.creator || '알 수 없음',
+          lastModified: doc.lastModified,
+          url: doc.url,
+          documentNumber: doc.documentNumber,
+          approvalDate: '',
+          status: 'active',
+          originalIndex: index,
+          documentType: doc.documentType || 'shared',
+          creator: doc.creator,
+          creatorEmail: doc.creatorEmail,
+          tag: doc.tag
+        }));
+        setDocuments(convertedDocs);
+      } catch (refreshError) {
+        console.error('문서 목록 새로고침 오류:', refreshError);
+        // 새로고침 실패해도 낙관적 업데이트는 이미 적용됨
+      }
     } catch (error) {
       console.error('문서 삭제 오류:', error);
       showNotification(`문서 삭제 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`, 'error');

@@ -62,8 +62,27 @@ export const initializeGoogleAPIOnce = async (): Promise<void> => {
             }
             isGoogleAPIInitialized = true;
             resolve();
-          } catch (error) {
-            reject(error);
+          } catch (error: any) {
+            // idpiframe_initialization_failed 오류는 이미 초기화되었을 수 있으므로 무시
+            if (error?.error === 'idpiframe_initialization_failed' || 
+                error?.result?.error?.error === 'idpiframe_initialization_failed' ||
+                (error && typeof error === 'object' && 'error' in error && error.error === 'idpiframe_initialization_failed')) {
+              console.warn('⚠️ idpiframe 초기화 실패 - 이미 초기화되었을 수 있습니다. 계속 진행합니다.');
+              // gapi.client가 이미 초기화되어 있는지 확인
+              if (gapi.client && gapi.client.drive) {
+                const { tokenManager } = await import('../auth/tokenManager');
+                const token = tokenManager.get();
+                if (token) {
+                  (gapi.client as any).setToken({ access_token: token });
+                }
+                isGoogleAPIInitialized = true;
+                resolve();
+              } else {
+                reject(error);
+              }
+            } else {
+              reject(error);
+            }
           }
         });
       });
