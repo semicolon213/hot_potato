@@ -26,6 +26,47 @@ const updateRow = async (spreadsheetId: string, sheetName: string, key: string, 
     await update(spreadsheetId, sheetName, key, data);
 };
 
+/**
+ * API Base URL 결정 헬퍼 함수
+ * 개발 환경: Vite 프록시 (/api)
+ * Netlify 배포 환경: Netlify Functions 프록시 (/.netlify/functions/proxy)
+ * Electron 환경: 직접 Apps Script URL 사용 (CORS 문제 없음)
+ */
+const getApiBaseUrl = (): string => {
+    // Electron 환경 감지
+    if (typeof window !== 'undefined' && window.electronAPI) {
+        const url = import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec';
+        console.log('🔧 [getApiBaseUrl] Electron 환경 감지, 직접 URL 사용:', url.substring(0, 50) + '...');
+        return url;
+    }
+    
+    // 개발 환경 감지 (Vite dev server)
+    const isDev = typeof window !== 'undefined' && import.meta && import.meta.env ? import.meta.env.DEV : false;
+    if (isDev) {
+        console.log('🔧 [getApiBaseUrl] 개발 환경 감지, Vite 프록시 사용: /api');
+        return '/api';
+    }
+    
+    // Netlify 배포 환경 감지
+    if (typeof window !== 'undefined' && window.location) {
+        const hostname = window.location.hostname;
+        // Netlify 배포 환경인지 확인
+        if (hostname.includes('netlify.app') || hostname.includes('netlify.com')) {
+            console.log('🔧 [getApiBaseUrl] Netlify 배포 환경 감지, Functions 프록시 사용: /.netlify/functions/proxy', { hostname });
+            return '/.netlify/functions/proxy';
+        }
+        // 로컬 개발 환경이 아닌 다른 프로덕션 환경
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.includes('localhost')) {
+            console.log('🔧 [getApiBaseUrl] 프로덕션 환경 감지, Functions 프록시 사용: /.netlify/functions/proxy', { hostname });
+            return '/.netlify/functions/proxy';
+        }
+    }
+    
+    // 기본값: 개발 환경으로 간주
+    console.log('🔧 [getApiBaseUrl] 기본값 사용, Vite 프록시: /api');
+    return '/api';
+};
+
 // papyrus-db에 Google API 인증 설정
 const setupPapyrusAuth = () => {
     if (window.gapi && window.gapi.client) {
@@ -1337,8 +1378,7 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
           console.log(`🔓 [학생] 배치 복호화 시작! ${encryptedPhoneNums.length}개 값`);
           try {
             // 배치 복호화 API 직접 호출 (apiClient는 객체를 받지만, 배치 API는 배열을 직접 받아야 함)
-            const isDevelopment = import.meta.env.DEV;
-            const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+            const baseUrl = getApiBaseUrl();
             
             console.log(`🔓 [학생] 배치 복호화 요청 전송:`, baseUrl, encryptedPhoneNums.length, '개');
             const response = await fetch(baseUrl, {
@@ -1366,7 +1406,13 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
               }
             } else {
               const errorText = await response.text();
-              console.error('❌ HTTP 오류 응답:', response.status, errorText);
+              console.error('❌ HTTP 오류 응답:', {
+                status: response.status,
+                statusText: response.statusText,
+                url: baseUrl,
+                errorText: errorText.substring(0, 200),
+                headers: Object.fromEntries(response.headers.entries())
+              });
               throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
             }
           } catch (error) {
@@ -1374,7 +1420,9 @@ export const fetchStudents = async (spreadsheetId?: string): Promise<Student[]> 
             console.error('❌ 오류 상세:', {
               message: error instanceof Error ? error.message : String(error),
               stack: error instanceof Error ? error.stack : undefined,
-              response: error instanceof Error ? undefined : error
+              response: error instanceof Error ? undefined : error,
+              baseUrl: baseUrl,
+              requestCount: encryptedPhoneNums.length
             });
             console.warn('⚠️ 배치 복호화 실패, 개별 복호화로 전환...');
             decryptedPhoneNums = await Promise.all(encryptedPhoneNums.map(phone => decryptValue(phone)));
@@ -2042,8 +2090,7 @@ export const fetchStaffFromPapyrus = async (spreadsheetId: string): Promise<Staf
       console.log(`🔓 [교직원] 배치 복호화 시작! ${allEncryptedValues.length}개 값`);
       try {
         // 배치 복호화 API 직접 호출 (apiClient는 객체를 받지만, 배치 API는 배열을 직접 받아야 함)
-        const isDevelopment = import.meta.env.DEV;
-        const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+        const baseUrl = getApiBaseUrl();
         
         console.log(`🔓 [교직원] 배치 복호화 요청 전송:`, baseUrl, allEncryptedValues.length, '개');
         const response = await fetch(baseUrl, {
@@ -2176,8 +2223,7 @@ export const fetchCommitteeFromPapyrus = async (spreadsheetId: string): Promise<
       console.log(`🔓 배치 복호화 준비: ${allEncryptedValues.length}개 값`);
       try {
         // 배치 복호화 API 직접 호출 (apiClient는 객체를 받지만, 배치 API는 배열을 직접 받아야 함)
-        const isDevelopment = import.meta.env.DEV;
-        const baseUrl = isDevelopment ? '/api' : (import.meta.env.VITE_APP_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwFLMG03A0aHCa_OE9oqLY4fCzopaj6wPWMeJYCxyieG_8CgKHQMbnp9miwTMu0Snt9/exec');
+        const baseUrl = getApiBaseUrl();
         
         console.log(`🔓 배치 복호화 요청 전송: ${baseUrl}`, {
           action: 'batchDecryptEmail',
