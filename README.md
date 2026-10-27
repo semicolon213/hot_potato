@@ -1,399 +1,195 @@
-# 🥔 Hot Potato ERP System
+# Hot Potato ERP (뜨거운 감자)
 
-<div align="center">
+학과 행정 업무(결재, 문서, 공지, 일정, 학생회비 장부, 학적)를 **Google Workspace 위에서 한곳에 모은 학과용 ERP**의 원본 저장소입니다.
+서버와 DB 없이 Google Sheets를 데이터베이스로, Apps Script를 백엔드로 씁니다.
 
-![Version](https://img.shields.io/badge/version-0.0.0-blue.svg)
-![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0.4-3178C6?logo=typescript)
-![Electron](https://img.shields.io/badge/Electron-38.2.0-47848F?logo=electron)
-![License](https://img.shields.io/badge/license-Private-red.svg)
+> **이 저장소는 2025-12-01(`ffed6c7`)에서 개발을 멈췄습니다.** 이후 정리·보강 작업과 현재 운영은 [hot_potato_remake](https://github.com/semicolon213/hot_potato_remake)에서 이어집니다.
 
-**구글 계정 기반의 통합 ERP 시스템**
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite)](https://vitejs.dev/)
+[![Electron](https://img.shields.io/badge/Electron-38-47848F?logo=electron)](https://www.electronjs.org/)
+[![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-V8-4285F4?logo=google)](https://developers.google.com/apps-script)
 
-[기능 소개](#-주요-기능) • [설치 방법](#-설치-방법) • [개발 가이드](#-개발-가이드) • [배포](#-배포)
+## 만들게 된 이유
 
-</div>
+학과 업무에는 따로 시스템이 없었습니다. 결재는 문서를 출력해서 교수님을 찾아가 서명을 받았고, 반려되면 다시 출력했습니다. 양식은 메일과 메신저로 돌았고, 공지는 단체방에 묻혔고, 학생회비 장부와 영수증은 담당자만 알고 있었습니다.
 
----
+새 서버를 들이기엔 예산도 운영할 사람도 없었습니다. 대신 학과 구성원 모두가 이미 Google 계정을 쓰고 있었습니다. 그래서 **이미 쓰고 있는 Drive·Sheets·Docs·Calendar 위에 업무 흐름만 얹자**는 방향을 잡았습니다.
 
-## 📋 프로젝트 개요
+문제 정의와 범위는 [docs/PROBLEM_DEFINITION.md](docs/PROBLEM_DEFINITION.md)에 정리했습니다.
 
-Hot Potato는 Google Workspace를 기반으로 한 통합 ERP(Enterprise Resource Planning) 시스템입니다. 학생, 교직원, 관리자가 하나의 플랫폼에서 문서 관리, 캘린더, 회계, 워크플로우, 게시판 등 다양한 업무를 처리할 수 있습니다.
+## 주요 기능
 
-### 주요 특징
-- 🔐 **Google OAuth 2.0 인증**: 안전한 구글 계정 기반 로그인
-- 📄 **문서 관리**: Google Docs/Sheets 템플릿 기반 문서 생성 및 관리
-- 📅 **캘린더 통합**: Google Calendar 연동으로 일정 관리
-- 💰 **회계 관리**: 예산 및 지출 관리 시스템
-- ✅ **워크플로우**: 결재 및 승인 프로세스 관리
-- 👥 **사용자 관리**: 학생/교직원 구분 및 권한 관리
-- 📢 **게시판**: 공지사항 및 자유 게시판
+- **결재** — 검토선과 결재선을 나눠 단계별로 승인·반려·보류하고, 반려되면 고쳐서 다시 올립니다. 모든 처리는 이력으로 남습니다.
+- **문서·양식** — 공유 양식으로 문서를 바로 만들고, "나만 보기" 또는 지정한 그룹에 편집 권한을 줍니다. 공용 태그·개인 태그·즐겨찾기로 정리합니다.
+- **공지사항** — 역할 그룹이나 개인 단위로 공개 범위를 정하고, 관리자 승인을 받아 상단에 고정합니다.
+- **회계** — 장부마다 전용 폴더와 증빙 폴더를 만들고, 입출금과 영수증을 함께 기록합니다. 예산 계획은 검토 → 승인 → 집행 순서로 처리됩니다.
+- **일정** — 교수·학생·집행부·조교·겸임교원 캘린더를 합쳐 보고, 개인 시간표도 관리합니다.
+- **학적** — 학생·교직원·위원회 관리, 엑셀 일괄 등록, 유급 표시, 1월 학년 자동 갱신(Apps Script 트리거)
+- **가입 관리** — 학번·이름 사전 등록 + 관리자 승인제. 관리자 키는 매일 바뀝니다.
+- **대시보드** — 위젯을 골라 배치하고, 배치는 각자 드라이브의 개인 설정 파일에 저장됩니다.
+- **Google 서비스 바로가기** — Apps Script, Sheets, Docs, Gemini, Groups를 앱 안에서 엽니다.
 
----
+기능별 동작 여부와 알려진 결함은 [docs/STATUS.md](docs/STATUS.md)에 있습니다.
 
-## 🎯 주요 기능
+## 화면
 
-### 📄 문서 관리
-- Google Docs/Sheets 템플릿 기반 문서 생성
-- 공유 템플릿 관리 및 메타데이터 관리
-- 문서 권한 설정 및 폴더 관리
-- 문서 검색 및 필터링
+<!-- 대시보드, 결재, 회계, 캘린더 화면 캡처 추가 예정 -->
 
-### 📅 캘린더
-- Google Calendar 연동
-- 교수/학생/학회 일정 통합 관리
-- 반복 일정 설정 (RRULE 지원)
-- 일정 공유 및 알림
+## 팀
 
-### 💰 회계 관리
-- 예산 관리 및 지출 내역 추적
-- 전자장부 및 영수증 관리
-- 증빙서류 확인서 생성
-- 회계 보고서 생성
+2025.07 ~ 2025.12 동안 6명이 666커밋으로 만들었습니다. 아래 역할은 커밋 이력에서 각자 가장 많이 작업한 영역입니다.
 
-### ✅ 워크플로우
-- 결재 라인 설정 및 관리
-- 문서 결재 프로세스
-- 결재 상태 추적
-- 결재 이력 관리
+<table>
+  <tr>
+    <td align="center"><img src="images/team/김형균.jpg" width="100"><br><b>김형균</b></td>
+    <td align="center"><img src="images/team/김나윤.jpg" width="100"><br><b>김나윤</b></td>
+    <td align="center"><img src="images/team/문준영.jpg" width="100"><br><b>문준영</b></td>
+    <td align="center"><img src="images/team/용지순.jpg" width="100"><br><b>용지순</b></td>
+    <td align="center"><img src="images/team/장환희.jpg" width="100"><br><b>장환희</b></td>
+    <td align="center"><img src="images/team/안창희.jpg" width="100"><br><b>안창희</b></td>
+  </tr>
+  <tr>
+    <td>Apps Script 백엔드, 회계, 결재, 관리자, 공통 유틸·타입, 배포</td>
+    <td>공지사항, 문서 양식 UI, 새 문서·문서함</td>
+    <td>캘린더, 양식 UI, 공통 UI 컴포넌트</td>
+    <td>디자인 시스템(스타일·아이콘), 레이아웃, 화면 UI</td>
+    <td>캘린더, 시간표, 대시보드</td>
+    <td>대시보드 위젯</td>
+  </tr>
+</table>
 
-### 👥 사용자 관리
-- 학생/교직원 구분
-- 관리자 승인 시스템
-- 권한별 기능 접근 제어
-- 사용자 프로필 관리
+## 기술 스택
 
-### 📢 게시판
-- 공지사항 작성 및 관리
-- 자유 게시판
-- 파일 첨부 지원
-- 댓글 및 좋아요 기능
+| 구분 | 사용 기술 |
+|---|---|
+| Frontend | React 19, TypeScript 5, Vite 5, Tiptap, Recharts, rrule, Zustand(인증 상태) |
+| Backend | Google Apps Script (V8), Netlify Functions (프록시) |
+| 저장소 | Google Sheets(데이터), Google Drive(파일), papyrus-db(Sheets 접근) |
+| 인증 | Google OAuth 2.0 |
+| 연동 | Google Docs·Calendar·Gmail |
+| 배포 | Electron 38(데스크톱), Netlify(웹) |
+| 품질 | GitHub Actions CI, Jest, Testing Library, ESLint 9 |
 
----
+## 구조
 
-## 🛠️ 기술 스택
+```mermaid
+flowchart LR
+    U["Electron / 브라우저"] --> FE["React SPA"]
+    FE -- "action RPC" --> PX["Netlify Function 프록시<br/>(웹) · Vite 프록시(개발)"]
+    PX --> GAS["Apps Script 웹앱"]
+    GAS --> WS[("Sheets · Drive · Docs<br/>Gmail")]
+    FE -- "사용자 토큰으로 직접 조회" --> WS
+    FE -. 캐시 .- C[("메모리 + localStorage")]
+```
 
-### Frontend
-- **React 19.2.0** - UI 라이브러리
-- **TypeScript 5.0.4** - 타입 안정성
-- **Vite 5.4.20** - 빌드 도구
-- **Zustand 5.0.8** - 상태 관리
-- **TipTap 3.9.0** - 리치 텍스트 에디터
-- **Recharts 3.4.1** - 차트 라이브러리
+설계하면서 고민한 부분입니다. 전체 결정 기록은 [docs/ADR.md](docs/ADR.md)에 있습니다.
 
-### Desktop App
-- **Electron 38.2.0** - 데스크톱 앱 프레임워크
-- **Electron Builder 26.0.12** - 앱 빌드 및 배포
+- **DB 서버 대신 Google Sheets를 썼습니다.**
+  운영비가 없었고, 운영을 맡을 조교는 DB는 못 다뤄도 스프레드시트는 다룰 수 있었습니다. 대신 FK·트랜잭션이 없어서 무결성은 코드가 지켜야 하고, 열 순서가 바뀌면 코드가 깨진다는 대가가 있었습니다.
+- **백엔드를 별도 서버에서 Apps Script로 옮겼습니다.**
+  처음에는 관리자 키와 회원 승인을 Google Cloud에 올린 Node.js 서버가 처리했습니다. 2025-10에 이 기능을 Apps Script 웹앱으로 옮기고, 이후 공지·문서·결재·회계도 같은 웹앱에 `action`으로 더했습니다([ADR-013](docs/ADR.md#adr-013-백엔드를-cloud-run-서버에서-apps-script로-옮긴다)).
+- **데이터 접근 경로를 둘로 나눴습니다.**
+  회원·결재·공지처럼 Drive 조작이 필요한 일은 Apps Script를 거치고, 캘린더·학생 목록·장부처럼 자주 읽는 데이터는 브라우저가 사용자 토큰으로 Sheets를 직접 읽습니다.
+- **장부마다 스프레드시트를 따로 만들었습니다.**
+  장부를 만들 때 전용 폴더·시트·증빙 폴더를 새로 만들고 지정한 사람에게만 공유하면, 별도 권한 시스템 없이 Drive 권한만으로 접근을 나눌 수 있었습니다.
 
-### Backend
-- **Google Apps Script** - 서버리스 백엔드
-- **Google Drive API** - 파일 저장 및 관리
-- **Google Sheets API** - 데이터베이스
-- **Papyrus DB 1.0.4** - Google Sheets ORM
+## 트러블슈팅
 
-### 인증 및 API
-- **Google OAuth 2.0** - 사용자 인증
-- **JWT** - 토큰 기반 인증
-- **Google Calendar API** - 캘린더 연동
+### 1. 화면마다 Apps Script를 불러 429가 자주 나던 문제
 
-### 개발 도구
-- **Jest 29.7.0** - 테스트 프레임워크
-- **ESLint 9.29.0** - 코드 린팅
-- **Prettier** - 코드 포맷팅
-- **GitHub Actions** - CI/CD
+화면마다 필요한 데이터를 각자 요청하다 보니 호출이 많았고, Apps Script·Sheets API 할당량에 걸려 429(요청 과다)가 자주 났습니다. 2025-11-17~18에 요청 흐름을 바꿨습니다.
 
----
+- 스프레드시트 ID는 이름 8개를 한 번에 보내 한 번에 받습니다.
+- 로그인 직후 필요한 데이터를 카테고리별로 미리 받아 둡니다(카테고리는 차례로, 카테고리 안은 병렬로).
+- 응답은 메모리 + localStorage 캐시에 **데이터 종류별 TTL**(결재 3분 ~ 장부 목록 45분)로 보관합니다.
+- 주기 갱신은 **현재 페이지가 쓰는 데이터만** 하고, 창이 비활성이면 멈춥니다.
+- 그래도 429가 오면 서버가 알려 준 대기 시간을 지키고, 그 데이터의 주기 갱신을 30~120분 멈춥니다.
 
-## 🚀 설치 방법
+남은 문제도 있습니다. 페이지 이름 표가 실제 이름과 달라 결재·문서 화면에서는 주기 갱신이 동작하지 않습니다(BUG-13). 자세한 내용은 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#92-데이터-로딩과-캐시)에 있습니다.
 
-### 필수 요구사항
-- Node.js 22.x 이상
-- npm 또는 yarn
-- Google 계정
-- Google Cloud Console 프로젝트
+### 2. 웹으로 배포하자 Apps Script 호출이 CORS에 막히던 문제
 
-### 1. 저장소 클론
+개발 중에는 Vite 개발 서버 프록시로 Apps Script를 불렀고, 데스크톱(Electron)이 주 배포 대상이었습니다. 2025-11-18 웹 배포를 시작하면서 브라우저에서 Apps Script를 직접 부르는 호출의 CORS 문제를 풀어야 했습니다.
+
+- Netlify Function으로 프록시(`/.netlify/functions/proxy`)를 두고, 운영 빌드의 API 호출은 모두 이 프록시를 거치게 했습니다.
+- Apps Script가 JSON 대신 HTML(권한·오류 페이지)을 돌려주면 프록시가 `{ success:false, error }`로 감싸서, 화면에서는 파싱 오류 대신 오류 응답으로 처리되게 했습니다.
+
+이 구조는 리메이크에서 서버 전용 환경변수, ESM 전환, 응답 로그로 더 다듬었습니다. 증상별 대응은 [docs/RUNBOOK.md](docs/RUNBOOK.md)에 있습니다.
+
+### 3. 1,600줄짜리 `App.tsx`로 6명이 동시에 작업하던 문제
+
+초기에는 화면 상태와 로직이 `App.tsx` 한 파일에 1,600줄 넘게 모여 있었습니다. 6명이 기능 브랜치에서 동시에 같은 파일을 고치게 되어 병합 충돌을 줄이는 것이 리팩터링 목표 중 하나였습니다. 2025-09-25 두 차례 리팩터링으로 구조를 나눴습니다.
+
+- 공용 상태와 초기화는 `hooks/core/useAppState.ts`로, 화면 선택은 `components/layout/PageRenderer.tsx`로 옮겼습니다.
+- 기능별로 `components/features/<도메인>`, `hooks/features/<도메인>` 폴더를 나눠, 사람마다 맡은 폴더 안에서 작업하게 했습니다.
+
+이후 `useAppState`가 다시 커지고 `PageRenderer`에 props가 50개 남짓 넘어가게 된 것은 남은 과제입니다([ADR-014](docs/ADR.md#adr-014-앱-상태를-useappstate-훅으로-모은다)).
+
+## 개발 방식
+
+- **단계별 산출물:** 문제 정의 → 요구사항 → 설계 → 구조 생성 → 구현 → 테스트 → 문서화 순서로, 단계마다 문서와 UML 다이어그램을 정리했습니다. 전체 지도는 [docs/README.md](docs/README.md)에 있습니다.
+- **브랜치 전략:** `main`(배포) ← `develop`(통합) ← `feature/*`. `feature/calendar`, `feature/notice`, `feature/admin` 등 기능별 브랜치로 6명이 병렬 작업했습니다([docs/CONVENTIONS.md](docs/CONVENTIONS.md)).
+- **CI:** `main`·`develop` 푸시와 PR마다 GitHub Actions가 타입 검사·린트·테스트를 돌리고, `v*` 태그를 달면 Electron 앱을 빌드합니다.
+- **운영자를 위한 문서:** 실제 운영자는 학과 조교라서 [운영자 매뉴얼](docs/OPERATOR_MANUAL.md)과 [런북](docs/RUNBOOK.md)을 따로 썼습니다.
+
+## 테스트
+
+2026-10-27에 기준 커밋(`ffed6c7`)을 다시 검사한 결과입니다. 통과하지 못한 항목도 그대로 적었습니다.
+
+| 검사 | 결과 |
+|---|---|
+| 빌드 | 통과. 메인 번들 gzip 561.5kB (번들 크기 검사는 없음) |
+| 단위 테스트 (Jest) | 13개 통과, 스위트 3개 중 1개 컴파일 실패 |
+| 린트 | 오류 31, 경고 416 |
+| 타입 검사 (`tsconfig.app.json`) | 오류 676 (`npm run type-check`는 검사 대상 파일이 없어 항상 통과) |
+| GitHub Actions (마지막 실행) | 실패 (test 잡) |
+
+자동 테스트가 없는 핵심 흐름은 [수동 TC 27개](docs/TEST_PLAN.md#3-테스트-케이스-시트-수동-배포-환경)로 확인합니다. 결함 13건은 [docs/TEST_PLAN.md](docs/TEST_PLAN.md#6-결함-리포트-테스트코드-점검으로-발견)에 있습니다.
+
+## 실행 방법
+
+필요한 것: Node.js 18 이상, 배포된 Apps Script 웹앱 URL, Google OAuth 클라이언트 ID
+
 ```bash
-git clone https://github.com/your-org/hot_potato.git
+git clone https://github.com/semicolon213/hot_potato.git
 cd hot_potato
+npm ci
+# 루트에 .env를 만들고 VITE_GOOGLE_CLIENT_ID, VITE_APP_SCRIPT_URL 입력
+npm run dev:web        # http://localhost:5173
 ```
 
-### 2. 의존성 설치
-```bash
-npm install
-```
-
-### 3. 환경 변수 설정
-
-프로젝트 루트에 `.env` 파일을 생성하고 다음 내용을 추가하세요:
-
-```env
-# Google OAuth 설정
-VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
-
-# Apps Script URL
-VITE_APP_SCRIPT_URL=your_app_script_url
-
-# 스프레드시트 이름
-VITE_HOT_POTATO_DB_SPREADSHEET_NAME=your_spreadsheet_name
-VITE_BOARD_SPREADSHEET_NAME=your_board_spreadsheet_name
-VITE_ANNOUNCEMENT_SPREADSHEET_NAME=your_announcement_spreadsheet_name
-VITE_CALENDAR_PROFESSOR_SPREADSHEET_NAME=your_calendar_professor_spreadsheet_name
-VITE_CALENDAR_STUDENT_SPREADSHEET_NAME=your_calendar_student_spreadsheet_name
-VITE_STUDENT_SPREADSHEET_NAME=your_student_spreadsheet_name
-
-# Papyrus DB 설정
-VITE_PAPYRUS_DB_URL=your_papyrus_db_url
-VITE_PAPYRUS_DB_API_KEY=your_papyrus_db_api_key
-```
-
-### 4. Google OAuth 설정
-
-1. [Google Cloud Console](https://console.cloud.google.com/)에서 새 프로젝트 생성
-2. 다음 API 활성화:
-   - Google+ API
-   - Google Calendar API
-   - Google Drive API
-   - Google Sheets API
-3. OAuth 2.0 클라이언트 ID 생성
-4. 승인된 리디렉션 URI 추가:
-   - 개발용: `http://localhost:5173`
-   - 프로덕션: 실제 도메인
-
-### 5. Google Apps Script 배포
-
-`appScript/` 폴더의 스크립트를 Google Apps Script에 배포하세요. 자세한 내용은 [appScript/README.md](./appScript/README.md)를 참조하세요.
-
----
-
-## 💻 개발
-
-### 개발 서버 실행
-
-#### 웹 브라우저에서 실행
-```bash
-npm run dev
-# 또는
-npm run dev:web
-```
-브라우저에서 `http://localhost:5173` 접속
-
-#### Electron 앱으로 실행
-```bash
-npm run electron:dev
-```
-Electron 창이 자동으로 열립니다.
-
-### 빌드
-
-#### 웹 빌드
-```bash
-npm run build
-```
-
-#### Electron 빌드
-```bash
-npm run electron:build
-```
-
-### 테스트
-```bash
-# 단위 테스트 실행
-npm run test
-
-# 테스트 커버리지
-npm run test:coverage
-
-# 테스트 감시 모드
-npm run test:watch
-```
-
-### 코드 품질 검사
-```bash
-# 타입 체크
-npm run type-check
-
-# 린트 검사
-npm run lint
-
-# 코드 포맷팅
-npm run format
-
-# 포맷팅 검사
-npm run format:check
-```
-
----
-
-## 📁 프로젝트 구조
-
-```
-hot_potato/
-├── src/                          # 소스 코드
-│   ├── components/               # UI 컴포넌트
-│   │   ├── layout/              # 레이아웃 컴포넌트
-│   │   ├── features/            # 기능별 컴포넌트
-│   │   │   ├── auth/           # 인증 관련
-│   │   │   ├── calendar/        # 캘린더 기능
-│   │   │   ├── documents/       # 문서 관리
-│   │   │   ├── accounting/      # 회계 관리
-│   │   │   ├── workflow/        # 워크플로우
-│   │   │   ├── students/        # 학생 관리
-│   │   │   ├── admin/          # 관리자 기능
-│   │   │   └── templates/       # 템플릿 관리
-│   │   └── ui/                 # 공통 UI 컴포넌트
-│   ├── hooks/                   # 커스텀 훅
-│   │   ├── core/               # 핵심 훅
-│   │   └── features/           # 기능별 훅
-│   ├── pages/                   # 페이지 컴포넌트
-│   ├── services/                # 서비스 레이어
-│   ├── utils/                   # 유틸리티 함수
-│   │   ├── api/                # API 클라이언트
-│   │   ├── database/           # 데이터베이스 유틸
-│   │   ├── google/             # Google API 유틸
-│   │   └── auth/               # 인증 유틸
-│   ├── types/                   # TypeScript 타입 정의
-│   ├── config/                  # 설정 파일
-│   ├── styles/                  # 스타일 파일
-│   └── assets/                  # 정적 자산
-├── appScript/                   # Google Apps Script 백엔드
-│   ├── Main.gs                 # 메인 엔트리 포인트
-│   ├── CONFIG.gs               # 설정 파일
-│   ├── DocumentTemplates.gs    # 문서 템플릿 관리
-│   ├── DocumentCreation.gs     # 문서 생성
-│   ├── UserAuth.gs             # 사용자 인증
-│   └── ...                     # 기타 스크립트 파일
-├── electron/                    # Electron 설정
-│   └── main.cjs                # Electron 메인 프로세스
-├── public/                      # 정적 파일
-├── .github/                     # GitHub Actions 워크플로우
-│   └── workflows/
-│       ├── ci.yml              # CI 파이프라인
-│       └── electron-build.yml # Electron 빌드
-├── package.json                # 프로젝트 설정
-├── tsconfig.json               # TypeScript 설정
-├── vite.config.ts              # Vite 설정
-└── README.md                    # 프로젝트 문서
-```
-
----
-
-## 🔐 인증 시스템
-
-### 사용자 인증 플로우
-
-1. **Google 로그인**: 사용자가 Google 계정으로 로그인
-2. **사용자 정보 입력**: 학생/교직원 구분 및 학번/교번 입력
-3. **승인 대기**: 관리자 승인 대기 상태
-4. **승인 완료**: 관리자 승인 후 메인 화면 접근
-
-### 권한 관리
-
-- **학생**: 기본 기능 접근 (문서 보기, 캘린더 조회 등)
-- **교직원**: 추가 기능 접근 (문서 생성, 캘린더 편집 등)
-- **관리자**: 모든 기능 접근 (사용자 관리, 시스템 설정 등)
-
----
-
-## 📦 배포
-
-### GitHub Actions를 통한 자동 배포
-
-1. **태그 생성 및 푸시**
-   ```bash
-   git tag -a v1.0.0 -m "Release v1.0.0"
-   git push origin v1.0.0
-   ```
-
-2. **자동 빌드 및 배포**
-   - GitHub Actions가 자동으로 Windows, macOS, Linux 빌드 실행
-   - 빌드 완료 후 GitHub Releases에 자동 업로드
-
-자세한 내용은 [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)를 참조하세요.
-
----
-
-## 📚 문서
-
-- [설치 가이드](./INSTALLATION_GUIDE.md) - 상세한 설치 방법
-- [배포 가이드](./DEPLOYMENT_GUIDE.md) - 배포 방법 및 체크리스트
-- [프로젝트 문서](./PROJECT_DOCUMENTATION.md) - 프로젝트 구조 및 아키텍처
-- [Apps Script 문서](./appScript/README.md) - 백엔드 스크립트 가이드
-- [환경 변수 설정](./ENVIRONMENT_VARIABLES_SETUP.md) - 환경 변수 설정 가이드
-
----
-
-## 🤝 기여
-
-프로젝트에 기여하고 싶으신가요? 다음 단계를 따르세요:
-
-1. 저장소 포크
-2. 기능 브랜치 생성 (`git checkout -b feature/AmazingFeature`)
-3. 변경사항 커밋 (`git commit -m 'Add some AmazingFeature'`)
-4. 브랜치에 푸시 (`git push origin feature/AmazingFeature`)
-5. Pull Request 생성
-
-### 코딩 스타일
-
-- TypeScript 사용
-- ESLint 규칙 준수
-- Prettier로 코드 포맷팅
-- 컴포넌트는 함수형 컴포넌트 사용
-- 커스텀 훅으로 로직 분리
-
----
-
-## 🐛 문제 해결
-
-### 일반적인 문제
-
-**의존성 설치 실패**
-```bash
-# 캐시 정리 후 재설치
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
-```
-
-**빌드 실패**
-```bash
-# 빌드 디렉토리 정리 후 재빌드
-rm -rf dist dist-electron
-npm run build
-```
-
-**환경 변수 인식 안 됨**
-- `.env` 파일이 프로젝트 루트에 있는지 확인
-- 환경 변수 이름이 `VITE_`로 시작하는지 확인
-- 개발 서버 재시작
-
-자세한 문제 해결 방법은 [INSTALLATION_GUIDE.md](./INSTALLATION_GUIDE.md)를 참조하세요.
-
----
-
-## 📝 라이선스
-
-이 프로젝트는 비공개 프로젝트입니다. 모든 권리가 보유자에게 있습니다.
-
----
-
-## 👥 팀
-
-Hot Potato 개발 팀
-
----
-
-## 🔗 관련 링크
-
-- [Google Apps Script](https://script.google.com/)
-- [Google Cloud Console](https://console.cloud.google.com/)
-- [Electron 문서](https://www.electronjs.org/)
-- [React 문서](https://react.dev/)
-
----
-
-<div align="center">
-
-**Made with ❤️ by Hot Potato Team**
-
-</div>
+| 명령 | 설명 |
+|---|---|
+| `npm run dev` | 웹 + Electron |
+| `npm run build` | 프로덕션 빌드 |
+| `npm test` / `npm run lint` | 테스트 / 린트 |
+| `npm run electron:build` | 데스크톱 앱 패키징 |
+
+- 로컬 개발: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- 백엔드부터 새로 세팅하기: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+## 아쉬운 점
+
+- **KPI 기준값이 없습니다.** 아날로그 방식이라 도입 전 수치가 없어, 시스템 로그로 측정할 지표만 정해 두었습니다.
+- **품질 게이트가 실제로는 막지 못했습니다.** CI는 있었지만 타입 검사가 아무 파일도 검사하지 않았고 린트는 실패해도 넘어가게 되어 있어, 오류가 쌓였습니다.
+- **서버 측 권한 검사가 약합니다.** 화면 단위 제어와 Drive 공유 권한에 많이 기댑니다([docs/SECURITY.md](docs/SECURITY.md)).
+- **같은 일을 하는 코드가 여러 벌입니다.** Apps Script 전역 함수 이름 중복, 결재 액션 분기 중복, 쓰지 않는 화면(게시판·채팅·회의록)이 남아 있습니다.
+
+이 중 상당수는 [리메이크](https://github.com/semicolon213/hot_potato_remake)에서 다루고 있습니다. 처리 여부는 [docs/STATUS.md](docs/STATUS.md#4-기술-백로그-기준-시점)에 적었습니다.
+
+## 문서
+
+| 문서 | 내용 |
+|---|---|
+| [문서 안내](docs/README.md) | 개발 단계별 산출물 지도 |
+| [문제 정의](docs/PROBLEM_DEFINITION.md) · [요구사항(SRS)](docs/SRS.md) · [용어](docs/GLOSSARY.md) | 왜, 무엇을 |
+| [아키텍처](docs/ARCHITECTURE.md) · [설계 결정(ADR)](docs/ADR.md) · [데이터 모델](docs/DATA_MODEL.md) · [API](docs/API_SPEC.md) | 어떻게 |
+| [개발 시작](docs/GETTING_STARTED.md) · [코딩 규칙](docs/CONVENTIONS.md) · [배포](docs/DEPLOYMENT.md) | 개발자용 |
+| [테스트](docs/TEST_PLAN.md) · [구현 상태](docs/STATUS.md) | 품질과 현황 |
+| [운영자 매뉴얼](docs/OPERATOR_MANUAL.md) · [런북](docs/RUNBOOK.md) · [보안](docs/SECURITY.md) | 운영자용 |
+
+## 라이선스
+
+학과 내부용으로 만든 프로젝트입니다. 소스 코드는 공개되어 있지만 별도 오픈소스 라이선스는 지정하지 않았습니다.
