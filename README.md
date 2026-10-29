@@ -35,7 +35,26 @@
 
 ## 화면
 
-<!-- 대시보드, 결재, 회계, 캘린더 화면 캡처 추가 예정 -->
+<p align="center"><img src="docs/images/login.png" alt="로그인" width="560"></p>
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/dashboard.png" alt="대시보드" width="400"><br>대시보드 (위젯)</td>
+    <td align="center"><img src="docs/images/announcements.png" alt="공지사항" width="400"><br>공지사항</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/workflow-request.png" alt="결재 요청" width="400"><br>문서 결재 요청</td>
+    <td align="center"><img src="docs/images/calendar.png" alt="일정" width="400"><br>일정 (월간)</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/budget-plan.png" alt="예산 계획" width="400"><br>회계 · 예산 계획</td>
+    <td align="center"><img src="docs/images/admin.png" alt="관리자" width="400"><br>관리자 · 가입 승인</td>
+  </tr>
+</table>
+
+<p align="center"><img src="docs/images/system-overview.png" alt="시스템 구성" width="560"><br>시스템 구성: HP ERP ↔ Apps Script ↔ Google Drive · Sheets · Docs · Groups</p>
+
+화면은 2025년 11월 캡스톤디자인 작품보고서에 실린 캡처입니다. 개인정보(이름·이메일·학번)와 장부 잔액은 모자이크 처리했습니다.
 
 ## 팀
 
