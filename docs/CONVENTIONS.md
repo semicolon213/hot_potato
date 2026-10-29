@@ -85,7 +85,7 @@ gitGraph
 | Jest | `jest.config.cjs` (ts-jest, jsdom) | `npm test`, `npm run test:ci` | 테스트 파일 4개, 그중 `Login.test.tsx`는 제외 설정 |
 | 한 번에 | `npm run ci` = type-check + lint + format:check + test:ci + audit | `npm run ci` | GitHub Actions는 이 스크립트를 부르지 않고 단계를 따로 실행 ([ADR-012](./ADR.md#adr-012-github-actions로-ci와-electron-빌드를-돌린다)) |
 
-> `npm run type-check`(`tsc --noEmit`)는 루트 `tsconfig.json`이 참조(`references`)만 갖고 있어 실제 파일을 검사하지 않고 항상 통과합니다. 타입 검사는 위의 `-p tsconfig.app.json` 명령을 쓰세요.
+> `npm run type-check`(`tsc --noEmit`)는 루트 `tsconfig.json`에 참조(`references`)만 있어 실제 파일을 검사하지 않고 항상 통과합니다. 타입 검사는 위의 `-p tsconfig.app.json` 명령을 쓰세요.
 
 ## 4. Apps Script
 

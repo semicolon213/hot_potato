@@ -65,13 +65,13 @@
 | CI 테스트 | `npm run test:ci` | **실패**: 위 스위트 실패 + 커버리지 기준(1%) 미달 (branches 0.7%, functions 0.74%) |
 | 린트 | `npm run lint` | **실패**: 오류 31, 경고 416 |
 | 타입 검사 | `npx tsc --noEmit -p tsconfig.app.json` | **실패**: 오류 676 |
-| `npm run type-check` | `tsc --noEmit` | 종료 코드 0이지만 **검사 대상 파일이 없음** (루트 `tsconfig.json`이 `files: []`와 참조만 가짐) |
+| `npm run type-check` | `tsc --noEmit` | 종료 코드 0이지만 **검사 대상 파일이 없음** (루트 `tsconfig.json`에 `files: []`와 참조만 있음) |
 | 포맷 검사 | `npm run format:check` | **실패**: `prettier`가 devDependencies에 없어 명령을 찾지 못함 |
 | 빌드 | `npm run build` | 통과 (약 8초) |
 | 번들 크기 | `npm run bundle-size` | 검사 없음 (스크립트가 "skipped" 문구만 출력). 빌드 결과 `index` 1,836.7kB (gzip 561.5kB), `chart-vendor` gzip 102.0kB. Vite가 1,000kB 초과 경고 |
 | GitHub Actions | `ci.yml` (run 19813851721, 2025-12-01) | **실패**: quality 통과, test(20.x) 실패, test(22.x) 취소, performance·deploy 건너뜀 |
 
-`quality` 잡이 통과한 것은 `type-check`가 아무 파일도 검사하지 않고, 린트 단계가 `continue-on-error`이기 때문입니다. `npm run ci` 스크립트는 `format:check`에서 멈춥니다.
+`type-check`가 아무 파일도 검사하지 않고 린트 단계가 `continue-on-error`라서 `quality` 잡이 통과했습니다. `npm run ci` 스크립트는 `format:check`에서 멈춥니다.
 
 ### 4.1 단위 테스트 상세
 

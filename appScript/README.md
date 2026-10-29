@@ -1,4 +1,4 @@
-# appScript — Hot Potato ERP 백엔드 (Google Apps Script)
+# appScript: Hot Potato ERP 백엔드 (Google Apps Script)
 
 이 폴더는 Google Apps Script 웹앱 코드입니다. `clasp` 설정 파일이 없어서, Apps Script 편집기에 파일을 붙여 넣어 올립니다.
 

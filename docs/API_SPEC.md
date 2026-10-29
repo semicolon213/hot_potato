@@ -28,7 +28,7 @@ sequenceDiagram
 | 로컬 개발 | `/api` | Vite dev 서버 프록시(`vite.config.ts`) → `VITE_APP_SCRIPT_URL` |
 | 배포 | `/.netlify/functions/proxy` | Netlify Function(`netlify/functions/proxy.js`) → 환경변수 `VITE_APP_SCRIPT_URL` 또는 `APP_SCRIPT_URL` |
 
-프록시를 두는 이유는 Apps Script 웹앱이 CORS 헤더를 직접 제어하지 못하기 때문입니다. [ADR-004](./ADR.md#adr-004-apps-script-앞에-netlify-function-프록시를-둔다) 참고.
+Apps Script 웹앱은 CORS 헤더를 직접 제어하지 못해서 프록시를 둡니다. [ADR-004](./ADR.md#adr-004-apps-script-앞에-netlify-function-프록시를-둔다) 참고.
 
 ### 1.1 클라이언트 (`src/utils/api/apiClient.ts`)
 
@@ -58,8 +58,8 @@ sequenceDiagram
 
 `doPost`는 두 단계로 분기합니다.
 
-1. `doPost` 본문 — 암호화, 문서·양식·태그, 인증, 회계, 학생 액션 (34개)
-2. `callUserManagementPost` — 관리자, 공지, 결재 액션 (34개)
+1. `doPost` 본문: 암호화, 문서·양식·태그, 인증, 회계, 학생 액션 (34개)
+2. `callUserManagementPost`: 관리자, 공지, 결재 액션 (34개)
 
 고유 액션은 **68개**입니다. 분기(`if`)는 82개인데, 결재 액션 14개가 두 번 적혀 있어 두 번째 블록에는 도달하지 않습니다.
 
@@ -79,7 +79,7 @@ sequenceDiagram
 | `getAllUsers` | — | 전체 사용자 + 대기/승인 분리 목록 |
 | `getPendingUsers` | — | 승인 대기 목록 |
 | `approveUserWithGroup` | `studentId, groupRole` | 승인(`O`) 후 해당 Google 그룹 관리자에게 추가 요청 메일 발송, `group_management_log`에 기록 |
-| `rejectUser` | `studentId` | 가입 거부 (구 스키마 `users` 시트 사용 — 수정 필요) |
+| `rejectUser` | `studentId` | 가입 거부 (구 스키마 `users` 시트 사용, 수정 필요) |
 | `addUsersToSpreadsheet` | `users:[{no_member,name_member}]` | 학번·이름 사전 등록 (중복 건너뜀) |
 | `clearUserCache` | — | 사용자 캐시 삭제 |
 | `sendAdminKeyEmail` | `userEmail` | 관리자 키 안내 메일 발송 |

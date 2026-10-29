@@ -506,7 +506,7 @@ flowchart TB
 
 - 라우터 라이브러리 없이 `currentPage` 상태와 `?page=` 쿼리로 화면을 바꿉니다. `App.handlePageChange`가 `history.pushState`로 쿼리를 바꾸고, `useAppState`가 첫 렌더 때 쿼리에서 페이지를 복원합니다.
 - 진입 순서: 로딩(저장된 사용자·토큰 복원) → 미로그인이면 `Login` → 미승인이면 `PendingApproval` → 앱 셸(`Sidebar` + `Header` + `PageRenderer`).
-- 메뉴 노출은 역할에 따라 달라집니다. 회계는 `std_council`·`professor`·`supp`, 관리자 메뉴는 `isAdmin`일 때만 보입니다. 화면 단위 권한 검사를 보강하는 것은 개선 과제입니다([SECURITY.md](./SECURITY.md)).
+- 메뉴 노출은 역할에 따라 달라집니다. 회계는 `std_council`·`professor`·`supp`, 관리자 메뉴는 `isAdmin`일 때만 보입니다. 화면 단위 권한 검사는 아직 보강하지 못했습니다([SECURITY.md](./SECURITY.md)).
 - `preferences`, `documents`, `users`, `settings`는 "구현 예정" 문구만 보여 줍니다.
 - Electron 창을 닫으면 `preload.js`의 `app-before-quit` 이벤트로 `App`이 로그아웃합니다.
 

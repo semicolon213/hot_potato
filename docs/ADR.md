@@ -176,7 +176,7 @@
 
 **날짜:** 2025-10-04 `661a30b` "3차 리펙터링 및 코드 최적화"(워크플로 2개 추가), 2025-10-05 `28bcbf8` "CI/CD 파이프라인 수정"(`.prettierrc` 추가) ~ `665a13c` "의존성 이슈 픽스 및 ci/cd 작업"
 
-**상황:** React 19로 올리면서 의존성 충돌을 확인할 필요가 있었습니다. 당시 `CI_CD_UPDATE_GUIDE.md`는 `npm ci --legacy-peer-deps`를 `npm ci`로 바꾸고 Node를 22.x로 올리며 "React 19 호환성 검증"을 추가했다고 적습니다.
+**상황:** React 19로 올리면서 의존성 충돌을 확인해야 했습니다. 당시 `CI_CD_UPDATE_GUIDE.md`는 `npm ci --legacy-peer-deps`를 `npm ci`로 바꾸고 Node를 22.x로 올리며 "React 19 호환성 검증"을 추가했다고 적습니다.
 
 **결정:**
 - `ci.yml`: `main`·`develop` push와 PR에서 실행합니다.

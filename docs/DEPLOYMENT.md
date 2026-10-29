@@ -46,7 +46,7 @@ flowchart LR
 2. **실행 사용자: 나(배포 계정)**, **액세스 권한: 모든 사용자**로 둡니다. Netlify 프록시가 로그인 정보 없이 호출하고, 백엔드는 배포 계정의 드라이브를 읽기 때문입니다.
 3. 배포 후 나오는 **웹 앱 URL**(`.../exec`)을 복사해 둡니다. 4단계에서 씁니다.
 4. 첫 실행 때 권한 승인 창이 뜨면 배포 계정으로 승인합니다.
-5. 브라우저에서 웹 앱 URL을 열어 `{"success":true,"message":"Hot Potato App Script is running", ...}`이 나오면 배포가 살아 있는 것입니다(`doGet`).
+5. 브라우저에서 웹 앱 URL을 열어 `{"success":true,"message":"Hot Potato App Script is running", ...}`이 나오면 배포가 살아 있습니다(`doGet`).
 
 > 이후 코드를 바꿀 때는 **새 배포를 만들지 말고** "배포 관리 → 기존 배포 편집 → 새 버전"으로 올립니다. 새 배포를 만들면 URL이 바뀌어 Netlify 환경변수도 바꿔야 합니다.
 
@@ -69,7 +69,7 @@ flowchart LR
 3. 스크립트 속성 중 아래 값이 비어 있으면 채웁니다. 이미 있는 값은 덮어쓰지 않습니다: `ROOT_FOLDER_NAME`, `DOCUMENT_FOLDER_NAME`, `TEMPLATE_FOLDER_NAME`, `SHARED_DOCUMENT_FOLDER_NAME`, `PERSONAL_TEMPLATE_FOLDER_NAME`, `SHEET_NAME_USER`, `SHEET_NAME_ADMIN_KEYS`, `NOTICE_SHEET_NAME`, `STATIC_TAG_SPREADSHEET_NAME`, `STATIC_TAG_SHEET_NAME`, `WORKFLOW_SPREADSHEET_NAME`
 4. **실행 로그를 꼭 확인합니다.** 개별 폴더·시트 생성이 실패해도 반환값은 `success:true`로 나옵니다.
 
-> ⚠️ 이미 있는 스프레드시트에 다시 실행하면, 1행 헤더가 코드의 헤더와 다를 때 **1행을 코드의 헤더로 덮어씁니다.** 운영 중에는 헤더를 손으로 바꾸지 말고, 재실행 전에 사본을 만들어 둡니다.
+> **주의:** 이미 있는 스프레드시트에 다시 실행하면, 1행 헤더가 코드의 헤더와 다를 때 **1행을 코드의 헤더로 덮어씁니다.** 운영 중에는 헤더를 손으로 바꾸지 말고, 재실행 전에 사본을 만들어 둡니다.
 
 ### 3.2 `initializeSystem`이 하지 않는 일 (수동)
 

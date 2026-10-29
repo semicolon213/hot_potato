@@ -109,13 +109,13 @@ Netlify Function을 로컬에서 돌리는 npm 스크립트는 없습니다. 필
 
 처음 읽을 때는 아래 순서를 추천합니다.
 
-1. `src/main.tsx` — 환경변수 검증, 앱 마운트
-2. `src/App.tsx` — 로그인·승인 게이트, 세션·토큰 만료 처리
-3. `src/hooks/core/useAppState.ts` — 전역 상태와 로그인 후 초기화
-4. `src/components/layout/PageRenderer.tsx` — 화면 전환
-5. `src/utils/api/apiClient.ts` — Apps Script 호출, 재시도, 캐시
-6. `src/utils/database/papyrusManager.ts` — 스프레드시트 ID 초기화, 시트 직접 읽기
-7. `appScript/Main.gs` — 백엔드 라우터 (`doPost`)
+1. `src/main.tsx`: 환경변수 검증, 앱 마운트
+2. `src/App.tsx`: 로그인·승인 게이트, 세션·토큰 만료 처리
+3. `src/hooks/core/useAppState.ts`: 전역 상태와 로그인 후 초기화
+4. `src/components/layout/PageRenderer.tsx`: 화면 전환
+5. `src/utils/api/apiClient.ts`: Apps Script 호출, 재시도, 캐시
+6. `src/utils/database/papyrusManager.ts`: 스프레드시트 ID 초기화, 시트 직접 읽기
+7. `appScript/Main.gs`: 백엔드 라우터 (`doPost`)
 
 구조는 [ARCHITECTURE.md](./ARCHITECTURE.md), 규칙은 [CONVENTIONS.md](./CONVENTIONS.md)를 보세요.
 
